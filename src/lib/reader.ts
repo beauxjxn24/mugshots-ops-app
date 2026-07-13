@@ -127,6 +127,16 @@ export async function readFile(
       const text = (await file.text()).trim()
       return { fileName: name, kind: 'text', text, lineItems: parseLineItems(text) }
     }
+    // Excel exports (Toast often ships .xlsx inside its zips) → convert every
+    // sheet to CSV text and run it through the same parsers.
+    if (['xlsx', 'xls'].includes(ext || '') || type.includes('spreadsheet') || type.includes('ms-excel')) {
+      const XLSX = await import('xlsx')
+      const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true })
+      const text = wb.SheetNames.map((sn) => XLSX.utils.sheet_to_csv(wb.Sheets[sn], { dateNF: 'yyyy-mm-dd' }))
+        .join('\n')
+        .trim()
+      return { fileName: name, kind: 'text', text, lineItems: parseLineItems(text) }
+    }
     return {
       fileName: name,
       kind: 'unsupported',
