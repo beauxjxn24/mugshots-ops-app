@@ -436,6 +436,11 @@ body {
 @keyframes awningWave { 0%,100%{transform:skewX(0)} 50%{transform:skewX(-4deg)} }
 .keyturn { transform-box: view-box; transform-origin: 8.4px 8.4px; animation: keyTurn 2.6s ease-in-out infinite; }
 @keyframes keyTurn { 0%,55%,100%{transform:rotate(0)} 70%,85%{transform:rotate(28deg)} }
+/* Martini: the glass sways, the olive bobs against it */
+.martini { transform-box: view-box; transform-origin: 12px 19px; animation: martiniSway 2.8s ease-in-out infinite; }
+.martini .olive { transform-box: fill-box; transform-origin: center; animation: oliveBob 2.8s ease-in-out infinite; }
+@keyframes martiniSway { 0%,100%{transform:rotate(-3.5deg)} 50%{transform:rotate(3.5deg)} }
+@keyframes oliveBob { 0%,100%{transform:translateY(0) rotate(3deg)} 50%{transform:translateY(-0.8px) rotate(-4deg)} }
 
 /* Print: only the sheet — no rail, bars, or buttons. */
 @media print {

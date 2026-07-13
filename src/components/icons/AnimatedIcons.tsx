@@ -352,6 +352,33 @@ export function PeopleIcon({ size = 18, className = '' }: P) {
   )
 }
 
+export function MartiniIcon({ size = 18, className = '' }: P) {
+  return (
+    <span className={className} style={wrap(size)} aria-hidden>
+      <svg viewBox="0 0 24 24" width={size} height={size} overflow="visible">
+        {/* filled martini glass that sways gently, olive bobbing on its pick */}
+        <g className="martini">
+          {/* bowl */}
+          <path d="M4 4.5 h16 L13.4 11.8 v0 L10.6 11.8 Z" fill="#F472B6" />
+          {/* liquid — lighter core layer */}
+          <path d="M6.6 6.3 h10.8 L13 10.9 h-2 Z" fill="#F9A8D4" />
+          {/* shine */}
+          <path d="M7.6 6.9 l1.6 0 -2 2.1 Z" fill="#FCE7F3" opacity=".9" />
+          {/* stem + foot */}
+          <rect x="11.2" y="11.6" width="1.6" height="6.2" rx=".8" fill="#F472B6" />
+          <path d="M8.2 19.6 a3.8 1.4 0 0 1 7.6 0 Z" fill="#F472B6" />
+          {/* olive on a pick */}
+          <g className="olive">
+            <line x1="14.8" y1="3.2" x2="12.6" y2="7.6" stroke="#E4B84C" strokeWidth="1" strokeLinecap="round" />
+            <circle cx="13.2" cy="6.4" r="1.5" fill="#4ADE80" />
+            <circle cx="13.2" cy="6.4" r=".55" fill="#166534" />
+          </g>
+        </g>
+      </svg>
+    </span>
+  )
+}
+
 export function KeyTurnIcon({ size = 18, className = '' }: P) {
   return (
     <span className={className} style={wrap(size)} aria-hidden>

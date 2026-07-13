@@ -33,7 +33,7 @@ import {
   MoonZIcon,
   ClockIcon,
   BarsIcon,
-  ShakerIcon,
+  MartiniIcon,
   PopperIcon,
   CheckBoxIcon,
   ChefIcon,
@@ -98,7 +98,7 @@ export const NAV: NavSection[] = [
       { to: '/lto', label: 'LTO', icon: Flame, color: '#F87171', anim: FlameIcon },
       { to: '/specs', label: 'Specs & Recipes', icon: BookOpen, color: '#E4B84C', anim: BookIcon, staff: true },
       { to: '/builds', label: 'Line Builds', icon: ChefHat, color: '#FB7185', anim: GridIcon, staff: true },
-      { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: ShakerIcon },
+      { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: MartiniIcon },
     ],
   },
   {
