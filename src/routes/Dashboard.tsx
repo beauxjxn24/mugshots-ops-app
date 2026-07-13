@@ -422,7 +422,7 @@ function LtoFocus() {
         ) : (
           <span className="text-xs text-muted">sales fill in from your PMIX drops</span>
         )}
-        <Link to="/lto" className="ml-auto text-sm font-semibold text-brand">
+        <Link to={`/lto?item=${encodeURIComponent(s.name)}`} className="ml-auto text-sm font-semibold text-brand">
           View build →
         </Link>
       </div>
