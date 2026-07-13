@@ -124,6 +124,7 @@ export function Dashboard() {
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
                 <KpiTile
                   compact
+                  to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
                   icon={<PartyPopper size={15} />}
                   value={String(todays.length)}
                   label="Caterings today"
@@ -131,6 +132,7 @@ export function Dashboard() {
                 />
                 <KpiTile
                   compact
+                  to={next ? `/catering?booking=${next.id}` : '/catering'}
                   icon={<CalendarClock size={15} />}
                   value={next ? String(next.guests || '—') : '—'}
                   label="Next booking"
@@ -249,12 +251,14 @@ export function Dashboard() {
         {!hasReal && (
           <div className="grid grid-cols-2 gap-4">
             <KpiTile
+              to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
               icon={<PartyPopper size={18} />}
               value={String(todays.length)}
               label="Caterings today"
               sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
             />
             <KpiTile
+              to={next ? `/catering?booking=${next.id}` : '/catering'}
               icon={<CalendarClock size={18} />}
               value={next ? String(next.guests || '—') : '—'}
               label="Next booking"
@@ -577,6 +581,7 @@ function KpiTile({
   sub,
   compact,
   className = '',
+  to,
 }: {
   icon: React.ReactNode
   value: string
@@ -584,9 +589,14 @@ function KpiTile({
   sub?: string
   compact?: boolean
   className?: string
+  to?: string
 }) {
-  return (
-    <Card className={`${compact ? 'flex flex-col justify-center p-3.5' : 'p-4'} ${className}`}>
+  const card = (
+    <Card
+      className={`h-full ${compact ? 'flex flex-col justify-center p-3.5' : 'p-4'} ${
+        to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/30' : ''
+      } ${className}`}
+    >
       <div className={`grid place-items-center rounded-xl bg-brand/10 text-brand ${compact ? 'mb-1.5 size-7' : 'mb-2 size-9'}`}>
         {icon}
       </div>
@@ -594,6 +604,13 @@ function KpiTile({
       <div className={`mt-0.5 font-semibold uppercase tracking-wide text-muted ${compact ? 'text-[10px]' : 'text-xs'}`}>{label}</div>
       {sub && <div className={`text-muted ${compact ? 'text-[11px]' : 'text-xs'}`}>{sub}</div>}
     </Card>
+  )
+  return to ? (
+    <Link to={to} className="block h-full">
+      {card}
+    </Link>
+  ) : (
+    card
   )
 }
 

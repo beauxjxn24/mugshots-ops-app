@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Check, Undo2 } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
@@ -16,6 +17,15 @@ export function Catering() {
   })
   const [showDone, setShowDone] = useState(false)
   const lastImport = getLastCateringImport()
+  // Deep link from the dashboard tiles: /catering?booking=<id> highlights
+  // that order and scrolls it into view.
+  const [params] = useSearchParams()
+  const focusId = params.get('booking')
+
+  useEffect(() => {
+    if (!focusId) return
+    document.getElementById(`booking-${focusId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [focusId])
 
   const sorted = useMemo(
     () => [...bookings].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)),
@@ -108,7 +118,11 @@ export function Catering() {
         ) : (
           <div className="space-y-2">
             {active.map((b) => (
-              <Card key={b.id} className="flex items-center gap-3 p-4">
+              <Card
+                key={b.id}
+                id={`booking-${b.id}`}
+                className={`flex items-center gap-3 p-4 ${b.id === focusId ? 'bg-brand/5 ring-2 ring-brand' : ''}`}
+              >
                 <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-brand/10 text-center">
                   <span className="font-display text-lg font-semibold leading-none text-brand">
                     {b.guests || '—'}

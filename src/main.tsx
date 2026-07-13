@@ -36,12 +36,12 @@ seedFlowoodHistory()
 applyOwnerDrops()
 
 // Keep installed copies fresh: grab new versions the moment they deploy,
-// and keep checking every 30 minutes while the app stays open.
+// and keep checking every 5 minutes while the app stays open.
 registerSW({
   immediate: true,
   onRegisteredSW(swUrl, reg) {
     if (!reg) return
-    setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000)
+    setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000)
   },
 })
 
@@ -76,7 +76,12 @@ async function selfHeal() {
   }
 }
 selfHeal()
-setInterval(selfHeal, 5 * 60 * 1000)
+setInterval(selfHeal, 60 * 1000)
+// The moment you come back to the tab, check for a fresh version too —
+// updates land on the next glance instead of the next timer tick.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') selfHeal()
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -22,9 +22,10 @@ export function PageHeader({
   )
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
   return (
     <div
+      id={id}
       className={`rounded-2xl border border-black/5 bg-white shadow-[0_10px_30px_-18px_rgba(23,32,55,0.18)] ${className}`}
     >
       {children}
