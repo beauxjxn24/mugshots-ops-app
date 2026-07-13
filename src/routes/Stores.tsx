@@ -61,6 +61,59 @@ function WeeklyTargets() {
   )
 }
 
+/**
+ * Tracked items — which items headline the dashboard's TRACKED band
+ * (handoff spec: Admin → Tracked items). Tiles fill from PMIX drops.
+ */
+function TrackedItems() {
+  const [tracked, setTracked] = usePersistentState<string[]>('tracked:items', [])
+  const [adding, setAdding] = useState('')
+  const add = () => {
+    if (!adding.trim()) return
+    setTracked((ts) => [...new Set([...ts, adding.trim()])])
+    setAdding('')
+  }
+  return (
+    <Card className="p-4">
+      <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted">
+        Tracked items · dashboard tiles
+      </div>
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {tracked.length === 0 && (
+          <span className="text-xs text-muted">Nothing tracked yet — add the items you watch.</span>
+        )}
+        {tracked.map((name) => (
+          <span key={name} className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-ink">
+            {name}
+            <button
+              onClick={async () => {
+                if (await confirmDelete(`Stop tracking ${name}?`, undefined, 'Remove'))
+                  setTracked((ts) => ts.filter((x) => x !== name))
+              }}
+              aria-label={`Stop tracking ${name}`}
+              className="text-muted hover:text-down"
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={adding}
+          onChange={(e) => setAdding(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="Add an item to track (matches your PMIX by name)…"
+          className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+        <button onClick={add} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+          Add
+        </button>
+      </div>
+    </Card>
+  )
+}
+
 export function Stores() {
   const concepts = useScope((s) => s.concepts)
   const currentConcept = useScope((s) => s.currentConcept)
@@ -101,6 +154,8 @@ export function Stores() {
         </Card>
 
         <WeeklyTargets />
+
+        <TrackedItems />
 
         {concepts.map((c) => (
           <Card key={c.id} className="overflow-hidden">

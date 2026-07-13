@@ -8,7 +8,7 @@ import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
 import type { PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, CalendarClock, Banknote, PieChart, Bell, Plus, Moon, X, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { PartyPopper, CalendarClock, Banknote, PieChart, Bell, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 
@@ -457,9 +457,8 @@ function LtoFocus() {
  * toggle (handoff spec). Add any item you sell; honest "not in PMIX" states.
  */
 function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
-  const [tracked, setTracked] = usePersistentState<string[]>('tracked:items', [])
+  const [tracked] = usePersistentState<string[]>('tracked:items', [])
   const [days] = usePersistentState<PmixDays>('pmix:days', {})
-  const [adding, setAdding] = useState('')
 
   const keys = Object.keys(days).sort()
   const inScope = useMemo(() => {
@@ -507,41 +506,21 @@ function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
             {scope} · {inScope.length} day{inScope.length === 1 ? '' : 's'} of PMIX
           </span>
         )}
-        <div className="ml-auto flex gap-1.5">
-          <input
-            value={adding}
-            onChange={(e) => setAdding(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && adding.trim()) {
-                setTracked((ts) => [...new Set([...ts, adding.trim()])])
-                setAdding('')
-              }
-            }}
-            placeholder="Track an item…"
-            className="w-36 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-brand"
-          />
-        </div>
+        <Link to="/stores" className="ml-auto text-[11px] font-semibold text-brand">
+          edit in Stores &amp; Concepts →
+        </Link>
       </div>
       {tracked.length === 0 ? (
         <Card className="p-4 text-center text-xs text-muted">
-          Track the items you watch (wings, burgers, a new LTO…) — tiles fill from your PMIX drops.
+          Pick the items you watch under Stores &amp; Concepts → Tracked items — tiles fill from
+          your PMIX drops.
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {tracked.map((name) => {
             const hit = find(name)
             return (
-              <Card key={name} className="group relative p-3">
-                <button
-                  onClick={async () => {
-                    if (await confirmDelete(`Stop tracking ${name}?`, undefined, 'Remove'))
-                      setTracked((ts) => ts.filter((x) => x !== name))
-                  }}
-                  aria-label={`Stop tracking ${name}`}
-                  className="absolute right-2 top-2 text-muted opacity-0 transition-opacity hover:text-down group-hover:opacity-100"
-                >
-                  <X size={13} />
-                </button>
+              <Card key={name} className="p-3">
                 <div className="truncate text-xs font-semibold text-ink">{name}</div>
                 {hit ? (
                   <>
