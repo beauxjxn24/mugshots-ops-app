@@ -442,6 +442,18 @@ body {
 @keyframes martiniSway { 0%,100%{transform:rotate(-3.5deg)} 50%{transform:rotate(3.5deg)} }
 @keyframes oliveBob { 0%,100%{transform:translateY(0) rotate(3deg)} 50%{transform:translateY(-0.8px) rotate(-4deg)} }
 
+/* Dashboard life: bars rise from the baseline on load, staggered per day;
+   category bars sweep in; cards drift up on entry. */
+.rise { transform-origin: bottom; animation: riseIn 0.55s cubic-bezier(0.2, 0.7, 0.3, 1.1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes riseIn { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.sweep { animation: sweepIn 0.7s ease-out both; animation-delay: calc(var(--i, 0) * 90ms); }
+@keyframes sweepIn { from { width: 0; } }
+.drift { animation: driftUp 0.45s ease-out both; animation-delay: calc(var(--i, 0) * 60ms); }
+@keyframes driftUp { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .sweep, .drift { animation: none; }
+}
+
 /* Catering ticker: the bell rings in bursts and the banner pulses a gold ring
    so an upcoming catering physically grabs the eye. `.urgent` = today. */
 .bell-ring { display: grid; place-items: center; transform-origin: 50% 15%; animation: bellRing 2.6s ease-in-out infinite; }

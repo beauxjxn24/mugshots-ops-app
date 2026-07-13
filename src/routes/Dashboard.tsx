@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, Card } from '../components/ui'
 import { useCurrentNames } from '../lib/scope'
@@ -14,6 +14,28 @@ import { SPECS } from '../lib/specs'
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
+
+/** Count the hero dollar up to its value — a little life on every load. */
+function useCountUp(target: number, ms = 750): number {
+  const [v, setV] = useState(0)
+  const raf = useRef(0)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setV(target)
+      return
+    }
+    const from = 0
+    const t0 = performance.now()
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / ms)
+      setV(from + (target - from) * (1 - Math.pow(1 - p, 3)))
+      if (p < 1) raf.current = requestAnimationFrame(tick)
+    }
+    raf.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf.current)
+  }, [target, ms])
+  return v
+}
 
 export function Dashboard() {
   const { concept, location } = useCurrentNames()
@@ -57,6 +79,7 @@ export function Dashboard() {
   }, [sorted, latest, scope])
 
   const net = win.nights.reduce((s, n) => s + n.netSales, 0)
+  const displayNet = useCountUp(net)
   const priorNet = win.prior.reduce((s, n) => s + n.netSales, 0)
   const vsPrior = priorNet > 0 ? ((net - priorNet) / priorNet) * 100 : null
   const laborSum = win.nights.reduce((s, n) => s + (n.labor ?? 0), 0)
@@ -119,9 +142,12 @@ export function Dashboard() {
           <>
             <TrackedBand scope={scope} anchor={latest?.date ?? t} />
 
+            {/* Gold rule — the prototype's section divider */}
+            <div className="h-[3px] rounded-full bg-gradient-to-r from-brand via-brand/40 to-transparent" />
+
             {/* Catering tiles (far left, by the nav) + compact hero + weekly chart */}
             <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(150px,1fr)_minmax(0,2.4fr)_minmax(0,3.6fr)]">
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
+              <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
                 <KpiTile
                   compact
                   to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
@@ -139,7 +165,7 @@ export function Dashboard() {
                   sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
                 />
               </div>
-              <Card className="relative flex flex-col overflow-hidden p-5">
+              <Card className="drift [--i:1] relative flex flex-col overflow-hidden p-5">
                 <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-brand/10 blur-2xl" />
                 <div className="relative mb-4 flex">
                   <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
@@ -158,7 +184,7 @@ export function Dashboard() {
                 </div>
                 <div className="relative flex flex-1 flex-col justify-center">
                   <span className="self-start border-b-[3px] border-brand pb-1 font-display text-[clamp(2.2rem,4.5vw,3rem)] font-semibold leading-none text-ink">
-                    {money(net)}
+                    {money(displayNet)}
                   </span>
                   <div className="mt-2 text-sm text-muted">net · {win.label}</div>
                 </div>
@@ -178,7 +204,7 @@ export function Dashboard() {
               </Card>
 
               {/* Weekly column chart — slim pillars, ▲▼ vs same day last year beneath */}
-              <Card className="p-5">
+              <Card className="drift [--i:2] p-5">
                 <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                   <div className="text-xs font-bold uppercase tracking-wide text-muted">
                     Recent nights · net sales
@@ -194,20 +220,20 @@ export function Dashboard() {
             {/* Category rows + Food Focus — two squares, side by side */}
             <div className="grid gap-6 lg:grid-cols-2">
               {cats.total > 0 && (
-                <Card className="h-full p-5">
+                <Card className="drift [--i:3] h-full p-5">
                   <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
                     Sales by category · {win.label}
                   </div>
                   <div className="space-y-3">
                     {[...cats.parts]
                       .sort((a, b) => b.v - a.v)
-                      .map((p) => {
+                      .map((p, pi) => {
                         const pct = (p.v / cats.total) * 100
                         return (
                           <div key={p.l} className="flex items-center gap-3">
                             <span className="w-16 shrink-0 text-xs font-semibold text-ink">{p.l}</span>
                             <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-black/5">
-                              <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 1)}%`, background: p.c }} />
+                              <div className="sweep h-full rounded-full" style={{ width: `${Math.max(pct, 1)}%`, background: p.c, '--i': pi } as React.CSSProperties} />
                             </div>
                             <span className="w-24 shrink-0 text-right font-mono text-[11px] text-muted">
                               {money(p.v)} · {pct.toFixed(1)}%
@@ -342,7 +368,7 @@ function WeekBars({ nights }: { nights: Night[] }) {
         </div>
       )}
       <div className="flex items-end justify-around gap-2" style={{ height: H + 22 }}>
-        {cols.map((c) => {
+        {cols.map((c, ci) => {
           const h = Math.max(6, (c.value / max) * H)
           if (c.kind === 'actual') {
             // Clickable bar → the nightly report for that day
@@ -357,8 +383,8 @@ function WeekBars({ nights }: { nights: Night[] }) {
                   ${(c.value / 1000).toFixed(1)}k
                 </div>
                 <div
-                  className="w-6 rounded-t-[4px] bg-brand transition-all group-hover:bg-brand-600 group-hover:ring-2 group-hover:ring-brand/30 sm:w-7"
-                  style={{ height: h }}
+                  className="rise w-6 rounded-t-[4px] bg-brand transition-all group-hover:bg-brand-600 group-hover:ring-2 group-hover:ring-brand/30 sm:w-7"
+                  style={{ height: h, '--i': ci } as React.CSSProperties}
                 />
               </Link>
             )
@@ -374,8 +400,8 @@ function WeekBars({ nights }: { nights: Night[] }) {
               )}
               {c.kind === 'forecast' && (
                 <div
-                  className="w-6 rounded-t-[4px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-7"
-                  style={{ height: h }}
+                  className="rise w-6 rounded-t-[4px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-7"
+                  style={{ height: h, '--i': ci } as React.CSSProperties}
                   title={`${c.date} · forecast ${money(c.value)}`}
                 />
               )}
@@ -447,7 +473,7 @@ function LtoFocus() {
   // Prototype spec: navy card, gold FOOD FOCUS header, white serif item name,
   // gold deal chip, product photo on the right.
   return (
-    <Card className="flex h-full flex-col border-navy !bg-navy p-5">
+    <Card className="drift [--i:4] flex h-full flex-col border-navy !bg-navy p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-[#e0b23c]">
           <Flame size={14} /> Food focus · LTO
