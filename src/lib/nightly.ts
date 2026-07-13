@@ -1,6 +1,7 @@
 import { load, save } from './store'
 import { useScope } from './scope'
 import seedHistory from '../data/seed-history.json'
+import seedHistory2025 from '../data/seed-history-2025.json'
 
 /**
  * A night's numbers — full prototype shape (see docs/handoff/README.md).
@@ -49,10 +50,9 @@ export const setNights = (n: Night[]): void => save(key(), n)
  */
 export function seedFlowoodHistory(): void {
   const FLAG = '__flowoodHistorySeeded'
-  if (load<boolean>(FLAG, false)) return
   const k = 'mugshots|flowood::nightly:log'
   const existing = load<Night[]>(k, [])
-  if (existing.length === 0) {
+  if (!load<boolean>(FLAG, false) && existing.length === 0) {
     const nights: Night[] = (seedHistory as Array<Record<string, number | string>>).map((r) => ({
       id: `seed-${r.date}`,
       date: String(r.date),
@@ -78,6 +78,27 @@ export function seedFlowoodHistory(): void {
     save(k, nights)
   }
   save(FLAG, true)
+
+  // Second seed (owner-supplied via chat, Jul 2026): real June 2025 sales from
+  // the Toast export — gives June 2026 true last-year comparisons. Merges into
+  // whatever is already logged; never overwrites an existing date.
+  const FLAG25 = '__flowoodLY2025Seeded'
+  if (!load<boolean>(FLAG25, false)) {
+    const cur = load<Night[]>(k, [])
+    const have = new Set(cur.map((n) => n.date))
+    const add: Night[] = (seedHistory2025 as Array<{ date: string; net: number; guests: number }>)
+      .filter((r) => !have.has(r.date))
+      .map((r) => ({
+        id: `seed25-${r.date}`,
+        date: r.date,
+        netSales: r.net,
+        deposit: 0,
+        covers: r.guests,
+        notes: '',
+      }))
+    if (add.length) save(k, [...cur, ...add].sort((a, b) => a.date.localeCompare(b.date)))
+    save(FLAG25, true)
+  }
 }
 
 export interface SalesRow {
@@ -117,12 +138,12 @@ export function parseSalesSummary(text: string): SalesRow[] {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
   if (!lines.length) return []
   const header = lines[0].toLowerCase()
-  const csv = header.includes(',') && /date/.test(header) && /(net|sales|total|gross)/.test(header)
+  const csv = header.includes(',') && /date|yyyymmdd/.test(header) && /(net|sales|total|gross)/.test(header)
   const rows: SalesRow[] = []
 
   if (csv) {
     const cols = splitCsv(lines[0]).map((h) => h.toLowerCase())
-    const iDate = cols.findIndex((h) => h.includes('date'))
+    const iDate = cols.findIndex((h) => h.includes('date') || h.includes('yyyymmdd'))
     const iNet =
       cols.findIndex((h) => h.includes('net sales')) >= 0
         ? cols.findIndex((h) => h.includes('net sales'))
@@ -160,6 +181,8 @@ function num(s: string): number {
 function parseDate(s: string): string {
   let m: RegExpMatchArray | null
   if ((m = s.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/))) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`
+  // Toast's compact form: 20250616
+  if ((m = s.match(/\b(20\d{2})(0[1-9]|1[0-2])([0-2]\d|3[01])\b/))) return `${m[1]}-${m[2]}-${m[3]}`
   if ((m = s.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2}|\d{2})\b/))) {
     const y = m[3].length === 2 ? `20${m[3]}` : m[3]
     return `${y}-${pad(m[1])}-${pad(m[2])}`
