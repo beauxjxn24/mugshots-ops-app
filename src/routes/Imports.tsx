@@ -1,0 +1,653 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2 } from 'lucide-react'
+import { PageHeader, Card } from '../components/ui'
+import { today } from '../lib/store'
+import { readFile, type ReadResult, type LineItem } from '../lib/reader'
+import { getOrdering, proposeReceipts, applyReceipts, addOrderItem, vendors, type Receipt } from '../lib/ordering'
+import { updatePrices, registerItem } from '../lib/catalog'
+import { addInvoice, parseInvoice } from '../lib/invoices'
+import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
+import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
+import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
+import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
+
+interface Job extends Partial<ReadResult> {
+  id: string
+  fileName: string
+  status: 'reading' | 'done' | 'error'
+  progress: number
+}
+
+let seq = 0
+
+export function Imports() {
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [drag, setDrag] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
+    const list = Array.from(files)
+    for (const file of list) {
+      const id = `j${++seq}`
+      setJobs((j) => [{ id, fileName: file.name, status: 'reading', progress: 0 }, ...j])
+      const res = await readFile(file, (p) =>
+        setJobs((j) => j.map((x) => (x.id === id ? { ...x, progress: p } : x))),
+      )
+      setJobs((j) =>
+        j.map((x) =>
+          x.id === id
+            ? { ...x, ...res, status: res.kind === 'unsupported' ? 'error' : 'done', progress: 1 }
+            : x,
+        ),
+      )
+    }
+  }, [])
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDrag(false)
+      if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files)
+    },
+    [handleFiles],
+  )
+
+  // Accept a file dropped anywhere on the Imports page, not only on the box.
+  useEffect(() => {
+    const onWinDrop = (e: DragEvent) => {
+      if (e.dataTransfer?.files?.length) {
+        e.preventDefault()
+        handleFiles(e.dataTransfer.files)
+        setDrag(false)
+      }
+    }
+    const onWinDragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes('Files')) setDrag(true)
+    }
+    window.addEventListener('drop', onWinDrop)
+    window.addEventListener('dragover', onWinDragOver)
+    return () => {
+      window.removeEventListener('drop', onWinDrop)
+      window.removeEventListener('dragover', onWinDragOver)
+    }
+  }, [handleFiles])
+
+  return (
+    <>
+      <PageHeader
+        title="Imports"
+        subtitle="Drop an invoice, order guide, price sheet, or ezCater order — PDF or a photo"
+      />
+      <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Drop zone */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDrag(true)
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
+            drag ? 'border-brand bg-brand/10' : 'border-black/15 bg-white/60 hover:border-brand/50'
+          }`}
+        >
+          <div className="mb-3 flex items-center justify-center gap-3 text-brand">
+            <span className="grid size-12 place-items-center rounded-2xl bg-brand/10">
+              <FileText size={22} />
+            </span>
+            <span className="grid size-12 place-items-center rounded-2xl bg-brand/10">
+              <Camera size={22} />
+            </span>
+            <span className="grid size-12 place-items-center rounded-2xl bg-brand/10">
+              <CloudUpload size={22} />
+            </span>
+          </div>
+          <div className="mt-2 font-display text-lg font-semibold text-ink">
+            Drop files here, or tap to choose
+          </div>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted text-pretty">
+            PDFs are read instantly. Photos of invoices are read with on-device OCR — snap a picture
+            of a US Foods or Gulf Coast delivery ticket and drop it in.
+          </p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              cameraRef.current?.click()
+            }}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-ink"
+          >
+            <Camera size={15} /> Take a photo instead
+          </button>
+          {/* Main picker: NO capture attribute — phones must be able to pick PDFs
+              and existing photos from the gallery, not just open the camera. */}
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept="application/pdf,image/*,.csv,.txt"
+            className="hidden"
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          />
+          {/* Camera-only path, offered as an explicit second button. */}
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          />
+        </div>
+
+        {/* Results */}
+        {jobs.map((job) => (
+          <Card key={job.id} className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate font-semibold text-ink">{job.fileName}</div>
+                <div className="text-xs text-muted">
+                  {job.status === 'reading'
+                    ? `Reading… ${Math.round((job.progress || 0) * 100)}%`
+                    : job.kind === 'unsupported'
+                      ? 'Could not read'
+                      : `${job.kind?.toUpperCase()} · ${job.lineItems?.length ?? 0} line items found`}
+                </div>
+              </div>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  job.status === 'done'
+                    ? 'bg-up/10 text-up'
+                    : job.status === 'error'
+                      ? 'bg-down/10 text-down'
+                      : 'bg-brand/10 text-brand'
+                }`}
+              >
+                {job.status === 'reading' ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" /> Reading
+                  </>
+                ) : job.status === 'done' ? (
+                  <>
+                    <FileCheck2 size={12} /> Read
+                  </>
+                ) : (
+                  <>
+                    <CircleAlert size={12} /> Error
+                  </>
+                )}
+              </span>
+            </div>
+
+            {job.note && <p className="mt-2 text-xs text-warn">{job.note}</p>}
+
+            {job.lineItems && job.lineItems.length > 0 && (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-muted">
+                      <th className="py-1 pr-3 font-semibold">Item</th>
+                      <th className="py-1 pr-3 font-semibold">Qty</th>
+                      <th className="py-1 font-semibold">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {job.lineItems.slice(0, 40).map((li, i) => (
+                      <tr key={i} className="border-t border-black/5">
+                        <td className="py-1 pr-3">{li.description}</td>
+                        <td className="py-1 pr-3 font-mono text-xs text-muted">{li.qty ?? '—'}</td>
+                        <td className="py-1 font-mono text-xs">{li.price ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} />}
+
+            {job.text && isSalesSummary(job.text) && <SalesImport text={job.text} />}
+
+            {job.text && isCateringDoc(job.text) && (
+              <CateringImport text={job.text} fileName={job.fileName} />
+            )}
+
+            {job.lineItems && job.lineItems.length > 0 && <Receiving lineItems={job.lineItems} />}
+
+            {job.lineItems && job.lineItems.length > 0 && job.text && (
+              <InvoiceLog text={job.text} fileName={job.fileName} />
+            )}
+
+            {job.lineItems && job.lineItems.length > 0 && job.text && (
+              <PriceUpdate lineItems={job.lineItems} text={job.text} />
+            )}
+
+            {job.text && (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-semibold text-muted">
+                  Raw extracted text
+                </summary>
+                <pre className="mt-2 max-h-60 overflow-auto rounded-lg bg-black/5 p-3 text-xs whitespace-pre-wrap">
+                  {job.text}
+                </pre>
+              </details>
+            )}
+          </Card>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/**
+ * Review + post extracted invoice lines into Ordering on-hand counts.
+ * Every line is pre-matched (fuzzy) to an order-guide item; the user confirms,
+ * re-maps, or skips before anything is written. Nothing applies automatically.
+ */
+interface Row {
+  description: string
+  qty: number
+  // '' = skip, 'NEW' = add to the guide as a new item, otherwise "vendor||itemId"
+  target: string
+}
+
+function Receiving({ lineItems }: { lineItems: LineItem[] }) {
+  const [open, setOpen] = useState(false)
+  const [applied, setApplied] = useState<{ updated: number; added: number } | null>(null)
+  const [rows, setRows] = useState<Row[]>([])
+  const vendorList = useMemo(() => vendors(), [open])
+  const [vendor, setVendor] = useState(vendorList[0] ?? 'US Foods')
+
+  const options = useMemo(() => {
+    const data = getOrdering()
+    return Object.entries(data).flatMap(([v, items]) =>
+      items.map((it) => ({ v, id: it.id, label: `${v} · ${it.name}` })),
+    )
+  }, [open])
+
+  const start = () => {
+    const proposed = proposeReceipts(lineItems)
+    setRows(
+      proposed.map((p) => ({
+        description: p.description,
+        qty: p.qty,
+        target: p.match ? `${p.match.vendor}||${p.match.item.id}` : 'NEW',
+      })),
+    )
+    setOpen(true)
+    setApplied(null)
+  }
+
+  const matched = rows.filter((r) => r.target && r.target !== 'NEW').length
+  const toAdd = rows.filter((r) => r.target === 'NEW').length
+
+  const apply = () => {
+    const receipts: Receipt[] = rows
+      .filter((r) => r.target && r.target !== 'NEW' && r.qty > 0)
+      .map((r) => {
+        const [v, itemId] = r.target.split('||')
+        return { vendor: v, itemId, qty: r.qty }
+      })
+    const updated = applyReceipts(receipts)
+    let added = 0
+    rows.filter((r) => r.target === 'NEW').forEach((r) => {
+      addOrderItem(vendor, r.description, 'cs', r.qty)
+      added++
+    })
+    setApplied({ updated, added })
+    setOpen(false)
+  }
+
+  if (!open) {
+    return (
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button onClick={start} className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white">
+          Post to Ordering →
+        </button>
+        {applied && (
+          <span className="text-sm font-semibold text-up">
+            ✓ {applied.updated} updated{applied.added ? `, ${applied.added} new` : ''}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs font-bold uppercase tracking-wide text-muted">
+          Review · {matched} matched · {toAdd} new
+        </div>
+        <button onClick={() => setOpen(false)} className="text-xs text-muted">
+          Cancel
+        </button>
+      </div>
+      <label className="mb-2 flex items-center gap-2 text-xs text-ink/70">
+        New items go to:
+        <select
+          value={vendor}
+          onChange={(e) => setVendor(e.target.value)}
+          className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs outline-none focus:border-brand"
+        >
+          {vendorList.map((v) => (
+            <option key={v}>{v}</option>
+          ))}
+        </select>
+      </label>
+      <div className="space-y-2">
+        {rows.map((r, i) => (
+          <div key={i} className="grid grid-cols-[1fr_auto] items-center gap-2">
+            <div className="min-w-0">
+              <div className="truncate text-sm text-ink">{r.description}</div>
+              <select
+                value={r.target}
+                onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))}
+                className="mt-1 w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-brand"
+              >
+                <option value="">— skip —</option>
+                <option value="NEW">➕ Add as new item</option>
+                {options.map((o) => (
+                  <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={r.qty}
+              onChange={(e) =>
+                setRows((rs) => rs.map((x, j) => (j === i ? { ...x, qty: Math.max(0, parseInt(e.target.value) || 0) } : x)))
+              }
+              className="w-16 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-center text-sm outline-none focus:border-brand"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={apply}
+        disabled={matched + toAdd === 0}
+        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+      >
+        Apply — {matched} on-hand{toAdd ? ` + ${toAdd} new item${toAdd === 1 ? '' : 's'}` : ''}
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Vendor price import (handoff spec): update the case cost everywhere the
+ * item lives, stamp vendor + date, and show each % change ▲▼. Lines not in
+ * the catalog get a one-tap Add.
+ */
+function PriceUpdate({ lineItems, text }: { lineItems: LineItem[]; text: string }) {
+  const vendor = useMemo(() => {
+    const m = text.match(/\b(us foods|gulf coast(?: produce)?|sysco|pfg|performance food)\b/i)
+    return m ? m[1].replace(/\b\w/g, (c) => c.toUpperCase()) : 'Vendor'
+  }, [text])
+  const [result, setResult] = useState<ReturnType<typeof updatePrices> | null>(null)
+  const [addedMisses, setAddedMisses] = useState<Set<string>>(new Set())
+
+  const run = () => {
+    const lines = lineItems
+      .map((li) => ({ name: li.description, price: parseFloat((li.price ?? '').replace(/[$,]/g, '')) || 0 }))
+      .filter((l) => l.price > 0)
+    setResult(updatePrices(lines, vendor))
+  }
+
+  if (!result) {
+    return (
+      <div className="mt-2">
+        <button
+          onClick={run}
+          className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink"
+        >
+          Update case costs from this doc ({vendor})
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-black/10 bg-white p-3">
+      <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
+        Price update · {result.changes.length} matched · {result.misses.length} not in catalog
+      </div>
+      {result.changes.length === 0 && result.misses.length === 0 && (
+        <p className="text-xs text-muted">No priced lines found in this document.</p>
+      )}
+      {result.changes.map((c) => (
+        <div key={c.name} className="flex items-baseline justify-between gap-2 border-b border-black/5 py-1 text-sm last:border-0">
+          <span className="min-w-0 truncate text-ink">{c.name}</span>
+          <span className="shrink-0 font-mono text-xs">
+            {c.oldCost != null && <span className="text-muted">${c.oldCost.toFixed(2)} → </span>}
+            <b className="text-ink">${c.newCost.toFixed(2)}</b>
+            {c.pct != null && Math.abs(c.pct) >= 0.5 && (
+              <span className={c.pct > 0 ? 'text-down' : 'text-up'}>
+                {' '}
+                {c.pct > 0 ? '▲' : '▼'}{Math.abs(c.pct).toFixed(1)}%
+              </span>
+            )}
+          </span>
+        </div>
+      ))}
+      {result.misses.map((m) => (
+        <div key={m.name} className="flex items-center justify-between gap-2 border-b border-black/5 py-1 text-sm last:border-0">
+          <span className="min-w-0 truncate text-muted">{m.name}</span>
+          {addedMisses.has(m.name) ? (
+            <span className="text-xs font-semibold text-up">added ✓</span>
+          ) : (
+            <button
+              onClick={() => {
+                registerItem({ name: m.name, vendor, cost: m.price })
+                setAddedMisses((s) => new Set([...s, m.name]))
+              }}
+              className="shrink-0 rounded-md bg-brand/10 px-2 py-0.5 text-xs font-bold text-brand"
+            >
+              Add ${m.price.toFixed(2)}
+            </button>
+          )}
+        </div>
+      ))}
+      <p className="mt-2 text-[11px] text-muted">
+        Costs updated everywhere the item appears, stamped {vendor} · today.
+      </p>
+    </div>
+  )
+}
+
+/** One-tap: log this invoice's total to the Invoices screen. */
+function InvoiceLog({ text, fileName }: { text: string; fileName: string }) {
+  const parsed = useMemo(() => parseInvoice(text, fileName), [text, fileName])
+  const [done, setDone] = useState(false)
+  if (parsed.total <= 0) return null
+  const money = `$${parsed.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  return (
+    <div className="mt-3 border-t border-black/10 pt-3">
+      {done ? (
+        <span className="text-sm font-semibold text-up">✓ Logged {money} to Invoices</span>
+      ) : (
+        <button
+          onClick={() => {
+            addInvoice({
+              id: `inv${Date.now()}`,
+              vendor: parsed.vendor,
+              date: today(),
+              number: parsed.number,
+              total: parsed.total,
+              paid: false,
+            })
+            setDone(true)
+          }}
+          className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink"
+        >
+          Also log {money} to Invoices ({parsed.vendor})
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** Turn a dropped ezCater / catering order into a reviewed booking. */
+function CateringImport({ text, fileName }: { text: string; fileName: string }) {
+  const [form, setForm] = useState(() => parseCatering(text, fileName))
+  const [added, setAdded] = useState<'' | 'added' | 'duplicate'>('')
+
+  const save = () => {
+    if (!form.event.trim() || !form.date) return
+    const result = addBooking({ ...form, id: `c${Date.now()}`, event: form.event.trim() })
+    recordCateringImport(fileName)
+    setAdded(result)
+  }
+
+  if (added) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+        <PartyPopper size={16} />
+        {added === 'duplicate'
+          ? `Already on the log (order #${form.orderNo}) — skipped`
+          : 'Added to Catering — see the Catering tab'}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <CalendarPlus size={14} /> Looks like a catering order — review &amp; add
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input
+          value={form.event}
+          onChange={(e) => setForm({ ...form, event: e.target.value })}
+          placeholder="Event / customer"
+          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2"
+        />
+        <input
+          type="date"
+          value={form.date}
+          onChange={(e) => setForm({ ...form, date: e.target.value })}
+          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+        <input
+          type="time"
+          value={form.time}
+          onChange={(e) => setForm({ ...form, time: e.target.value })}
+          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+        <input
+          type="number"
+          inputMode="numeric"
+          value={form.guests || ''}
+          onChange={(e) => setForm({ ...form, guests: parseInt(e.target.value) || 0 })}
+          placeholder="Guests"
+          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+        <input
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          placeholder="Notes"
+          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+        />
+      </div>
+      <button
+        onClick={save}
+        disabled={!form.event.trim() || !form.date}
+        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+      >
+        Add to Catering
+      </button>
+      {!form.date && (
+        <p className="mt-1.5 text-xs text-warn">Couldn’t read a date — please set one above.</p>
+      )}
+    </div>
+  )
+}
+
+/** Import a dropped sales summary (Toast export) into Nightly Numbers. */
+function SalesImport({ text }: { text: string }) {
+  const rows = useMemo(() => parseSalesSummary(text), [text])
+  const [added, setAdded] = useState(0)
+  const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+
+  if (rows.length === 0) return null
+
+  if (added > 0) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+        <LineChart size={16} /> Imported {added} day{added === 1 ? '' : 's'} into Nightly Numbers — the
+        Dashboard is now live.
+      </div>
+    )
+  }
+
+  const total = rows.reduce((s, r) => s + r.netSales, 0)
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <LineChart size={14} /> Sales summary — {rows.length} days · {money(total)} net
+      </div>
+      <div className="max-h-52 overflow-y-auto rounded-lg bg-white">
+        <table className="w-full text-sm">
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.date} className="border-b border-black/5 last:border-0">
+                <td className="px-3 py-1.5">{r.date}</td>
+                <td className="px-3 py-1.5 text-right font-mono">{money(r.netSales)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button
+        onClick={() => setAdded(upsertNights(rows))}
+        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
+      >
+        Import {rows.length} days into Nightly Numbers
+      </button>
+    </div>
+  )
+}
+
+/** Import a dropped employee roster (e.g. Toast export) into Staff. */
+function StaffImport({ text }: { text: string }) {
+  const people = useMemo(() => importPeople(text), [text])
+  const [added, setAdded] = useState<number | null>(null)
+  if (people.length === 0) return null
+
+  if (added !== null) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+        <Users size={16} /> Added {added} of {people.length} to Staff (rest already on roster).
+      </div>
+    )
+  }
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <Users size={14} /> Employee roster — {people.length} people detected
+      </div>
+      <div className="max-h-52 overflow-y-auto rounded-lg bg-white">
+        <table className="w-full text-sm">
+          <tbody>
+            {people.slice(0, 100).map((p, i) => (
+              <tr key={i} className="border-b border-black/5 last:border-0">
+                <td className="px-3 py-1.5">{p.name}</td>
+                <td className="px-3 py-1.5 text-right text-xs text-muted">{p.role}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button
+        onClick={() => setAdded(addPeople(people))}
+        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
+      >
+        Import {people.length} to Staff
+      </button>
+    </div>
+  )
+}
