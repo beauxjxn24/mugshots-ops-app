@@ -92,10 +92,12 @@ export function Dashboard() {
         {(todays.length > 0 || (next && daysUntil(next.date) <= 7)) && (
           <Link
             to="/catering"
-            className="flex items-center gap-3 rounded-2xl border border-brand/30 bg-brand/5 p-4 transition-colors hover:bg-brand/10"
+            className={`cater-alert flex items-center gap-3 rounded-2xl border border-brand/30 bg-brand/5 p-4 transition-colors hover:bg-brand/10 ${todays.length > 0 ? 'urgent' : ''}`}
           >
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-white">
-              <Bell size={18} />
+              <span className="bell-ring">
+                <Bell size={18} />
+              </span>
             </span>
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-ink">
@@ -115,57 +117,61 @@ export function Dashboard() {
 
         {hasReal ? (
           <>
-            {/* Hero + scope toggle */}
-            <Card className="relative overflow-hidden p-5 sm:p-6">
-              <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-brand/10 blur-2xl" />
-              <div className="relative mb-3 flex">
-                <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
-                  {(['day', 'week', 'period'] as Scope[]).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setScope(s)}
-                      className={`rounded-md px-3 py-1 text-xs font-semibold capitalize ${
-                        scope === s ? 'bg-navy text-white shadow-sm' : 'text-muted'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="relative flex flex-wrap items-baseline gap-x-5 gap-y-2">
-                <span className="font-display text-[clamp(2.5rem,8vw,3.5rem)] font-semibold leading-none text-ink">
-                  {money(net)}
-                </span>
-                <span className="text-sm text-muted">net · {win.label}</span>
-                {vsPrior != null && (
-                  <span className={`rounded-full px-3 py-1 text-sm font-bold ${vsPrior >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
-                    {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({net - priorNet >= 0 ? '+' : '−'}
-                    {money(Math.abs(net - priorNet))}) vs prior · goal +{targets.growthPct}%
-                  </span>
-                )}
-                {laborPct != null && (
-                  <span className={`rounded-full px-3 py-1 text-sm font-bold ${laborPct <= targets.laborPct ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
-                    labor {laborPct.toFixed(1)}% · goal ≤ {targets.laborPct}%
-                  </span>
-                )}
-              </div>
-            </Card>
-
             <TrackedBand scope={scope} anchor={latest?.date ?? t} />
 
-            {/* Weekly column chart — slim pillars, ▲▼ vs same day last year beneath */}
-            <Card className="p-5">
-              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                <div className="text-xs font-bold uppercase tracking-wide text-muted">
-                  Recent nights · net sales
+            {/* Compact hero (left) + weekly chart (right) */}
+            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+              <Card className="relative flex flex-col overflow-hidden p-5">
+                <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-brand/10 blur-2xl" />
+                <div className="relative mb-4 flex">
+                  <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
+                    {(['day', 'week', 'period'] as Scope[]).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setScope(s)}
+                        className={`rounded-md px-3 py-1 text-xs font-semibold capitalize ${
+                          scope === s ? 'bg-navy text-white shadow-sm' : 'text-muted'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="text-xs text-muted">
-                  Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
+                <div className="relative flex flex-1 flex-col justify-center">
+                  <span className="font-display text-[clamp(2.2rem,4.5vw,3rem)] font-semibold leading-none text-ink">
+                    {money(net)}
+                  </span>
+                  <div className="mt-1 text-sm text-muted">net · {win.label}</div>
                 </div>
-              </div>
-              <WeekBars nights={sorted} />
-            </Card>
+                <div className="relative mt-4 flex flex-col items-start gap-1.5">
+                  {vsPrior != null && (
+                    <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${vsPrior >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
+                      {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({net - priorNet >= 0 ? '+' : '−'}
+                      {money(Math.abs(net - priorNet))}) vs prior · goal +{targets.growthPct}%
+                    </span>
+                  )}
+                  {laborPct != null && (
+                    <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${laborPct <= targets.laborPct ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
+                      labor {laborPct.toFixed(1)}% · goal ≤ {targets.laborPct}%
+                    </span>
+                  )}
+                </div>
+              </Card>
+
+              {/* Weekly column chart — slim pillars, ▲▼ vs same day last year beneath */}
+              <Card className="p-5">
+                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="text-xs font-bold uppercase tracking-wide text-muted">
+                    Recent nights · net sales
+                  </div>
+                  <div className="text-xs text-muted">
+                    Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
+                  </div>
+                </div>
+                <WeekBars nights={sorted} />
+              </Card>
+            </div>
 
             {/* Category rows + Food Focus — two squares, side by side */}
             <div className="grid gap-6 lg:grid-cols-2">

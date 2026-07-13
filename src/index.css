@@ -442,6 +442,31 @@ body {
 @keyframes martiniSway { 0%,100%{transform:rotate(-3.5deg)} 50%{transform:rotate(3.5deg)} }
 @keyframes oliveBob { 0%,100%{transform:translateY(0) rotate(3deg)} 50%{transform:translateY(-0.8px) rotate(-4deg)} }
 
+/* Catering ticker: the bell rings in bursts and the banner pulses a gold ring
+   so an upcoming catering physically grabs the eye. `.urgent` = today. */
+.bell-ring { display: grid; place-items: center; transform-origin: 50% 15%; animation: bellRing 2.6s ease-in-out infinite; }
+.cater-alert.urgent .bell-ring { animation-duration: 1.4s; }
+@keyframes bellRing {
+  0%, 52%, 100% { transform: rotate(0); }
+  6%  { transform: rotate(16deg); }
+  12% { transform: rotate(-14deg); }
+  18% { transform: rotate(11deg); }
+  24% { transform: rotate(-8deg); }
+  30% { transform: rotate(5deg); }
+  36% { transform: rotate(-3deg); }
+  42% { transform: rotate(1.5deg); }
+}
+.cater-alert { animation: caterGlow 2.6s ease-in-out infinite; }
+.cater-alert.urgent { animation-duration: 1.4s; }
+@keyframes caterGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0.35); }
+  45% { box-shadow: 0 0 0 7px rgba(184, 134, 11, 0); }
+  46%, 99.9% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bell-ring, .cater-alert { animation: none; }
+}
+
 /* Print: only the sheet — no rail, bars, or buttons. */
 @media print {
   aside, header, nav, .print\:hidden { display: none !important; }
