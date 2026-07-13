@@ -57,19 +57,34 @@ const MONTHS = 'jan feb mar apr may jun jul aug sep oct nov dec'.split(' ')
 export function parseCatering(text: string, fileName = ''): Omit<Booking, 'id'> {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
 
-  // Date: try ISO, US numeric, or "Month DD, YYYY".
+  // Date: try ISO, US numeric, or "Month DD[, YYYY]" — ezCater tickets print
+  // "Tuesday, August 11" with no year, so the year is optional and we assume
+  // the next upcoming occurrence.
   let date = ''
   const iso = text.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/)
   const us = text.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2}|\d{2})\b/)
-  const named = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\b/)
+  const named = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:,?\s+(20\d{2}))?\b/)
   if (iso) {
     date = `${iso[1]}-${pad(iso[2])}-${pad(iso[3])}`
   } else if (us) {
     const yr = us[3].length === 2 ? `20${us[3]}` : us[3]
     date = `${yr}-${pad(us[1])}-${pad(us[2])}`
-  } else if (named) {
-    const mi = MONTHS.indexOf(named[1].slice(0, 3).toLowerCase())
-    if (mi >= 0) date = `${named[3]}-${pad(String(mi + 1))}-${pad(named[2])}`
+  } else {
+    // Try every "Word DD" candidate until one is an actual month — street
+    // addresses ("Jackson 4245") match the shape but aren't months.
+    for (const m of text.matchAll(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:,?\s+(20\d{2}))?\b/g)) {
+      const mi = MONTHS.indexOf(m[1].slice(0, 3).toLowerCase())
+      if (mi < 0) continue
+      let year = m[3] ? parseInt(m[3], 10) : new Date().getFullYear()
+      if (!m[3]) {
+        // No year on the ticket: if that month/day passed more than 60 days
+        // ago, it must mean next year.
+        const candidate = new Date(year, mi, parseInt(m[2], 10))
+        if (Date.now() - candidate.getTime() > 60 * 86400000) year++
+      }
+      date = `${year}-${pad(String(mi + 1))}-${pad(m[2])}`
+      break
+    }
   }
 
   // Time: "6:30 PM" / "18:30".
@@ -84,12 +99,25 @@ export function parseCatering(text: string, fileName = ''): Omit<Booking, 'id'> 
     time = `${pad(t24[1])}:${t24[2]}`
   }
 
-  // Headcount: "headcount 30", "30 guests", "# of people: 30".
+  // Headcount: "headcount 30", "30 guests", "# of people: 30". OCR of a
+  // two-column ticket can wedge other text (even a delivery time) between the
+  // label and the number, so scan a wider window and skip anything time-like.
   let guests = 0
   const g =
-    text.match(/(?:head\s?count|guest count|# of (?:guests|people)|guests?|people|serves)\D{0,6}(\d{1,4})/i) ||
+    text.match(/(?:head\s?count|guest count|# of (?:guests|people)|guests?|people|serves)\D{0,6}(\d{1,4})\b(?!:)/i) ||
     text.match(/(\d{1,4})\s*(?:guests|people|pax|servings)\b/i)
-  if (g) guests = parseInt(g[1], 10) || 0
+  if (g) {
+    guests = parseInt(g[1], 10) || 0
+  } else {
+    const hc = text.match(/head\s?count([\s\S]{0,80})/i)
+    if (hc) {
+      const window = hc[1]
+        .replace(/\d{1,2}:\d{2}(?:\s?[AP]\.?M\.?)?(?:\s+[A-Z]{2,4})?/gi, ' ') // strip times
+        .replace(/\d{1,2}:\d{2}/g, ' ')
+      const num = window.match(/\b(\d{1,4})\b/)
+      if (num) guests = parseInt(num[1], 10) || 0
+    }
+  }
 
   // Title: prefer a labeled customer/company, then an order # (must contain a
   // digit), else the file name.

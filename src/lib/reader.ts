@@ -1,7 +1,8 @@
 import * as pdfjs from 'pdfjs-dist'
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
+// Self-hosted worker with polyfills (see public/pdfjs/worker-polyfilled.mjs) —
+// pdf.js's renderer needs JS APIs some browsers don't ship yet.
+pdfjs.GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}pdfjs/worker-polyfilled.mjs`
 
 export interface ReadResult {
   fileName: string
@@ -54,15 +55,60 @@ async function readPdf(file: File): Promise<string> {
   return out.join('\n').trim()
 }
 
+// OCR engine + English model are self-hosted with the app — no CDN, works
+// offline, and behaves identically on every device. Paths must be ABSOLUTE:
+// the OCR worker resolves relative paths against its own folder, not the page.
+const OCR_BASE = new URL(`${import.meta.env.BASE_URL}tesseract/`, window.location.href).href
+const OCR_OPTS = {
+  workerPath: `${OCR_BASE}worker.min.js`,
+  corePath: `${OCR_BASE}tesseract-core-simd-lstm.wasm.js`,
+  langPath: OCR_BASE.replace(/\/$/, ''),
+}
+
 /** OCR a photo / scanned image. Tesseract loads its engine on first use. */
-async function readImage(file: File, onProgress?: (p: number) => void): Promise<string> {
+async function readImage(file: File | HTMLCanvasElement, onProgress?: (p: number) => void): Promise<string> {
   const Tesseract = (await import('tesseract.js')).default
-  const { data } = await Tesseract.recognize(file, 'eng', {
+  const { data } = await Tesseract.recognize(file as File, 'eng', {
+    ...OCR_OPTS,
     logger: (m: { status: string; progress: number }) => {
       if (m.status === 'recognizing text' && onProgress) onProgress(m.progress)
     },
   })
   return (data.text || '').trim()
+}
+
+/**
+ * Render a PDF's pages to canvases and OCR them. This is the only way to read
+ * PDFs whose numbers are invisible to the text layer (ezCater embeds every
+ * digit in a font the text layer can't expose — "Deliver at __:__",
+ * "HEADCOUNT __") and scanned PDFs with no text layer at all.
+ */
+async function ocrPdfPages(file: File, onProgress?: (p: number) => void, maxPages = 2): Promise<string> {
+  const buf = await file.arrayBuffer()
+  // standardFontDataUrl: without it, non-embedded fonts (ezCater's digit
+  // font) render as BLANKS on the canvas and even OCR can't see the numbers.
+  const pdf = await pdfjs.getDocument({
+    data: buf,
+    standardFontDataUrl: `${import.meta.env.BASE_URL}standard_fonts/`,
+    // Draw glyph outlines straight from the embedded font programs instead of
+    // going through the browser's font engine — the only way ezCater's
+    // digit font actually paints its numbers onto the canvas.
+    disableFontFace: true,
+  }).promise
+  const pages = Math.min(pdf.numPages, maxPages)
+  const out: string[] = []
+  for (let p = 1; p <= pages; p++) {
+    const page = await pdf.getPage(p)
+    const viewport = page.getViewport({ scale: 3 })
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const ctx = canvas.getContext('2d')!
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise
+    const text = await readImage(canvas, (pr) => onProgress?.((p - 1 + pr) / pages))
+    out.push(text)
+  }
+  return out.join('\n').trim()
 }
 
 /**
@@ -112,10 +158,24 @@ export async function readFile(
     if (type === 'application/pdf' || ext === 'pdf') {
       let text = await readPdf(file)
       let note: string | undefined
-      // Scanned PDF (image-only) → no text layer. Fall back to OCR of page 1.
-      if (text.length < 8) {
-        note = 'Scanned PDF — used OCR (may be slower / less exact).'
-        text = await readImage(file, onProgress).catch(() => '')
+      // Hidden-digit detection (prototype spec): a PDF whose text layer has
+      // labels but almost no digits (ezCater), or no text at all (a scan),
+      // gets rendered to images and read with OCR instead. Slower (~30s)
+      // but it actually reads the numbers.
+      const digits = (text.match(/\d/g) || []).length
+      if (text.length < 8 || digits < 10) {
+        note =
+          digits > 0
+            ? 'This PDF hides its numbers from text extraction — read it with OCR instead.'
+            : 'Scanned PDF — read with OCR.'
+        const ocr = await ocrPdfPages(file, onProgress).catch((err) => {
+          console.warn('PDF OCR failed:', err)
+          return ''
+        })
+        // Keep whichever version actually READ THE NUMBERS.
+        const ocrDigits = (ocr.match(/\d/g) || []).length
+        console.info(`PDF OCR: layer ${text.length} chars/${digits} digits · ocr ${ocr.length} chars/${ocrDigits} digits`)
+        if (ocrDigits > digits) text = ocr
       }
       return { fileName: name, kind: 'pdf', text, lineItems: parseLineItems(text), note }
     }

@@ -1,3 +1,27 @@
+// Polyfills for brand-new JS APIs pdf.js's renderer uses — without these,
+// PDF page rendering (and therefore OCR) dies on slightly older browsers.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+if (!(Map.prototype as any).getOrInsertComputed) {
+  ;(Map.prototype as any).getOrInsertComputed = function (key: unknown, fn: (k: unknown) => unknown) {
+    if (!this.has(key)) this.set(key, fn(key))
+    return this.get(key)
+  }
+}
+if (!(Map.prototype as any).getOrInsert) {
+  ;(Map.prototype as any).getOrInsert = function (key: unknown, value: unknown) {
+    if (!this.has(key)) this.set(key, value)
+    return this.get(key)
+  }
+}
+if (!(Math as any).sumPrecise) {
+  ;(Math as any).sumPrecise = (values: Iterable<number>) => {
+    let sum = 0
+    for (const v of values) sum += v
+    return sum
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'

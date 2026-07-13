@@ -6,6 +6,7 @@ import ownerDrops from '../data/owner-drops.json'
 import { load, save } from './store'
 import type { Night } from './nightly'
 import type { PmixDays } from './pmix'
+import type { Booking } from './catering'
 
 const STORE = 'mugshots|flowood'
 
@@ -14,6 +15,7 @@ export function applyOwnerDrops(): void {
     version: number
     nights: Array<Record<string, number | string>>
     pmix: Record<string, { file: string; items: PmixDays[string]['items'] }>
+    bookings?: Array<Omit<Booking, 'id'>>
   }
   const FLAG = '__ownerDropsVersion'
   if (load<number>(FLAG, 0) >= data.version) return
@@ -66,6 +68,17 @@ export function applyOwnerDrops(): void {
         .map((i) => i.name)
       if (top.length) save(tk, top)
     }
+  }
+
+  // Catering bookings from chat-dropped orders — de-duped by ezCater order #.
+  if (data.bookings?.length) {
+    const bk = `${STORE}::catering:bookings`
+    const cur = load<Booking[]>(bk, [])
+    const have = new Set(cur.map((b) => b.orderNo).filter(Boolean))
+    const add = data.bookings
+      .filter((b) => !b.orderNo || !have.has(b.orderNo))
+      .map((b) => ({ ...b, id: `owner-${b.orderNo ?? b.date}` }))
+    if (add.length) save(bk, [...cur, ...add])
   }
 
   save(FLAG, data.version)

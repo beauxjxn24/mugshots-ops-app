@@ -152,6 +152,8 @@ export function Dashboard() {
               </div>
             </Card>
 
+            <TrackedBand scope={scope} anchor={latest?.date ?? t} />
+
             {/* Weekly column chart — slim pillars, ▲▼ vs same day last year beneath */}
             <Card className="p-5">
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -165,32 +167,35 @@ export function Dashboard() {
               <WeekBars nights={sorted} />
             </Card>
 
-            {/* Sales by category — stacked rows, one per category (prototype) */}
-            {cats.total > 0 && (
-              <Card className="p-5">
-                <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
-                  Sales by category · {win.label}
-                </div>
-                <div className="space-y-2.5">
-                  {[...cats.parts]
-                    .sort((a, b) => b.v - a.v)
-                    .map((p) => {
-                      const pct = (p.v / cats.total) * 100
-                      return (
-                        <div key={p.l} className="flex items-center gap-3">
-                          <span className="w-20 shrink-0 text-xs font-semibold text-ink">{p.l}</span>
-                          <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-black/5">
-                            <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 1)}%`, background: p.c }} />
+            {/* Category rows + Food Focus — two squares, side by side */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {cats.total > 0 && (
+                <Card className="h-full p-5">
+                  <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
+                    Sales by category · {win.label}
+                  </div>
+                  <div className="space-y-3">
+                    {[...cats.parts]
+                      .sort((a, b) => b.v - a.v)
+                      .map((p) => {
+                        const pct = (p.v / cats.total) * 100
+                        return (
+                          <div key={p.l} className="flex items-center gap-3">
+                            <span className="w-16 shrink-0 text-xs font-semibold text-ink">{p.l}</span>
+                            <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-black/5">
+                              <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 1)}%`, background: p.c }} />
+                            </div>
+                            <span className="w-24 shrink-0 text-right font-mono text-[11px] text-muted">
+                              {money(p.v)} · {pct.toFixed(1)}%
+                            </span>
                           </div>
-                          <span className="w-28 shrink-0 text-right font-mono text-xs text-muted">
-                            {money(p.v)} · {pct.toFixed(1)}%
-                          </span>
-                        </div>
-                      )
-                    })}
-                </div>
-              </Card>
-            )}
+                        )
+                      })}
+                  </div>
+                </Card>
+              )}
+              <LtoFocus />
+            </div>
           </>
         ) : (
           <Card className="p-8 text-center">
@@ -211,9 +216,12 @@ export function Dashboard() {
           </Card>
         )}
 
-        <TrackedBand scope={scope} anchor={latest?.date ?? t} />
-
-        <LtoFocus />
+        {!hasReal && (
+          <>
+            <TrackedBand scope={scope} anchor={t} />
+            <LtoFocus />
+          </>
+        )}
 
         {/* KPI tiles */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -405,8 +413,8 @@ function LtoFocus() {
   }
 
   return (
-    <Card className="border-brand/25 bg-gradient-to-br from-white to-brand/5 p-5">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <Card className="flex h-full flex-col border-brand/25 bg-gradient-to-br from-white to-brand/5 p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-brand">
           <Flame size={14} /> Food focus · LTO
         </div>
@@ -420,33 +428,25 @@ function LtoFocus() {
           </button>
         </div>
       </div>
-      <div className="flex gap-4">
-        {photo && (
-          <img
-            src={photo}
-            alt={s.name}
-            className="h-28 w-36 shrink-0 rounded-xl object-cover shadow-sm sm:h-32 sm:w-44"
-          />
+      {photo && (
+        <img src={photo} alt={s.name} className="mb-3 h-44 w-full rounded-xl object-cover shadow-sm" />
+      )}
+      <div className="font-display text-xl font-semibold text-ink">{s.name}</div>
+      <div className="mt-0.5 text-sm text-ink/70">
+        {s.ing.slice(0, 4).map(([n]) => n).join(' · ')}
+        {s.ing.length > 4 ? ' · …' : ''}
+      </div>
+      <div className="mt-auto flex flex-wrap items-center gap-3 pt-2">
+        {sold ? (
+          <span className="text-sm font-semibold text-up">
+            {sold.qty} sold {fmtWhen(sold.day)} · {money(sold.sales)}
+          </span>
+        ) : (
+          <span className="text-xs text-muted">sales fill in from your PMIX drops</span>
         )}
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-xl font-semibold text-ink">{s.name}</div>
-          <div className="mt-0.5 text-sm text-ink/70">
-            {s.ing.slice(0, 4).map(([n]) => n).join(' · ')}
-            {s.ing.length > 4 ? ' · …' : ''}
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            {sold ? (
-              <span className="text-sm font-semibold text-up">
-                {sold.qty} sold {fmtWhen(sold.day)} · {money(sold.sales)}
-              </span>
-            ) : (
-              <span className="text-xs text-muted">sales fill in from your PMIX drops</span>
-            )}
-            <Link to={`/lto?item=${encodeURIComponent(s.name)}`} className="ml-auto text-sm font-semibold text-brand">
-              View build →
-            </Link>
-          </div>
-        </div>
+        <Link to={`/lto?item=${encodeURIComponent(s.name)}`} className="ml-auto text-sm font-semibold text-brand">
+          View build →
+        </Link>
       </div>
     </Card>
   )

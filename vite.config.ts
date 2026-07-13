@@ -38,7 +38,11 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // The OCR engine (~9MB) loads on demand — don't precache it.
+        globIgnores: ['tesseract/**'],
+      },
     }),
   ],
 })
