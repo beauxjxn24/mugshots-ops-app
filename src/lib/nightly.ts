@@ -1,6 +1,5 @@
 import { load, save } from './store'
 import { useScope } from './scope'
-import seedHistory from '../data/seed-history.json'
 import seedHistory2025 from '../data/seed-history-2025.json'
 
 /**
@@ -43,41 +42,22 @@ export const getNights = (): Night[] => load<Night[]>(key(), [])
 export const setNights = (n: Night[]): void => save(key(), n)
 
 /**
- * One-time: load the owner's real 21-day Flowood history from the handoff
- * (docs/handoff/data/seed-history.json) into Mugshots → Flowood, only if that
- * store's log is empty. Owner decision (AUDIT.md #2): keep Flowood's data;
- * new stores/concepts start blank.
+ * One-time data migrations for Mugshots → Flowood.
+ * Owner's call (Jul 2026): NO sample data anywhere — the prototype's 2026
+ * seed nights are removed from every device that loaded them. The only
+ * baked-in history is what the owner supplied himself (June 2025 Toast export).
  */
 export function seedFlowoodHistory(): void {
-  const FLAG = '__flowoodHistorySeeded'
   const k = 'mugshots|flowood::nightly:log'
-  const existing = load<Night[]>(k, [])
-  if (!load<boolean>(FLAG, false) && existing.length === 0) {
-    const nights: Night[] = (seedHistory as Array<Record<string, number | string>>).map((r) => ({
-      id: `seed-${r.date}`,
-      date: String(r.date),
-      netSales: Number(r.net) || 0,
-      deposit: 0,
-      covers: 0,
-      notes: '',
-      gross: Number(r.gross) || undefined,
-      rewards: Number(r.rewards) || undefined,
-      promos: Number(r.promos) || undefined,
-      comps: Number(r.comps) || undefined,
-      staffDisc: Number(r.staff) || undefined,
-      food: Number(r.food) || undefined,
-      beer: Number(r.beer) || undefined,
-      liquor: Number(r.liquor) || undefined,
-      wine: Number(r.wine) || undefined,
-      na: Number(r.na) || undefined,
-      nocat: Number(r.nocat) || undefined,
-      labor: Number(r.labor) || undefined,
-      laborPct: Number(r.laborPct) || undefined,
-      overUnder: r.overUnder != null ? Number(r.overUnder) : undefined,
-    }))
-    save(k, nights)
+
+  // Purge the prototype's sample nights (ids "seed-…") wherever they landed.
+  const PURGE = '__sampleNightsPurged'
+  if (!load<boolean>(PURGE, false)) {
+    const cur = load<Night[]>(k, [])
+    const clean = cur.filter((n) => !n.id.startsWith('seed-'))
+    if (clean.length !== cur.length) save(k, clean)
+    save(PURGE, true)
   }
-  save(FLAG, true)
 
   // Second seed (owner-supplied via chat, Jul 2026): real June 2025 sales from
   // the Toast export — gives June 2026 true last-year comparisons. Merges into

@@ -587,7 +587,13 @@ function fmtMonth(k: string): string {
 }
 function fmtWhen(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  // Show the year whenever it isn't this year — a June 2025 night must never
+  // read like it happened this June.
+  const opts: Intl.DateTimeFormatOptions =
+    y === new Date().getFullYear()
+      ? { weekday: 'short', month: 'short', day: 'numeric' }
+      : { month: 'short', day: 'numeric', year: 'numeric' }
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', opts)
 }
 function fmtTime(tm: string): string {
   const [h, m] = tm.split(':').map(Number)
