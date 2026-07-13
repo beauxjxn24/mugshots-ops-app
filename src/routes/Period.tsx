@@ -87,6 +87,7 @@ export function Period() {
                   <Stat label="Best night" value={money(p.best.netSales)} sub={fmtDay(p.best.date)} up />
                   <Stat label="Slowest night" value={money(p.worst.netSales)} sub={fmtDay(p.worst.date)} up={false} />
                 </div>
+                <WeekCards nights={p.nights} monthKey={p.key} />
               </Card>
             )
           })
@@ -99,6 +100,41 @@ export function Period() {
         )}
       </div>
     </>
+  )
+}
+
+/** Week-by-week strip inside a month (handoff spec's week cards). */
+function WeekCards({ nights, monthKey }: { nights: Night[]; monthKey: string }) {
+  const weeks = new Map<number, Night[]>()
+  for (const n of nights) {
+    const day = parseInt(n.date.slice(8), 10)
+    const w = Math.floor((day - 1) / 7) + 1 // wk 1 = 1st–7th, etc.
+    const arr = weeks.get(w) ?? []
+    arr.push(n)
+    weeks.set(w, arr)
+  }
+  const keys = [...weeks.keys()].sort((a, b) => a - b)
+  if (keys.length < 2) return null
+  const inProgress = monthKey === new Date().toISOString().slice(0, 7)
+  return (
+    <div className="flex gap-px overflow-x-auto bg-black/5">
+      {keys.map((w) => {
+        const arr = weeks.get(w)!
+        const total = arr.reduce((s, n) => s + n.netSales, 0)
+        return (
+          <div key={w} className="min-w-24 flex-1 bg-white p-2.5 text-center">
+            <div className="text-[9px] font-extrabold uppercase tracking-wide text-muted">Wk {w}</div>
+            <div className="font-display text-sm font-semibold text-ink">{money(total)}</div>
+            <div className="text-[10px] text-muted">{arr.length} night{arr.length === 1 ? '' : 's'}</div>
+          </div>
+        )
+      })}
+      {inProgress && (
+        <div className="flex min-w-24 flex-1 items-center justify-center bg-white p-2.5 text-center text-[10px] text-muted">
+          month in progress
+        </div>
+      )}
+    </div>
   )
 }
 

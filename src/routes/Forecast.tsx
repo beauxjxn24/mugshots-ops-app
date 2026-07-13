@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
+import { Megaphone } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
+import type { Booking } from '../lib/catering'
+import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 
 interface Night {
   id: string
@@ -17,6 +20,14 @@ const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', '
 function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+function fmtShort(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+function fmtTime(t: string): string {
+  const [h, m] = t.split(':').map(Number)
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')}${h >= 12 ? 'p' : 'a'}`
+}
 
 /**
  * Forecast — projects the next 7 days from your own sales history.
@@ -28,6 +39,8 @@ export function Forecast() {
   const [log] = usePersistentState<Night[]>('nightly:log', [])
   const [adj, setAdj] = usePersistentState<number>('forecast:adj', 0)
   const [overrides, setOverrides] = usePersistentState<Record<string, number>>('forecast:overrides', {})
+  const [bookings] = usePersistentState<Booking[]>('catering:bookings', [])
+  const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
 
   // Average of the most recent 4 entries per weekday.
   const dowAvg = useMemo(() => {
@@ -60,6 +73,47 @@ export function Forecast() {
   const weekTotal = days.reduce((s, d) => s + d.value, 0)
   const max = Math.max(...days.map((d) => d.value), 1)
   const hasHistory = Object.keys(dowAvg).length > 0
+  const laborBudget = weekTotal * (targets.laborPct / 100)
+
+  // "This week's calls" — generated, not editorial (handoff spec): bookings in
+  // the next 7 days, plus weekdays trending well above / below their average.
+  const calls = useMemo(() => {
+    const out: Array<{ icon: string; text: string }> = []
+    const horizon = days[days.length - 1]?.date ?? today()
+    for (const b of bookings) {
+      if (b.completedAt || b.date < today() || b.date > horizon) continue
+      out.push({
+        icon: '🎉',
+        text: `${b.event}${b.guests ? ` — party of ${b.guests}` : ''} on ${fmtShort(b.date)}${b.time ? ` @ ${fmtTime(b.time)}` : ''} — prep the day before.`,
+      })
+    }
+    // Trend flags: latest same-weekday vs its 4-visit average.
+    const byDow: Record<number, Night[]> = {}
+    for (const n of log) {
+      if (!(n.netSales > 0)) continue
+      ;(byDow[new Date(n.date + 'T12:00:00').getDay()] ??= []).push(n)
+    }
+    const flags: Array<{ pct: number; dow: number }> = []
+    for (const [k, arr] of Object.entries(byDow)) {
+      if (arr.length < 3) continue
+      const sorted = arr.sort((a, b) => b.date.localeCompare(a.date))
+      const latest = sorted[0].netSales
+      const prior = sorted.slice(1, 5)
+      const avg = prior.reduce((s, n) => s + n.netSales, 0) / prior.length
+      if (avg > 0) flags.push({ pct: ((latest - avg) / avg) * 100, dow: +k })
+    }
+    flags
+      .filter((f) => f.pct >= 8)
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 2)
+      .forEach((f) => out.push({ icon: '📈', text: `${DOW[f.dow]}s trending +${f.pct.toFixed(0)}% — consider pars up on prep.` }))
+    flags
+      .filter((f) => f.pct <= -8)
+      .sort((a, b) => a.pct - b.pct)
+      .slice(0, 1)
+      .forEach((f) => out.push({ icon: '✂️', text: `${DOW[f.dow]}s trending ${f.pct.toFixed(0)}% — plan a first cut.` }))
+    return out
+  }, [bookings, days, log])
 
   return (
     <>
@@ -143,9 +197,36 @@ export function Forecast() {
                 )
               })}
               <div className="flex items-center justify-between bg-black/[0.02] px-4 py-3">
-                <span className="text-sm font-semibold text-muted">Projected week</span>
+                <div>
+                  <span className="text-sm font-semibold text-muted">Projected week</span>
+                  <div className="text-[11px] text-muted">
+                    Labor budget ≤ {money(laborBudget)} ({targets.laborPct}% of projection)
+                  </div>
+                </div>
                 <span className="font-display text-xl font-semibold text-ink">{money(weekTotal)}</span>
               </div>
+            </Card>
+
+            {/* This week's calls — generated from bookings + trends */}
+            <Card className="p-4">
+              <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted">
+                <Megaphone size={14} className="text-brand" /> This week's calls
+              </div>
+              {calls.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Nothing flags this week — no bookings in the window and no weekday trending
+                  sharply either way. Calls appear here on their own.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {calls.map((c, i) => (
+                    <div key={i} className="flex gap-2 text-sm text-ink/85">
+                      <span className="shrink-0">{c.icon}</span>
+                      <span>{c.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <p className="text-center text-xs text-muted text-pretty">
