@@ -122,7 +122,11 @@ export function parseCatering(text: string, fileName = ''): Omit<Booking, 'id'> 
   // Title: prefer a labeled customer/company, then an order # (must contain a
   // digit), else the file name.
   const labeled = text.match(/(?:customer|contact|company|account|bill\s*to)\s*[:\-]\s*([^\n]{2,50})/i)
-  const orderNo = text.match(/#\s*([A-Z0-9][A-Z0-9-]{3,})/)
+  // Order # must contain a digit — "#SETUP", "#DELIVERY" and other shouty
+  // section headers match the shape but aren't order numbers.
+  const orderNo =
+    text.match(/order\s*(?:#|no\.?|number)?\s*:?\s*([A-Z0-9][A-Z0-9-]{2,}\d[A-Z0-9-]*|[A-Z0-9-]*\d[A-Z0-9-]{2,})/i) ||
+    text.match(/#\s*((?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{3,})/)
   const company =
     labeled?.[1]?.trim() ||
     lines.find((l) => /\b(llc|inc|school|church|corp|group|team|office|catering)\b/i.test(l))?.slice(0, 50) ||

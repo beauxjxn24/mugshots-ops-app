@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ChevronDown, Mail, Check } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
@@ -43,8 +44,18 @@ const f = (s: string) => parseFloat(s) || 0
 export function Nightly() {
   const [log, setLog] = usePersistentState<Night[]>('nightly:log', [])
   const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
-  const [form, setForm] = useState<Form>(EMPTY)
+  // Deep link from the dashboard chart: /nightly?date=YYYY-MM-DD highlights
+  // that night's summary (and pre-fills the form if it hasn't been saved yet).
+  const [params] = useSearchParams()
+  const focusDate = params.get('date')
+  const [form, setForm] = useState<Form>(focusDate ? { ...EMPTY, date: focusDate } : EMPTY)
   const [showCats, setShowCats] = useState(false)
+
+  useEffect(() => {
+    if (!focusDate) return
+    const el = document.getElementById(`night-${focusDate}`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [focusDate])
 
   const discounts = f(form.rewards) + f(form.promos) + f(form.comps) + f(form.staffDisc)
   const net = Math.max(0, f(form.gross) - discounts)
@@ -164,14 +175,19 @@ export function Nightly() {
           </button>
         </Card>
 
-        <NightlyLog log={log} targets={targets} />
+        <NightlyLog log={log} targets={targets} initialDate={focusDate ?? undefined} />
 
         {sorted.length > 0 && (
           <Card className="overflow-hidden">
             {sorted.map((n) => {
               const lp = n.laborPct ?? (n.labor && n.netSales ? (n.labor / n.netSales) * 100 : 0)
+              const focused = n.date === focusDate
               return (
-                <div key={n.id} className="border-b border-black/5 p-4 last:border-0">
+                <div
+                  key={n.id}
+                  id={`night-${n.date}`}
+                  className={`border-b border-black/5 p-4 last:border-0 ${focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''}`}
+                >
                   <div className="flex items-baseline justify-between">
                     <span className="font-semibold text-ink">{fmtDate(n.date)}</span>
                     <span className="font-display text-lg font-semibold text-brand">{money(n.netSales)}</span>
@@ -224,11 +240,11 @@ const LOG_FIELDS: Array<{ key: keyof LogEntry; label: string; ph: string }> = [
   { key: 'wins', label: 'Wins', ph: 'Big tables, reviews, milestones…' },
 ]
 
-function NightlyLog({ log, targets }: { log: Night[]; targets: Targets }) {
+function NightlyLog({ log, targets, initialDate }: { log: Night[]; targets: Targets; initialDate?: string }) {
   const [entries, setEntries] = usePersistentState<Record<string, LogEntry>>('nightlog:entries', {})
   const [sent, setSent] = usePersistentState<Record<string, { lunch?: string; dinner?: string }>>('nightlog:sent', {})
   const [users] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
-  const [date, setDate] = useState(today())
+  const [date, setDate] = useState(initialDate ?? today())
   const { concept, location } = useCurrentNames()
 
   const entry = entries[date] ?? EMPTY_LOG

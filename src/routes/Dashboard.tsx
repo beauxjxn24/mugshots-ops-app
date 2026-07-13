@@ -334,17 +334,33 @@ function WeekBars({ nights }: { nights: Night[] }) {
       <div className="flex items-end justify-around gap-2" style={{ height: H + 22 }}>
         {cols.map((c) => {
           const h = Math.max(6, (c.value / max) * H)
+          if (c.kind === 'actual') {
+            // Clickable bar → the nightly report for that day
+            return (
+              <Link
+                key={c.date}
+                to={`/nightly?date=${c.date}`}
+                title={`${c.date} · ${money(c.value)} — open nightly report`}
+                className="group flex min-w-0 flex-1 flex-col items-center justify-end"
+              >
+                <div className="mb-1 font-mono text-[10px] font-semibold text-ink/70 group-hover:text-ink">
+                  ${(c.value / 1000).toFixed(1)}k
+                </div>
+                <div
+                  className="w-6 rounded-t-[4px] bg-brand transition-all group-hover:bg-brand-600 group-hover:ring-2 group-hover:ring-brand/30 sm:w-7"
+                  style={{ height: h }}
+                />
+              </Link>
+            )
+          }
           return (
             <div key={c.date} className="flex flex-1 flex-col items-center justify-end">
               {c.kind === 'none' ? (
                 <div className="mb-1 text-[9px] text-muted/60">no data</div>
               ) : (
-                <div className={`mb-1 font-mono text-[10px] font-semibold ${c.kind === 'forecast' ? 'text-muted' : 'text-ink/70'}`}>
-                  {c.kind === 'forecast' ? '~' : ''}${(c.value / 1000).toFixed(1)}k
+                <div className="mb-1 font-mono text-[10px] font-semibold text-muted">
+                  ~${(c.value / 1000).toFixed(1)}k
                 </div>
-              )}
-              {c.kind === 'actual' && (
-                <div className="w-6 rounded-t-[4px] bg-brand sm:w-7" style={{ height: h }} title={`${c.date} · ${money(c.value)}`} />
               )}
               {c.kind === 'forecast' && (
                 <div

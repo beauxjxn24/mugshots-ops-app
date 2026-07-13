@@ -28,11 +28,23 @@ export function Imports() {
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
 
+  const recentDrops = useRef<Map<string, number>>(new Map())
+
   const handleFiles = useCallback(async (files: FileList | File[]) => {
+    // Guard: the same file arriving twice within a few seconds is a double
+    // event (drop fired two handlers, picker re-fired) — process it once.
+    const now = Date.now()
+    const fresh = Array.from(files).filter((f) => {
+      const key = `${f.name}|${f.size}`
+      const last = recentDrops.current.get(key)
+      recentDrops.current.set(key, now)
+      return !(last && now - last < 4000)
+    })
+    if (fresh.length === 0) return
     // Toast exports arrive zipped — expand them and feed every file inside
     // through the same reader, so a dropped .zip "just works".
     const list: File[] = []
-    for (const file of Array.from(files)) {
+    for (const file of fresh) {
       if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
         try {
           const { unzipSync } = await import('fflate')
@@ -80,16 +92,9 @@ export function Imports() {
     }
   }, [])
 
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setDrag(false)
-      if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files)
-    },
-    [handleFiles],
-  )
-
-  // Accept a file dropped anywhere on the Imports page, not only on the box.
+  // ONE drop path only: the window listener below catches drops anywhere on
+  // the page, including on the box. (A second onDrop on the box itself made
+  // every drop process twice — two tiles per file.)
   useEffect(() => {
     const onWinDrop = (e: DragEvent) => {
       if (e.dataTransfer?.files?.length) {
@@ -123,7 +128,6 @@ export function Imports() {
             setDrag(true)
           }}
           onDragLeave={() => setDrag(false)}
-          onDrop={onDrop}
           onClick={() => inputRef.current?.click()}
           className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
             drag ? 'border-brand bg-brand/10' : 'border-black/15 bg-white/60 hover:border-brand/50'
