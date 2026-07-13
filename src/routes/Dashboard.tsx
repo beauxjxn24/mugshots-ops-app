@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader, Card } from '../components/ui'
-import { AreaChart, type Point } from '../components/AreaChart'
 import { useCurrentNames } from '../lib/scope'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
@@ -76,9 +75,6 @@ export function Dashboard() {
     return { parts, total }
   }, [win.nights])
 
-  const weekData: Point[] = sorted
-    .slice(-7)
-    .map((n) => ({ label: weekday(n.date), value: +(n.netSales / 1000).toFixed(1) }))
   const wtd = sorted.slice(-7).reduce((s, n) => s + n.netSales, 0)
 
   return (
@@ -148,7 +144,7 @@ export function Dashboard() {
               </div>
             </Card>
 
-            {/* Weekly trend + ▲▼ day strip */}
+            {/* Weekly column chart — slim pillars, ▲▼ vs same day last year beneath */}
             <Card className="p-5">
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                 <div className="text-xs font-bold uppercase tracking-wide text-muted">
@@ -158,25 +154,7 @@ export function Dashboard() {
                   Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
                 </div>
               </div>
-              <AreaChart data={weekData} height={200} format={(n) => `$${n.toFixed(1)}k`} />
-              <div className="mt-2 grid grid-cols-7 gap-1">
-                {sorted.slice(-7).map((n, i, arr) => {
-                  const prev = arr[i - 1] ?? sorted[sorted.length - 8]
-                  const d = prev ? ((n.netSales - prev.netSales) / prev.netSales) * 100 : null
-                  return (
-                    <div key={n.date} className="text-center">
-                      <div className="text-[9px] font-bold text-muted">{weekday(n.date)}</div>
-                      {d != null ? (
-                        <div className={`text-[10px] font-bold ${d >= 0 ? 'text-up' : 'text-down'}`}>
-                          {d >= 0 ? '▲' : '▼'}{Math.abs(d).toFixed(0)}%
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-muted">—</div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+              <WeekBars nights={sorted} />
             </Card>
 
             {/* Sales by category */}
@@ -254,6 +232,77 @@ export function Dashboard() {
         </div>
       </div>
     </>
+  )
+}
+
+/**
+ * Weekly column chart (prototype spec): slim gold pillars centered over each
+ * day, dollar value on top, and a green/red +/- underneath comparing to the
+ * SAME DAY LAST YEAR — falling back to the same weekday last week until a
+ * year of history builds up.
+ */
+function WeekBars({ nights }: { nights: Night[] }) {
+  const last7 = nights.slice(-7)
+  if (last7.length === 0) return null
+  const byDate = new Map(nights.map((n) => [n.date, n]))
+  const max = Math.max(...last7.map((n) => n.netSales), 1)
+  const H = 168 // px, plot height
+  let usedLY = false
+  let usedLW = false
+
+  const cols = last7.map((n) => {
+    // Same day last year = 364 days back (same weekday); else same day last week.
+    const ly = byDate.get(shiftDays(n.date, -364))
+    const lw = byDate.get(shiftDays(n.date, -7))
+    const base = ly ?? lw
+    if (ly) usedLY = true
+    else if (lw) usedLW = true
+    const delta = base && base.netSales > 0 ? ((n.netSales - base.netSales) / base.netSales) * 100 : null
+    return { ...n, delta }
+  })
+
+  return (
+    <div>
+      <div className="flex items-end justify-around gap-2" style={{ height: H + 22 }}>
+        {cols.map((n) => {
+          const h = Math.max(6, (n.netSales / max) * H)
+          return (
+            <div key={n.date} className="flex flex-1 flex-col items-center justify-end">
+              <div className="mb-1 font-mono text-[10px] font-semibold text-ink/70">
+                ${(n.netSales / 1000).toFixed(1)}k
+              </div>
+              <div
+                className="w-6 rounded-t-[4px] bg-brand sm:w-7"
+                style={{ height: h }}
+                title={`${n.date} · ${money(n.netSales)}`}
+              />
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-1.5 flex justify-around gap-2 border-t border-black/5 pt-1.5">
+        {cols.map((n) => (
+          <div key={n.date} className="flex-1 text-center">
+            <div className="text-[9px] font-bold text-muted">{weekday(n.date)}</div>
+            <div className="text-[8.5px] text-muted/70">{n.date.slice(5).replace('-', '/')}</div>
+            {n.delta != null ? (
+              <div className={`text-[10px] font-bold ${n.delta >= 0 ? 'text-up' : 'text-down'}`}>
+                {n.delta >= 0 ? '+' : '−'}{Math.abs(n.delta).toFixed(0)}%
+              </div>
+            ) : (
+              <div className="text-[10px] text-muted">—</div>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-center text-[10px] text-muted">
+        {usedLY
+          ? '+/- vs the same day last year'
+          : usedLW
+            ? '+/- vs the same day last week — switches to last year automatically once a year of history builds'
+            : 'Comparisons appear once there are matching prior days'}
+      </p>
+    </div>
   )
 }
 
