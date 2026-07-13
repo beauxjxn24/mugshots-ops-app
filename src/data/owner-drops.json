@@ -1,0 +1,885 @@
+{
+ "version": 1,
+ "nights": [
+  {
+   "date": "2026-07-11",
+   "net": 10347.66,
+   "covers": 373,
+   "gross": 10677.95,
+   "comps": 330.29,
+   "food": 8383.9,
+   "na": 815.61,
+   "liquor": 621.5,
+   "wine": 6.0,
+   "beer": 440.0,
+   "nocat": 80.65,
+   "labor": 1222.39,
+   "laborPct": 11.81
+  }
+ ],
+ "pmix": {
+  "2026-07-11": {
+   "file": "ProductMix_20260711.zip",
+   "items": [
+    {
+     "name": "Classic Dog",
+     "category": "Food",
+     "qty": 3,
+     "sales": 31.46
+    },
+    {
+     "name": "Chili Cheese Dog",
+     "category": "Food",
+     "qty": 2,
+     "sales": 23.37
+    },
+    {
+     "name": "Chicago-ish Dog",
+     "category": "Food",
+     "qty": 4,
+     "sales": 46.16
+    },
+    {
+     "name": "Southern Dog",
+     "category": "Food",
+     "qty": 1,
+     "sales": 11.99
+    },
+    {
+     "name": "Firecracker Dog",
+     "category": "Food",
+     "qty": 3,
+     "sales": 38.36
+    },
+    {
+     "name": "Small Chips 'N Rotel",
+     "category": "Food",
+     "qty": 3,
+     "sales": 9.0
+    },
+    {
+     "name": "Small Blankenshrooms",
+     "category": "Food",
+     "qty": 4,
+     "sales": 12.0
+    },
+    {
+     "name": "Small Boneless Wings",
+     "category": "Food",
+     "qty": 9,
+     "sales": 29.0
+    },
+    {
+     "name": "Small Davis' Dill Pickles",
+     "category": "Food",
+     "qty": 4,
+     "sales": 14.5
+    },
+    {
+     "name": "Small Tee's Cheese Wedges",
+     "category": "Food",
+     "qty": 17,
+     "sales": 66.15
+    },
+    {
+     "name": "Single Savell Smash",
+     "category": "Food",
+     "qty": 3,
+     "sales": 28.02
+    },
+    {
+     "name": "Single Texan Smash",
+     "category": "Food",
+     "qty": 3,
+     "sales": 32.1
+    },
+    {
+     "name": "Single McDowell Smash",
+     "category": "Food",
+     "qty": 2,
+     "sales": 17.97
+    },
+    {
+     "name": "Single Classic Smash",
+     "category": "Food",
+     "qty": 3,
+     "sales": 32.31
+    },
+    {
+     "name": "Single Signature Smash",
+     "category": "Food",
+     "qty": 1,
+     "sales": 10.58
+    },
+    {
+     "name": "BLANKENSHROOMS",
+     "category": "Food",
+     "qty": 5,
+     "sales": 44.84
+    },
+    {
+     "name": "Chips 'N Rotel",
+     "category": "Food",
+     "qty": 2,
+     "sales": 10.48
+    },
+    {
+     "name": "Chips 'N Queso",
+     "category": "Food",
+     "qty": 9,
+     "sales": 71.91
+    },
+    {
+     "name": "Chips 'N Salsa",
+     "category": "Food",
+     "qty": 1,
+     "sales": 5.99
+    },
+    {
+     "name": "CUZ'S CHEESEBURGER QUESADILLA",
+     "category": "Food",
+     "qty": 3,
+     "sales": 31.47
+    },
+    {
+     "name": "DAVIS' PICKLE CHIPS",
+     "category": "Food",
+     "qty": 5,
+     "sales": 42.45
+    },
+    {
+     "name": "KATIES KICKIN CHICKEN",
+     "category": "Food",
+     "qty": 13,
+     "sales": 174.36
+    },
+    {
+     "name": "MOMBO COMBO",
+     "category": "Food",
+     "qty": 35,
+     "sales": 523.07
+    },
+    {
+     "name": "POW POW SHRIMP",
+     "category": "Food",
+     "qty": 4,
+     "sales": 50.5
+    },
+    {
+     "name": "Seans Nachos",
+     "category": "Food",
+     "qty": 2,
+     "sales": 19.98
+    },
+    {
+     "name": "SOUTHWEST EGGROLLS",
+     "category": "Food",
+     "qty": 15,
+     "sales": 175.45
+    },
+    {
+     "name": "TEES CHEESE WEDGES",
+     "category": "Food",
+     "qty": 23,
+     "sales": 257.17
+    },
+    {
+     "name": "WANGS - 5",
+     "category": "Food",
+     "qty": 3,
+     "sales": 28.47
+    },
+    {
+     "name": "WANGS - 10",
+     "category": "Food",
+     "qty": 5,
+     "sales": 83.95
+    },
+    {
+     "name": "WANGS - 15",
+     "category": "Food",
+     "qty": 1,
+     "sales": 22.49
+    },
+    {
+     "name": "WANGS - 20",
+     "category": "Food",
+     "qty": 1,
+     "sales": 29.99
+    },
+    {
+     "name": "ANTHONY'S PEANUT BUTTER BURGER",
+     "category": "Food",
+     "qty": 5,
+     "sales": 62.95
+    },
+    {
+     "name": "CLIFFS COMEBACK BURGER",
+     "category": "Food",
+     "qty": 14,
+     "sales": 201.24
+    },
+    {
+     "name": "GAMBLE BURGER",
+     "category": "Food",
+     "qty": 4,
+     "sales": 53.45
+    },
+    {
+     "name": "MCDOWELL BURGER",
+     "category": "Food",
+     "qty": 14,
+     "sales": 200.91
+    },
+    {
+     "name": "MIDDLEBERGER",
+     "category": "Food",
+     "qty": 28,
+     "sales": 331.29
+    },
+    {
+     "name": "PATO BURGER",
+     "category": "Food",
+     "qty": 17,
+     "sales": 231.58
+    },
+    {
+     "name": "SAVELL BURGER",
+     "category": "Food",
+     "qty": 21,
+     "sales": 304.26
+    },
+    {
+     "name": "STUS MUSHROOM BURGER",
+     "category": "Food",
+     "qty": 6,
+     "sales": 84.48
+    },
+    {
+     "name": "GUTHRIE'S GODFATHER",
+     "category": "Food",
+     "qty": 2,
+     "sales": 35.47
+    },
+    {
+     "name": "THE SHE-E-O",
+     "category": "Food",
+     "qty": 1,
+     "sales": 17.38
+    },
+    {
+     "name": "A1 STEAK SAUCE BURGER",
+     "category": "Food",
+     "qty": 4,
+     "sales": 65.63
+    },
+    {
+     "name": "BREAKFAST BURGER",
+     "category": "Food",
+     "qty": 6,
+     "sales": 89.94
+    },
+    {
+     "name": "DA' BIG KAHUNA BURGER",
+     "category": "Food",
+     "qty": 4,
+     "sales": 62.23
+    },
+    {
+     "name": "LIZ'S PARM-A-GEDDON",
+     "category": "Food",
+     "qty": 8,
+     "sales": 125.39
+    },
+    {
+     "name": "MAC DADDY BURGER",
+     "category": "Food",
+     "qty": 3,
+     "sales": 50.36
+    },
+    {
+     "name": "PATTY MELT BURGER",
+     "category": "Food",
+     "qty": 3,
+     "sales": 41.95
+    },
+    {
+     "name": "RUSSUM'S SOUTHERN BURGER",
+     "category": "Food",
+     "qty": 3,
+     "sales": 44.97
+    },
+    {
+     "name": "GLENN-CREDIBLE STEAK BURGER",
+     "category": "Food",
+     "qty": 3,
+     "sales": 47.97
+    },
+    {
+     "name": "TEXAN BURGER",
+     "category": "Food",
+     "qty": 16,
+     "sales": 234.62
+    },
+    {
+     "name": "TURKEY BURGER",
+     "category": "Food",
+     "qty": 3,
+     "sales": 43.36
+    },
+    {
+     "name": "TERRI-YAKI CHICKEN WRAP",
+     "category": "Food",
+     "qty": 1,
+     "sales": 11.99
+    },
+    {
+     "name": "Briscoe Inferno Sandwich",
+     "category": "Food",
+     "qty": 7,
+     "sales": 91.2
+    },
+    {
+     "name": "CAITLINS CAJUN SANDWICH",
+     "category": "Food",
+     "qty": 4,
+     "sales": 60.55
+    },
+    {
+     "name": "CALLIES MAHI SANDWICH",
+     "category": "Food",
+     "qty": 1,
+     "sales": 14.99
+    },
+    {
+     "name": "HICKS PHILLY SANDWICH",
+     "category": "Food",
+     "qty": 5,
+     "sales": 70.12
+    },
+    {
+     "name": "HOWARDS PHILLY SANDWICH",
+     "category": "Food",
+     "qty": 4,
+     "sales": 59.53
+    },
+    {
+     "name": "SOUTHWEST PHILLY SANDWICH",
+     "category": "Food",
+     "qty": 2,
+     "sales": 28.47
+    },
+    {
+     "name": "KIRKSEY TURKEY CLUB SANDWICH",
+     "category": "Food",
+     "qty": 3,
+     "sales": 43.62
+    },
+    {
+     "name": "INFERNO WRAP",
+     "category": "Food",
+     "qty": 5,
+     "sales": 63.53
+    },
+    {
+     "name": "PHILLY WRAP",
+     "category": "Food",
+     "qty": 3,
+     "sales": 40.47
+    },
+    {
+     "name": "PHILLY PASTA-LA-VISTA",
+     "category": "Food",
+     "qty": 3,
+     "sales": 44.97
+    },
+    {
+     "name": "BLACKENED MAHI",
+     "category": "Food",
+     "qty": 4,
+     "sales": 67.95
+    },
+    {
+     "name": "HAMBURGER STEAK",
+     "category": "Food",
+     "qty": 10,
+     "sales": 142.7
+    },
+    {
+     "name": "BLACKENED SHRIMP PASTA",
+     "category": "Food",
+     "qty": 6,
+     "sales": 101.04
+    },
+    {
+     "name": "PARMESAN CHICKEN MARINARA",
+     "category": "Food",
+     "qty": 3,
+     "sales": 41.97
+    },
+    {
+     "name": "RAJUN CAJUN PASTA",
+     "category": "Food",
+     "qty": 4,
+     "sales": 55.96
+    },
+    {
+     "name": "LLOYD'S LOADED CHEESEBURGER BOWL",
+     "category": "Food",
+     "qty": 1,
+     "sales": 13.99
+    },
+    {
+     "name": "BUFFALO BLEU SALAD",
+     "category": "Food",
+     "qty": 5,
+     "sales": 69.95
+    },
+    {
+     "name": "RAJUN HESTER CAJUN SALAD",
+     "category": "Food",
+     "qty": 3,
+     "sales": 34.97
+    },
+    {
+     "name": "BISHOP'S BURGER",
+     "category": "Food",
+     "qty": 5,
+     "sales": 43.23
+    },
+    {
+     "name": "KAYLAS MINI CHICKEN BASKET",
+     "category": "Food",
+     "qty": 23,
+     "sales": 173.26
+    },
+    {
+     "name": "EMMA'S GRILLED CHEESE",
+     "category": "Food",
+     "qty": 3,
+     "sales": 18.86
+    },
+    {
+     "name": "MEG'S MAC-N-CHEESE",
+     "category": "Food",
+     "qty": 1,
+     "sales": 6.49
+    },
+    {
+     "name": "TAYLOR'S MINI PASTA",
+     "category": "Food",
+     "qty": 6,
+     "sales": 43.24
+    },
+    {
+     "name": "DUNCAN'S CHEESE QUESADILLA",
+     "category": "Food",
+     "qty": 2,
+     "sales": 14.27
+    },
+    {
+     "name": "ICE CREAM SCOOP",
+     "category": "Food",
+     "qty": 3,
+     "sales": 5.97
+    },
+    {
+     "name": "Milkshakes",
+     "category": "Shakes",
+     "qty": 12,
+     "sales": 65.68
+    },
+    {
+     "name": "Rocket Pop Shake",
+     "category": "Shakes",
+     "qty": 3,
+     "sales": 14.97
+    },
+    {
+     "name": "CHILI",
+     "category": "Food",
+     "qty": 1,
+     "sales": 4.49
+    },
+    {
+     "name": "FRIES",
+     "category": "Food",
+     "qty": 8,
+     "sales": 30.28
+    },
+    {
+     "name": "MASH - GRAVY",
+     "category": "Food",
+     "qty": 1,
+     "sales": 3.99
+    },
+    {
+     "name": "ONION RINGS",
+     "category": "Food",
+     "qty": 2,
+     "sales": 8.98
+    },
+    {
+     "name": "SIDE MAC N CHEESE",
+     "category": "Food",
+     "qty": 1,
+     "sales": 2.9
+    },
+    {
+     "name": "SIDE SALAD - HOUSE",
+     "category": "Food",
+     "qty": 4,
+     "sales": 15.86
+    },
+    {
+     "name": "WAFFLE SWEET FRIES",
+     "category": "Food",
+     "qty": 2,
+     "sales": 8.98
+    },
+    {
+     "name": "Tots",
+     "category": "Food",
+     "qty": 2,
+     "sales": 6.98
+    },
+    {
+     "name": "VEGGIES - GRILL",
+     "category": "Food",
+     "qty": 1,
+     "sales": 4.49
+    },
+    {
+     "name": "6 OZ ROTEL",
+     "category": "Food",
+     "qty": 1,
+     "sales": 3.99
+    },
+    {
+     "name": "2 OZ CHILI",
+     "category": "Food",
+     "qty": 1,
+     "sales": 1.5
+    },
+    {
+     "name": "2 OZ ROTEL",
+     "category": "Food",
+     "qty": 1,
+     "sales": 1.5
+    },
+    {
+     "name": "Signature Smash Burger",
+     "category": "Food",
+     "qty": 8,
+     "sales": 123.95
+    },
+    {
+     "name": "Savell Smash Burger",
+     "category": "Food",
+     "qty": 3,
+     "sales": 45.77
+    },
+    {
+     "name": "McDowell Smash Burger",
+     "category": "Food",
+     "qty": 3,
+     "sales": 42.02
+    },
+    {
+     "name": "Russum's Southern Smash Burger",
+     "category": "Food",
+     "qty": 1,
+     "sales": 14.99
+    },
+    {
+     "name": "Texan Smash Burger",
+     "category": "Food",
+     "qty": 12,
+     "sales": 181.33
+    },
+    {
+     "name": "Classic Smash Burger",
+     "category": "Food",
+     "qty": 4,
+     "sales": 53.52
+    },
+    {
+     "name": "ARNOLD PALMER",
+     "category": "NA Beverage",
+     "qty": 2,
+     "sales": 7.02
+    },
+    {
+     "name": "COKE",
+     "category": "NA Beverage",
+     "qty": 31,
+     "sales": 98.01
+    },
+    {
+     "name": "TEA - SWEET",
+     "category": "NA Beverage",
+     "qty": 43,
+     "sales": 133.89
+    },
+    {
+     "name": "Single Smash",
+     "category": "Food",
+     "qty": 9,
+     "sales": 86.9
+    },
+    {
+     "name": "4 Piece KICKIN CHICKEN",
+     "category": "Food",
+     "qty": 2,
+     "sales": 17.04
+    },
+    {
+     "name": "Classic 1/4 lb BURGER",
+     "category": "Food",
+     "qty": 2,
+     "sales": 19.04
+    },
+    {
+     "name": "Colony Wangs - 5",
+     "category": "Food",
+     "qty": 3,
+     "sales": 32.28
+    },
+    {
+     "name": "Water",
+     "category": "NA Beverage",
+     "qty": 117,
+     "sales": 0.0
+    },
+    {
+     "name": "TEA - UNSWEET",
+     "category": "NA Beverage",
+     "qty": 10,
+     "sales": 31.9
+    },
+    {
+     "name": "TEA - HALF & HALF",
+     "category": "NA Beverage",
+     "qty": 7,
+     "sales": 22.33
+    },
+    {
+     "name": "COKE ZERO",
+     "category": "NA Beverage",
+     "qty": 11,
+     "sales": 32.93
+    },
+    {
+     "name": "DIET COKE",
+     "category": "NA Beverage",
+     "qty": 9,
+     "sales": 28.71
+    },
+    {
+     "name": "DR PEPPER",
+     "category": "NA Beverage",
+     "qty": 31,
+     "sales": 96.73
+    },
+    {
+     "name": "LEMONADE",
+     "category": "NA Beverage",
+     "qty": 6,
+     "sales": 18.78
+    },
+    {
+     "name": "BARQ'S ROOT BEER",
+     "category": "NA Beverage",
+     "qty": 15,
+     "sales": 47.49
+    },
+    {
+     "name": "SPRITE",
+     "category": "NA Beverage",
+     "qty": 16,
+     "sales": 49.6
+    },
+    {
+     "name": "DIET DR PEPPER",
+     "category": "NA Beverage",
+     "qty": 4,
+     "sales": 12.04
+    },
+    {
+     "name": "STRAWBERRY LEMONADE",
+     "category": "NA Beverage",
+     "qty": 4,
+     "sales": 15.96
+    },
+    {
+     "name": "ROOT BEER FLOAT",
+     "category": "NA Beverage",
+     "qty": 2,
+     "sales": 7.98
+    },
+    {
+     "name": "Team RedBull",
+     "category": "NA Beverage",
+     "qty": 1,
+     "sales": 2.0
+    },
+    {
+     "name": "Mugarita",
+     "category": "Liquor",
+     "qty": 10,
+     "sales": 135.0
+    },
+    {
+     "name": "Southern Key Lime Pie Rita",
+     "category": "Liquor",
+     "qty": 1,
+     "sales": 12.5
+    },
+    {
+     "name": "Frozen Rita",
+     "category": "Liquor",
+     "qty": 10,
+     "sales": 93.0
+    },
+    {
+     "name": "Kentucky Buck",
+     "category": "Liquor",
+     "qty": 1,
+     "sales": 12.0
+    },
+    {
+     "name": "\u2018Sippers Cherry Limeade",
+     "category": "Liquor",
+     "qty": 1,
+     "sales": 9.5
+    },
+    {
+     "name": "Strawberry Lemon Twist",
+     "category": "Liquor",
+     "qty": 2,
+     "sales": 20.0
+    },
+    {
+     "name": "Texas Ranch Water",
+     "category": "Liquor",
+     "qty": 3,
+     "sales": 36.0
+    },
+    {
+     "name": "Crown Royal",
+     "category": "Liquor",
+     "qty": 2,
+     "sales": 20.0
+    },
+    {
+     "name": "Well Tequila",
+     "category": "Liquor",
+     "qty": 1,
+     "sales": 7.0
+    },
+    {
+     "name": "Grey Goose",
+     "category": "Liquor",
+     "qty": 1,
+     "sales": 15.0
+    },
+    {
+     "name": "Well Vodka",
+     "category": "Liquor",
+     "qty": 1,
+     "sales": 7.0
+    },
+    {
+     "name": "Coors Light",
+     "category": "Bottled Beer",
+     "qty": 4,
+     "sales": 18.0
+    },
+    {
+     "name": "Miller Lite",
+     "category": "Bottled Beer",
+     "qty": 1,
+     "sales": 4.5
+    },
+    {
+     "name": "Corona Extra",
+     "category": "Bottled Beer",
+     "qty": 1,
+     "sales": 5.0
+    },
+    {
+     "name": "Michelob Ultra Zero",
+     "category": "Bottled Beer",
+     "qty": 1,
+     "sales": 5.0
+    },
+    {
+     "name": "Colson's Draft",
+     "category": "Draft Beer",
+     "qty": 3,
+     "sales": 23.0
+    },
+    {
+     "name": "Angry Orchard Draft",
+     "category": "Draft Beer",
+     "qty": 4,
+     "sales": 26.0
+    },
+    {
+     "name": "Samuel Adams Seasonal Draft",
+     "category": "Draft Beer",
+     "qty": 4,
+     "sales": 28.0
+    },
+    {
+     "name": "Crowd Control Draft",
+     "category": "Draft Beer",
+     "qty": 1,
+     "sales": 9.0
+    },
+    {
+     "name": "Devil's Harvest Draft",
+     "category": "Draft Beer",
+     "qty": 1,
+     "sales": 9.0
+    },
+    {
+     "name": "Garage Beer Draft",
+     "category": "Draft Beer",
+     "qty": 6,
+     "sales": 35.0
+    },
+    {
+     "name": "Yuengling Draft",
+     "category": "Draft Beer",
+     "qty": 4,
+     "sales": 22.0
+    },
+    {
+     "name": "Miller Lite Draft",
+     "category": "Draft Beer",
+     "qty": 7,
+     "sales": 48.0
+    },
+    {
+     "name": "Michelob Ultra Draft",
+     "category": "Draft Beer",
+     "qty": 14,
+     "sales": 75.0
+    },
+    {
+     "name": "Bud Light Draft",
+     "category": "Draft Beer",
+     "qty": 1,
+     "sales": 6.0
+    },
+    {
+     "name": "Modelo Draft",
+     "category": "Draft Beer",
+     "qty": 1,
+     "sales": 7.0
+    }
+   ]
+  }
+ }
+}
