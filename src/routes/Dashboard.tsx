@@ -8,7 +8,7 @@ import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
 import type { PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, CalendarClock, Banknote, PieChart, Bell, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { PartyPopper, CalendarClock, Bell, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 
@@ -119,8 +119,24 @@ export function Dashboard() {
           <>
             <TrackedBand scope={scope} anchor={latest?.date ?? t} />
 
-            {/* Compact hero (left) + weekly chart (right) */}
-            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            {/* Catering tiles (far left, by the nav) + compact hero + weekly chart */}
+            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(150px,1fr)_minmax(0,2.4fr)_minmax(0,3.6fr)]">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
+                <KpiTile
+                  compact
+                  icon={<PartyPopper size={15} />}
+                  value={String(todays.length)}
+                  label="Caterings today"
+                  sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
+                />
+                <KpiTile
+                  compact
+                  icon={<CalendarClock size={15} />}
+                  value={next ? String(next.guests || '—') : '—'}
+                  label="Next booking"
+                  sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
+                />
+              </div>
               <Card className="relative flex flex-col overflow-hidden p-5">
                 <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-brand/10 blur-2xl" />
                 <div className="relative mb-4 flex">
@@ -229,33 +245,23 @@ export function Dashboard() {
           </>
         )}
 
-        {/* KPI tiles */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <KpiTile
-            icon={<PartyPopper size={18} />}
-            value={String(todays.length)}
-            label="Caterings today"
-            sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
-          />
-          <KpiTile
-            icon={<CalendarClock size={18} />}
-            value={next ? String(next.guests || '—') : '—'}
-            label="Next booking"
-            sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
-          />
-          <KpiTile
-            icon={<Banknote size={18} />}
-            value={hasReal && latest.deposit > 0 ? money(latest.deposit) : '—'}
-            label="Last deposit"
-            sub={hasReal ? fmtWhen(latest.date) : 'from Nightly Numbers'}
-          />
-          <KpiTile
-            icon={<PieChart size={18} />}
-            value={cats.total > 0 && cats.parts[0] ? `${((cats.parts[0].v / cats.total) * 100).toFixed(0)}%` : '—'}
-            label="Food mix"
-            sub={cats.total > 0 ? `of ${money(cats.total)} categorized` : 'log category sales'}
-          />
-        </div>
+        {/* Catering tiles live beside the hero once sales exist — until then, here. */}
+        {!hasReal && (
+          <div className="grid grid-cols-2 gap-4">
+            <KpiTile
+              icon={<PartyPopper size={18} />}
+              value={String(todays.length)}
+              label="Caterings today"
+              sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
+            />
+            <KpiTile
+              icon={<CalendarClock size={18} />}
+              value={next ? String(next.guests || '—') : '—'}
+              label="Next booking"
+              sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
+            />
+          </div>
+        )}
       </div>
     </>
   )
@@ -564,13 +570,29 @@ function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
   )
 }
 
-function KpiTile({ icon, value, label, sub }: { icon: React.ReactNode; value: string; label: string; sub?: string }) {
+function KpiTile({
+  icon,
+  value,
+  label,
+  sub,
+  compact,
+  className = '',
+}: {
+  icon: React.ReactNode
+  value: string
+  label: string
+  sub?: string
+  compact?: boolean
+  className?: string
+}) {
   return (
-    <Card className="p-4">
-      <div className="mb-2 grid size-9 place-items-center rounded-xl bg-brand/10 text-brand">{icon}</div>
-      <div className="font-display text-2xl font-semibold text-brand">{value}</div>
-      <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
-      {sub && <div className="text-xs text-muted">{sub}</div>}
+    <Card className={`${compact ? 'flex flex-col justify-center p-3.5' : 'p-4'} ${className}`}>
+      <div className={`grid place-items-center rounded-xl bg-brand/10 text-brand ${compact ? 'mb-1.5 size-7' : 'mb-2 size-9'}`}>
+        {icon}
+      </div>
+      <div className={`font-display font-semibold text-brand ${compact ? 'text-xl' : 'text-2xl'}`}>{value}</div>
+      <div className={`mt-0.5 font-semibold uppercase tracking-wide text-muted ${compact ? 'text-[10px]' : 'text-xs'}`}>{label}</div>
+      {sub && <div className={`text-muted ${compact ? 'text-[11px]' : 'text-xs'}`}>{sub}</div>}
     </Card>
   )
 }
