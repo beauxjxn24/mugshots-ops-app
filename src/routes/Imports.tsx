@@ -9,6 +9,8 @@ import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
 import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
+import { logImport, useImportLog } from '../lib/importlog'
+import { confirmDelete } from '../lib/confirm'
 import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
 
 interface Job extends Partial<ReadResult> {
@@ -60,6 +62,21 @@ export function Imports() {
             : x,
         ),
       )
+      // Every read lands in the permanent import history.
+      if (res.kind === 'unsupported') {
+        logImport(file.name, `⚠ could not read${res.note ? ` — ${res.note}` : ''}`)
+      } else {
+        const detected = isSalesSummary(res.text)
+          ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
+          : isRosterDoc(res.text)
+            ? 'employee roster — review below'
+            : isCateringDoc(res.text)
+              ? 'catering order — review below'
+              : res.lineItems.length > 0
+                ? `${res.lineItems.length} line items — review below`
+                : 'read'
+        logImport(file.name, `read · ${detected}`)
+      }
     }
   }, [])
 
@@ -224,22 +241,22 @@ export function Imports() {
               </div>
             )}
 
-            {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} />}
+            {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isSalesSummary(job.text) && <SalesImport text={job.text} />}
+            {job.text && isSalesSummary(job.text) && <SalesImport text={job.text} fileName={job.fileName} />}
 
             {job.text && isCateringDoc(job.text) && (
               <CateringImport text={job.text} fileName={job.fileName} />
             )}
 
-            {job.lineItems && job.lineItems.length > 0 && <Receiving lineItems={job.lineItems} />}
+            {job.lineItems && job.lineItems.length > 0 && <Receiving lineItems={job.lineItems} fileName={job.fileName} />}
 
             {job.lineItems && job.lineItems.length > 0 && job.text && (
               <InvoiceLog text={job.text} fileName={job.fileName} />
             )}
 
             {job.lineItems && job.lineItems.length > 0 && job.text && (
-              <PriceUpdate lineItems={job.lineItems} text={job.text} />
+              <PriceUpdate lineItems={job.lineItems} text={job.text} fileName={job.fileName} />
             )}
 
             {job.text && (
@@ -254,8 +271,44 @@ export function Imports() {
             )}
           </Card>
         ))}
+
+        <ImportHistory />
       </div>
     </>
+  )
+}
+
+/** Permanent import history — every drop and where it went. Survives reloads. */
+function ImportHistory() {
+  const entries = useImportLog((s) => s.entries)
+  const clear = useImportLog((s) => s.clear)
+  if (entries.length === 0) return null
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-black/5 bg-black/[0.02] px-4 py-2">
+        <span className="text-xs font-extrabold uppercase tracking-wide text-muted">
+          Import history
+        </span>
+        <button
+          onClick={async () => {
+            if (await confirmDelete('Clear the import history?', 'The imported data itself stays where it landed.', 'Clear'))
+              clear()
+          }}
+          className="text-xs font-semibold text-muted hover:text-down"
+        >
+          Clear
+        </button>
+      </div>
+      {entries.map((e) => (
+        <div key={e.id} className="flex items-baseline gap-3 border-b border-black/5 px-4 py-2 text-sm last:border-0">
+          <span className="min-w-0 flex-1 truncate font-medium text-ink">{e.file}</span>
+          <span className={`min-w-0 flex-1 truncate text-xs ${e.outcome.startsWith('⚠') ? 'text-down' : e.outcome.includes('→') ? 'text-up' : 'text-muted'}`}>
+            {e.outcome}
+          </span>
+          <span className="shrink-0 text-[10px] text-muted">{e.at}</span>
+        </div>
+      ))}
+    </Card>
   )
 }
 
@@ -271,7 +324,7 @@ interface Row {
   target: string
 }
 
-function Receiving({ lineItems }: { lineItems: LineItem[] }) {
+function Receiving({ lineItems, fileName }: { lineItems: LineItem[]; fileName: string }) {
   const [open, setOpen] = useState(false)
   const [applied, setApplied] = useState<{ updated: number; added: number } | null>(null)
   const [rows, setRows] = useState<Row[]>([])
@@ -316,6 +369,7 @@ function Receiving({ lineItems }: { lineItems: LineItem[] }) {
     })
     setApplied({ updated, added })
     setOpen(false)
+    logImport(fileName, `${updated} received → Ordering on-hand${added ? ` · ${added} new item${added === 1 ? '' : 's'} → Catalog` : ''}`)
   }
 
   if (!open) {
@@ -402,7 +456,7 @@ function Receiving({ lineItems }: { lineItems: LineItem[] }) {
  * item lives, stamp vendor + date, and show each % change ▲▼. Lines not in
  * the catalog get a one-tap Add.
  */
-function PriceUpdate({ lineItems, text }: { lineItems: LineItem[]; text: string }) {
+function PriceUpdate({ lineItems, text, fileName }: { lineItems: LineItem[]; text: string; fileName: string }) {
   const vendor = useMemo(() => {
     const m = text.match(/\b(us foods|gulf coast(?: produce)?|sysco|pfg|performance food)\b/i)
     return m ? m[1].replace(/\b\w/g, (c) => c.toUpperCase()) : 'Vendor'
@@ -414,7 +468,9 @@ function PriceUpdate({ lineItems, text }: { lineItems: LineItem[]; text: string 
     const lines = lineItems
       .map((li) => ({ name: li.description, price: parseFloat((li.price ?? '').replace(/[$,]/g, '')) || 0 }))
       .filter((l) => l.price > 0)
-    setResult(updatePrices(lines, vendor))
+    const r = updatePrices(lines, vendor)
+    setResult(r)
+    logImport(fileName, `${r.changes.length} case cost${r.changes.length === 1 ? '' : 's'} updated → Catalog (${vendor})`)
   }
 
   if (!result) {
@@ -500,6 +556,7 @@ function InvoiceLog({ text, fileName }: { text: string; fileName: string }) {
               paid: false,
             })
             setDone(true)
+            logImport(fileName, `${money} → Invoices (${parsed.vendor})`)
           }}
           className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink"
         >
@@ -520,6 +577,7 @@ function CateringImport({ text, fileName }: { text: string; fileName: string }) 
     const result = addBooking({ ...form, id: `c${Date.now()}`, event: form.event.trim() })
     recordCateringImport(fileName)
     setAdded(result)
+    logImport(fileName, result === 'duplicate' ? `duplicate order #${form.orderNo ?? ''} — skipped` : `booking "${form.event.trim()}" → Catering`)
   }
 
   if (added) {
@@ -587,7 +645,7 @@ function CateringImport({ text, fileName }: { text: string; fileName: string }) 
 }
 
 /** Import a dropped sales summary (Toast export) into Nightly Numbers. */
-function SalesImport({ text }: { text: string }) {
+function SalesImport({ text, fileName }: { text: string; fileName: string }) {
   const rows = useMemo(() => parseSalesSummary(text), [text])
   const [added, setAdded] = useState(0)
   const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -622,7 +680,7 @@ function SalesImport({ text }: { text: string }) {
         </table>
       </div>
       <button
-        onClick={() => setAdded(upsertNights(rows))}
+        onClick={() => { const n = upsertNights(rows); setAdded(n); logImport(fileName, `${n} nights → Nightly Numbers`) }}
         className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
       >
         Import {rows.length} days into Nightly Numbers
@@ -632,7 +690,7 @@ function SalesImport({ text }: { text: string }) {
 }
 
 /** Import a dropped employee roster (e.g. Toast export) into Staff. */
-function StaffImport({ text }: { text: string }) {
+function StaffImport({ text, fileName }: { text: string; fileName: string }) {
   const people = useMemo(() => importPeople(text), [text])
   const [added, setAdded] = useState<number | null>(null)
   if (people.length === 0) return null
@@ -662,7 +720,7 @@ function StaffImport({ text }: { text: string }) {
         </table>
       </div>
       <button
-        onClick={() => setAdded(addPeople(people))}
+        onClick={() => { const n = addPeople(people); setAdded(n); logImport(fileName, `${n} people → Staff roster`) }}
         className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
       >
         Import {people.length} to Staff
