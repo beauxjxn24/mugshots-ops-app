@@ -157,10 +157,10 @@ export function Dashboard() {
                   </div>
                 </div>
                 <div className="relative flex flex-1 flex-col justify-center">
-                  <span className="font-display text-[clamp(2.2rem,4.5vw,3rem)] font-semibold leading-none text-ink">
+                  <span className="self-start border-b-[3px] border-brand pb-1 font-display text-[clamp(2.2rem,4.5vw,3rem)] font-semibold leading-none text-ink">
                     {money(net)}
                   </span>
-                  <div className="mt-1 text-sm text-muted">net · {win.label}</div>
+                  <div className="mt-2 text-sm text-muted">net · {win.label}</div>
                 </div>
                 <div className="relative mt-4 flex flex-col items-start gap-1.5">
                   {vsPrior != null && (
@@ -444,48 +444,59 @@ function LtoFocus() {
     }
   }
 
+  // Prototype spec: navy card, gold FOOD FOCUS header, white serif item name,
+  // gold deal chip, product photo on the right.
   return (
-    <Card className="flex h-full flex-col border-brand/25 bg-gradient-to-br from-white to-brand/5 p-5">
+    <Card className="flex h-full flex-col border-navy !bg-navy p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-brand">
+        <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-[#e0b23c]">
           <Flame size={14} /> Food focus · LTO
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted">
-          <button onClick={() => setIdx((i) => i - 1)} aria-label="Previous" className="grid size-6 place-items-center rounded-md border border-black/10 bg-white">
+        <div className="flex items-center gap-1 text-xs text-white/60">
+          <button onClick={() => setIdx((i) => i - 1)} aria-label="Previous" className="grid size-6 place-items-center rounded-md border border-white/15 bg-white/10 text-white">
             <ChevronLeft size={13} />
           </button>
           {(((idx % ltos.length) + ltos.length) % ltos.length) + 1} / {ltos.length}
-          <button onClick={() => setIdx((i) => i + 1)} aria-label="Next" className="grid size-6 place-items-center rounded-md border border-black/10 bg-white">
+          <button onClick={() => setIdx((i) => i + 1)} aria-label="Next" className="grid size-6 place-items-center rounded-md border border-white/15 bg-white/10 text-white">
             <ChevronRight size={13} />
           </button>
         </div>
       </div>
-      {photo ? (
-        <img src={photo} alt={s.name} className="mb-3 h-44 w-full rounded-xl object-cover shadow-sm" />
-      ) : (
-        <div className="mb-3 grid h-44 w-full place-items-center rounded-xl bg-brand/[0.07]">
-          <div className="text-center">
-            <Flame size={26} className="mx-auto text-brand/40" />
-            <div className="mt-1 text-[11px] font-semibold text-muted">photo coming soon</div>
+      <div className="flex min-h-0 flex-1 items-stretch gap-4">
+        <div className="flex min-w-0 flex-1 flex-col">
+          {s.yields && (
+            <span className="mb-2 self-start rounded-md bg-brand px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white">
+              {s.yields.slice(0, 34)}
+            </span>
+          )}
+          <div className="font-display text-2xl font-semibold leading-tight text-white">{s.name}</div>
+          <div className="mt-1.5 text-sm text-white/70">
+            {s.ing.slice(0, 4).map(([n]) => n).join(' · ')}
+            {s.ing.length > 4 ? ' · …' : ''}
+          </div>
+          <div className="mt-auto flex flex-wrap items-center gap-3 pt-3">
+            {sold ? (
+              <span className="text-sm font-semibold text-emerald-300">
+                {sold.qty} sold {fmtWhen(sold.day)} · {money(sold.sales)}
+              </span>
+            ) : (
+              <span className="text-xs text-white/50">sales fill in from your PMIX drops</span>
+            )}
+            <Link to={`/lto?item=${encodeURIComponent(s.name)}`} className="ml-auto text-sm font-semibold text-[#e0b23c]">
+              View build →
+            </Link>
           </div>
         </div>
-      )}
-      <div className="font-display text-xl font-semibold text-ink">{s.name}</div>
-      <div className="mt-0.5 text-sm text-ink/70">
-        {s.ing.slice(0, 4).map(([n]) => n).join(' · ')}
-        {s.ing.length > 4 ? ' · …' : ''}
-      </div>
-      <div className="mt-auto flex flex-wrap items-center gap-3 pt-2">
-        {sold ? (
-          <span className="text-sm font-semibold text-up">
-            {sold.qty} sold {fmtWhen(sold.day)} · {money(sold.sales)}
-          </span>
+        {photo ? (
+          <img src={photo} alt={s.name} className="w-[42%] self-stretch rounded-xl object-cover shadow-sm" />
         ) : (
-          <span className="text-xs text-muted">sales fill in from your PMIX drops</span>
+          <div className="grid w-[42%] place-items-center self-stretch rounded-xl bg-white/[0.06]">
+            <div className="text-center">
+              <Flame size={26} className="mx-auto text-[#e0b23c]/50" />
+              <div className="mt-1 text-[11px] font-semibold text-white/50">photo coming soon</div>
+            </div>
+          </div>
         )}
-        <Link to={`/lto?item=${encodeURIComponent(s.name)}`} className="ml-auto text-sm font-semibold text-brand">
-          View build →
-        </Link>
       </div>
     </Card>
   )
@@ -555,23 +566,22 @@ function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
           your PMIX drops.
         </Card>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="flex flex-wrap gap-2.5">
           {tracked.map((name) => {
             const hit = find(name)
             return (
-              <Card key={name} className="p-3">
-                <div className="truncate text-xs font-semibold text-ink">{name}</div>
-                {hit ? (
-                  <>
-                    <div className="mt-1 font-display text-xl font-semibold text-brand">{hit.qty}</div>
-                    <div className="text-[10px] text-muted">
-                      {money(hit.sales)}
-                      {agg.net > 0 ? ` · ${((hit.sales / agg.net) * 100).toFixed(1)}% mix` : ''}
-                    </div>
-                  </>
-                ) : (
-                  <div className="mt-1 text-sm text-muted">— · not in PMIX</div>
-                )}
+              <Card key={name} className="flex items-center gap-2.5 px-3.5 py-2">
+                <span className="font-display text-2xl font-semibold leading-none text-brand">
+                  {hit ? hit.qty : '—'}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[13px] font-bold leading-tight text-ink">{name}</span>
+                  <span className="block text-[11px] leading-tight text-muted">
+                    {hit
+                      ? `${money(hit.sales)}${agg.net > 0 ? ` · ${((hit.sales / agg.net) * 100).toFixed(1)}%` : ''}`
+                      : 'not in PMIX'}
+                  </span>
+                </span>
               </Card>
             )
           })}
@@ -598,18 +608,28 @@ function KpiTile({
   className?: string
   to?: string
 }) {
-  const card = (
+  // Compact = the prototype's cream catering chip: gold number left, bold
+  // label + tiny sub beside it, warm outline.
+  const card = compact ? (
     <Card
-      className={`h-full ${compact ? 'flex flex-col justify-center p-3.5' : 'p-4'} ${
-        to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/30' : ''
+      className={`flex h-full items-center gap-3 border-brand/40 !bg-[#fbf3df] px-3.5 py-2.5 ${
+        to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/40' : ''
       } ${className}`}
     >
-      <div className={`grid place-items-center rounded-xl bg-brand/10 text-brand ${compact ? 'mb-1.5 size-7' : 'mb-2 size-9'}`}>
-        {icon}
-      </div>
-      <div className={`font-display font-semibold text-brand ${compact ? 'text-xl' : 'text-2xl'}`}>{value}</div>
-      <div className={`mt-0.5 font-semibold uppercase tracking-wide text-muted ${compact ? 'text-[10px]' : 'text-xs'}`}>{label}</div>
-      {sub && <div className={`text-muted ${compact ? 'text-[11px]' : 'text-xs'}`}>{sub}</div>}
+      <span className="font-display text-2xl font-semibold leading-none text-brand">{value}</span>
+      <span className="min-w-0">
+        <span className="block text-[13px] font-bold leading-tight text-ink">{label}</span>
+        {sub && <span className="block text-[11px] leading-tight text-muted">{sub}</span>}
+      </span>
+    </Card>
+  ) : (
+    <Card
+      className={`h-full p-4 ${to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/30' : ''} ${className}`}
+    >
+      <div className="mb-2 grid size-9 place-items-center rounded-xl bg-brand/10 text-brand">{icon}</div>
+      <div className="font-display text-2xl font-semibold text-brand">{value}</div>
+      <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
+      {sub && <div className="text-xs text-muted">{sub}</div>}
     </Card>
   )
   return to ? (
