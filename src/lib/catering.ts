@@ -127,10 +127,20 @@ export function parseCatering(text: string, fileName = ''): Omit<Booking, 'id'> 
   const orderNo =
     text.match(/order\s*(?:#|no\.?|number)?\s*:?\s*([A-Z0-9][A-Z0-9-]{2,}\d[A-Z0-9-]*|[A-Z0-9-]*\d[A-Z0-9-]{2,})/i) ||
     text.match(/#\s*((?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{3,})/)
-  const company =
+  let company =
     labeled?.[1]?.trim() ||
-    lines.find((l) => /\b(llc|inc|school|church|corp|group|team|office|catering)\b/i.test(l))?.slice(0, 50) ||
+    lines.find((l) => /\b(llc|inc|school|church|corp|group|team|office|catering|center|centre|clinic|care|medical|dental|hospital|bank|university|academy)\b/i.test(l))?.slice(0, 50) ||
     ''
+  // OCR merges the ticket's columns, so junk can trail the name ("… of
+  // Mississippi as sate ap"). Names capitalize their words — cut at the
+  // first run of two lowercase tokens.
+  const toks = company.split(/\s+/)
+  for (let i = 1; i < toks.length; i++) {
+    if (/^[a-z]/.test(toks[i - 1]) && /^[a-z]/.test(toks[i])) {
+      company = toks.slice(0, i - 1).join(' ')
+      break
+    }
+  }
   const event = /ezcater/i.test(text)
     ? `ezCater${orderNo ? ` #${orderNo[1]}` : ''}${company ? ` · ${company}` : ''}`
     : company || fileName.replace(/\.[^.]+$/, '') || 'Catering order'

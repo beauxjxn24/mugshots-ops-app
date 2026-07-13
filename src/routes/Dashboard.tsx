@@ -460,8 +460,15 @@ function LtoFocus() {
           </button>
         </div>
       </div>
-      {photo && (
+      {photo ? (
         <img src={photo} alt={s.name} className="mb-3 h-44 w-full rounded-xl object-cover shadow-sm" />
+      ) : (
+        <div className="mb-3 grid h-44 w-full place-items-center rounded-xl bg-brand/[0.07]">
+          <div className="text-center">
+            <Flame size={26} className="mx-auto text-brand/40" />
+            <div className="mt-1 text-[11px] font-semibold text-muted">photo coming soon</div>
+          </div>
+        </div>
       )}
       <div className="font-display text-xl font-semibold text-ink">{s.name}</div>
       <div className="mt-0.5 text-sm text-ink/70">

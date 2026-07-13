@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "nights": [
   {
    "date": "2026-07-11",
@@ -748,7 +748,7 @@
      "sales": 12.0
     },
     {
-     "name": "\u2018Sippers Cherry Limeade",
+     "name": "‘Sippers Cherry Limeade",
      "category": "Liquor",
      "qty": 1,
      "sales": 9.5
@@ -884,13 +884,22 @@
  },
  "bookings": [
   {
-   "event": "ezCater #2CY-XE4 \u00b7 Fresenius Kidney Care - North Jackson",
+   "event": "ezCater #2CY-XE4 · Fresenius Kidney Care - North Jackson",
    "date": "2026-08-11",
    "time": "11:30",
    "guests": 15,
-   "notes": "15x Pato Boxed Lunch, 2x Gallon Sweet Tea, 1x Gallon Lemonade + tableware \u00b7 deliver to 5722 Interstate 55 N Frontage Rd, ask for Nicole Wedgeworth (601-953-9780) \u00b7 setup required \u00b7 window 11:15-11:30 AM",
+   "notes": "15x Pato Boxed Lunch, 2x Gallon Sweet Tea, 1x Gallon Lemonade + tableware · deliver to 5722 Interstate 55 N Frontage Rd, ask for Nicole Wedgeworth (601-953-9780) · setup required · window 11:15-11:30 AM",
    "source": "ezCater",
    "orderNo": "2CY-XE4"
+  },
+  {
+   "event": "ezCater #XP2-0C2 · DECM Diabetes Endocrine Center of Mississippi",
+   "date": "2026-07-14",
+   "time": "11:30",
+   "guests": 40,
+   "notes": "4x Savell Platter ($83.49 ea) + tableware · deliver to 971 Lakeland Dr Suite 450, Jackson · ask for David Bartley (601-826-0058) · window 11:15-11:30 AM",
+   "source": "ezCater",
+   "orderNo": "XP2-0C2"
   }
  ]
 }

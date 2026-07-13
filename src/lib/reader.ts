@@ -163,9 +163,13 @@ export async function readFile(
       // gets rendered to images and read with OCR instead. Slower (~30s)
       // but it actually reads the numbers.
       const digits = (text.match(/\d/g) || []).length
-      if (text.length < 8 || digits < 10) {
+      // NUL characters in the layer ARE the hidden digits — some tickets
+      // (ezCater) blank every digit to \u0000 while keeping enough stray
+      // real digits elsewhere to sneak past a plain digit count.
+      const hiddenDigits = (text.match(/\u0000/g) || []).length
+      if (text.length < 8 || digits < 10 || hiddenDigits > 3) {
         note =
-          digits > 0
+          digits > 0 || hiddenDigits > 3
             ? 'This PDF hides its numbers from text extraction — read it with OCR instead.'
             : 'Scanned PDF — read with OCR.'
         const ocr = await ocrPdfPages(file, onProgress).catch((err) => {
