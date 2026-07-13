@@ -8,7 +8,9 @@ import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
 import type { PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, CalendarClock, Banknote, PieChart, Bell, Plus, Moon, X } from 'lucide-react'
+import { PartyPopper, CalendarClock, Banknote, PieChart, Bell, Plus, Moon, X, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
+import { SPECS } from '../lib/specs'
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
@@ -77,9 +79,14 @@ export function Dashboard() {
 
   const wtd = sorted.slice(-7).reduce((s, n) => s + n.netSales, 0)
 
+  const pw = periodWeek(t)
+
   return (
     <>
-      <PageHeader title="Dashboard" subtitle={`${concept} · ${location} · ${todayLong()}`} />
+      <PageHeader
+        title="Dashboard"
+        subtitle={`${concept} · ${location} · ${todayLong()} · Period ${pw.period}, Week ${pw.week}`}
+      />
       <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Catering alerts */}
         {(todays.length > 0 || (next && daysUntil(next.date) <= 7)) && (
@@ -133,7 +140,8 @@ export function Dashboard() {
                 <span className="text-sm text-muted">net · {win.label}</span>
                 {vsPrior != null && (
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${vsPrior >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
-                    {vsPrior >= 0 ? '▲' : '▼'} {Math.abs(vsPrior).toFixed(1)}% vs prior
+                    {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({net - priorNet >= 0 ? '+' : '−'}
+                    {money(Math.abs(net - priorNet))}) vs prior · goal +{targets.growthPct}%
                   </span>
                 )}
                 {laborPct != null && (
@@ -203,6 +211,8 @@ export function Dashboard() {
 
         <TrackedBand scope={scope} anchor={latest?.date ?? t} />
 
+        <LtoFocus />
+
         {/* KPI tiles */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <KpiTile
@@ -242,52 +252,110 @@ export function Dashboard() {
  * year of history builds up.
  */
 function WeekBars({ nights }: { nights: Night[] }) {
-  const last7 = nights.slice(-7)
-  if (last7.length === 0) return null
+  if (nights.length === 0) return null
   const byDate = new Map(nights.map((n) => [n.date, n]))
-  const max = Math.max(...last7.map((n) => n.netSales), 1)
   const H = 168 // px, plot height
+  const t = today()
+
+  // Current-week mode (prototype): Mon–Sun of this week — real bars where
+  // nights exist, dashed ~forecast bars for the days still ahead. If this week
+  // has no data yet, fall back to the last 7 logged nights.
+  const monday = mondayOf(t)
+  const weekDates = Array.from({ length: 7 }, (_, i) => shiftDays(monday, i))
+  const weekActuals = weekDates.filter((d) => byDate.has(d))
+  const currentWeekMode = weekActuals.length > 0
+  const avg = dowAverages(nights)
+
+  type Col = { date: string; value: number; kind: 'actual' | 'forecast' | 'none'; delta: number | null; deltaAbs: number | null }
   let usedLY = false
   let usedLW = false
+  const mkCol = (date: string): Col => {
+    const n = byDate.get(date)
+    if (n) {
+      const ly = byDate.get(shiftDays(date, -364))
+      const lw = byDate.get(shiftDays(date, -7))
+      const base = ly ?? lw
+      if (ly) usedLY = true
+      else if (lw) usedLW = true
+      const delta = base && base.netSales > 0 ? ((n.netSales - base.netSales) / base.netSales) * 100 : null
+      return { date, value: n.netSales, kind: 'actual', delta, deltaAbs: base ? n.netSales - base.netSales : null }
+    }
+    if (date >= t) {
+      const proj = projectDay(avg, date)
+      return { date, value: proj, kind: proj > 0 ? 'forecast' : 'none', delta: null, deltaAbs: null }
+    }
+    return { date, value: 0, kind: 'none', delta: null, deltaAbs: null }
+  }
 
-  const cols = last7.map((n) => {
-    // Same day last year = 364 days back (same weekday); else same day last week.
-    const ly = byDate.get(shiftDays(n.date, -364))
-    const lw = byDate.get(shiftDays(n.date, -7))
-    const base = ly ?? lw
-    if (ly) usedLY = true
-    else if (lw) usedLW = true
-    const delta = base && base.netSales > 0 ? ((n.netSales - base.netSales) / base.netSales) * 100 : null
-    return { ...n, delta }
-  })
+  const cols: Col[] = currentWeekMode
+    ? weekDates.map(mkCol)
+    : nights.slice(-7).map((n) => mkCol(n.date))
+
+  const max = Math.max(...cols.map((c) => c.value), 1)
+  const wtd = cols.filter((c) => c.kind === 'actual').reduce((s, c) => s + c.value, 0)
+  const pacing = cols.reduce((s, c) => s + (c.kind === 'none' ? 0 : c.value), 0)
+  const lwTotal = weekDates.reduce((s, d) => s + (byDate.get(shiftDays(d, -7))?.netSales ?? 0), 0)
 
   return (
     <div>
+      {currentWeekMode && (
+        <div className="mb-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted">
+          <span>
+            WTD <b className="font-mono text-ink">{money(wtd)}</b>
+          </span>
+          {pacing > wtd && (
+            <span>
+              pacing <b className="font-mono text-ink">${(pacing / 1000).toFixed(1)}k</b>
+            </span>
+          )}
+          {lwTotal > 0 && (
+            <span>
+              LW <b className="font-mono">${(lwTotal / 1000).toFixed(1)}k</b>
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex items-end justify-around gap-2" style={{ height: H + 22 }}>
-        {cols.map((n) => {
-          const h = Math.max(6, (n.netSales / max) * H)
+        {cols.map((c) => {
+          const h = Math.max(6, (c.value / max) * H)
           return (
-            <div key={n.date} className="flex flex-1 flex-col items-center justify-end">
-              <div className="mb-1 font-mono text-[10px] font-semibold text-ink/70">
-                ${(n.netSales / 1000).toFixed(1)}k
-              </div>
-              <div
-                className="w-6 rounded-t-[4px] bg-brand sm:w-7"
-                style={{ height: h }}
-                title={`${n.date} · ${money(n.netSales)}`}
-              />
+            <div key={c.date} className="flex flex-1 flex-col items-center justify-end">
+              {c.kind === 'none' ? (
+                <div className="mb-1 text-[9px] text-muted/60">no data</div>
+              ) : (
+                <div className={`mb-1 font-mono text-[10px] font-semibold ${c.kind === 'forecast' ? 'text-muted' : 'text-ink/70'}`}>
+                  {c.kind === 'forecast' ? '~' : ''}${(c.value / 1000).toFixed(1)}k
+                </div>
+              )}
+              {c.kind === 'actual' && (
+                <div className="w-6 rounded-t-[4px] bg-brand sm:w-7" style={{ height: h }} title={`${c.date} · ${money(c.value)}`} />
+              )}
+              {c.kind === 'forecast' && (
+                <div
+                  className="w-6 rounded-t-[4px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-7"
+                  style={{ height: h }}
+                  title={`${c.date} · forecast ${money(c.value)}`}
+                />
+              )}
+              {c.kind === 'none' && <div className="w-6 border-b-2 border-black/10 sm:w-7" />}
             </div>
           )
         })}
       </div>
       <div className="mt-1.5 flex justify-around gap-2 border-t border-black/5 pt-1.5">
-        {cols.map((n) => (
-          <div key={n.date} className="flex-1 text-center">
-            <div className="text-[9px] font-bold text-muted">{weekday(n.date)}</div>
-            <div className="text-[8.5px] text-muted/70">{n.date.slice(5).replace('-', '/')}</div>
-            {n.delta != null ? (
-              <div className={`text-[10px] font-bold ${n.delta >= 0 ? 'text-up' : 'text-down'}`}>
-                {n.delta >= 0 ? '+' : '−'}{Math.abs(n.delta).toFixed(0)}%
+        {cols.map((c) => (
+          <div key={c.date} className="flex-1 text-center">
+            <div className="text-[9px] font-bold text-muted">{weekday(c.date)}</div>
+            <div className="text-[8.5px] text-muted/70">{c.date.slice(5).replace('-', '/')}</div>
+            {c.kind === 'forecast' ? (
+              <div className="text-[9px] font-semibold text-muted">forecast</div>
+            ) : c.delta != null ? (
+              <div className={`text-[10px] font-bold ${c.delta >= 0 ? 'text-up' : 'text-down'}`}>
+                {c.delta >= 0 ? '▲ +' : '▼ −'}
+                {Math.abs(c.delta).toFixed(0)}%
+                {c.deltaAbs != null && (
+                  <span className="font-semibold"> · {c.deltaAbs >= 0 ? '+' : '−'}${(Math.abs(c.deltaAbs) / 1000).toFixed(1)}k</span>
+                )}
               </div>
             ) : (
               <div className="text-[10px] text-muted">—</div>
@@ -297,12 +365,68 @@ function WeekBars({ nights }: { nights: Night[] }) {
       </div>
       <p className="mt-2 text-center text-[10px] text-muted">
         {usedLY
-          ? '+/- vs the same day last year'
+          ? '▲▼ vs the same day last year'
           : usedLW
-            ? '+/- vs the same day last week — switches to last year automatically once a year of history builds'
+            ? '▲▼ vs the same day last week — switches to last year once that history exists (drop old Toast sales summaries on Imports to backfill)'
             : 'Comparisons appear once there are matching prior days'}
       </p>
     </div>
+  )
+}
+
+/** FOOD FOCUS — LTO carousel card (prototype spec): cycle the live LTOs. */
+function LtoFocus() {
+  const [idx, setIdx] = useState(0)
+  const [days] = usePersistentState<PmixDays>('pmix:days', {})
+  const ltos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
+  if (ltos.length === 0) return null
+  const s = ltos[((idx % ltos.length) + ltos.length) % ltos.length]
+
+  // Latest PMIX day that mentions this item, if any — honest otherwise.
+  const keys = Object.keys(days).sort().reverse()
+  let sold: { qty: number; sales: number; day: string } | null = null
+  for (const k of keys) {
+    const hit = days[k].items.find((i) => i.name.toLowerCase().includes(s.name.toLowerCase().slice(0, 12)))
+    if (hit) {
+      sold = { qty: hit.qty, sales: hit.sales, day: k }
+      break
+    }
+  }
+
+  return (
+    <Card className="border-brand/25 bg-gradient-to-br from-white to-brand/5 p-5">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-brand">
+          <Flame size={14} /> Food focus · LTO
+        </div>
+        <div className="flex items-center gap-1 text-xs text-muted">
+          <button onClick={() => setIdx((i) => i - 1)} aria-label="Previous" className="grid size-6 place-items-center rounded-md border border-black/10 bg-white">
+            <ChevronLeft size={13} />
+          </button>
+          {(((idx % ltos.length) + ltos.length) % ltos.length) + 1} / {ltos.length}
+          <button onClick={() => setIdx((i) => i + 1)} aria-label="Next" className="grid size-6 place-items-center rounded-md border border-black/10 bg-white">
+            <ChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+      <div className="font-display text-xl font-semibold text-ink">{s.name}</div>
+      <div className="mt-0.5 truncate text-sm text-ink/70">
+        {s.ing.slice(0, 4).map(([n]) => n).join(' · ')}
+        {s.ing.length > 4 ? ' · …' : ''}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        {sold ? (
+          <span className="text-sm font-semibold text-up">
+            {sold.qty} sold {fmtWhen(sold.day)} · {money(sold.sales)}
+          </span>
+        ) : (
+          <span className="text-xs text-muted">sales fill in from your PMIX drops</span>
+        )}
+        <Link to="/lto" className="ml-auto text-sm font-semibold text-brand">
+          View build →
+        </Link>
+      </div>
+    </Card>
   )
 }
 
@@ -440,6 +564,12 @@ function daysUntil(iso: string): number {
   const then = new Date(y, m - 1, d).getTime()
   const [ty, tm, td] = today().split('-').map(Number)
   return Math.round((then - new Date(ty, tm - 1, td).getTime()) / 86400000)
+}
+function mondayOf(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 function shiftDays(iso: string, delta: number): string {
   const [y, m, d] = iso.split('-').map(Number)

@@ -27,7 +27,26 @@ export function Imports() {
   const cameraRef = useRef<HTMLInputElement>(null)
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
-    const list = Array.from(files)
+    // Toast exports arrive zipped — expand them and feed every file inside
+    // through the same reader, so a dropped .zip "just works".
+    const list: File[] = []
+    for (const file of Array.from(files)) {
+      if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
+        try {
+          const { unzipSync } = await import('fflate')
+          const entries = unzipSync(new Uint8Array(await file.arrayBuffer()))
+          for (const [path, bytes] of Object.entries(entries)) {
+            const name = path.split('/').pop() ?? path
+            if (!name || path.endsWith('/') || path.includes('__MACOSX') || name.startsWith('.')) continue
+            list.push(new File([bytes.slice().buffer as ArrayBuffer], name))
+          }
+          continue
+        } catch {
+          /* fall through — the reader reports it honestly */
+        }
+      }
+      list.push(file)
+    }
     for (const file of list) {
       const id = `j${++seq}`
       setJobs((j) => [{ id, fileName: file.name, status: 'reading', progress: 0 }, ...j])
@@ -126,7 +145,7 @@ export function Imports() {
             ref={inputRef}
             type="file"
             multiple
-            accept="application/pdf,image/*,.csv,.txt"
+            accept="application/pdf,image/*,.csv,.txt,.zip,.xls,.xlsx"
             className="hidden"
             onChange={(e) => e.target.files && handleFiles(e.target.files)}
           />
