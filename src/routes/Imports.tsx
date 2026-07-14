@@ -411,7 +411,8 @@ function ImportHistory() {
  * re-maps, or skips before anything is written. Nothing applies automatically.
  */
 interface Row {
-  description: string
+  description: string // editable — correct what the reader thought it said
+  raw: string // exactly what was read; corrections teach the reader (saved as alias)
   qty: number
   price?: number // case cost from the invoice line — carried into the catalog
   code?: string // vendor item code split off the name
@@ -430,6 +431,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
   const [rows, setRows] = useState<Row[]>(() =>
     proposeReceipts(lineItems).map((p) => ({
       description: p.description,
+      raw: p.description,
       qty: p.qty,
       price: p.price,
       code: p.code,
@@ -461,16 +463,20 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
     let repriced = 0
     for (const r of matchedRows) {
       const itemId = r.target.split('||')[1]
+      // Learn BOTH spellings: the corrected name and exactly what was read —
+      // next invoice, the raw reading auto-matches without a correction.
       addAlias(itemId, r.description)
+      addAlias(itemId, r.raw)
       if (r.price && r.price > 0) {
         setItemCost(itemId, r.price, vendor)
         repriced++
       }
     }
     let added = 0
-    rows.filter((r) => r.target === 'NEW').forEach((r) => {
+    rows.filter((r) => r.target === 'NEW' && r.description.trim()).forEach((r) => {
       // registerItem de-dupes by name AND alias — the catalog never doubles up.
-      const ci = registerItem({ name: r.description, unit: 'cs', vendor, cost: r.price, code: r.code, size: r.size })
+      const ci = registerItem({ name: r.description.trim(), unit: 'cs', vendor, cost: r.price, code: r.code, size: r.size })
+      if (r.raw !== r.description) addAlias(ci.id, r.raw)
       setOnGuide(ci.id, true)
       setParEntry(ci.id, { onHand: Math.max(0, r.qty) })
       added++
@@ -506,6 +512,9 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
         <span className="text-xs font-bold uppercase tracking-wide text-muted">
           Received · {rows.length} lines{inv.date ? ` · ${inv.date}` : ''}
         </span>
+        <span className="text-[11px] text-muted">
+          fix any name we misread — the reader remembers your correction
+        </span>
         <label className="ml-auto flex items-center gap-1.5 text-xs text-ink/70">
           Vendor
           <select
@@ -529,8 +538,20 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       {rows.map((r, i) => (
         <div key={i} className="grid grid-cols-[minmax(0,2fr)_72px_52px_72px_minmax(110px,1fr)] items-center gap-1.5 border-b border-black/5 py-1.5 last:border-0">
           <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-ink">{r.description}</span>
-            {r.code && <span className="block font-mono text-[9px] text-muted">{r.code}</span>}
+            <input
+              value={r.description}
+              onChange={(e) =>
+                setRows((rs) => rs.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))
+              }
+              title="Correct the name if we misread it — the correction is remembered"
+              className={`w-full rounded-lg border bg-white px-2 py-1 text-sm font-semibold text-ink outline-none focus:border-brand ${
+                r.description !== r.raw ? 'border-brand/50' : 'border-black/10'
+              }`}
+            />
+            <span className="block truncate font-mono text-[9px] text-muted">
+              {r.code && <>{r.code} · </>}
+              {r.description !== r.raw && <>read as “{r.raw}”</>}
+            </span>
           </span>
           <span className="truncate text-xs text-muted">{r.size ?? '—'}</span>
           <input

@@ -155,6 +155,25 @@ export function setOnGuide(id: string, on: boolean): void {
 }
 
 /** Teach the catalog: this invoice description IS that item. Sticks forever. */
+/**
+ * Fix an item's spelling anywhere it shows. The old (often OCR-garbled) name
+ * is kept as an alias, so future invoice lines that read the same way still
+ * match this item — renaming teaches the reader.
+ */
+export function renameItem(id: string, newName: string): void {
+  const items = getCatalog()
+  const it = items.find((x) => x.id === id)
+  const name = newName.trim()
+  if (!it || !name || it.name === name) return
+  const old = it.name
+  it.name = name
+  const oldKey = normKey(old)
+  if (oldKey && oldKey !== normKey(name) && !(it.aliases ?? []).some((a) => normKey(a) === oldKey)) {
+    it.aliases = [...(it.aliases ?? []), old].slice(-12)
+  }
+  setCatalog(items)
+}
+
 export function addAlias(id: string, alias: string): void {
   const items = getCatalog()
   const it = items.find((x) => x.id === id)

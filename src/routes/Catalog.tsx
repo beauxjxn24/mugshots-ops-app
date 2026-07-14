@@ -9,9 +9,11 @@ import {
   getFlags,
   setOnGuide,
   registerItem,
+  renameItem,
   SHELVES,
   type CatalogItem,
 } from '../lib/catalog'
+import { Pencil } from 'lucide-react'
 
 const money = (n: number) => `$${n.toFixed(2)}`
 
@@ -34,6 +36,14 @@ export function Catalog() {
   const [cat, setCat] = useState('All')
   const [guide, setGuide] = useState<'all' | 'on' | 'off'>('all')
   const [form, setForm] = useState({ name: '', unit: 'cs', category: 'Food', vendor: '' })
+  // Inline spelling fix — the old name stays as an alias so imports still match.
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const commitRename = () => {
+    if (editingId) renameItem(editingId, editName)
+    setEditingId(null)
+    refresh()
+  }
 
   const add = () => {
     if (!form.name.trim()) return
@@ -142,7 +152,33 @@ export function Catalog() {
               return (
                 <div key={it.id} className="flex items-center gap-3 border-b border-black/5 p-3 last:border-0">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-ink">{it.name}</div>
+                    {editingId === it.id ? (
+                      <input
+                        autoFocus
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitRename()
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        className="w-full rounded-lg border border-brand/50 bg-white px-2 py-1 text-sm font-medium text-ink outline-none"
+                      />
+                    ) : (
+                      <div className="group/name flex items-center gap-1.5">
+                        <div className="truncate font-medium text-ink">{it.name}</div>
+                        <button
+                          onClick={() => {
+                            setEditingId(it.id)
+                            setEditName(it.name)
+                          }}
+                          title="Fix the spelling — imports keep matching the old name"
+                          className="shrink-0 text-muted/50 hover:text-brand-600"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                      </div>
+                    )}
                     <div className="text-xs text-muted">
                       {it.code && <span className="font-mono">{it.code} · </span>}
                       {it.category} · {it.unit}

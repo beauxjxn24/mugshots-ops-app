@@ -32,6 +32,7 @@ import { Users } from './routes/Users'
 import { LineBuilds } from './routes/LineBuilds'
 import { Printables } from './routes/Printables'
 import { PinDialog } from './components/PinDialog'
+import { Mugsy } from './components/Mugsy'
 import { Placeholder } from './routes/Placeholder'
 
 const router = createHashRouter([
@@ -86,6 +87,7 @@ export function App() {
       <RouterProvider router={router} />
       <ConfirmDialog />
       <PinDialog />
+      <Mugsy />
     </>
   )
 }

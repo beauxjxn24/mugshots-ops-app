@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Printer, Check } from 'lucide-react'
+import { Printer, Check, Pencil } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { getOrdering, suggested, addOrderItem, setParEntry, vendors } from '../lib/ordering'
-import { setOnGuide, getPriceLog, SHELVES } from '../lib/catalog'
+import { setOnGuide, getPriceLog, renameItem, SHELVES } from '../lib/catalog'
 
 const money2 = (n: number) => `$${n.toFixed(2)}`
 
@@ -32,6 +32,14 @@ export function Ordering() {
   const [view, setView] = useState<'guide' | 'sheet'>('guide')
   const [copied, setCopied] = useState(false)
   const [form, setForm] = useState({ name: '', vendor: 'US Foods', category: 'Food' })
+  // Inline spelling fix (garbled OCR names) — old name stays as an alias.
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const commitRename = () => {
+    if (editingId) renameItem(editingId, editName)
+    setEditingId(null)
+    refresh()
+  }
 
   const items = all.filter((it) => shelf === 'All' || it.category === shelf)
   const needed = items.filter((x) => suggested(x) > 0)
@@ -214,7 +222,33 @@ export function Ordering() {
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="truncate font-medium text-ink">{it.name}</div>
+                  {editingId === it.id ? (
+                    <input
+                      autoFocus
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onBlur={commitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename()
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      className="w-full rounded-lg border border-brand/50 bg-white px-2 py-1 text-sm font-medium text-ink outline-none"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <div className="truncate font-medium text-ink">{it.name}</div>
+                      <button
+                        onClick={() => {
+                          setEditingId(it.id)
+                          setEditName(it.name)
+                        }}
+                        title="Fix the spelling — imports keep matching the old name"
+                        className="shrink-0 text-muted/40 opacity-0 transition-opacity hover:text-brand-600 group-hover:opacity-100 print:hidden"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-[10px] text-muted">
                     <span>
                       {it.vendor} · {it.category}
