@@ -145,7 +145,46 @@ export function Prep() {
           </div>
         }
       />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+      {/* Print-only prep sheet — one dense page: item · spec · today's par ·
+          write-in boxes for on-hand and prep. The screen UI never prints. */}
+      <div className="prep-print hidden">
+        <div className="mb-0.5 flex items-baseline justify-between">
+          <span className="text-[13px] font-bold">Prep list · {fmtLong(t)}</span>
+          <span className="text-[9px]">prep needed = today's par − on hand · Mugshots Flowood</span>
+        </div>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="border border-black/40 px-1 py-0 text-left text-[7.5px] uppercase">Prep item</th>
+              <th className="border border-black/40 px-1 py-0 text-left text-[7.5px] uppercase">Batch / pan</th>
+              <th className="w-12 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">Par</th>
+              <th className="w-14 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">On hand</th>
+              <th className="w-16 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">Prep</th>
+              <th className="w-8 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">✓</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((it) => (
+              <tr key={it.name}>
+                <td className="border border-black/40 px-1 py-0 text-[8.5px] font-semibold leading-[13px]">{it.name}</td>
+                <td className="border border-black/40 px-1 py-0 text-[7.5px] leading-[13px]">{it.spec || it.unit}</td>
+                <td className="border border-black/40 px-1 py-0 text-center font-mono text-[8.5px] leading-[13px]">
+                  {fmtQty(it.pars[di] ?? 0)} {it.unit}
+                </td>
+                <td className="border border-black/40 px-1 py-0 text-center font-mono text-[8.5px] leading-[13px]">
+                  {onHand[it.name] != null ? fmtQty(onHand[it.name]) : ''}
+                </td>
+                <td className="border border-black/40 px-1 py-0 text-center font-mono text-[8.5px] leading-[13px]">
+                  {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : ''}
+                </td>
+                <td className="border border-black/40 px-1 py-0" />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden">
         {/* Navy live board */}
         <Card className="border-navy !bg-navy p-5 text-white">
           <div className="flex flex-wrap gap-x-8 gap-y-4">
