@@ -8,6 +8,8 @@ export interface Invoice {
   number: string
   total: number
   paid: boolean
+  /** IndexedDB id of the imported PDF/photo this invoice came from. */
+  docId?: string
 }
 
 function key(): string {

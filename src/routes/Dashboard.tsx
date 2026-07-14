@@ -8,7 +8,7 @@ import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
 import type { PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, CalendarClock, Bell, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
@@ -112,45 +112,33 @@ export function Dashboard() {
         subtitle={`${concept} · ${location} · ${todayLong()} · Period ${pw.period}, Week ${pw.week}`}
       />
       <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
-        {/* Catering alerts */}
-        {(todays.length > 0 || (next && daysUntil(next.date) <= 7)) && (
-          <Link
-            to="/catering"
-            className={`cater-alert flex items-center gap-3 rounded-2xl border border-brand/30 bg-brand/5 p-4 transition-colors hover:bg-brand/10 ${todays.length > 0 ? 'urgent' : ''}`}
-          >
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-white">
-              <span className="bell-ring">
-                <Bell size={18} />
-              </span>
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-ink">
-                {todays.length > 0
-                  ? `${todays.length} catering${todays.length === 1 ? '' : 's'} today`
-                  : `Upcoming catering — ${fmtWhen(next!.date)}`}
-              </div>
-              <div className="truncate text-xs text-muted">
-                {(todays[0] ?? next)?.event}
-                {(todays[0] ?? next)?.guests ? ` · ${(todays[0] ?? next)!.guests} guests` : ''}
-                {(todays[0] ?? next)?.time ? ` · ${fmtTime((todays[0] ?? next)!.time)}` : ''}
-              </div>
-            </div>
-            <span className="text-sm font-semibold text-brand">View →</span>
-          </Link>
-        )}
-
         {hasReal ? (
           <>
+            {/* Weekly chart across the top — trimmed height (owner spec) */}
+            <Card className="drift [--i:0] p-5">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-wide text-muted">
+                  Recent nights · net sales
+                </div>
+                <div className="text-xs text-muted">
+                  Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
+                </div>
+              </div>
+              <WeekBars nights={sorted} h={108} />
+            </Card>
+
             <TrackedBand scope={scope} anchor={latest?.date ?? t} />
 
             {/* Gold rule — the prototype's section divider */}
             <div className="h-[3px] rounded-full bg-gradient-to-r from-brand via-brand/40 to-transparent" />
 
-            {/* Catering tiles (far left, by the nav) + compact hero + weekly chart */}
-            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(150px,1fr)_minmax(0,2.4fr)_minmax(0,3.6fr)]">
-              <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
+            {/* Catering tiles (far left, by the nav) + hero — the tiles
+                themselves blink & shake when a catering is coming up */}
+            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,3.2fr)]">
+              <div className="drift [--i:1] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
                 <KpiTile
                   compact
+                  className={todays.length > 0 ? 'tile-alert urgent' : ''}
                   to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
                   icon={<PartyPopper size={15} />}
                   value={String(todays.length)}
@@ -159,6 +147,7 @@ export function Dashboard() {
                 />
                 <KpiTile
                   compact
+                  className={next && todays.length === 0 && daysUntil(next.date) <= 7 ? 'tile-alert' : ''}
                   to={next ? `/catering?booking=${next.id}` : '/catering'}
                   icon={<CalendarClock size={15} />}
                   value={next ? String(next.guests || '—') : '—'}
@@ -166,7 +155,7 @@ export function Dashboard() {
                   sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
                 />
               </div>
-              <Card className="drift [--i:1] relative flex flex-col overflow-hidden p-5">
+              <Card className="drift [--i:2] relative flex flex-col overflow-hidden p-5">
                 <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-brand/10 blur-2xl" />
                 <div className="relative mb-4 flex">
                   <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
@@ -202,19 +191,6 @@ export function Dashboard() {
                     </span>
                   )}
                 </div>
-              </Card>
-
-              {/* Weekly column chart — slim pillars, ▲▼ vs same day last year beneath */}
-              <Card className="drift [--i:2] p-5">
-                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                  <div className="text-xs font-bold uppercase tracking-wide text-muted">
-                    Recent nights · net sales
-                  </div>
-                  <div className="text-xs text-muted">
-                    Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
-                  </div>
-                </div>
-                <WeekBars nights={sorted} />
               </Card>
             </div>
 
@@ -304,10 +280,10 @@ export function Dashboard() {
  * SAME DAY LAST YEAR — falling back to the same weekday last week until a
  * year of history builds up.
  */
-function WeekBars({ nights }: { nights: Night[] }) {
+function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
   if (nights.length === 0) return null
   const byDate = new Map(nights.map((n) => [n.date, n]))
-  const H = 168 // px, plot height
+  const H = h // px, plot height
   const t = today()
 
   // Current-week mode (prototype): Mon–Sun of this week — real bars where

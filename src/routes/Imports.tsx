@@ -10,6 +10,7 @@ import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '
 import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { logImport, useImportLog } from '../lib/importlog'
+import { saveDoc } from '../lib/docs'
 import { confirmDelete } from '../lib/confirm'
 import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
 
@@ -18,6 +19,8 @@ interface Job extends Partial<ReadResult> {
   fileName: string
   status: 'reading' | 'done' | 'error'
   progress: number
+  /** IndexedDB id of the original document — invoices link back to it. */
+  docId?: string
 }
 
 const money2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -65,7 +68,9 @@ export function Imports() {
     }
     for (const file of list) {
       const id = `j${++seq}`
-      setJobs((j) => [{ id, fileName: file.name, status: 'reading', progress: 0 }, ...j])
+      const docId = `doc${Date.now().toString(36)}${seq}`
+      void saveDoc(docId, file) // keep the original — invoices reopen it
+      setJobs((j) => [{ id, fileName: file.name, status: 'reading', progress: 0, docId }, ...j])
       const res = await readFile(file, (p) =>
         setJobs((j) => j.map((x) => (x.id === id ? { ...x, progress: p } : x))),
       )
@@ -277,7 +282,7 @@ export function Imports() {
             {/* Invoices/deliveries (lines with quantities) → one-tap receiving.
                 Price sheets (prices but no quantities) → price update only. */}
             {job.lineItems && job.lineItems.length > 0 && job.lineItems.some((li) => li.qty) && (
-              <Receiving lineItems={job.lineItems} fileName={job.fileName} text={job.text ?? ''} />
+              <Receiving lineItems={job.lineItems} fileName={job.fileName} text={job.text ?? ''} docId={job.docId} />
             )}
             {job.lineItems && job.lineItems.length > 0 && !job.lineItems.some((li) => li.qty) && job.text && (
               <PriceUpdate lineItems={job.lineItems} text={job.text} fileName={job.fileName} />
@@ -356,7 +361,7 @@ interface Row {
  * table shows item · size · qty · price, and ONE button logs the received
  * quantities, updates pricing everywhere, and files the invoice.
  */
-function Receiving({ lineItems, fileName, text }: { lineItems: LineItem[]; fileName: string; text: string }) {
+function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]; fileName: string; text: string; docId?: string }) {
   const [applied, setApplied] = useState<string | null>(null)
   const [rows, setRows] = useState<Row[]>(() =>
     proposeReceipts(lineItems).map((p) => ({
@@ -415,6 +420,7 @@ function Receiving({ lineItems, fileName, text }: { lineItems: LineItem[]; fileN
         number: inv.number,
         total: inv.total,
         paid: false,
+        docId,
       })
     }
     const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${inv.total > 0 ? ` · invoice ${money2(inv.total)} filed` : ''}`

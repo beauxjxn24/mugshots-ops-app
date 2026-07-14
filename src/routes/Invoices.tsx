@@ -5,7 +5,8 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { getPriceLog } from '../lib/catalog'
 import type { Night } from '../lib/nightly'
-import { ScanLine, Check } from 'lucide-react'
+import { ScanLine, Check, FileText } from 'lucide-react'
+import { openDoc } from '../lib/docs'
 
 interface Invoice {
   id: string
@@ -14,6 +15,7 @@ interface Invoice {
   number: string
   total: number
   paid: boolean
+  docId?: string
 }
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -161,8 +163,22 @@ export function Invoices() {
                     >
                       {r.paid && <Check size={15} />}
                     </button>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold text-ink">{r.vendor}</div>
+                    <div
+                      className={`min-w-0 flex-1 ${r.docId ? 'cursor-pointer' : ''}`}
+                      onClick={async () => {
+                        if (r.docId && !(await openDoc(r.docId)))
+                          alert('The original file is no longer on this device — re-drop it on Imports to relink.')
+                      }}
+                      title={r.docId ? 'Open the imported document' : undefined}
+                    >
+                      <div className="flex items-center gap-1.5 truncate font-semibold text-ink">
+                        {r.vendor}
+                        {r.docId && (
+                          <span className="inline-flex items-center gap-1 rounded bg-brand/10 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-brand-600">
+                            <FileText size={9} /> PDF
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-muted">
                         {fmtDay(r.date)} {r.date}
                         {r.number ? ` · #${r.number}` : ''}
