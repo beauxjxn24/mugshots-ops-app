@@ -56,7 +56,7 @@ export function LineBuilds() {
                 group === g ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white text-muted hover:border-brand/40'
               }`}
             >
-              {g.replace(' Builds', '')}
+              {g === 'Line Builds' ? 'LTO' : g.replace(' Builds', '')}
             </button>
           ))}
         </div>
@@ -76,7 +76,7 @@ export function LineBuilds() {
               <div className="mb-0.5 flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1 truncate font-display text-[15px] font-semibold text-ink">{s.name}</div>
                 <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-muted">
-                  {s.g.replace(' Builds', '')}
+                  {s.g === 'Line Builds' ? 'LTO' : s.g.replace(' Builds', '')}
                 </span>
               </div>
               <ol className="mt-1.5 space-y-0.5">

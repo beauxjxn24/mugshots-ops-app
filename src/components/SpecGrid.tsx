@@ -61,11 +61,6 @@ function SpecCard({
         <button onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left">
           <div className="min-w-0 flex-1">
             <div className="font-display text-base font-semibold text-ink">{spec.name}</div>
-            {showGroup && (
-              <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-brand">
-                {spec.g}
-              </div>
-            )}
             <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
               {spec.storage && <Chip>{spec.storage}</Chip>}
               {spec.shelf && <Chip>{spec.shelf}</Chip>}

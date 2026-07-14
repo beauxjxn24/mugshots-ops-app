@@ -56,7 +56,10 @@ export function Dashboard() {
   const latest = sorted[sorted.length - 1]
   const hasReal = !!latest
 
-  // ---- Day / Week / Period windows (latest night anchors "day") ----
+  // ---- Day / Week / Period windows ----
+  // Day = the last night entered, with its date. Week = the REAL week the
+  // latest night sits in, Monday → Sunday (never a rolling 7 that looks like
+  // Wednesday-to-Wednesday). Period = the 28-day period containing it.
   const win = useMemo(() => {
     if (!latest) return { nights: [] as Night[], prior: [] as Night[], label: '' }
     if (scope === 'day') {
@@ -64,18 +67,22 @@ export function Dashboard() {
       return { nights: [latest], prior: prior ? [prior] : [], label: fmtWhen(latest.date) }
     }
     if (scope === 'week') {
+      const start = mondayOf(latest.date)
+      const end = shiftDays(start, 6)
+      const prevStart = shiftDays(start, -7)
       return {
-        nights: sorted.slice(-7),
-        prior: sorted.slice(-14, -7),
-        label: `last ${Math.min(7, sorted.length)} nights`,
+        nights: sorted.filter((n) => n.date >= start && n.date <= end),
+        prior: sorted.filter((n) => n.date >= prevStart && n.date < start),
+        label: `week of Mon ${fmtWhen(start).replace(/^\w+, /, '')}`,
       }
     }
-    const month = latest.date.slice(0, 7)
-    const prevMonth = prevMonthKey(month)
+    const pStart = periodStartOf(latest.date)
+    const pEnd = shiftDays(pStart, 27)
+    const prevStart = shiftDays(pStart, -28)
     return {
-      nights: sorted.filter((n) => n.date.startsWith(month)),
-      prior: sorted.filter((n) => n.date.startsWith(prevMonth)),
-      label: fmtMonth(month),
+      nights: sorted.filter((n) => n.date >= pStart && n.date <= pEnd),
+      prior: sorted.filter((n) => n.date >= prevStart && n.date < pStart),
+      label: `Period ${periodWeek(latest.date).period}`,
     }
   }, [sorted, latest, scope])
 
@@ -101,7 +108,12 @@ export function Dashboard() {
     return { parts, total }
   }, [win.nights])
 
-  const wtd = sorted.slice(-7).reduce((s, n) => s + n.netSales, 0)
+  // Week-to-date, anchored to the Monday of the latest night's week.
+  const wtd = useMemo(() => {
+    if (!latest) return 0
+    const start = mondayOf(latest.date)
+    return sorted.filter((n) => n.date >= start && n.date <= shiftDays(start, 6)).reduce((s, n) => s + n.netSales, 0)
+  }, [sorted, latest])
 
   const pw = periodWeek(t)
 
@@ -185,7 +197,7 @@ export function Dashboard() {
                         Recent nights · net sales
                       </div>
                       <div className="text-xs text-muted">
-                        Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
+                        This week (Mon–Sun) <b className="font-mono text-ink">{money(wtd)}</b>
                       </div>
                     </div>
                     <WeekBars nights={sorted} h={104} />
@@ -656,6 +668,15 @@ function daysUntil(iso: string): number {
   const [ty, tm, td] = today().split('-').map(Number)
   return Math.round((then - new Date(ty, tm - 1, td).getTime()) / 86400000)
 }
+/** First day of the 28-day period containing the date (periods from Jan 1). */
+function periodStartOf(iso: string): string {
+  const d = new Date(iso + 'T12:00:00')
+  const start = new Date(d.getFullYear(), 0, 1)
+  const doy = Math.floor((d.getTime() - start.getTime()) / 86400000)
+  const p = Math.min(13, Math.floor(doy / 28) + 1)
+  const ps = new Date(d.getFullYear(), 0, 1 + (p - 1) * 28)
+  return `${ps.getFullYear()}-${String(ps.getMonth() + 1).padStart(2, '0')}-${String(ps.getDate()).padStart(2, '0')}`
+}
 function mondayOf(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   const dt = new Date(y, m - 1, d)
@@ -667,7 +688,7 @@ function shiftDays(iso: string, delta: number): string {
   const dt = new Date(y, m - 1, d + delta)
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
-function prevMonthKey(month: string): string {
+function __unusedPrev(month: string): string {
   const [y, m] = month.split('-').map(Number)
   const d = new Date(y, m - 2, 1)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
