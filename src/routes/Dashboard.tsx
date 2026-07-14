@@ -310,10 +310,12 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
   const monday = mondayOf(t)
   const weekDates = Array.from({ length: 7 }, (_, i) => shiftDays(monday, i))
   const weekActuals = weekDates.filter((d) => byDate.has(d))
-  const currentWeekMode = weekActuals.length > 0
+  // Stay in Mon–Sun mode even before the first night of the week is logged —
+  // last year's week fills the frame until the gold bars land on it.
+  const currentWeekMode = weekActuals.length > 0 || weekDates.some((d) => byDate.has(shiftDays(d, -364)))
   const avg = dowAverages(nights)
 
-  type Col = { date: string; value: number; kind: 'actual' | 'forecast' | 'none'; delta: number | null; deltaAbs: number | null }
+  type Col = { date: string; value: number; kind: 'actual' | 'ly' | 'forecast' | 'none'; delta: number | null; deltaAbs: number | null }
   let usedLY = false
   let usedLW = false
   const mkCol = (date: string): Col => {
@@ -326,6 +328,15 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
       else if (lw) usedLW = true
       const delta = base && base.netSales > 0 ? ((n.netSales - base.netSales) / base.netSales) * 100 : null
       return { date, value: n.netSales, kind: 'actual', delta, deltaAbs: base ? n.netSales - base.netSales : null }
+    }
+    // Owner spec: an unlogged day shows LAST YEAR's sales for that day as a
+    // quiet grey bar — the gold bar takes its place once the night is logged
+    // (falls back to last week, then the forecast, when LY isn't there yet).
+    const ly364 = byDate.get(shiftDays(date, -364))
+    const lyN = ly364 ?? byDate.get(shiftDays(date, -7))
+    if (lyN && lyN.netSales > 0) {
+      if (ly364) usedLY = true
+      return { date, value: lyN.netSales, kind: 'ly', delta: null, deltaAbs: null }
     }
     if (date >= t) {
       const proj = projectDay(avg, date)
@@ -390,8 +401,15 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
                 <div className="mb-1 text-[11px] text-muted/60">no data</div>
               ) : (
                 <div className="mb-1 font-mono text-[13px] font-semibold text-muted">
-                  ~${(c.value / 1000).toFixed(1)}k
+                  {c.kind === 'ly' ? '' : '~'}${(c.value / 1000).toFixed(1)}k
                 </div>
+              )}
+              {c.kind === 'ly' && (
+                <div
+                  className="rise w-8 rounded-t-[4px] bg-navy/20 sm:w-9"
+                  style={{ height: h, '--i': ci } as React.CSSProperties}
+                  title={`${c.date} · last year ${money(c.value)} — logs tonight's number over it`}
+                />
               )}
               {c.kind === 'forecast' && (
                 <div
@@ -410,7 +428,9 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
           <div key={c.date} className="flex-1 text-center">
             <div className="text-[12px] font-bold text-ink/80">{weekday(c.date)}</div>
             <div className="text-[11px] text-muted">{c.date.slice(5).replace('-', '/')}</div>
-            {c.kind === 'forecast' ? (
+            {c.kind === 'ly' ? (
+              <div className="text-[11px] font-semibold text-muted">last yr</div>
+            ) : c.kind === 'forecast' ? (
               <div className="text-[11px] font-semibold text-muted">forecast</div>
             ) : c.delta != null ? (
               <div className={`text-[12px] font-bold ${c.delta >= 0 ? 'text-up' : 'text-down'}`}>
@@ -428,7 +448,7 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
       </div>
       <p className="mt-2 text-center text-[11px] text-muted">
         {usedLY
-          ? '▲▼ vs the same day last year'
+          ? 'Grey bars = the same day last year — each turns gold with ▲▼ as the night is logged'
           : usedLW
             ? '▲▼ vs the same day last week — switches to last year once that history exists (drop old Toast sales summaries on Imports to backfill)'
             : 'Comparisons appear once there are matching prior days'}

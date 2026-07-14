@@ -1,0 +1,90 @@
+{
+ "weekly": [
+  {
+   "title": "KITCHEN EQUIPMENT",
+   "items": [
+    "Check fryers for leaks, damaged cords, loose fittings, or unusual noise.",
+    "Check fryer filter pan and drain valves.",
+    "Check grill/flat-top controls, surface, grease trough, and guards.",
+    "Check hood filters and confirm exhaust fan is working.",
+    "Check toaster and hot-holding equipment.",
+    "Check walk-in cooler and freezer doors, seals, ice buildup, and drains.",
+    "Check line coolers, prep rails, and reach-ins.",
+    "Check ice machine and dish machine for leaks or visible buildup."
+   ]
+  },
+  {
+   "title": "SAFETY & BUILDING",
+   "items": [
+    "Check fire extinguishers, exits, exit signs, and emergency lights.",
+    "Check cords, plugs, outlets, and electrical panels for damage or heat.",
+    "Check hand sinks, toilets, faucets, floor drains, and mop sink for leaks or clogs.",
+    "Check floors, mats, ladders, shelving, and chemical storage.",
+    "Check for pest activity and gaps around doors or wall openings.",
+    "Check HVAC airflow, unusual noise, odors, or water leaks."
+   ]
+  },
+  {
+   "title": "GUEST & EXTERIOR AREAS",
+   "items": [
+    "Check dining room tables, chairs, booths, doors, and floor transitions.",
+    "Check restroom fixtures, grab bars, dispensers, fans, and hardware.",
+    "Check parking lot, sidewalks, exterior lights, signs, and drive-thru lane.",
+    "Check dumpster pad and used-oil area for spills, overflow, or pests."
+   ]
+  },
+  {
+   "title": "WEEKLY CLOSEOUT",
+   "items": [
+    "Remove damaged smallwares, cutting boards, baskets, utensils, or containers.",
+    "Check POS, kitchen screens, printers, headsets, and visible cables.",
+    "Follow up on every open repair before signing off the week.",
+    "Manager reviewed all unchecked items and arranged follow-up."
+   ]
+  }
+ ],
+ "period": [
+  {
+   "title": "COOKING & REFRIGERATION",
+   "items": [
+    "Inspect fryer and grill bodies, casters, connections, and leveling.",
+    "Check cooking-equipment temperature accuracy.",
+    "Clean accessible refrigerator and freezer air-intake areas.",
+    "Inspect walk-in fans, drains, door hardware, and seals.",
+    "Confirm ice-machine cleaning and filter service are current.",
+    "Delime and clean the dish machine as required."
+   ]
+  },
+  {
+   "title": "HOOD, GREASE & BUILDING SYSTEMS",
+   "items": [
+    "Deep-clean removable hood filters.",
+    "Confirm hood-cleaning and fire-suppression inspections are current.",
+    "Review grease-interceptor and used-oil service.",
+    "Inspect or replace accessible HVAC filters.",
+    "Inspect water-heater area, shutoffs, exposed piping, and drains.",
+    "Check walls, ceilings, floors, grout, sealant, and wall openings."
+   ]
+  },
+  {
+   "title": "SAFETY & EXTERIOR",
+   "items": [
+    "Check emergency lights, exit signs, first-aid supplies, PPE, and spill kit.",
+    "Review the pest-control report and complete needed repairs.",
+    "Inspect exterior drainage, signs, awnings, and drive-thru equipment.",
+    "Tighten or repair dining room and restroom hardware."
+   ]
+  },
+  {
+   "title": "PERIOD CLOSEOUT",
+   "items": [
+    "Review repeat equipment failures and repair-versus-replace needs.",
+    "Review vendor service records and upcoming inspection dates.",
+    "Check maintenance supplies and reorder needed items.",
+    "Review unusual water, gas, or electric usage.",
+    "Carry all unfinished repairs into the next period.",
+    "Manager reviewed all unchecked items and arranged follow-up."
+   ]
+  }
+ ]
+}
