@@ -328,7 +328,7 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
   return (
     <div>
       {currentWeekMode && (
-        <div className="mb-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted">
+        <div className="mb-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-muted">
           <span>
             WTD <b className="font-mono text-ink">{money(wtd)}</b>
           </span>
@@ -356,11 +356,11 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
                 title={`${c.date} · ${money(c.value)} — open nightly report`}
                 className="group flex min-w-0 flex-1 flex-col items-center justify-end"
               >
-                <div className="mb-1 font-mono text-[10px] font-semibold text-ink/70 group-hover:text-ink">
+                <div className="mb-1 font-mono text-[13px] font-semibold text-ink/80 group-hover:text-ink">
                   ${(c.value / 1000).toFixed(1)}k
                 </div>
                 <div
-                  className="rise w-6 rounded-t-[4px] bg-brand transition-all group-hover:bg-brand-600 group-hover:ring-2 group-hover:ring-brand/30 sm:w-7"
+                  className="rise w-8 rounded-t-[4px] bg-brand transition-all group-hover:bg-brand-600 group-hover:ring-2 group-hover:ring-brand/30 sm:w-9"
                   style={{ height: h, '--i': ci } as React.CSSProperties}
                 />
               </Link>
@@ -369,20 +369,20 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
           return (
             <div key={c.date} className="flex flex-1 flex-col items-center justify-end">
               {c.kind === 'none' ? (
-                <div className="mb-1 text-[9px] text-muted/60">no data</div>
+                <div className="mb-1 text-[11px] text-muted/60">no data</div>
               ) : (
-                <div className="mb-1 font-mono text-[10px] font-semibold text-muted">
+                <div className="mb-1 font-mono text-[13px] font-semibold text-muted">
                   ~${(c.value / 1000).toFixed(1)}k
                 </div>
               )}
               {c.kind === 'forecast' && (
                 <div
-                  className="rise w-6 rounded-t-[4px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-7"
+                  className="rise w-8 rounded-t-[4px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-9"
                   style={{ height: h, '--i': ci } as React.CSSProperties}
                   title={`${c.date} · forecast ${money(c.value)}`}
                 />
               )}
-              {c.kind === 'none' && <div className="w-6 border-b-2 border-black/10 sm:w-7" />}
+              {c.kind === 'none' && <div className="w-8 border-b-2 border-black/10 sm:w-9" />}
             </div>
           )
         })}
@@ -390,12 +390,12 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
       <div className="mt-1.5 flex justify-around gap-2 border-t border-black/5 pt-1.5">
         {cols.map((c) => (
           <div key={c.date} className="flex-1 text-center">
-            <div className="text-[9px] font-bold text-muted">{weekday(c.date)}</div>
-            <div className="text-[8.5px] text-muted/70">{c.date.slice(5).replace('-', '/')}</div>
+            <div className="text-[12px] font-bold text-ink/80">{weekday(c.date)}</div>
+            <div className="text-[11px] text-muted">{c.date.slice(5).replace('-', '/')}</div>
             {c.kind === 'forecast' ? (
-              <div className="text-[9px] font-semibold text-muted">forecast</div>
+              <div className="text-[11px] font-semibold text-muted">forecast</div>
             ) : c.delta != null ? (
-              <div className={`text-[10px] font-bold ${c.delta >= 0 ? 'text-up' : 'text-down'}`}>
+              <div className={`text-[12px] font-bold ${c.delta >= 0 ? 'text-up' : 'text-down'}`}>
                 {c.delta >= 0 ? '▲ +' : '▼ −'}
                 {Math.abs(c.delta).toFixed(0)}%
                 {c.deltaAbs != null && (
@@ -403,12 +403,12 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
                 )}
               </div>
             ) : (
-              <div className="text-[10px] text-muted">—</div>
+              <div className="text-[12px] text-muted">—</div>
             )}
           </div>
         ))}
       </div>
-      <p className="mt-2 text-center text-[10px] text-muted">
+      <p className="mt-2 text-center text-[11px] text-muted">
         {usedLY
           ? '▲▼ vs the same day last year'
           : usedLW

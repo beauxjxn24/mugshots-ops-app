@@ -735,24 +735,27 @@ function CateringImport({ text, fileName }: { text: string; fileName: string }) 
 function SalesImport({ text, fileName }: { text: string; fileName: string }) {
   const rows = useMemo(() => parseSalesSummary(text), [text])
   const [added, setAdded] = useState(0)
+  const ran = useRef(false)
   const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+
+  // Owner spec: a drop IS the import — no extra button to find. Upserting by
+  // date makes this safe to run on sight (same days just refresh in place).
+  useEffect(() => {
+    if (rows.length === 0 || ran.current) return
+    ran.current = true
+    const n = upsertNights(rows)
+    setAdded(n)
+    logImport(fileName, `${n} nights → Nightly Numbers`)
+  }, [rows, fileName])
 
   if (rows.length === 0) return null
 
-  if (added > 0) {
-    return (
-      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
-        <LineChart size={16} /> Imported {added} day{added === 1 ? '' : 's'} into Nightly Numbers — the
-        Dashboard is now live.
-      </div>
-    )
-  }
-
   const total = rows.reduce((s, r) => s + r.netSales, 0)
   return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
-        <LineChart size={14} /> Sales summary — {rows.length} days · {money(total)} net
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-up">
+        <LineChart size={16} /> Imported {added || rows.length} day{rows.length === 1 ? '' : 's'} into
+        Nightly Numbers · {money(total)} net — Dashboard and Nightly are live.
       </div>
       <div className="max-h-52 overflow-y-auto rounded-lg bg-white">
         <table className="w-full text-sm">
@@ -766,12 +769,6 @@ function SalesImport({ text, fileName }: { text: string; fileName: string }) {
           </tbody>
         </table>
       </div>
-      <button
-        onClick={() => { const n = upsertNights(rows); setAdded(n); logImport(fileName, `${n} nights → Nightly Numbers`) }}
-        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
-      >
-        Import {rows.length} days into Nightly Numbers
-      </button>
     </div>
   )
 }
