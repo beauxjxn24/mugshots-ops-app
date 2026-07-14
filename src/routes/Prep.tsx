@@ -145,43 +145,39 @@ export function Prep() {
           </div>
         }
       />
-      {/* Print-only prep sheet — one dense page: item · spec · today's par ·
-          write-in boxes for on-hand and prep. The screen UI never prints. */}
+      {/* Print-only prep sheet (owner spec): zero items never print, and the
+          list flows into TWO columns so the type stays readable. */}
       <div className="prep-print hidden">
-        <div className="mb-0.5 flex items-baseline justify-between">
-          <span className="text-[13px] font-bold">Prep list · {fmtLong(t)}</span>
-          <span className="text-[9px]">prep needed = today's par − on hand · Mugshots Flowood</span>
+        <div className="mb-2 flex items-baseline justify-between border-b-2 border-black pb-1">
+          <span className="text-[16px] font-bold">Prep list · {fmtLong(t)}</span>
+          <span className="text-[10px]">par − on hand = prep · Mugshots Flowood</span>
         </div>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="border border-black/40 px-1 py-0 text-left text-[7.5px] uppercase">Prep item</th>
-              <th className="border border-black/40 px-1 py-0 text-left text-[7.5px] uppercase">Batch / pan</th>
-              <th className="w-12 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">Par</th>
-              <th className="w-14 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">On hand</th>
-              <th className="w-16 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">Prep</th>
-              <th className="w-8 border border-black/40 px-1 py-0 text-center text-[7.5px] uppercase">✓</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr key={it.name}>
-                <td className="border border-black/40 px-1 py-0 text-[8.5px] font-semibold leading-[13px]">{it.name}</td>
-                <td className="border border-black/40 px-1 py-0 text-[7.5px] leading-[13px]">{it.spec || it.unit}</td>
-                <td className="border border-black/40 px-1 py-0 text-center font-mono text-[8.5px] leading-[13px]">
-                  {fmtQty(it.pars[di] ?? 0)} {it.unit}
-                </td>
-                <td className="border border-black/40 px-1 py-0 text-center font-mono text-[8.5px] leading-[13px]">
-                  {onHand[it.name] != null ? fmtQty(onHand[it.name]) : ''}
-                </td>
-                <td className="border border-black/40 px-1 py-0 text-center font-mono text-[8.5px] leading-[13px]">
-                  {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : ''}
-                </td>
-                <td className="border border-black/40 px-1 py-0" />
-              </tr>
+        <div style={{ columns: 2, columnGap: '22px' }}>
+          {items
+            .filter((it) => (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0))
+            .map((it) => (
+              <div
+                key={it.name}
+                className="flex items-center gap-2 border-b border-black/25 py-[3px]"
+                style={{ breakInside: 'avoid' }}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[11px] font-bold leading-[13px]">{it.name}</span>
+                  <span className="block truncate text-[8.5px] leading-[10px] text-black/60">{it.spec || it.unit}</span>
+                </span>
+                <span className="w-14 shrink-0 text-right font-mono text-[11px] font-bold">
+                  {onHand[it.name] != null && need(it) > 0
+                    ? `${fmtQty(need(it))} ${it.unit}`
+                    : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
+                </span>
+                <span className="h-[15px] w-9 shrink-0 rounded-[3px] border border-black/50" />
+              </div>
             ))}
-          </tbody>
-        </table>
+        </div>
+        <div className="mt-1.5 text-[8.5px] text-black/60">
+          Number shown = {Object.keys(onHand).length ? 'prep needed (on-hands already counted in the app)' : "today's par"} ·
+          box = done ✓ · items with nothing to prep don't print
+        </div>
       </div>
 
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden">
