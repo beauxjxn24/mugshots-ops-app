@@ -114,28 +114,11 @@ export function Dashboard() {
       <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
         {hasReal ? (
           <>
-            {/* Weekly chart across the top — trimmed height (owner spec) */}
-            <Card className="drift [--i:0] p-5">
-              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                <div className="text-xs font-bold uppercase tracking-wide text-muted">
-                  Recent nights · net sales
-                </div>
-                <div className="text-xs text-muted">
-                  Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
-                </div>
-              </div>
-              <WeekBars nights={sorted} h={108} />
-            </Card>
-
-            <TrackedBand scope={scope} anchor={latest?.date ?? t} />
-
-            {/* Gold rule — the prototype's section divider */}
-            <div className="h-[3px] rounded-full bg-gradient-to-r from-brand via-brand/40 to-transparent" />
-
-            {/* Catering tiles (far left, by the nav) + hero — the tiles
-                themselves blink & shake when a catering is coming up */}
-            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,3.2fr)]">
-              <div className="drift [--i:1] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
+            {/* Row 1 — catering tiles by the nav (they blink & shake when a
+                catering is coming up) + ONE sales card: hero number on the
+                left, the week's graph beside it */}
+            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,4.4fr)]">
+              <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
                 <KpiTile
                   compact
                   className={todays.length > 0 ? 'tile-alert urgent' : ''}
@@ -155,47 +138,68 @@ export function Dashboard() {
                   sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
                 />
               </div>
-              <Card className="drift [--i:2] relative flex flex-col overflow-hidden p-5">
+              <Card className="drift [--i:1] relative overflow-hidden p-5">
                 <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-brand/10 blur-2xl" />
-                <div className="relative mb-4 flex">
-                  <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
-                    {(['day', 'week', 'period'] as Scope[]).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setScope(s)}
-                        className={`rounded-md px-3 py-1 text-xs font-semibold capitalize ${
-                          scope === s ? 'bg-navy text-white shadow-sm' : 'text-muted'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
+                <div className="relative flex flex-col gap-6 lg:flex-row">
+                  {/* Hero — the number, its toggle, and the goal pills */}
+                  <div className="flex shrink-0 flex-col lg:w-[280px]">
+                    <div className="mb-4 flex">
+                      <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
+                        {(['day', 'week', 'period'] as Scope[]).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setScope(s)}
+                            className={`rounded-md px-3 py-1 text-xs font-semibold capitalize ${
+                              scope === s ? 'bg-navy text-white shadow-sm' : 'text-muted'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center">
+                      <span className="self-start border-b-[3px] border-brand pb-1 font-display text-[clamp(2.1rem,3.2vw,2.7rem)] font-semibold leading-none text-ink">
+                        {money(displayNet)}
+                      </span>
+                      <div className="mt-2 text-sm text-muted">net · {win.label}</div>
+                    </div>
+                    <div className="mt-4 flex flex-col items-start gap-1.5">
+                      {vsPrior != null && (
+                        <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${vsPrior >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
+                          {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({net - priorNet >= 0 ? '+' : '−'}
+                          {money(Math.abs(net - priorNet))}) vs prior · goal +{targets.growthPct}%
+                        </span>
+                      )}
+                      {laborPct != null && (
+                        <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${laborPct <= targets.laborPct ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
+                          labor {laborPct.toFixed(1)}% · goal ≤ {targets.laborPct}%
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="relative flex flex-1 flex-col justify-center">
-                  <span className="self-start border-b-[3px] border-brand pb-1 font-display text-[clamp(2.2rem,4.5vw,3rem)] font-semibold leading-none text-ink">
-                    {money(displayNet)}
-                  </span>
-                  <div className="mt-2 text-sm text-muted">net · {win.label}</div>
-                </div>
-                <div className="relative mt-4 flex flex-col items-start gap-1.5">
-                  {vsPrior != null && (
-                    <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${vsPrior >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
-                      {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({net - priorNet >= 0 ? '+' : '−'}
-                      {money(Math.abs(net - priorNet))}) vs prior · goal +{targets.growthPct}%
-                    </span>
-                  )}
-                  {laborPct != null && (
-                    <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${laborPct <= targets.laborPct ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
-                      labor {laborPct.toFixed(1)}% · goal ≤ {targets.laborPct}%
-                    </span>
-                  )}
+                  {/* The week's graph, right beside the number */}
+                  <div className="min-w-0 flex-1 lg:border-l lg:border-black/5 lg:pl-6">
+                    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                      <div className="text-xs font-bold uppercase tracking-wide text-muted">
+                        Recent nights · net sales
+                      </div>
+                      <div className="text-xs text-muted">
+                        Last {Math.min(7, sorted.length)} nights <b className="font-mono text-ink">{money(wtd)}</b>
+                      </div>
+                    </div>
+                    <WeekBars nights={sorted} h={104} />
+                  </div>
                 </div>
               </Card>
             </div>
 
-            {/* Category rows + Food Focus — two squares, side by side */}
+            {/* Gold rule — the prototype's section divider */}
+            <div className="h-[3px] rounded-full bg-gradient-to-r from-brand via-brand/40 to-transparent" />
+
+            {/* Row 2 — Food Focus up front where it can be seen, categories beside it */}
             <div className="grid gap-6 lg:grid-cols-2">
+              <LtoFocus />
               {cats.total > 0 && (
                 <Card className="drift [--i:3] h-full p-5">
                   <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
@@ -221,8 +225,10 @@ export function Dashboard() {
                   </div>
                 </Card>
               )}
-              <LtoFocus />
             </div>
+
+            {/* Row 3 — tracked items from PMIX */}
+            <TrackedBand scope={scope} anchor={latest?.date ?? t} />
           </>
         ) : (
           <Card className="p-8 text-center">

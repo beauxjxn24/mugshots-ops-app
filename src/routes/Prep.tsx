@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Printer, Pencil, Check } from 'lucide-react'
+import { Printer, Pencil, Check, GripVertical } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
@@ -35,8 +35,8 @@ function fmtLong(iso: string): string {
 /**
  * Prep list — the prototype screen, seeded with the owner's real 49-item
  * sheet: a par for EVERY day of the week (today's column highlighted),
- * on-hand entry, prep-today chips, the navy live board, and pars that
- * learn from what you actually had left over.
+ * on-hand entry, drag-to-reorder rows (the printed sheet follows shelf
+ * order), and pars that learn from what you actually had left over.
  */
 export function Prep() {
   const t = today()
@@ -48,7 +48,20 @@ export function Prep() {
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans' })
 
   const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
-  const todayList = items.filter((it) => need(it) > 0)
+
+  // Drag a row by its grip to lay the list out sheet-to-shelf; the order is
+  // saved and the printed sheet follows it.
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+  const moveItem = (from: number, to: number) => {
+    if (from === to) return
+    setItems((is) => {
+      const next = [...is]
+      const [m] = next.splice(from, 1)
+      next.splice(to, 0, m)
+      return next
+    })
+  }
 
   const setCount = (name: string, v: number | undefined) => {
     setOnHand((o) => {
@@ -119,7 +132,7 @@ export function Prep() {
     <>
       <PageHeader
         title={`Prep list · ${fmtLong(t)}`}
-        subtitle="Enter on-hands · prep needed = today's par − on hand"
+        subtitle="Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             <Link to="/builds" className="text-xs font-bold text-brand">
@@ -181,30 +194,6 @@ export function Prep() {
       </div>
 
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden">
-        {/* Navy live board */}
-        <Card className="border-navy !bg-navy p-5 text-white">
-          <div className="flex flex-wrap gap-x-8 gap-y-4">
-            <div className="shrink-0">
-              <div className="font-display text-lg font-semibold">Today's prep · {todayList.length} items</div>
-              <div className="text-[11px] text-white/60">Live total as you enter on-hands</div>
-            </div>
-            {todayList.length === 0 ? (
-              <p className="self-center text-sm text-white/70">Everything's at par — enter on-hands to build the list.</p>
-            ) : (
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
-                {todayList.map((it) => (
-                  <div key={it.name} className="flex items-baseline justify-between gap-3 border-b border-white/10 py-0.5 text-sm">
-                    <span className="min-w-0 truncate">{it.name}</span>
-                    <span className="shrink-0 font-mono text-xs font-bold text-[#eec263]">
-                      {fmtQty(need(it))} {it.unit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
-
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
           <Card className="border-brand/25 bg-brand/[0.06] p-4">
             <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">How pars work here</div>
@@ -240,9 +229,10 @@ export function Prep() {
 
         {/* Par table */}
         <Card className="overflow-x-auto">
-          <div className="min-w-[860px]">
-            <div className="grid grid-cols-[minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-              <span>Prep item</span>
+          <div className="min-w-[880px]">
+            <div className="grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <span title="Drag rows to match your shelf order" />
+              <span>Prep item · drag ⠿ to shelf order</span>
               {DOWS.map((d, i) => (
                 <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
                   {d}
@@ -251,14 +241,43 @@ export function Prep() {
               <span className="text-center">On hand</span>
               <span className="text-right">Prep today</span>
             </div>
-            {items.map((it) => {
+            {items.map((it, idx) => {
               const n = need(it)
               const counted = onHand[it.name] != null
               return (
                 <div
                   key={it.name}
-                  className="group grid grid-cols-[minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0"
+                  onDragOver={(e) => {
+                    if (dragIdx == null) return
+                    e.preventDefault()
+                    setOverIdx(idx)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    if (dragIdx != null) moveItem(dragIdx, idx)
+                    setDragIdx(null)
+                    setOverIdx(null)
+                  }}
+                  className={`group grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
+                    dragIdx === idx ? 'opacity-40' : ''
+                  } ${overIdx === idx && dragIdx !== idx ? 'border-t-2 border-t-brand' : ''}`}
                 >
+                  <span
+                    draggable
+                    onDragStart={(e) => {
+                      setDragIdx(idx)
+                      e.dataTransfer.effectAllowed = 'move'
+                      e.dataTransfer.setData('text/plain', it.name)
+                    }}
+                    onDragEnd={() => {
+                      setDragIdx(null)
+                      setOverIdx(null)
+                    }}
+                    title="Drag to reorder — the printed sheet follows this order"
+                    className="cursor-grab text-muted/50 hover:text-ink active:cursor-grabbing"
+                  >
+                    <GripVertical size={14} />
+                  </span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-ink">{it.name}</div>
                     <div className="flex items-center gap-2 text-[10px] text-muted">

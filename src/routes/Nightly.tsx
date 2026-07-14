@@ -51,6 +51,10 @@ export function Nightly() {
   const focusDate = params.get('date')
   const [form, setForm] = useState<Form>(focusDate ? { ...EMPTY, date: focusDate } : EMPTY)
   const [showCats, setShowCats] = useState(false)
+  // History stays out of the way: last 7 nights show; anything older is
+  // hidden until looked up by date (or expanded).
+  const [lookup, setLookup] = useState('')
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     if (!focusDate) return
@@ -78,6 +82,42 @@ export function Nightly() {
   const cmpNight = lyNight ?? lwNight
   const catTotal = f(form.food) + f(form.beer) + f(form.liquor) + f(form.wine) + f(form.na)
   const catDiff = catTotal - net
+
+  // Clicking a history row loads that night back into the sheet for review.
+  const loadNight = (n: Night) => {
+    setForm({
+      date: n.date,
+      gross: n.gross != null ? String(n.gross) : String(n.netSales),
+      rewards: n.rewards != null ? String(n.rewards) : '',
+      promos: n.promos != null ? String(n.promos) : '',
+      comps: n.comps != null ? String(n.comps) : '',
+      staffDisc: n.staffDisc != null ? String(n.staffDisc) : '',
+      labor: n.labor != null ? String(n.labor) : '',
+      deposit: n.deposit ? String(n.deposit) : '',
+      overUnder: n.overUnder != null ? String(n.overUnder) : '',
+      covers: n.covers ? String(n.covers) : '',
+      notes: n.notes ?? '',
+      food: n.food != null ? String(n.food) : '',
+      beer: n.beer != null ? String(n.beer) : '',
+      liquor: n.liquor != null ? String(n.liquor) : '',
+      wine: n.wine != null ? String(n.wine) : '',
+      na: n.na != null ? String(n.na) : '',
+    })
+    if ((n.food ?? 0) > 0) setShowCats(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Which history rows are visible right now.
+  const visibleNights = useMemo(() => {
+    if (lookup) return sorted.filter((n) => n.date === lookup)
+    if (showAll) return sorted
+    const recent = sorted.slice(0, 7)
+    if (focusDate && !recent.some((n) => n.date === focusDate)) {
+      const focused = sorted.find((n) => n.date === focusDate)
+      if (focused) return [...recent, focused]
+    }
+    return recent
+  }, [sorted, lookup, showAll, focusDate])
 
   const save = () => {
     if (!form.date || (f(form.gross) === 0 && net === 0)) return
@@ -292,14 +332,49 @@ export function Nightly() {
 
         {sorted.length > 0 && (
           <Card className="overflow-hidden">
-            {sorted.map((n) => {
+            <div className="flex flex-wrap items-center gap-2 border-b border-black/10 bg-black/[0.02] px-4 py-3">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Night history</span>
+              <span className="text-[11px] text-muted">
+                {lookup ? `showing ${fmtDate(lookup)}` : showAll ? `all ${sorted.length} nights` : `last 7 of ${sorted.length} — older nights are tucked away`}
+              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <input
+                  type="date"
+                  value={lookup}
+                  onChange={(e) => setLookup(e.target.value)}
+                  title="Jump to any saved night by date"
+                  className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-brand"
+                />
+                {lookup ? (
+                  <button
+                    onClick={() => setLookup('')}
+                    className="rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink"
+                  >
+                    Back to recent
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowAll((v) => !v)}
+                    className="rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink"
+                  >
+                    {showAll ? 'Show recent' : `Show all (${sorted.length})`}
+                  </button>
+                )}
+              </div>
+            </div>
+            {visibleNights.length === 0 && (
+              <p className="p-4 text-sm text-muted">No night saved for that date.</p>
+            )}
+            {visibleNights.map((n) => {
               const lp = n.laborPct ?? (n.labor && n.netSales ? (n.labor / n.netSales) * 100 : 0)
               const focused = n.date === focusDate
               return (
                 <div
                   key={n.id}
                   id={`night-${n.date}`}
-                  className={`border-b border-black/5 p-4 last:border-0 ${focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''}`}
+                  onClick={() => loadNight(n)}
+                  title="Open this night in the sheet above"
+                  className={`cursor-pointer border-b border-black/5 p-4 last:border-0 hover:bg-brand/5 ${focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''}`}
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="font-semibold text-ink">{fmtDate(n.date)}</span>
