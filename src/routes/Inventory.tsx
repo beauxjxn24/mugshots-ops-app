@@ -1,124 +1,314 @@
 import { useMemo, useState } from 'react'
-import { confirmDelete } from '../lib/confirm'
+import { Printer } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { PageHeader, Card } from '../components/ui'
-import { usePersistentState, today } from '../lib/store'
+import { usePersistentState, load, save, today } from '../lib/store'
+import { useScope } from '../lib/scope'
+import { getCatalog, getFlags, getPars, registerItem, setOnGuide } from '../lib/catalog'
+import { setParEntry } from '../lib/ordering'
 
-interface CountItem {
-  id: string
-  name: string
-  unit: string
-  count: number | ''
-}
-type Areas = Record<string, CountItem[]>
+const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
-// Empty count sheets — your storage areas, ready for your items. No sample data.
-const SEED: Areas = {
-  'Walk-in Cooler': [],
-  Freezer: [],
-  'Dry Storage': [],
-  Bar: [],
-}
-function c(name: string, unit: string): CountItem {
-  return { id: `${name}`.replace(/\s+/g, '-').toLowerCase(), name, unit, count: '' }
+export const LOCATIONS = ['Walk-in', 'Dry storage', 'Line', 'Bar', 'Freezer'] as const
+type Location = (typeof LOCATIONS)[number]
+const LOC_COLORS: Record<Location, string> = {
+  'Walk-in': '#b8860b',
+  'Dry storage': '#d4a94c',
+  Bar: '#8b6bb8',
+  Line: '#2f6b4f',
+  Freezer: '#4c7fb8',
 }
 
+interface InvMeta {
+  location?: Location
+  lastCount?: string // YYYY-MM-DD of the last on-hand edit
+}
+
+function metaKey(): string {
+  const s = useScope.getState()
+  return `${s.currentConcept}|${s.currentLocation}::inv:meta`
+}
+const getMeta = (): Record<string, InvMeta> => load(metaKey(), {})
+const setMeta = (m: Record<string, InvMeta>): void => save(metaKey(), m)
+
+function guessLocation(category: string): Location {
+  if (/liquor|beer|wine/i.test(category)) return 'Bar'
+  if (/paper|supply|dry/i.test(category)) return 'Dry storage'
+  return 'Walk-in'
+}
+function fmtDay(iso?: string): string {
+  if (!iso) return '—'
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short' })
+}
+
+/**
+ * Inventory — prototype layout, catalog-backed (ONE source of truth):
+ * the same on-hand record Ordering reads. Location filters, par status,
+ * value by location, count schedule.
+ */
 export function Inventory() {
-  const [areas, setAreas] = usePersistentState<Areas>(`inv:${today()}`, SEED)
-  const areaNames = Object.keys(areas)
-  const [area, setArea] = useState(areaNames[0])
-  const [newName, setNewName] = useState('')
-
-  const items = areas[area] ?? []
-  const counted = useMemo(
-    () => Object.values(areas).flat().filter((x) => x.count !== '' && x.count != null).length,
-    [areas],
+  const [tick, setTick] = useState(0)
+  const refresh = () => setTick((t) => t + 1)
+  const [schedule, setSchedule] = usePersistentState<string>(
+    'inv:schedule',
+    'Walk-in + Dry — Mon & Thu\nBar (full) — Sun close\nLine par check — daily · prep list',
   )
-  const total = useMemo(() => Object.values(areas).flat().length, [areas])
+  const [loc, setLoc] = useState<'All' | Location>('All')
+  const [form, setForm] = useState({ name: '', location: 'Walk-in' as Location, onHand: '', par: '', unit: 'cs' })
 
-  const update = (id: string, count: number | '') =>
-    setAreas((a) => ({ ...a, [area]: (a[area] ?? []).map((x) => (x.id === id ? { ...x, count } : x)) }))
-  const removeItem = async (id: string) => {
-    const it = (areas[area] ?? []).find((x) => x.id === id)
-    if (!(await confirmDelete(`Remove ${it?.name.replace(/-\d+$/, '') ?? 'this item'}?`))) return
-    setAreas((a) => ({ ...a, [area]: (a[area] ?? []).filter((x) => x.id !== id) }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => {
+    const flags = getFlags()
+    const pars = getPars()
+    const meta = getMeta()
+    return getCatalog()
+      .filter((ci) => flags[ci.id])
+      .map((ci) => {
+        const p = pars[ci.id] ?? { par: 0, onHand: 0 }
+        const m = meta[ci.id] ?? {}
+        const location = m.location ?? guessLocation(ci.category)
+        return {
+          id: ci.id,
+          name: ci.name,
+          unit: ci.unit,
+          location,
+          onHand: p.onHand,
+          par: p.par,
+          value: ci.cost != null ? ci.cost * p.onHand : null,
+          lastCount: m.lastCount,
+        }
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick])
+
+  const shown = rows.filter((r) => loc === 'All' || r.location === loc)
+  const totalValue = rows.reduce((s, r) => s + (r.value ?? 0), 0)
+  const lastFull = rows.reduce<string | undefined>((acc, r) => (r.lastCount && (!acc || r.lastCount > acc) ? r.lastCount : acc), undefined)
+
+  const byLoc = useMemo(() => {
+    const m = new Map<Location, number>()
+    for (const r of rows) if (r.value) m.set(r.location, (m.get(r.location) ?? 0) + r.value)
+    return [...m.entries()].sort((a, b) => b[1] - a[1])
+  }, [rows])
+
+  const setCount = (id: string, v: number) => {
+    setParEntry(id, { onHand: v })
+    const meta = getMeta()
+    meta[id] = { ...meta[id], lastCount: today() }
+    setMeta(meta)
+    refresh()
   }
+  const setLocation = (id: string, location: Location) => {
+    const meta = getMeta()
+    meta[id] = { ...meta[id], location }
+    setMeta(meta)
+    refresh()
+  }
+
   const addItem = () => {
-    if (!newName.trim()) return
-    setAreas((a) => ({ ...a, [area]: [...(a[area] ?? []), c(newName.trim() + '-' + Date.now(), 'ea')] }))
-    setNewName('')
+    if (!form.name.trim()) return
+    const ci = registerItem({ name: form.name.trim(), unit: form.unit || 'cs' })
+    setOnGuide(ci.id, true)
+    setParEntry(ci.id, { onHand: parseFloat(form.onHand) || 0, par: parseFloat(form.par) || 0 })
+    const meta = getMeta()
+    meta[ci.id] = { location: form.location, lastCount: today() }
+    setMeta(meta)
+    setForm({ name: '', location: form.location, onHand: '', par: '', unit: 'cs' })
+    refresh()
   }
 
   return (
     <>
       <PageHeader
-        title="Inventory Count"
-        subtitle={`${counted} of ${total} items counted · ${today()}`}
-      />
-      <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-wrap gap-2">
-          {areaNames.map((a) => (
-            <button
-              key={a}
-              onClick={() => setArea(a)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                area === a
-                  ? 'border-brand bg-brand text-white'
-                  : 'border-black/10 bg-white text-muted hover:border-brand/40'
-              }`}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
-
-        <Card className="overflow-hidden">
-          {items.map((it) => (
-            <div
-              key={it.id}
-              className="group flex items-center gap-3 border-b border-black/5 px-4 py-2.5 last:border-0"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-ink">
-                  {it.name.replace(/-\d+$/, '')}
-                </div>
+        title="Inventory"
+        subtitle={`On-hand value ${money(totalValue)}${lastFull ? ` · last count ${fmtDay(lastFull)} ${lastFull}` : ' · counts update Ordering directly'}`}
+        right={
+          <div className="flex items-center gap-2">
+            <div className="flex flex-wrap gap-1 rounded-xl bg-black/5 p-1 print:hidden">
+              {(['All', ...LOCATIONS] as const).map((l) => (
                 <button
-                  onClick={() => removeItem(it.id)}
-                  className="text-[10px] text-muted opacity-0 transition-opacity hover:text-down group-hover:opacity-100"
+                  key={l}
+                  onClick={() => setLoc(l)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold ${loc === l ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-ink'}`}
                 >
-                  remove
+                  {l}
                 </button>
-              </div>
-              <span className="text-xs text-muted">{it.unit}</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={it.count}
-                onChange={(e) =>
-                  update(it.id, e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value)))
-                }
-                placeholder="—"
-                className={`w-20 rounded-lg border bg-white px-2 py-1.5 text-center text-sm outline-none focus:border-brand ${
-                  it.count !== '' ? 'border-up/40' : 'border-black/10'
-                }`}
-              />
+              ))}
             </div>
-          ))}
-          <div className="flex gap-2 p-3">
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addItem()}
-              placeholder={`Add item to ${area}…`}
-              className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-            />
             <button
-              onClick={addItem}
-              className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white print:hidden"
             >
-              Add
+              <Printer size={13} /> Count sheet
             </button>
           </div>
-        </Card>
+        }
+      />
+      <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3.2fr)_minmax(0,1fr)]">
+          <Card className="overflow-hidden">
+            <div className="grid grid-cols-[minmax(0,1.8fr)_110px_70px_54px_70px_78px_88px] items-center gap-2 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <span>Item</span>
+              <span>Location</span>
+              <span className="text-right">On hand</span>
+              <span className="text-right">Par</span>
+              <span className="text-right">Value</span>
+              <span className="text-right">Last count</span>
+              <span className="text-right">Status</span>
+            </div>
+            {shown.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-muted">
+                Nothing here yet — add items below, or drop your order guides &amp; invoices on{' '}
+                <Link to="/imports" className="font-bold text-brand">
+                  Imports
+                </Link>{' '}
+                and the catalog fills in. Counts entered here update Ordering's on-hand directly.
+              </p>
+            )}
+            {shown.map((r) => {
+              const status =
+                r.par <= 0
+                  ? null
+                  : r.onHand <= r.par * 0.25
+                    ? { label: 'Critical', cls: 'text-down' }
+                    : r.onHand < r.par
+                      ? { label: 'Below par', cls: 'text-brand-600' }
+                      : { label: 'OK', cls: 'text-up' }
+              return (
+                <div
+                  key={r.id}
+                  className="grid grid-cols-[minmax(0,1.8fr)_110px_70px_54px_70px_78px_88px] items-center gap-2 border-b border-black/5 px-4 py-2.5 last:border-0"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-ink">{r.name}</div>
+                    <div className="text-[10px] text-muted">{r.unit}</div>
+                  </div>
+                  <select
+                    value={r.location}
+                    onChange={(e) => setLocation(r.id, e.target.value as Location)}
+                    className="rounded-md border border-transparent bg-transparent py-1 text-xs text-ink/80 outline-none hover:border-black/10 focus:border-brand"
+                  >
+                    {LOCATIONS.map((l) => (
+                      <option key={l}>{l}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={r.onHand}
+                    onChange={(e) => setCount(r.id, Math.max(0, parseFloat(e.target.value) || 0))}
+                    className="w-full rounded-lg border border-black/10 bg-white px-1 py-1 text-right font-mono text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={r.par}
+                    onChange={(e) => {
+                      setParEntry(r.id, { par: Math.max(0, parseInt(e.target.value) || 0) })
+                      refresh()
+                    }}
+                    className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-right font-mono text-sm text-muted outline-none hover:border-black/10 focus:border-brand"
+                  />
+                  <span className="text-right font-mono text-sm text-ink">{r.value != null ? money(r.value) : '—'}</span>
+                  <span className="text-right font-mono text-xs text-muted">{fmtDay(r.lastCount)}</span>
+                  <span className={`text-right text-xs font-extrabold ${status?.cls ?? 'text-muted'}`}>{status?.label ?? '—'}</span>
+                </div>
+              )
+            })}
+            {/* Add item */}
+            <div className="flex flex-wrap gap-2 border-t border-black/5 p-3 print:hidden">
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && addItem()}
+                placeholder="Add item to count — name…"
+                className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+              <select
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value as Location })}
+                className="rounded-lg border border-black/10 bg-white px-2 py-2 text-xs outline-none focus:border-brand"
+              >
+                {LOCATIONS.map((l) => (
+                  <option key={l}>{l}</option>
+                ))}
+              </select>
+              <input
+                value={form.onHand}
+                onChange={(e) => setForm({ ...form, onHand: e.target.value })}
+                placeholder="on hand"
+                type="number"
+                inputMode="decimal"
+                className="w-24 rounded-lg border border-dashed border-black/20 bg-white px-2 py-2 text-right text-sm outline-none focus:border-brand"
+              />
+              <input
+                value={form.par}
+                onChange={(e) => setForm({ ...form, par: e.target.value })}
+                placeholder="par"
+                type="number"
+                inputMode="numeric"
+                className="w-20 rounded-lg border border-dashed border-black/20 bg-white px-2 py-2 text-right text-sm outline-none focus:border-brand"
+              />
+              <input
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                placeholder="unit (cases, jugs…)"
+                className="w-36 rounded-lg border border-dashed border-black/20 bg-white px-2 py-2 text-sm outline-none focus:border-brand"
+              />
+              <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
+                Add item
+              </button>
+            </div>
+          </Card>
+
+          {/* Right rail */}
+          <div className="space-y-5">
+            <Card className="p-4">
+              <div className="mb-2 text-sm font-bold text-ink">Value by location</div>
+              {byLoc.length === 0 ? (
+                <p className="text-xs text-muted">Fills in as counts and case costs land.</p>
+              ) : (
+                <>
+                  <div className="mb-2 flex h-2.5 gap-px overflow-hidden rounded-full">
+                    {byLoc.map(([l, v]) => (
+                      <div key={l} style={{ width: `${(v / Math.max(totalValue, 1)) * 100}%`, background: LOC_COLORS[l] }} />
+                    ))}
+                  </div>
+                  {byLoc.map(([l, v]) => (
+                    <div key={l} className="flex items-center justify-between py-0.5 text-xs">
+                      <span className="flex items-center gap-1.5 font-semibold text-ink">
+                        <span className="size-2 rounded-sm" style={{ background: LOC_COLORS[l] }} />
+                        {l}
+                      </span>
+                      <span className="font-mono text-muted">{money(v)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <div className="mb-2 text-sm font-bold text-ink">Count schedule</div>
+              <textarea
+                value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
+                rows={3}
+                className="w-full resize-none rounded-lg border border-transparent bg-transparent text-xs leading-relaxed text-ink/80 outline-none hover:border-black/10 focus:border-brand"
+              />
+            </Card>
+
+            <Card className="border-brand/25 bg-brand/[0.06] p-4">
+              <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">
+                One source of truth
+              </div>
+              <p className="text-xs leading-relaxed text-ink/80">
+                Counts entered anywhere — inventory, ordering, receiving — update the same on-hand
+                record. Ordering, usage, and cost analysis all read from it.
+              </p>
+            </Card>
+          </div>
+        </div>
       </div>
     </>
   )
