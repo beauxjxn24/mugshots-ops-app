@@ -14,6 +14,8 @@ export interface CatalogItem {
   cost?: number
   costVendor?: string
   costDate?: string // YYYY-MM-DD of the invoice/price sheet that set the cost
+  /** Invoice descriptions confirmed to be THIS item — match once, matched forever. */
+  aliases?: string[]
 }
 
 export const SHELVES = ['Produce', 'Liquor', 'Beer', 'Food', 'Paper / Supply', 'Kitchen', 'Other']
@@ -54,7 +56,11 @@ export function registerItem(input: {
   cost?: number
 }): CatalogItem {
   const items = getCatalog()
-  const existing = items.find((x) => x.name.toLowerCase() === input.name.toLowerCase())
+  const want = normKey(input.name)
+  // No duplicates, ever: exact name OR a learned alias claims the line.
+  const existing = items.find(
+    (x) => normKey(x.name) === want || (x.aliases ?? []).some((a) => normKey(a) === want),
+  )
   if (existing) {
     let changed = false
     if (input.cost && !existing.cost) {
@@ -91,6 +97,48 @@ export function registerItem(input: {
 /** Put an item on / take it off this store's order guide. */
 export function setOnGuide(id: string, on: boolean): void {
   setFlags({ ...getFlags(), [id]: on })
+}
+
+/** Teach the catalog: this invoice description IS that item. Sticks forever. */
+export function addAlias(id: string, alias: string): void {
+  const items = getCatalog()
+  const it = items.find((x) => x.id === id)
+  if (!it) return
+  const key = normKey(alias)
+  if (!key || normKey(it.name) === key) return
+  if ((it.aliases ?? []).some((a) => normKey(a) === key)) return
+  it.aliases = [...(it.aliases ?? []), alias.trim()].slice(-12)
+  setCatalog(items)
+}
+
+/**
+ * Set one item's case cost from an invoice line: updates the cost everywhere
+ * (Ordering, Inventory, Costs all read it) and feeds the price ticker.
+ */
+export function setItemCost(id: string, price: number, vendor: string): void {
+  if (!(price > 0)) return
+  const items = getCatalog()
+  const it = items.find((x) => x.id === id)
+  if (!it) return
+  const oldCost = it.cost
+  if (oldCost === price) return
+  it.cost = price
+  it.costVendor = vendor
+  it.costDate = isoToday()
+  setCatalog(items)
+  const pct = oldCost && oldCost > 0 ? ((price - oldCost) / oldCost) * 100 : undefined
+  if (pct != null && Math.abs(pct) >= 0.5) {
+    const log = getPriceLog()
+    save(conceptKey().replace('catalog:items', 'catalog:priceLog'), [
+      { name: it.name, oldCost, newCost: price, pct, vendor, date: isoToday() },
+      ...log,
+    ].slice(0, 40))
+  }
+}
+
+/** Normalized identity key: lowercase, punctuation-free, spacing collapsed. */
+export function normKey(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 /**
@@ -146,8 +194,14 @@ export interface PriceChange {
 export const getPriceLog = (): PriceChange[] =>
   load(conceptKey().replace('catalog:items', 'catalog:priceLog'), [])
 
-/** Case-insensitive word-overlap match against catalog names. */
+/** Case-insensitive word-overlap match against catalog names + learned aliases. */
 export function fuzzyFind(name: string, items: CatalogItem[] = getCatalog()): CatalogItem | null {
+  // Learned aliases and exact names win outright.
+  const key = normKey(name)
+  const exact = items.find(
+    (x) => normKey(x.name) === key || (x.aliases ?? []).some((a) => normKey(a) === key),
+  )
+  if (exact) return exact
   const words = norm(name)
   if (words.size === 0) return null
   let best: CatalogItem | null = null

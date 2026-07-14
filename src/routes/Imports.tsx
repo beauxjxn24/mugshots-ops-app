@@ -3,8 +3,8 @@ import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2 } from 
 import { PageHeader, Card } from '../components/ui'
 import { today } from '../lib/store'
 import { readFile, type ReadResult, type LineItem } from '../lib/reader'
-import { getOrdering, proposeReceipts, applyReceipts, addOrderItem, vendors, type Receipt } from '../lib/ordering'
-import { updatePrices, registerItem } from '../lib/catalog'
+import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type Receipt } from '../lib/ordering'
+import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
 import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
@@ -324,6 +324,7 @@ function ImportHistory() {
 interface Row {
   description: string
   qty: number
+  price?: number // case cost from the invoice line — carried into the catalog
   // '' = skip, 'NEW' = add to the guide as a new item, otherwise "vendor||itemId"
   target: string
 }
@@ -348,6 +349,7 @@ function Receiving({ lineItems, fileName }: { lineItems: LineItem[]; fileName: s
       proposed.map((p) => ({
         description: p.description,
         qty: p.qty,
+        price: p.price,
         target: p.match ? `${p.match.vendor}||${p.match.item.id}` : 'NEW',
       })),
     )
@@ -359,21 +361,39 @@ function Receiving({ lineItems, fileName }: { lineItems: LineItem[]; fileName: s
   const toAdd = rows.filter((r) => r.target === 'NEW').length
 
   const apply = () => {
-    const receipts: Receipt[] = rows
-      .filter((r) => r.target && r.target !== 'NEW' && r.qty > 0)
+    const matchedRows = rows.filter((r) => r.target && r.target !== 'NEW')
+    const receipts: Receipt[] = matchedRows
+      .filter((r) => r.qty > 0)
       .map((r) => {
         const [v, itemId] = r.target.split('||')
         return { vendor: v, itemId, qty: r.qty }
       })
     const updated = applyReceipts(receipts)
+    // One drop does it all: teach the alias (matched once = matched forever)
+    // and push the line's case cost through the whole app + price ticker.
+    let repriced = 0
+    for (const r of matchedRows) {
+      const itemId = r.target.split('||')[1]
+      addAlias(itemId, r.description)
+      if (r.price && r.price > 0) {
+        setItemCost(itemId, r.price, vendor)
+        repriced++
+      }
+    }
     let added = 0
     rows.filter((r) => r.target === 'NEW').forEach((r) => {
-      addOrderItem(vendor, r.description, 'cs', r.qty)
+      // registerItem de-dupes by name AND alias — the catalog never doubles up.
+      const ci = registerItem({ name: r.description, unit: 'cs', vendor, cost: r.price })
+      setOnGuide(ci.id, true)
+      setParEntry(ci.id, { onHand: Math.max(0, r.qty) })
       added++
     })
     setApplied({ updated, added })
     setOpen(false)
-    logImport(fileName, `${updated} received → Ordering on-hand${added ? ` · ${added} new item${added === 1 ? '' : 's'} → Catalog` : ''}`)
+    logImport(
+      fileName,
+      `${updated} received → on-hand${repriced ? ` · ${repriced} case cost${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}`,
+    )
   }
 
   if (!open) {

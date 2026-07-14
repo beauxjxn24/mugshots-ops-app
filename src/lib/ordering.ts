@@ -145,15 +145,31 @@ export function applyReceipts(receipts: Receipt[]): number {
 export function proposeReceipts(lineItems: LineItem[]) {
   const data = getOrdering()
   const flat = Object.entries(data).flatMap(([vendor, items]) => items.map((item) => ({ vendor, item })))
+  const catalog = getCatalog()
   return lineItems.map((li) => {
-    const m = bestMatch(li.description, flat)
+    // Learned aliases + exact catalog names claim the line before any fuzzing.
+    const known = fuzzyExact(li.description, catalog)
+    const flatHit = known ? flat.find((f) => f.item.id === known.id) : null
+    const m = flatHit ? { ...flatHit, score: 1 } : bestMatch(li.description, flat)
     const qty = li.qty ? parseInt(li.qty, 10) : 1
     return {
       description: li.description,
       qty: Number.isFinite(qty) ? qty : 1,
+      price: li.price ? parseFloat(li.price.replace(/[^0-9.]/g, '')) || undefined : undefined,
       match: m,
     }
   })
+}
+
+function fuzzyExact(name: string, items: CatalogItem[]): CatalogItem | null {
+  const key = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()
+  return (
+    items.find(
+      (x) =>
+        x.name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim() === key ||
+        (x.aliases ?? []).some((a) => a.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim() === key),
+    ) ?? null
+  )
 }
 
 /** Legacy factory kept for callers that still build ad-hoc items. */
