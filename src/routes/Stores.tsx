@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Download, Upload } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
@@ -6,6 +6,7 @@ import { useScope, useCurrentNames } from '../lib/scope'
 import { usePersistentState } from '../lib/store'
 import { requirePin } from '../lib/pin'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
+import { getPmixDays } from '../lib/pmix'
 
 /**
  * Weekly targets — Admin-set per store (handoff spec). Labor ≤ % flags the
@@ -69,11 +70,34 @@ function WeeklyTargets() {
 function TrackedItems() {
   const [tracked, setTracked] = usePersistentState<string[]>('tracked:items', [])
   const [adding, setAdding] = useState('')
-  const add = () => {
-    if (!adding.trim()) return
-    setTracked((ts) => [...new Set([...ts, adding.trim()])])
+
+  // Predictive text tied to REAL PMIX items — you can only track something
+  // that actually shows up in your product mix, so every tile fills in.
+  const pmixNames = useMemo(() => {
+    const days = getPmixDays()
+    const set = new Set<string>()
+    for (const d of Object.values(days)) for (const it of d.items) if (it.name.trim()) set.add(it.name.trim())
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [])
+  const q = adding.trim().toLowerCase()
+  const suggestions =
+    q.length < 2
+      ? []
+      : pmixNames
+          .filter((n) => n.toLowerCase().includes(q) && !tracked.some((t) => t.toLowerCase() === n.toLowerCase()))
+          .slice(0, 8)
+  const exactPmix = pmixNames.find((n) => n.toLowerCase() === q)
+
+  const add = (name?: string) => {
+    const pick = (name ?? adding).trim()
+    if (!pick) return
+    // With PMIX on file, only real PMIX names go up — anything else would
+    // never get tracked.
+    if (pmixNames.length > 0 && !pmixNames.some((n) => n.toLowerCase() === pick.toLowerCase())) return
+    setTracked((ts) => [...new Set([...ts, pick])])
     setAdding('')
   }
+
   return (
     <Card className="p-4">
       <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted">
@@ -99,17 +123,49 @@ function TrackedItems() {
           </span>
         ))}
       </div>
-      <div className="flex gap-2">
-        <input
-          value={adding}
-          onChange={(e) => setAdding(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && add()}
-          placeholder="Add an item to track (matches your PMIX by name)…"
-          className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-        />
-        <button onClick={add} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
-          Add
-        </button>
+      <div className="relative">
+        <div className="flex gap-2">
+          <input
+            value={adding}
+            onChange={(e) => setAdding(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') add(suggestions.length === 1 ? suggestions[0] : undefined)
+              if (e.key === 'Escape') setAdding('')
+            }}
+            placeholder={pmixNames.length ? 'Start typing — matches your real PMIX items…' : 'Add an item to track (drop a PMIX on Imports to get suggestions)…'}
+            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <button
+            onClick={() => add()}
+            disabled={pmixNames.length > 0 && !exactPmix}
+            title={pmixNames.length > 0 && !exactPmix ? 'Pick a real PMIX item from the suggestions' : undefined}
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            Add
+          </button>
+        </div>
+        {suggestions.length > 0 && (
+          <div className="absolute left-0 right-16 top-full z-10 mt-1 overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg">
+            {suggestions.map((n) => (
+              <button
+                key={n}
+                onClick={() => add(n)}
+                className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-brand/10"
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
+        {q.length >= 2 &&
+          pmixNames.length > 0 &&
+          suggestions.length === 0 &&
+          !exactPmix &&
+          (pmixNames.some((n) => n.toLowerCase().includes(q)) ? (
+            <p className="mt-1 text-[11px] text-muted">Already on the board — every PMIX match is tracked.</p>
+          ) : (
+            <p className="mt-1 text-[11px] text-warn">No PMIX item matches “{adding.trim()}” — it wouldn't get tracked.</p>
+          ))}
       </div>
     </Card>
   )

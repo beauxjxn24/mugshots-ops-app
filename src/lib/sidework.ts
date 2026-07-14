@@ -39,7 +39,7 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
         ],
       },
       {
-        section: 'Section 5',
+        section: 'Section 4',
         tasks: [
           'Brew tea for bar side',
           'Set up drink station for bar area',
@@ -50,7 +50,7 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
       {
         section: 'Section 6',
         tasks: [
-          'Cut lemons for dining & bar side for the entire day (Section 5 M–F)',
+          'Cut lemons for dining & bar side for the entire day (Section 4 M–F)',
           'Check section — set up for a busy, successful shift',
         ],
       },
@@ -89,7 +89,7 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
         ],
       },
       {
-        section: 'Section 5',
+        section: 'Section 4',
         tasks: [
           'Restock tea, ice, cups, and lids for bar area',
           'Roll silverware',
@@ -142,7 +142,7 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
         ],
       },
       {
-        section: 'Section 5',
+        section: 'Section 4',
         tasks: [
           'Check sections 1–3 sidework — ensure everything is done before checkout',
           'Mop dining room',

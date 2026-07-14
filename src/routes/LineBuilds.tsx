@@ -65,11 +65,15 @@ export function LineBuilds() {
           {cards.map((s) => {
             const photo = dishPhoto(s.name)
             return (
-            <Card key={`${s.g}-${s.name}`} className="break-inside-avoid p-3.5 print:border print:shadow-none">
+            <Card key={`${s.g}-${s.name}`} className="break-inside-avoid overflow-hidden p-3.5 print:border print:shadow-none">
+              {photo && (
+                <img
+                  src={photo}
+                  alt={s.name}
+                  className="-mx-3.5 -mt-3.5 mb-2.5 h-28 w-[calc(100%+1.75rem)] max-w-none object-cover print:hidden"
+                />
+              )}
               <div className="mb-0.5 flex items-center justify-between gap-2">
-                {photo && (
-                  <img src={photo} alt={s.name} className="size-10 shrink-0 rounded-lg object-cover shadow-sm" />
-                )}
                 <div className="min-w-0 flex-1 truncate font-display text-[15px] font-semibold text-ink">{s.name}</div>
                 <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-muted">
                   {s.g.replace(' Builds', '')}

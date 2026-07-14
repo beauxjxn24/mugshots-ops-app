@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Printer, Pencil, Check, GripVertical } from 'lucide-react'
+import { Printer, Pencil, Check, GripVertical, Archive } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
@@ -11,6 +11,8 @@ interface PrepItem {
   spec: string
   unit: string
   pars: number[] // Mon..Sun
+  section?: string // Recipes | Test items | LTO
+  parked?: boolean // archived — kept, hidden, one tap to bring back
 }
 interface HistEntry {
   date: string
@@ -21,7 +23,18 @@ interface HistEntry {
 }
 
 const DOWS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const SECTIONS = ['Recipes', 'Test items', 'LTO'] as const
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+
+/** First-run classification (owner spec): brined chicken / queso meat /
+ *  sliced jals were tests; LTO items get their own box; the originals are
+ *  the recipes. */
+function classify(it: PrepItem): string {
+  const hay = `${it.name} ${it.spec}`
+  if (/brine|queso\s*meat|slic\w*\s*jal/i.test(hay)) return 'Test items'
+  if (/\bLTO\b|firecracker|popper/i.test(hay)) return 'LTO'
+  return 'Recipes'
+}
 
 function dayIdx(iso: string): number {
   const [y, m, d] = iso.split('-').map(Number)
@@ -33,10 +46,9 @@ function fmtLong(iso: string): string {
 }
 
 /**
- * Prep list — the prototype screen, seeded with the owner's real 49-item
- * sheet: a par for EVERY day of the week (today's column highlighted),
- * on-hand entry, drag-to-reorder rows (the printed sheet follows shelf
- * order), and pars that learn from what you actually had left over.
+ * Prep list — the owner's real 49-item sheet in three boxes (Recipes / Test
+ * items / LTO): per-day pars, on-hand entry, drag-to-shelf-order (the print
+ * follows it), park-don't-delete, and pars that learn from leftovers.
  */
 export function Prep() {
   const t = today()
@@ -45,23 +57,42 @@ export function Prep() {
   const [onHand, setOnHand] = usePersistentState<Record<string, number>>(`prep:onhand:${t}`, {})
   const [history, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
   const [editingPars, setEditingPars] = useState(false)
-  const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans' })
+  const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes' })
+
+  // One-time: sort existing items into their boxes.
+  useEffect(() => {
+    if (items.some((it) => !it.section)) {
+      setItems((is) => is.map((it) => (it.section ? it : { ...it, section: classify(it) })))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const active = items.filter((it) => !it.parked)
+  const parked = items.filter((it) => it.parked)
+  const inSection = (sec: string) => active.filter((it) => (it.section ?? 'Recipes') === sec)
 
   const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
 
-  // Drag a row by its grip to lay the list out sheet-to-shelf; the order is
-  // saved and the printed sheet follows it.
-  const [dragIdx, setDragIdx] = useState<number | null>(null)
-  const [overIdx, setOverIdx] = useState<number | null>(null)
-  const moveItem = (from: number, to: number) => {
-    if (from === to) return
+  // Drag by the grip — within a box or across boxes; order + box persist and
+  // the printed sheet follows.
+  const [dragName, setDragName] = useState<string | null>(null)
+  const [overName, setOverName] = useState<string | null>(null)
+  const dropOn = (targetName: string | null, section: string) => {
+    if (!dragName) return
     setItems((is) => {
+      const from = is.findIndex((x) => x.name === dragName)
+      if (from < 0) return is
       const next = [...is]
       const [m] = next.splice(from, 1)
-      next.splice(to, 0, m)
+      const moved = { ...m, section }
+      const at = targetName ? next.findIndex((x) => x.name === targetName) : -1
+      next.splice(at < 0 ? next.length : at, 0, moved)
       return next
     })
   }
+
+  const park = (name: string, on: boolean) =>
+    setItems((is) => is.map((x) => (x.name === name ? { ...x, parked: on } : x)))
 
   const setCount = (name: string, v: number | undefined) => {
     setOnHand((o) => {
@@ -70,7 +101,6 @@ export function Prep() {
       else next[name] = v
       return next
     })
-    // Usage history: today's leftover vs today's par — pars learn from this.
     if (v != null) {
       const it = items.find((x) => x.name === name)
       if (it)
@@ -83,7 +113,7 @@ export function Prep() {
   // Pars learn from usage: ≥3 counts on the same weekday → suggest a bump.
   const suggestions = useMemo(() => {
     const out: Array<{ name: string; dow: number; from: number; to: number }> = []
-    for (const it of items) {
+    for (const it of active) {
       for (let dow = 0; dow < 7; dow++) {
         const entries = history.filter((e) => e.name === it.name && e.dow === dow).slice(-4)
         if (entries.length < 3) continue
@@ -98,7 +128,7 @@ export function Prep() {
       }
     }
     return out.slice(0, 5)
-  }, [items, history])
+  }, [active, history])
 
   const applySuggestions = () => {
     setItems((is) =>
@@ -124,8 +154,143 @@ export function Prep() {
   const addItem = () => {
     if (!adding.name.trim()) return
     if (items.some((x) => x.name.toLowerCase() === adding.name.trim().toLowerCase())) return
-    setItems((is) => [...is, { name: adding.name.trim(), spec: adding.spec.trim(), unit: adding.unit || 'pans', pars: [1, 1, 1, 1, 1, 1, 1] }])
-    setAdding({ name: '', spec: '', unit: 'pans' })
+    setItems((is) => [
+      ...is,
+      { name: adding.name.trim(), spec: adding.spec.trim(), unit: adding.unit || 'pans', pars: [1, 1, 1, 1, 1, 1, 1], section: adding.section },
+    ])
+    setAdding((a) => ({ ...a, name: '', spec: '' }))
+  }
+
+  const actionButtons = (
+    <>
+      <button onClick={resetDay} className="rounded-lg border border-down/30 bg-white px-3 py-2 text-xs font-bold text-down">
+        Reset day
+      </button>
+      <button
+        onClick={() => setEditingPars((e) => !e)}
+        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
+          editingPars ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
+        }`}
+      >
+        {editingPars ? <Check size={13} /> : <Pencil size={12} />} {editingPars ? 'Done' : 'Edit daily pars'}
+      </button>
+      <button
+        onClick={() => window.print()}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
+      >
+        <Printer size={13} /> Print prep sheet
+      </button>
+    </>
+  )
+
+  const renderRow = (it: PrepItem) => {
+    const n = need(it)
+    const counted = onHand[it.name] != null
+    return (
+      <div
+        key={it.name}
+        onDragOver={(e) => {
+          if (!dragName) return
+          e.preventDefault()
+          setOverName(it.name)
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          dropOn(it.name, it.section ?? 'Recipes')
+          setDragName(null)
+          setOverName(null)
+        }}
+        className={`group grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
+          dragName === it.name ? 'opacity-40' : ''
+        } ${overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''}`}
+      >
+        <span
+          draggable
+          onDragStart={(e) => {
+            setDragName(it.name)
+            e.dataTransfer.effectAllowed = 'move'
+            e.dataTransfer.setData('text/plain', it.name)
+          }}
+          onDragEnd={() => {
+            setDragName(null)
+            setOverName(null)
+          }}
+          title="Drag to reorder — drop into another box to move it there"
+          className="cursor-grab text-muted/50 hover:text-ink active:cursor-grabbing"
+        >
+          <GripVertical size={14} />
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold text-ink">{it.name}</div>
+          <div className="flex items-center gap-2 text-[10px] text-muted">
+            <span className="truncate">{it.spec || it.unit}</span>
+            <button
+              onClick={() => park(it.name, true)}
+              title="Park it — off the list and the print, kept in the Parked box below"
+              className="shrink-0 text-muted opacity-0 transition-opacity hover:text-brand-600 group-hover:opacity-100"
+            >
+              park
+            </button>
+            {editingPars && (
+              <button
+                onClick={async () => {
+                  if (await confirmDelete(`Remove ${it.name} from the prep list?`, 'Gone for good — Park keeps it instead.'))
+                    setItems((is) => is.filter((x) => x.name !== it.name))
+                }}
+                className="shrink-0 text-down opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                remove
+              </button>
+            )}
+          </div>
+        </div>
+        {it.pars.map((p, i) =>
+          editingPars ? (
+            <input
+              key={i}
+              type="number"
+              inputMode="decimal"
+              step="0.5"
+              value={p}
+              onChange={(e) => setPar(it.name, i, Math.max(0, parseFloat(e.target.value) || 0))}
+              className={`w-full rounded-md border px-0.5 py-1 text-center font-mono text-xs outline-none focus:border-brand ${
+                i === di ? 'border-brand/50 bg-brand/10 font-bold' : 'border-black/10 bg-white'
+              }`}
+            />
+          ) : (
+            <span
+              key={i}
+              className={`rounded-md py-1 text-center font-mono text-xs ${i === di ? 'bg-brand/15 font-bold text-ink' : 'text-muted'}`}
+            >
+              {fmtQty(p)}
+            </span>
+          ),
+        )}
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.5"
+          value={counted ? onHand[it.name] : ''}
+          placeholder="—"
+          onChange={(e) => {
+            const v = e.target.value
+            setCount(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
+          }}
+          className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
+        />
+        <span className="text-right">
+          {n > 0 ? (
+            <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
+              {fmtQty(n)} {it.unit}
+            </span>
+          ) : counted ? (
+            <span className="rounded-full bg-up/10 px-2.5 py-1 text-xs font-extrabold text-up">✓ at par</span>
+          ) : (
+            <span className="text-xs text-muted">—</span>
+          )}
+        </span>
+      </div>
+    )
   }
 
   return (
@@ -138,54 +303,41 @@ export function Prep() {
             <Link to="/builds" className="text-xs font-bold text-brand">
               Line builds →
             </Link>
-            <button onClick={resetDay} className="rounded-lg border border-down/30 bg-white px-3 py-2 text-xs font-bold text-down">
-              Reset day
-            </button>
-            <button
-              onClick={() => setEditingPars((e) => !e)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
-                editingPars ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
-              }`}
-            >
-              {editingPars ? <Check size={13} /> : <Pencil size={12} />} {editingPars ? 'Done' : 'Edit daily pars'}
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
-            >
-              <Printer size={13} /> Print prep sheet
-            </button>
+            {actionButtons}
           </div>
         }
       />
-      {/* Print-only prep sheet (owner spec): zero items never print, and the
-          list flows into TWO columns so the type stays readable. */}
+      {/* Print-only prep sheet (owner spec): zero items never print, sections
+          keep their boxes, and the list flows into TWO columns. */}
       <div className="prep-print hidden">
         <div className="mb-2 flex items-baseline justify-between border-b-2 border-black pb-1">
           <span className="text-[16px] font-bold">Prep list · {fmtLong(t)}</span>
           <span className="text-[10px]">par − on hand = prep · Mugshots Flowood</span>
         </div>
         <div style={{ columns: 2, columnGap: '22px' }}>
-          {items
-            .filter((it) => (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0))
-            .map((it) => (
-              <div
-                key={it.name}
-                className="flex items-center gap-2 border-b border-black/25 py-[3px]"
-                style={{ breakInside: 'avoid' }}
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[11px] font-bold leading-[13px]">{it.name}</span>
-                  <span className="block truncate text-[8.5px] leading-[10px] text-black/60">{it.spec || it.unit}</span>
-                </span>
-                <span className="w-14 shrink-0 text-right font-mono text-[11px] font-bold">
-                  {onHand[it.name] != null && need(it) > 0
-                    ? `${fmtQty(need(it))} ${it.unit}`
-                    : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
-                </span>
-                <span className="h-[15px] w-9 shrink-0 rounded-[3px] border border-black/50" />
+          {SECTIONS.map((sec) => {
+            const rows = inSection(sec).filter((it) => (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0))
+            if (rows.length === 0) return null
+            return (
+              <div key={sec}>
+                <div className="mt-1 border-b border-black py-[2px] text-[9.5px] font-extrabold uppercase tracking-wider">
+                  {sec}
+                </div>
+                {rows.map((it) => (
+                  <div key={it.name} className="flex items-center gap-2 border-b border-black/25 py-[3px]" style={{ breakInside: 'avoid' }}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[11px] font-bold leading-[13px]">{it.name}</span>
+                      <span className="block truncate text-[8.5px] leading-[10px] text-black/60">{it.spec || it.unit}</span>
+                    </span>
+                    <span className="w-14 shrink-0 text-right font-mono text-[11px] font-bold">
+                      {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
+                    </span>
+                    <span className="h-[15px] w-9 shrink-0 rounded-[3px] border border-black/50" />
+                  </div>
+                ))}
               </div>
-            ))}
+            )
+          })}
         </div>
         <div className="mt-1.5 text-[8.5px] text-black/60">
           Number shown = {Object.keys(onHand).length ? 'prep needed (on-hands already counted in the app)' : "today's par"} ·
@@ -227,152 +379,123 @@ export function Prep() {
           </Card>
         </div>
 
-        {/* Par table */}
-        <Card className="overflow-x-auto">
-          <div className="min-w-[880px]">
-            <div className="grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-              <span title="Drag rows to match your shelf order" />
-              <span>Prep item · drag ⠿ to shelf order</span>
-              {DOWS.map((d, i) => (
-                <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
-                  {d}
+        {/* One box per section — Recipes / Test items / LTO */}
+        {SECTIONS.map((sec) => {
+          const rows = inSection(sec)
+          return (
+            <Card key={sec} className="overflow-x-auto">
+              <div
+                onDragOver={(e) => {
+                  if (!dragName) return
+                  e.preventDefault()
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  dropOn(null, sec)
+                  setDragName(null)
+                  setOverName(null)
+                }}
+                className="flex items-center justify-between border-b border-brand/20 bg-brand/[0.07] px-4 py-2"
+              >
+                <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600">
+                  {sec} <span className="ml-1 font-semibold text-muted">{rows.length}</span>
                 </span>
-              ))}
-              <span className="text-center">On hand</span>
-              <span className="text-right">Prep today</span>
-            </div>
-            {items.map((it, idx) => {
-              const n = need(it)
-              const counted = onHand[it.name] != null
-              return (
-                <div
-                  key={it.name}
-                  onDragOver={(e) => {
-                    if (dragIdx == null) return
-                    e.preventDefault()
-                    setOverIdx(idx)
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    if (dragIdx != null) moveItem(dragIdx, idx)
-                    setDragIdx(null)
-                    setOverIdx(null)
-                  }}
-                  className={`group grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
-                    dragIdx === idx ? 'opacity-40' : ''
-                  } ${overIdx === idx && dragIdx !== idx ? 'border-t-2 border-t-brand' : ''}`}
-                >
-                  <span
-                    draggable
-                    onDragStart={(e) => {
-                      setDragIdx(idx)
-                      e.dataTransfer.effectAllowed = 'move'
-                      e.dataTransfer.setData('text/plain', it.name)
-                    }}
-                    onDragEnd={() => {
-                      setDragIdx(null)
-                      setOverIdx(null)
-                    }}
-                    title="Drag to reorder — the printed sheet follows this order"
-                    className="cursor-grab text-muted/50 hover:text-ink active:cursor-grabbing"
-                  >
-                    <GripVertical size={14} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-ink">{it.name}</div>
-                    <div className="flex items-center gap-2 text-[10px] text-muted">
-                      <span className="truncate">{it.spec || it.unit}</span>
-                      {editingPars && (
-                        <button
-                          onClick={async () => {
-                            if (await confirmDelete(`Remove ${it.name} from the prep list?`))
-                              setItems((is) => is.filter((x) => x.name !== it.name))
-                          }}
-                          className="shrink-0 text-down opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          remove
-                        </button>
-                      )}
+                {sec !== 'Recipes' && (
+                  <span className="text-[10px] text-muted">{sec === 'LTO' ? 'limited-time builds' : 'trial recipes — park or promote'}</span>
+                )}
+              </div>
+              <div className="min-w-[880px]">
+                <div className="grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                  <span />
+                  <span>Prep item</span>
+                  {DOWS.map((d, i) => (
+                    <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
+                      {d}
+                    </span>
+                  ))}
+                  <span className="text-center">On hand</span>
+                  <span className="text-right">Prep today</span>
+                </div>
+                {rows.length === 0 ? (
+                  <p className="px-4 py-4 text-center text-xs text-muted">Nothing here — drag an item in, or add one below.</p>
+                ) : (
+                  rows.map(renderRow)
+                )}
+              </div>
+            </Card>
+          )
+        })}
+
+        {/* Add row */}
+        <Card className="flex flex-wrap gap-2 p-3">
+          <input
+            value={adding.name}
+            onChange={(e) => setAdding({ ...adding, name: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && addItem()}
+            placeholder="Add prep item…"
+            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <input
+            value={adding.spec}
+            onChange={(e) => setAdding({ ...adding, spec: e.target.value })}
+            placeholder="Pan spec (Clear 1/6 pan…)"
+            className="w-52 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <input
+            value={adding.unit}
+            onChange={(e) => setAdding({ ...adding, unit: e.target.value })}
+            placeholder="unit"
+            className="w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <select
+            value={adding.section}
+            onChange={(e) => setAdding({ ...adding, section: e.target.value })}
+            className="rounded-lg border border-black/10 bg-white px-2 py-2 text-sm outline-none focus:border-brand"
+          >
+            {SECTIONS.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
+            Add
+          </button>
+        </Card>
+
+        {/* Parked — archived, never lost */}
+        <details className="rounded-2xl border border-black/10 bg-white px-4 py-3">
+          <summary className="cursor-pointer text-sm font-bold text-ink">
+            <span className="inline-flex items-center gap-1.5">
+              <Archive size={14} className="text-muted" /> Parked items
+              <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">{parked.length}</span>
+            </span>
+            <span className="ml-2 text-xs font-normal text-muted">off the list and the print — nothing is lost</span>
+          </summary>
+          {parked.length === 0 ? (
+            <p className="mt-2 text-xs text-muted">Nothing parked. Hover an item and tap “park” to tuck it away.</p>
+          ) : (
+            <div className="mt-2 divide-y divide-black/5">
+              {parked.map((it) => (
+                <div key={it.name} className="flex items-center gap-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-ink/70">{it.name}</div>
+                    <div className="truncate text-[10px] text-muted">
+                      {it.section ?? 'Recipes'} · {it.spec || it.unit}
                     </div>
                   </div>
-                  {it.pars.map((p, i) =>
-                    editingPars ? (
-                      <input
-                        key={i}
-                        type="number"
-                        inputMode="decimal"
-                        step="0.5"
-                        value={p}
-                        onChange={(e) => setPar(it.name, i, Math.max(0, parseFloat(e.target.value) || 0))}
-                        className={`w-full rounded-md border px-0.5 py-1 text-center font-mono text-xs outline-none focus:border-brand ${
-                          i === di ? 'border-brand/50 bg-brand/10 font-bold' : 'border-black/10 bg-white'
-                        }`}
-                      />
-                    ) : (
-                      <span
-                        key={i}
-                        className={`rounded-md py-1 text-center font-mono text-xs ${
-                          i === di ? 'bg-brand/15 font-bold text-ink' : 'text-muted'
-                        }`}
-                      >
-                        {fmtQty(p)}
-                      </span>
-                    ),
-                  )}
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.5"
-                    value={counted ? onHand[it.name] : ''}
-                    placeholder="—"
-                    onChange={(e) => {
-                      const v = e.target.value
-                      setCount(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
-                    }}
-                    className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
-                  />
-                  <span className="text-right">
-                    {n > 0 ? (
-                      <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
-                        {fmtQty(n)} {it.unit}
-                      </span>
-                    ) : counted ? (
-                      <span className="rounded-full bg-up/10 px-2.5 py-1 text-xs font-extrabold text-up">✓ at par</span>
-                    ) : (
-                      <span className="text-xs text-muted">—</span>
-                    )}
-                  </span>
+                  <button
+                    onClick={() => park(it.name, false)}
+                    className="rounded-lg border border-brand/40 px-3 py-1.5 text-xs font-bold text-brand-600 hover:bg-brand/10"
+                  >
+                    Bring back
+                  </button>
                 </div>
-              )
-            })}
-            {editingPars && (
-              <div className="flex flex-wrap gap-2 border-t border-black/5 p-3 print:hidden">
-                <input
-                  value={adding.name}
-                  onChange={(e) => setAdding({ ...adding, name: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && addItem()}
-                  placeholder="Add prep item…"
-                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                />
-                <input
-                  value={adding.spec}
-                  onChange={(e) => setAdding({ ...adding, spec: e.target.value })}
-                  placeholder="Pan spec (Clear 1/6 pan…)"
-                  className="w-52 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                />
-                <input
-                  value={adding.unit}
-                  onChange={(e) => setAdding({ ...adding, unit: e.target.value })}
-                  placeholder="unit"
-                  className="w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                />
-                <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
-                  Add
-                </button>
-              </div>
-            )}
-          </div>
-        </Card>
+              ))}
+            </div>
+          )}
+        </details>
+
+        {/* Bottom action bar — same buttons as the top, so there's no scroll-back */}
+        <div className="flex flex-wrap items-center justify-end gap-2">{actionButtons}</div>
       </div>
     </>
   )

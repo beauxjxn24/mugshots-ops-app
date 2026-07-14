@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Check } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
@@ -20,6 +20,42 @@ export function Sidework() {
 
   const activePhase = phases.includes(phase) ? phase : phases[0]
   const sections = data[role]?.[activePhase] ?? []
+
+  // One-time: the default sheet used to jump Section 3 → Section 5; stored
+  // copies get the renumber too (titles stay editable below).
+  useEffect(() => {
+    setData((d) => {
+      let changed = false
+      const next: Data = { ...d }
+      for (const r of Object.keys(next) as Role[]) {
+        for (const ph of Object.keys(next[r] ?? {})) {
+          const secs = next[r][ph] ?? []
+          if (secs.some((s) => s.section === 'Section 5') && !secs.some((s) => s.section === 'Section 4')) {
+            changed = true
+            next[r] = {
+              ...next[r],
+              [ph]: secs.map((s) =>
+                s.section === 'Section 5'
+                  ? { ...s, section: 'Section 4', tasks: s.tasks.map((t) => t.replace(/Section 5/g, 'Section 4')) }
+                  : s,
+              ),
+            }
+          }
+        }
+      }
+      return changed ? next : d
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Section titles are editable (owner spec: some stores use names, not
+  // section numbers).
+  const renameSection = (si: number, title: string) => {
+    const name = title.trim()
+    if (!name) return
+    setSections((secs) => secs.map((s, i) => (i === si ? { ...s, section: name } : s)))
+    setEditingSec(name)
+  }
 
   const key = (s: string, t: string) => `${role}|${activePhase}|${s}|${t}`
   const allTasks = useMemo(
@@ -133,8 +169,17 @@ export function Sidework() {
           const editing = editingSec === sec.section
           return (
             <Card key={sec.section} className={`overflow-hidden ${editing ? 'ring-2 ring-brand' : ''}`}>
-              <div className={`flex items-center justify-between border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'}`}>
-                <span className="font-display text-sm font-semibold text-ink">{sec.section}</span>
+              <div className={`flex items-center justify-between gap-2 border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'}`}>
+                {editing ? (
+                  <input
+                    value={sec.section}
+                    onChange={(e) => renameSection(si, e.target.value)}
+                    title="Rename this tile — use a name instead of a section number if that's how your store works"
+                    className="min-w-0 flex-1 rounded-lg border border-brand/40 bg-white px-2 py-1 font-display text-sm font-semibold text-ink outline-none"
+                  />
+                ) : (
+                  <span className="font-display text-sm font-semibold text-ink">{sec.section}</span>
+                )}
                 <span className="flex items-center gap-2">
                   {!editing && (
                     <span className="text-xs text-muted">

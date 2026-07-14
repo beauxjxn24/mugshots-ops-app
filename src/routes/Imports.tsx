@@ -457,9 +457,9 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       .filter((r) => r.qty > 0)
       .map((r) => {
         const [v, itemId] = r.target.split('||')
-        return { vendor: v, itemId, qty: r.qty }
+        return { vendor: v, itemId, qty: r.qty, cost: r.price }
       })
-    const updated = applyReceipts(receipts)
+    const updated = applyReceipts(receipts, inv.date ?? undefined)
     let repriced = 0
     for (const r of matchedRows) {
       const itemId = r.target.split('||')[1]
@@ -478,7 +478,9 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       const ci = registerItem({ name: r.description.trim(), unit: 'cs', vendor, cost: r.price, code: r.code, size: r.size })
       if (r.raw !== r.description) addAlias(ci.id, r.raw)
       setOnGuide(ci.id, true)
-      setParEntry(ci.id, { onHand: Math.max(0, r.qty) })
+      // Through applyReceipts (not a bare count) so the line lands in the
+      // receipts log — the Orders Usage view reads that.
+      applyReceipts([{ vendor, itemId: ci.id, qty: Math.max(0, r.qty), cost: r.price }], inv.date ?? undefined)
       added++
     })
     // File the invoice automatically — qty, price, date, done.

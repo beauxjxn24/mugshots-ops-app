@@ -126,18 +126,41 @@ export interface Receipt {
   vendor: string
   itemId: string
   qty: number
+  cost?: number // per-unit price on the invoice line — feeds the usage view
 }
 
-/** Add received quantities onto this store's on-hand counts. */
-export function applyReceipts(receipts: Receipt[]): number {
+/** Every received line, forever (capped) — the Usage view reads this. */
+export interface ReceiptLogEntry {
+  date: string // YYYY-MM-DD (invoice date when known)
+  itemId: string
+  name: string
+  qty: number
+  cost?: number
+  vendor: string
+}
+
+export const getReceiptLog = (): ReceiptLogEntry[] => load<ReceiptLogEntry[]>(storeKey('receipts:log'), [])
+
+/** Add received quantities onto this store's on-hand counts + log each line. */
+export function applyReceipts(receipts: Receipt[], date?: string): number {
   const pars = getPars()
+  const names = new Map(getCatalog().map((c) => [c.id, c.name]))
+  const stamp =
+    date ??
+    (() => {
+      const d = new Date()
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })()
   let applied = 0
+  const logEntries: ReceiptLogEntry[] = []
   for (const r of receipts) {
     const p = pars[r.itemId] ?? { par: 0, onHand: 0 }
     pars[r.itemId] = { ...p, onHand: Math.max(0, p.onHand + r.qty) }
+    logEntries.push({ date: stamp, itemId: r.itemId, name: names.get(r.itemId) ?? '', qty: r.qty, cost: r.cost, vendor: r.vendor })
     applied++
   }
   setPars(pars)
+  if (logEntries.length) save(storeKey('receipts:log'), [...logEntries, ...getReceiptLog()].slice(0, 1200))
   return applied
 }
 
