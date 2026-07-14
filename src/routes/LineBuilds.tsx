@@ -3,6 +3,7 @@ import { Printer } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { SPECS, GROUP_ORDER } from '../lib/specs'
+import { dishPhoto } from '../lib/photos'
 
 /**
  * Line builds — the kitchen line's board view (handoff spec): every build
@@ -61,10 +62,15 @@ export function LineBuilds() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-2">
-          {cards.map((s) => (
+          {cards.map((s) => {
+            const photo = dishPhoto(s.name)
+            return (
             <Card key={`${s.g}-${s.name}`} className="break-inside-avoid p-3.5 print:border print:shadow-none">
-              <div className="mb-0.5 flex items-baseline justify-between gap-2">
-                <div className="min-w-0 truncate font-display text-[15px] font-semibold text-ink">{s.name}</div>
+              <div className="mb-0.5 flex items-center justify-between gap-2">
+                {photo && (
+                  <img src={photo} alt={s.name} className="size-10 shrink-0 rounded-lg object-cover shadow-sm" />
+                )}
+                <div className="min-w-0 flex-1 truncate font-display text-[15px] font-semibold text-ink">{s.name}</div>
                 <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-muted">
                   {s.g.replace(' Builds', '')}
                 </span>
@@ -81,7 +87,8 @@ export function LineBuilds() {
                 ))}
               </ol>
             </Card>
-          ))}
+            )
+          })}
         </div>
         {cards.length === 0 && (
           <p className="py-8 text-center text-sm text-muted">No builds match “{q}”.</p>

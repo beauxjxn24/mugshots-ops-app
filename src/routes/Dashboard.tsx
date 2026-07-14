@@ -11,6 +11,7 @@ import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { PartyPopper, CalendarClock, Bell, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
+import { dishPhoto } from '../lib/photos'
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
@@ -442,13 +443,6 @@ function WeekBars({ nights }: { nights: Night[] }) {
   )
 }
 
-// Real product photos, recovered from the owner's prototype bundle.
-const LTO_PHOTOS: Record<string, string> = Object.fromEntries(
-  Object.entries(import.meta.glob('../assets/lto/*.jpg', { eager: true, query: '?url', import: 'default' })).map(
-    ([path, url]) => [path.split('/').pop()!.replace('.jpg', ''), url as string],
-  ),
-)
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
 /** FOOD FOCUS — LTO carousel card (prototype spec): cycle the live LTOs. */
 function LtoFocus() {
@@ -457,7 +451,7 @@ function LtoFocus() {
   const ltos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
   if (ltos.length === 0) return null
   const s = ltos[((idx % ltos.length) + ltos.length) % ltos.length]
-  const photo = LTO_PHOTOS[slugify(s.name)]
+  const photo = dishPhoto(s.name)
 
   // Latest PMIX day that mentions this item, if any — honest otherwise.
   const keys = Object.keys(days).sort().reverse()
