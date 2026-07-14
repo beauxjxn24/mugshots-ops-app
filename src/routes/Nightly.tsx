@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, Mail, Check } from 'lucide-react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { Mail, Check } from 'lucide-react'
+import { periodWeek } from '../lib/forecast'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
@@ -64,6 +65,20 @@ export function Nightly() {
   const sorted = useMemo(() => [...log].sort((a, b) => b.date.localeCompare(a.date)), [log])
   const weekTotal = useMemo(() => sorted.slice(0, 7).reduce((s, n) => s + n.netSales, 0), [sorted])
 
+  // Prototype context: period/week chips + same-day-last-year comparison.
+  const pw = periodWeek(form.date)
+  const byDate = useMemo(() => new Map(log.map((n) => [n.date, n])), [log])
+  const shiftD = (isoDate: string, delta: number) => {
+    const [y, m, d] = isoDate.split('-').map(Number)
+    const dt = new Date(y, m - 1, d + delta)
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+  }
+  const lyNight = byDate.get(shiftD(form.date, -364)) ?? null
+  const lwNight = byDate.get(shiftD(form.date, -7)) ?? null
+  const cmpNight = lyNight ?? lwNight
+  const catTotal = f(form.food) + f(form.beer) + f(form.liquor) + f(form.wine) + f(form.na)
+  const catDiff = catTotal - net
+
   const save = () => {
     if (!form.date || (f(form.gross) === 0 && net === 0)) return
     const n: Night = {
@@ -95,85 +110,183 @@ export function Nightly() {
   return (
     <>
       <PageHeader
-        title="Nightly Numbers"
-        subtitle={`Last 7 nights: ${money(weekTotal)} net · labor target ≤ ${targets.laborPct}%`}
+        title={`Nightly Numbers · ${fmtDate(form.date)}`}
+        subtitle={`Period ${pw.period} · Week ${pw.week} · last 7 nights ${money(weekTotal)} net`}
+        right={
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full bg-brand/15 px-2.5 py-1 text-[10px] font-extrabold text-brand-600">
+              Labor ≤ {targets.laborPct}%
+            </span>
+            <span className="rounded-full bg-navy px-2.5 py-1 text-[10px] font-extrabold text-white">
+              Growth +{targets.growthPct}% vs LY
+            </span>
+            <Link to="/period" className="ml-1 text-xs font-bold text-brand">
+              Period review →
+            </Link>
+          </div>
+        }
       />
-      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
-        <Card className="p-4">
-          <div className="grid gap-2 sm:grid-cols-3">
-            <Field label="Date">
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={cls()} />
-            </Field>
-            <Field label="Gross sales">
-              <MoneyInput value={form.gross} onChange={(v) => setForm({ ...form, gross: v })} />
-            </Field>
-            <Field label="Covers">
-              <input type="number" inputMode="numeric" value={form.covers} onChange={(e) => setForm({ ...form, covers: e.target.value })} className={cls()} />
-            </Field>
-            <Field label="Rewards">
-              <MoneyInput value={form.rewards} onChange={(v) => setForm({ ...form, rewards: v })} />
-            </Field>
-            <Field label="Promos">
-              <MoneyInput value={form.promos} onChange={(v) => setForm({ ...form, promos: v })} />
-            </Field>
-            <Field label="Comps">
-              <MoneyInput value={form.comps} onChange={(v) => setForm({ ...form, comps: v })} />
-            </Field>
-            <Field label="Staff discount">
-              <MoneyInput value={form.staffDisc} onChange={(v) => setForm({ ...form, staffDisc: v })} />
-            </Field>
-            <Field label="Labor $">
-              <MoneyInput value={form.labor} onChange={(v) => setForm({ ...form, labor: v })} />
-            </Field>
-            <Field label="Deposit">
-              <MoneyInput value={form.deposit} onChange={(v) => setForm({ ...form, deposit: v })} />
-            </Field>
-            <Field label="Deposit over/under">
-              <MoneyInput value={form.overUnder} onChange={(v) => setForm({ ...form, overUnder: v })} allowNegative />
-            </Field>
-          </div>
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2.4fr)]">
+          {/* SALES + LABOR / DEPOSIT — the prototype's close-out sheet */}
+          <div className="space-y-5">
+            <Card className="p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Sales</span>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  className="rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-brand"
+                />
+              </div>
+              <SheetRow label="Gross Sales" strong>
+                <MoneyInput value={form.gross} onChange={(v) => setForm({ ...form, gross: v })} />
+              </SheetRow>
+              <SheetRow label="− Rewards">
+                <MoneyInput value={form.rewards} onChange={(v) => setForm({ ...form, rewards: v })} />
+              </SheetRow>
+              <SheetRow label="− Promos">
+                <MoneyInput value={form.promos} onChange={(v) => setForm({ ...form, promos: v })} />
+              </SheetRow>
+              <SheetRow label="− Comps">
+                <MoneyInput value={form.comps} onChange={(v) => setForm({ ...form, comps: v })} />
+              </SheetRow>
+              <SheetRow label="− Staff meals">
+                <MoneyInput value={form.staffDisc} onChange={(v) => setForm({ ...form, staffDisc: v })} />
+              </SheetRow>
+              <SheetRow label="Covers">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={form.covers}
+                  onChange={(e) => setForm({ ...form, covers: e.target.value })}
+                  className={`w-full ${cls()}`}
+                />
+              </SheetRow>
+              <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-3">
+                <span className="font-display text-lg font-semibold text-ink">Net Sales</span>
+                <span className="border-b-[3px] border-brand pb-0.5 font-display text-3xl font-semibold text-ink">
+                  {money2(net)}
+                </span>
+              </div>
+              {cmpNight && cmpNight.netSales > 0 && net > 0 && (
+                <div className="mt-3 flex items-center justify-between rounded-lg bg-black/[0.04] px-3 py-2 text-xs">
+                  <span className="font-semibold text-muted">
+                    vs last {lyNight ? 'year' : 'week'} ({fmtDate(lyNight ? shiftD(form.date, -364) : shiftD(form.date, -7)).split(',')[0]} {money(cmpNight.netSales)})
+                  </span>
+                  <span className={`font-bold ${net >= cmpNight.netSales ? 'text-up' : 'text-down'}`}>
+                    {net >= cmpNight.netSales ? '▲ +' : '▼ −'}
+                    {Math.abs(((net - cmpNight.netSales) / cmpNight.netSales) * 100).toFixed(1)}% ·{' '}
+                    {net >= cmpNight.netSales ? '+' : '−'}
+                    {money(Math.abs(net - cmpNight.netSales))}
+                  </span>
+                </div>
+              )}
+            </Card>
 
-          {/* Live math strip */}
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-black/[0.03] px-3 py-2.5">
-            <Pill label="Net" value={money2(net)} strong />
-            {discounts > 0 && <Pill label="Discounts" value={`−${money2(discounts)}`} />}
-            {laborPct > 0 && (
-              <Pill
-                label="Labor"
-                value={`${laborPct.toFixed(1)}%`}
-                tone={laborPct <= targets.laborPct ? 'up' : 'down'}
+            <Card className="p-5">
+              <div className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted">Labor</div>
+              <SheetRow label="Labor $">
+                <MoneyInput value={form.labor} onChange={(v) => setForm({ ...form, labor: v })} />
+              </SheetRow>
+              <div className="flex items-baseline justify-between py-1.5">
+                <span className="text-sm font-bold text-ink">Labor %</span>
+                <span className={`font-display text-xl font-semibold ${laborPct === 0 ? 'text-muted' : laborPct <= targets.laborPct ? 'text-up' : 'text-down'}`}>
+                  {laborPct > 0 ? `${laborPct.toFixed(2)}%` : '—'}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted">Drop the Toast Labor report (by day) on Imports to fill this automatically.</p>
+              <div className="my-3 border-t border-black/10" />
+              <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted">Deposit</div>
+              <SheetRow label="Deposit">
+                <MoneyInput value={form.deposit} onChange={(v) => setForm({ ...form, deposit: v })} />
+              </SheetRow>
+              <SheetRow label="Over / under">
+                <MoneyInput value={form.overUnder} onChange={(v) => setForm({ ...form, overUnder: v })} allowNegative />
+              </SheetRow>
+              {form.overUnder !== '' && (
+                <div className="flex items-baseline justify-between pt-1">
+                  <span className="font-display text-base font-semibold text-ink">Over / Under</span>
+                  <span className={`font-display text-2xl font-semibold ${Math.abs(f(form.overUnder)) < 5 ? 'text-up' : 'text-down'}`}>
+                    {f(form.overUnder) >= 0 ? '+' : '−'}${Math.abs(f(form.overUnder)).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <input
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="Notes — weather, events, callouts, 86'd items…"
+                className={`mt-3 w-full ${cls()}`}
               />
-            )}
-            {form.overUnder !== '' && (
-              <Pill label="Drawer" value={`${f(form.overUnder) >= 0 ? '+' : ''}${money2(f(form.overUnder))}`} tone={Math.abs(f(form.overUnder)) < 5 ? 'up' : 'down'} />
-            )}
+              <button onClick={save} className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
+                Save night ✓
+              </button>
+            </Card>
           </div>
 
-          {/* Category breakdown (optional) */}
-          <button onClick={() => setShowCats((v) => !v)} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-muted">
-            <ChevronDown size={13} className={`transition-transform ${showCats ? 'rotate-180' : ''}`} />
-            Sales by category (optional)
-          </button>
-          {showCats && (
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
-              {(['food', 'beer', 'liquor', 'wine', 'na'] as const).map((c) => (
-                <Field key={c} label={c === 'na' ? 'N/A bev' : c[0].toUpperCase() + c.slice(1)}>
-                  <MoneyInput value={form[c]} onChange={(v) => setForm({ ...form, [c]: v })} />
-                </Field>
+          {/* CATEGORIES + DISCOUNTS — right rail, checked against net */}
+          <div className="space-y-5">
+            <Card className="p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Categories</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                    catTotal === 0 ? 'bg-black/5 text-muted' : Math.abs(catDiff) < 1 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'
+                  }`}
+                >
+                  {catTotal === 0 ? 'from your sheet' : Math.abs(catDiff) < 1 ? '✓ check = 0' : `${catDiff > 0 ? '+' : '−'}${money2(Math.abs(catDiff))} vs net`}
+                </span>
+              </div>
+              {(
+                [
+                  ['food', 'Food (incl. shakes)'],
+                  ['na', 'NA Bev'],
+                  ['beer', 'Beer'],
+                  ['liquor', 'Liquor'],
+                  ['wine', 'Wine'],
+                ] as const
+              ).map(([k, label]) => (
+                <SheetRow key={k} label={label}>
+                  <MoneyInput value={form[k]} onChange={(v) => setForm({ ...form, [k]: v })} />
+                </SheetRow>
               ))}
-            </div>
-          )}
+              <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-2.5">
+                <span className="text-sm font-bold text-ink">Category total</span>
+                <span className="font-display text-xl font-semibold text-ink">{money2(catTotal)}</span>
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted">
+                Mapped from Toast sales categories on import — check must equal net, same as your sheet.
+              </p>
+            </Card>
 
-          <input
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-            placeholder="Notes — weather, events, callouts, 86'd items…"
-            className={`mt-3 w-full ${cls()}`}
-          />
-          <button onClick={save} className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
-            Save night
-          </button>
-        </Card>
+            <Card className="p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Discounts</span>
+                <span className={`rounded-lg px-2 py-0.5 font-mono text-xs font-bold ${discounts > 0 ? 'bg-down/10 text-down' : 'bg-black/5 text-muted'}`}>
+                  ${discounts.toFixed(2)}
+                </span>
+              </div>
+              {(
+                [
+                  ['rewards', 'Rewards'],
+                  ['promos', 'Promos'],
+                  ['comps', 'Comps'],
+                  ['staffDisc', 'Staff meals'],
+                ] as const
+              ).map(([k, label]) => (
+                <div key={k} className="flex items-baseline justify-between border-b border-black/5 py-1.5 text-sm last:border-0">
+                  <span className="text-ink/80">{label}</span>
+                  <span className="font-mono text-xs font-semibold text-ink">${f(form[k]).toFixed(2)}</span>
+                </div>
+              ))}
+              <p className="mt-2 text-[11px] text-muted">
+                Every deduction from the Sales card — imports fill these from Toast's Check + Menu Item
+                Discounts, nothing typed.
+              </p>
+            </Card>
+          </div>
+        </div>
 
         <NightlyLog log={log} targets={targets} initialDate={focusDate ?? undefined} />
 
@@ -413,11 +526,12 @@ function cls(): string {
   return 'rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand'
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** One line of the close-out sheet: label left, slim input right. */
+function SheetRow({ label, strong, children }: { label: string; strong?: boolean; children: React.ReactNode }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-muted">{label}</span>
-      {children}
+    <label className="flex items-center justify-between gap-3 border-b border-black/5 py-1.5 last:border-0">
+      <span className={`text-sm ${strong ? 'font-bold text-ink' : 'text-ink/80'}`}>{label}</span>
+      <span className="w-36 shrink-0">{children}</span>
     </label>
   )
 }
