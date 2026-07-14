@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Pencil, Check } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
@@ -12,7 +13,8 @@ export function Sidework() {
   const [role, setRole] = useState<Role>('Server')
   const phases = phasesFor(role)
   const [phase, setPhase] = useState<string>(phases[0])
-  const [editing, setEditing] = useState(false)
+  // Per-tile editing (owner request): the pencil lives on each section card.
+  const [editingSec, setEditingSec] = useState<string | null>(null)
   const [done, setDone] = usePersistentState<Record<string, boolean>>(`sidework:done:${today()}`, {})
   const [adding, setAdding] = useState<Record<number, string>>({})
 
@@ -50,11 +52,15 @@ export function Sidework() {
     setSections((secs) => secs.map((s, i) => (i === si ? { ...s, tasks: [...s.tasks, text] } : s)))
     setAdding((a) => ({ ...a, [si]: '' }))
   }
-  const resetPhase = () =>
-    setData((d) => ({
-      ...d,
-      [role]: { ...d[role], [activePhase]: SIDEWORK[role][activePhase] },
-    }))
+  // Reset just one section's duties back to the default sheet.
+  const resetSection = (name: string) =>
+    setSections((secs) =>
+      secs.map((s) =>
+        s.section === name
+          ? ((SIDEWORK[role][activePhase] ?? []).find((x) => x.section === name) ?? s)
+          : s,
+      ),
+    )
   const clearChecks = () =>
     setDone((d) => {
       const next = { ...d }
@@ -68,24 +74,14 @@ export function Sidework() {
         title="Sidework"
         subtitle={`${role} · ${activePhase} · ${doneCount}/${allTasks.length} · ${today()}`}
         right={
-          <div className="flex items-center gap-2">
+          doneCount > 0 && (
             <button
-              onClick={() => setEditing((e) => !e)}
-              className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-                editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
-              }`}
+              onClick={clearChecks}
+              className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-muted"
             >
-              {editing ? 'Done editing' : 'Edit'}
+              Reset checks
             </button>
-            {!editing && doneCount > 0 && (
-              <button
-                onClick={clearChecks}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-muted"
-              >
-                Reset
-              </button>
-            )}
-          </div>
+          )
         }
       />
       <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6 lg:p-8">
@@ -97,6 +93,7 @@ export function Sidework() {
               onClick={() => {
                 setRole(r)
                 setPhase(phasesFor(r)[0])
+                setEditingSec(null)
               }}
               className={`flex-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition-colors ${
                 role === r
@@ -114,7 +111,10 @@ export function Sidework() {
           {phases.map((ph) => (
             <button
               key={ph}
-              onClick={() => setPhase(ph)}
+              onClick={() => {
+                setPhase(ph)
+                setEditingSec(null)
+              }}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 activePhase === ph
                   ? 'border-navy bg-navy text-white'
@@ -126,28 +126,37 @@ export function Sidework() {
           ))}
         </div>
 
-        {editing && (
-          <div className="flex items-center justify-between rounded-xl border border-brand/30 bg-brand/5 px-4 py-2.5 text-sm">
-            <span className="text-ink/80">Editing {role} · {activePhase} — changes save automatically</span>
-            <button onClick={resetPhase} className="font-semibold text-down">
-              Reset to default
-            </button>
-          </div>
-        )}
-
-        {/* Sections */}
+        {/* Sections — each tile carries its own pencil */}
         {sections.map((sec, si) => {
           const secKeys = sec.tasks.map((t) => key(sec.section, t))
           const secDone = secKeys.filter((k) => done[k]).length
+          const editing = editingSec === sec.section
           return (
-            <Card key={sec.section} className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-black/5 bg-black/[0.02] px-4 py-2.5">
+            <Card key={sec.section} className={`overflow-hidden ${editing ? 'ring-2 ring-brand' : ''}`}>
+              <div className={`flex items-center justify-between border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'}`}>
                 <span className="font-display text-sm font-semibold text-ink">{sec.section}</span>
-                {!editing && (
-                  <span className="text-xs text-muted">
-                    {secDone}/{sec.tasks.length}
-                  </span>
-                )}
+                <span className="flex items-center gap-2">
+                  {!editing && (
+                    <span className="text-xs text-muted">
+                      {secDone}/{sec.tasks.length}
+                    </span>
+                  )}
+                  {editing && (
+                    <button onClick={() => resetSection(sec.section)} className="text-[11px] font-semibold text-down">
+                      Reset to default
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setEditingSec(editing ? null : sec.section)}
+                    aria-label={editing ? `Done editing ${sec.section}` : `Edit ${sec.section}`}
+                    title={editing ? 'Done editing' : 'Edit this list'}
+                    className={`grid size-7 place-items-center rounded-lg ${
+                      editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-muted hover:text-ink'
+                    }`}
+                  >
+                    {editing ? <Check size={13} /> : <Pencil size={12} />}
+                  </button>
+                </span>
               </div>
 
               {sec.tasks.map((t, ti) =>

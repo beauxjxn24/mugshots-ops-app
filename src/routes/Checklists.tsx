@@ -45,36 +45,17 @@ const DEFAULTS: Record<Phase, string[]> = {
  */
 export function Checklists() {
   const [data, setData] = usePersistentState<Record<Phase, string[]>>('checklists:data', DEFAULTS)
-  const [editing, setEditing] = useState(false)
 
   return (
     <>
       <PageHeader
         title="Checklists"
         subtitle={`Opening & Closing reset daily · Weekly resets each week · ${today()}`}
-        right={
-          <button
-            onClick={() => setEditing((e) => !e)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold ${
-              editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
-            }`}
-          >
-            {editing ? (
-              <>
-                <Check size={15} /> Done editing
-              </>
-            ) : (
-              <>
-                <Pencil size={14} /> Edit lists
-              </>
-            )}
-          </button>
-        }
       />
       <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
         <div className="grid items-start gap-5 lg:grid-cols-3">
           {PHASES.map((phase) => (
-            <PhaseColumn key={phase} phase={phase} data={data} setData={setData} editing={editing} />
+            <PhaseColumn key={phase} phase={phase} data={data} setData={setData} />
           ))}
         </div>
       </div>
@@ -86,18 +67,18 @@ function PhaseColumn({
   phase,
   data,
   setData,
-  editing,
 }: {
   phase: Phase
   data: Record<Phase, string[]>
   setData: React.Dispatch<React.SetStateAction<Record<Phase, string[]>>>
-  editing: boolean
 }) {
   const scope = phase === 'Weekly' ? weekKey() : today()
   const [done, setDone] = usePersistentState<Record<string, boolean>>(
     `checklists:done:${phase}:${scope}`,
     {},
   )
+  // Per-tile editing: the pencil lives on each column's header.
+  const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState('')
   const items = data[phase] ?? []
   const doneCount = useMemo(() => items.filter((t) => done[t]).length, [items, done])
@@ -117,8 +98,20 @@ function PhaseColumn({
         }`}
       >
         <span className="font-display text-lg font-semibold text-ink">{phase}</span>
-        <span className={`text-xs font-bold ${complete ? 'text-up' : 'text-muted'}`}>
-          {complete ? 'Complete ✓' : `${doneCount}/${items.length}`}
+        <span className="flex items-center gap-2">
+          <span className={`text-xs font-bold ${complete ? 'text-up' : 'text-muted'}`}>
+            {complete ? 'Complete ✓' : `${doneCount}/${items.length}`}
+          </span>
+          <button
+            onClick={() => setEditing((e) => !e)}
+            aria-label={editing ? `Done editing ${phase}` : `Edit ${phase} checklist`}
+            title={editing ? 'Done editing' : 'Edit this list'}
+            className={`grid size-7 place-items-center rounded-lg ${
+              editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-muted hover:text-ink'
+            }`}
+          >
+            {editing ? <Check size={13} /> : <Pencil size={12} />}
+          </button>
         </span>
       </div>
       {items.map((t, i) =>

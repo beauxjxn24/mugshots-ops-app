@@ -1,0 +1,688 @@
+[
+ {
+  "name": "Veggies",
+  "spec": "6 oz portions",
+  "unit": "ptns",
+  "pars": [
+   10.0,
+   10.0,
+   10.0,
+   12.0,
+   18.0,
+   20.0,
+   15.0
+  ]
+ },
+ {
+  "name": "O-Strings",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   3.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Bell Peppers",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Diced Red Onions",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   4.0,
+   5.0,
+   6.0,
+   4.0
+  ]
+ },
+ {
+  "name": "Diced Toms",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Sliced Toms",
+  "spec": "Clear 1/3 pan w/ drip",
+  "unit": "pans",
+  "pars": [
+   2.0,
+   2.0,
+   2.0,
+   3.0,
+   4.0,
+   4.0,
+   3.0
+  ]
+ },
+ {
+  "name": "Pico De Gallo",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Garlic Parm Chz",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Pimento Chz",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Asian Slaw",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Shredded Lettuce",
+  "spec": "Clear 1/3 pan w/ drip",
+  "unit": "pans",
+  "pars": [
+   4.0,
+   5.0,
+   5.0,
+   6.0,
+   7.0,
+   10.0,
+   7.0
+  ]
+ },
+ {
+  "name": "Celery",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Romaine",
+  "spec": "Clear 1/3 pan w/ drip",
+  "unit": "pans",
+  "pars": [
+   2.0,
+   2.0,
+   2.0,
+   2.0,
+   3.0,
+   4.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Rotel",
+  "spec": "Amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   4.0,
+   4.0,
+   6.0,
+   6.0,
+   8.0,
+   8.0,
+   6.0
+  ]
+ },
+ {
+  "name": "Chili",
+  "spec": "Amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   4.0,
+   5.0,
+   6.0,
+   4.0
+  ]
+ },
+ {
+  "name": "Mac & Chz",
+  "spec": "Shallow amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   4.0,
+   4.0,
+   6.0,
+   4.0
+  ]
+ },
+ {
+  "name": "Mash",
+  "spec": "Shallow amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   4.0,
+   4.0,
+   6.0,
+   4.0
+  ]
+ },
+ {
+  "name": "Alfredo Sauce",
+  "spec": "Amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   4.0,
+   4.0,
+   6.0,
+   4.0
+  ]
+ },
+ {
+  "name": "Marinara",
+  "spec": "Amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   2.0,
+   2.0,
+   2.0,
+   2.0,
+   4.0,
+   4.0,
+   3.0
+  ]
+ },
+ {
+  "name": "Cheese Sauce",
+  "spec": "Shallow amber 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Shrooms",
+  "spec": "4 oz in 1/2 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Turkey",
+  "spec": "8 slices per portion",
+  "unit": "ptns",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   3.0,
+   5.0,
+   5.0,
+   5.0
+  ]
+ },
+ {
+  "name": "Eggroll",
+  "spec": "Clear 1/3 pan",
+  "unit": "pans",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   5.0,
+   6.0,
+   7.0,
+   3.0
+  ]
+ },
+ {
+  "name": "Burgers",
+  "spec": "Shallow hotel pan (wrapped)",
+  "unit": "pans",
+  "pars": [
+   9.0,
+   10.0,
+   10.0,
+   10.0,
+   13.0,
+   14.0,
+   12.0
+  ]
+ },
+ {
+  "name": "Smash Burgers",
+  "spec": "Deep hotel pan (wrapped)",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Caitlyn Ckn Breasts",
+  "spec": "Marinated in blk spice",
+  "unit": "ea",
+  "pars": [
+   6.0,
+   6.0,
+   9.0,
+   12.0,
+   12.0,
+   18.0,
+   10.0
+  ]
+ },
+ {
+  "name": "Pow Pow Sauce",
+  "spec": "Clear 1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Ranch",
+  "spec": "Clear 1/3 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   3.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Sriracha Ranch",
+  "spec": "Blue squeeze bottle",
+  "unit": "btl",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Mugs Sig Sauce",
+  "spec": "Clear 1/3 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Bread Pudding Bites",
+  "spec": "15 per portion \u00b7 1x = 1 tray",
+  "unit": "trays",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Mozz Wedges",
+  "spec": "Clear 1/2 pan",
+  "unit": "pans",
+  "pars": [
+   4.0,
+   4.0,
+   8.0,
+   8.0,
+   10.0,
+   6.0,
+   6.0
+  ]
+ },
+ {
+  "name": "PJ Wedges",
+  "spec": "Clear 1/2 pan",
+  "unit": "pans",
+  "pars": [
+   6.0,
+   6.0,
+   4.0,
+   6.0,
+   10.0,
+   6.0,
+   6.0
+  ]
+ },
+ {
+  "name": "Philly",
+  "spec": "Portioned (case)",
+  "unit": "cs",
+  "pars": [
+   2.0,
+   2.0,
+   2.0,
+   2.0,
+   3.0,
+   3.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Hicks",
+  "spec": "Portioned (case)",
+  "unit": "cs",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Pow Pow Shrimp",
+  "spec": "4 oz portions (case)",
+  "unit": "cs",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Pasta",
+  "spec": "7 oz portions (case)",
+  "unit": "cs",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Tots",
+  "spec": "6 oz portions (case)",
+  "unit": "cs",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Sweet Fries",
+  "spec": "6 oz portions (case)",
+  "unit": "cs",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Wings",
+  "spec": "Tray",
+  "unit": "trays",
+  "pars": [
+   5.0,
+   5.0,
+   6.0,
+   6.0,
+   8.0,
+   9.0,
+   7.0
+  ]
+ },
+ {
+  "name": "Bacon",
+  "spec": "Case",
+  "unit": "cs",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Sliced Jals",
+  "spec": "",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Dice Yellow Onions",
+  "spec": "1/6 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Brined Tenders",
+  "spec": "Bag (10 lb)",
+  "unit": "bags",
+  "pars": [
+   2.0,
+   2.0,
+   3.0,
+   4.0,
+   5.0,
+   5.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Brined Breast",
+  "spec": "Bag (15 per bag)",
+  "unit": "bags",
+  "pars": [
+   1.0,
+   1.0,
+   2.0,
+   3.0,
+   4.0,
+   3.0,
+   0.0
+  ]
+ },
+ {
+  "name": "Queso Meat",
+  "spec": "Patty",
+  "unit": "ea",
+  "pars": [
+   3.0,
+   3.0,
+   3.0,
+   4.0,
+   6.0,
+   5.0,
+   4.0
+  ]
+ },
+ {
+  "name": "Blackened Ckn Tenders",
+  "spec": "1/2 pan",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0
+  ]
+ },
+ {
+  "name": "Jalepeno Popper Mix",
+  "spec": "1/9 pan \u00b7 LTO",
+  "unit": "pans",
+  "pars": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ {
+  "name": "Boneless Wangs",
+  "spec": "3 oz portions \u00b7 LTO",
+  "unit": "ptns",
+  "pars": [
+   10.0,
+   10.0,
+   10.0,
+   15.0,
+   20.0,
+   25.0,
+   20.0
+  ]
+ }
+]

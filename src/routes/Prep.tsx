@@ -1,126 +1,325 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Printer, Pencil, Check } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
-import { SPECS } from '../lib/specs'
 import { usePersistentState, today } from '../lib/store'
-import type { Spec } from '../lib/types'
+import { confirmDelete } from '../lib/confirm'
+import PREP_SEED from '../data/prep-items.json'
 
+interface PrepItem {
+  name: string
+  spec: string
+  unit: string
+  pars: number[] // Mon..Sun
+}
+interface HistEntry {
+  date: string
+  dow: number
+  name: string
+  onHand: number
+  par: number
+}
+
+const DOWS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+
+function dayIdx(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number)
+  return (new Date(y, m - 1, d).getDay() + 6) % 7 // Monday-first
+}
+function fmtLong(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+}
+
+/**
+ * Prep list — the prototype screen, seeded with the owner's real 49-item
+ * sheet: a par for EVERY day of the week (today's column highlighted),
+ * on-hand entry, prep-today chips, the navy live board, and pars that
+ * learn from what you actually had left over.
+ */
 export function Prep() {
-  const prepItems = useMemo(() => SPECS.filter((s) => s.g === 'Prep'), [])
-  // Done-state is scoped to today's date, so it resets automatically each day.
-  const [done, setDone] = usePersistentState<Record<string, boolean>>(`prep:done:${today()}`, {})
-  // Par targets persist across days.
-  const [par, setPar] = usePersistentState<Record<string, string>>('prep:par', {})
-  const [open, setOpen] = useState<string | null>(null)
+  const t = today()
+  const di = dayIdx(t)
+  const [items, setItems] = usePersistentState<PrepItem[]>('prep:items', PREP_SEED as PrepItem[])
+  const [onHand, setOnHand] = usePersistentState<Record<string, number>>(`prep:onhand:${t}`, {})
+  const [history, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
+  const [editingPars, setEditingPars] = useState(false)
+  const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans' })
 
-  const doneCount = prepItems.filter((s) => done[s.name]).length
+  const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
+  const todayList = items.filter((it) => need(it) > 0)
+
+  const setCount = (name: string, v: number | undefined) => {
+    setOnHand((o) => {
+      const next = { ...o }
+      if (v == null) delete next[name]
+      else next[name] = v
+      return next
+    })
+    // Usage history: today's leftover vs today's par — pars learn from this.
+    if (v != null) {
+      const it = items.find((x) => x.name === name)
+      if (it)
+        setHistory((h) =>
+          [...h.filter((e) => !(e.date === t && e.name === name)), { date: t, dow: di, name, onHand: v, par: it.pars[di] ?? 0 }].slice(-800),
+        )
+    }
+  }
+
+  // Pars learn from usage: ≥3 counts on the same weekday → suggest a bump.
+  const suggestions = useMemo(() => {
+    const out: Array<{ name: string; dow: number; from: number; to: number }> = []
+    for (const it of items) {
+      for (let dow = 0; dow < 7; dow++) {
+        const entries = history.filter((e) => e.name === it.name && e.dow === dow).slice(-4)
+        if (entries.length < 3) continue
+        const par = it.pars[dow] ?? 0
+        if (par <= 0) continue
+        const avgLeft = entries.reduce((s, e) => s + e.onHand, 0) / entries.length
+        if (avgLeft >= par * 0.5 && par - Math.round(avgLeft * 2) / 2 >= 0.5) {
+          out.push({ name: it.name, dow, from: par, to: Math.max(0.5, par - Math.round(avgLeft * 2) / 2) })
+        } else if (avgLeft === 0 && entries.every((e) => e.onHand === 0)) {
+          out.push({ name: it.name, dow, from: par, to: par + 1 })
+        }
+      }
+    }
+    return out.slice(0, 5)
+  }, [items, history])
+
+  const applySuggestions = () => {
+    setItems((is) =>
+      is.map((it) => {
+        const mine = suggestions.filter((s) => s.name === it.name)
+        if (!mine.length) return it
+        const pars = [...it.pars]
+        for (const s of mine) pars[s.dow] = s.to
+        return { ...it, pars }
+      }),
+    )
+  }
+
+  const setPar = (name: string, dow: number, v: number) =>
+    setItems((is) => is.map((it) => (it.name === name ? { ...it, pars: it.pars.map((p, i) => (i === dow ? v : p)) } : it)))
+
+  const resetDay = async () => {
+    if (Object.keys(onHand).length === 0) return
+    if (await confirmDelete("Reset today's on-hands?", 'Pars stay — only the counts entered today are cleared.', 'Reset day'))
+      setOnHand({})
+  }
+
+  const addItem = () => {
+    if (!adding.name.trim()) return
+    if (items.some((x) => x.name.toLowerCase() === adding.name.trim().toLowerCase())) return
+    setItems((is) => [...is, { name: adding.name.trim(), spec: adding.spec.trim(), unit: adding.unit || 'pans', pars: [1, 1, 1, 1, 1, 1, 1] }])
+    setAdding({ name: '', spec: '', unit: 'pans' })
+  }
 
   return (
     <>
       <PageHeader
-        title="Prep List"
-        subtitle={`${doneCount} of ${prepItems.length} done · ${today()}`}
+        title={`Prep list · ${fmtLong(t)}`}
+        subtitle="Enter on-hands · prep needed = today's par − on hand"
         right={
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-32 overflow-hidden rounded-full bg-black/10">
-              <div
-                className="h-full rounded-full bg-brand transition-all"
-                style={{ width: `${(doneCount / prepItems.length) * 100}%` }}
-              />
-            </div>
-            {doneCount > 0 && (
-              <button
-                onClick={() => setDone({})}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-muted"
-              >
-                Reset
-              </button>
-            )}
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <Link to="/builds" className="text-xs font-bold text-brand">
+              Line builds →
+            </Link>
+            <button onClick={resetDay} className="rounded-lg border border-down/30 bg-white px-3 py-2 text-xs font-bold text-down">
+              Reset day
+            </button>
+            <button
+              onClick={() => setEditingPars((e) => !e)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
+                editingPars ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
+              }`}
+            >
+              {editingPars ? <Check size={13} /> : <Pencil size={12} />} {editingPars ? 'Done' : 'Edit daily pars'}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
+            >
+              <Printer size={13} /> Print prep sheet
+            </button>
           </div>
         }
       />
-      <div className="mx-auto max-w-3xl space-y-2 p-4 sm:p-6 lg:p-8">
-        {prepItems.map((s) => (
-          <PrepRow
-            key={s.name}
-            spec={s}
-            done={!!done[s.name]}
-            par={par[s.name] ?? ''}
-            open={open === s.name}
-            onToggleDone={() => setDone((d) => ({ ...d, [s.name]: !d[s.name] }))}
-            onPar={(v) => setPar((p) => ({ ...p, [s.name]: v }))}
-            onOpen={() => setOpen(open === s.name ? null : s.name)}
-          />
-        ))}
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Navy live board */}
+        <Card className="border-navy !bg-navy p-5 text-white">
+          <div className="flex flex-wrap gap-x-8 gap-y-4">
+            <div className="shrink-0">
+              <div className="font-display text-lg font-semibold">Today's prep · {todayList.length} items</div>
+              <div className="text-[11px] text-white/60">Live total as you enter on-hands</div>
+            </div>
+            {todayList.length === 0 ? (
+              <p className="self-center text-sm text-white/70">Everything's at par — enter on-hands to build the list.</p>
+            ) : (
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
+                {todayList.map((it) => (
+                  <div key={it.name} className="flex items-baseline justify-between gap-3 border-b border-white/10 py-0.5 text-sm">
+                    <span className="min-w-0 truncate">{it.name}</span>
+                    <span className="shrink-0 font-mono text-xs font-bold text-[#eec263]">
+                      {fmtQty(need(it))} {it.unit}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
+          <Card className="border-brand/25 bg-brand/[0.06] p-4">
+            <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">How pars work here</div>
+            <p className="text-xs leading-relaxed text-ink/80">
+              Each prep item has a par for every day of the week (Friday ≠ Monday). Today's column
+              is highlighted; on-hands entered here are tracked so the app learns if pars are
+              chronically over or under.
+            </p>
+          </Card>
+          <Card className="flex flex-wrap items-center gap-3 p-4">
+            <div className="shrink-0">
+              <div className="text-sm font-bold text-ink">Pars learn from usage</div>
+              <div className="text-[11px] text-muted">
+                {history.length ? `${history.length} counts on record` : 'fills in as you enter on-hands'}
+              </div>
+            </div>
+            {suggestions.length === 0 ? (
+              <span className="text-xs text-muted">No changes suggested yet — keep counting.</span>
+            ) : (
+              <>
+                {suggestions.map((s, i) => (
+                  <span key={i} className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink">
+                    {s.name} · {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][s.dow]} {fmtQty(s.from)} → <b className="text-brand-600">{fmtQty(s.to)}</b>
+                  </span>
+                ))}
+                <button onClick={applySuggestions} className="ml-auto rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white print:hidden">
+                  Review &amp; apply
+                </button>
+              </>
+            )}
+          </Card>
+        </div>
+
+        {/* Par table */}
+        <Card className="overflow-x-auto">
+          <div className="min-w-[860px]">
+            <div className="grid grid-cols-[minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <span>Prep item</span>
+              {DOWS.map((d, i) => (
+                <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
+                  {d}
+                </span>
+              ))}
+              <span className="text-center">On hand</span>
+              <span className="text-right">Prep today</span>
+            </div>
+            {items.map((it) => {
+              const n = need(it)
+              const counted = onHand[it.name] != null
+              return (
+                <div
+                  key={it.name}
+                  className="group grid grid-cols-[minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-ink">{it.name}</div>
+                    <div className="flex items-center gap-2 text-[10px] text-muted">
+                      <span className="truncate">{it.spec || it.unit}</span>
+                      {editingPars && (
+                        <button
+                          onClick={async () => {
+                            if (await confirmDelete(`Remove ${it.name} from the prep list?`))
+                              setItems((is) => is.filter((x) => x.name !== it.name))
+                          }}
+                          className="shrink-0 text-down opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {it.pars.map((p, i) =>
+                    editingPars ? (
+                      <input
+                        key={i}
+                        type="number"
+                        inputMode="decimal"
+                        step="0.5"
+                        value={p}
+                        onChange={(e) => setPar(it.name, i, Math.max(0, parseFloat(e.target.value) || 0))}
+                        className={`w-full rounded-md border px-0.5 py-1 text-center font-mono text-xs outline-none focus:border-brand ${
+                          i === di ? 'border-brand/50 bg-brand/10 font-bold' : 'border-black/10 bg-white'
+                        }`}
+                      />
+                    ) : (
+                      <span
+                        key={i}
+                        className={`rounded-md py-1 text-center font-mono text-xs ${
+                          i === di ? 'bg-brand/15 font-bold text-ink' : 'text-muted'
+                        }`}
+                      >
+                        {fmtQty(p)}
+                      </span>
+                    ),
+                  )}
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.5"
+                    value={counted ? onHand[it.name] : ''}
+                    placeholder="—"
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setCount(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
+                    }}
+                    className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
+                  />
+                  <span className="text-right">
+                    {n > 0 ? (
+                      <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
+                        {fmtQty(n)} {it.unit}
+                      </span>
+                    ) : counted ? (
+                      <span className="rounded-full bg-up/10 px-2.5 py-1 text-xs font-extrabold text-up">✓ at par</span>
+                    ) : (
+                      <span className="text-xs text-muted">—</span>
+                    )}
+                  </span>
+                </div>
+              )
+            })}
+            {editingPars && (
+              <div className="flex flex-wrap gap-2 border-t border-black/5 p-3 print:hidden">
+                <input
+                  value={adding.name}
+                  onChange={(e) => setAdding({ ...adding, name: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && addItem()}
+                  placeholder="Add prep item…"
+                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+                <input
+                  value={adding.spec}
+                  onChange={(e) => setAdding({ ...adding, spec: e.target.value })}
+                  placeholder="Pan spec (Clear 1/6 pan…)"
+                  className="w-52 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+                <input
+                  value={adding.unit}
+                  onChange={(e) => setAdding({ ...adding, unit: e.target.value })}
+                  placeholder="unit"
+                  className="w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+                <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
     </>
-  )
-}
-
-function PrepRow({
-  spec,
-  done,
-  par,
-  open,
-  onToggleDone,
-  onPar,
-  onOpen,
-}: {
-  spec: Spec
-  done: boolean
-  par: string
-  open: boolean
-  onToggleDone: () => void
-  onPar: (v: string) => void
-  onOpen: () => void
-}) {
-  return (
-    <Card className={`overflow-hidden transition-colors ${done ? 'bg-up/5' : ''}`}>
-      <div className="flex items-center gap-3 p-3">
-        <button
-          onClick={onToggleDone}
-          aria-label={done ? 'Mark not done' : 'Mark done'}
-          className={`grid size-7 shrink-0 place-items-center rounded-md border-2 transition-colors ${
-            done ? 'border-up bg-up text-white' : 'border-black/20'
-          }`}
-        >
-          {done && '✓'}
-        </button>
-        <button onClick={onOpen} className="min-w-0 flex-1 text-left">
-          <div className={`font-semibold ${done ? 'text-muted line-through' : 'text-ink'}`}>
-            {spec.name}
-          </div>
-          <div className="truncate text-xs text-muted">
-            {spec.storage} · {spec.shelf}
-          </div>
-        </button>
-        <input
-          value={par}
-          onChange={(e) => onPar(e.target.value)}
-          placeholder="par"
-          className="w-16 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-center text-xs outline-none focus:border-brand"
-        />
-      </div>
-      {open && (spec.ing.length > 0 || spec.steps.length > 0) && (
-        <div className="border-t border-black/5 bg-white/60 p-3 text-sm">
-          {spec.ing.length > 0 && (
-            <ul className="mb-2 space-y-0.5">
-              {spec.ing.map(([n, q], i) => (
-                <li key={i} className="flex justify-between gap-3">
-                  <span>{n}</span>
-                  <span className="font-mono text-xs text-muted">{q}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {spec.steps.length > 0 && (
-            <ol className="list-decimal space-y-0.5 pl-4 text-ink/90">
-              {spec.steps.map((st, i) => (
-                <li key={i}>{st}</li>
-              ))}
-            </ol>
-          )}
-        </div>
-      )}
-    </Card>
   )
 }
