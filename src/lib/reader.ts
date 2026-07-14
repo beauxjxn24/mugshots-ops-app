@@ -1,4 +1,5 @@
 import * as pdfjs from 'pdfjs-dist'
+import { cleanItemLine } from './clean'
 
 // Self-hosted worker with polyfills (see public/pdfjs/worker-polyfilled.mjs) —
 // pdf.js's renderer needs JS APIs some browsers don't ship yet.
@@ -17,6 +18,10 @@ export interface LineItem {
   description: string
   qty?: string
   price?: string
+  /** Vendor item code pulled off the front of the line, when present. */
+  code?: string
+  /** Pack size pulled out of the name (750ml, 4/5LB, 24 ct…). */
+  size?: string
 }
 
 /**
@@ -141,7 +146,11 @@ export function parseLineItems(text: string): LineItem[] {
     description = description.replace(/\s{2,}/g, ' ').trim()
     if (description.length < 3) continue
 
-    items.push({ description, qty, price })
+    // Scrub OCR noise, pull the vendor code out of the name, and drop lines
+    // too garbled to trust — garbage must never reach the catalog.
+    const cleaned = cleanItemLine(description)
+    if (cleaned.junk) continue
+    items.push({ description: cleaned.name, qty, price, code: cleaned.code, size: cleaned.size })
   }
   return items
 }

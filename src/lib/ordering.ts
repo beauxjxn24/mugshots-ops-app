@@ -156,6 +156,8 @@ export function proposeReceipts(lineItems: LineItem[]) {
       description: li.description,
       qty: Number.isFinite(qty) ? qty : 1,
       price: li.price ? parseFloat(li.price.replace(/[^0-9.]/g, '')) || undefined : undefined,
+      code: li.code,
+      size: li.size,
       match: m,
     }
   })

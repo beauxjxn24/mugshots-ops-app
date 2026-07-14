@@ -4,6 +4,7 @@
 // par/on-hand counts. Everything that adds an item anywhere registers it here.
 import { load, save } from './store'
 import { useScope } from './scope'
+import { cleanItemLine, tidyName } from './clean'
 
 export interface CatalogItem {
   id: string
@@ -16,6 +17,10 @@ export interface CatalogItem {
   costDate?: string // YYYY-MM-DD of the invoice/price sheet that set the cost
   /** Invoice descriptions confirmed to be THIS item — match once, matched forever. */
   aliases?: string[]
+  /** Vendor item code (order guides print it before the name). */
+  code?: string
+  /** Pack size (750ml, 4/5LB, 24 ct…). */
+  size?: string
 }
 
 export const SHELVES = ['Produce', 'Liquor', 'Beer', 'Food', 'Paper / Supply', 'Kitchen', 'Other']
@@ -54,6 +59,8 @@ export function registerItem(input: {
   category?: string
   vendor?: string
   cost?: number
+  code?: string
+  size?: string
 }): CatalogItem {
   const items = getCatalog()
   const want = normKey(input.name)
@@ -77,21 +84,69 @@ export function registerItem(input: {
       existing.category = input.category
       changed = true
     }
+    if (input.code && !existing.code) {
+      existing.code = input.code
+      changed = true
+    }
+    if (input.size && !existing.size) {
+      existing.size = input.size
+      changed = true
+    }
     if (changed) setCatalog(items)
     return existing
   }
   const item: CatalogItem = {
     id: newItemId(),
-    name: input.name.trim(),
+    name: tidyName(input.name.trim()),
     unit: input.unit || 'cs',
     category: input.category || guessCategory(input.name, input.vendor),
     vendor: input.vendor || '',
     cost: input.cost,
     costVendor: input.cost ? input.vendor : undefined,
     costDate: input.cost ? isoToday() : undefined,
+    code: input.code,
+    size: input.size,
+    // Remember the raw spelling so re-drops of the same doc match exactly.
+    aliases: tidyName(input.name.trim()) !== input.name.trim() ? [input.name.trim()] : undefined,
   }
   setCatalog([...items, item])
   return item
+}
+
+/**
+ * One-time repair: OCR noise that reached the catalog before line cleaning
+ * existed gets scrubbed in place — junk chars out, vendor code split off,
+ * shouty names tidied. Old spellings become aliases so nothing re-duplicates.
+ */
+export function cleanupCatalogNames(): void {
+  const FLAG = 'mugops:__catalogNamesCleaned2'
+  if (localStorage.getItem(FLAG)) return
+  const items = getCatalog()
+  let changed = false
+  for (const it of items) {
+    const c = cleanItemLine(it.name)
+    const fresh = tidyName(c.name)
+    if (fresh && fresh !== it.name) {
+      it.aliases = [...new Set([...(it.aliases ?? []), it.name])].slice(-12)
+      it.name = fresh
+      changed = true
+    }
+    if (c.code && !it.code) {
+      it.code = c.code
+      changed = true
+    }
+    if (c.size && !it.size) {
+      it.size = c.size
+      changed = true
+    }
+    const better = guessCategory(it.name, it.vendor)
+    if ((!it.category || it.category === 'Other') && better !== 'Other') {
+      it.category = better
+      changed = true
+    }
+  }
+  if (changed) setCatalog(items)
+  localStorage.setItem(FLAG, '1')
 }
 
 /** Put an item on / take it off this store's order guide. */
@@ -223,8 +278,13 @@ export function fuzzyFind(name: string, items: CatalogItem[] = getCatalog()): Ca
 export function guessCategory(name: string, vendor = ''): string {
   const s = `${name} ${vendor}`.toLowerCase()
   if (/produce|lettuce|tomato|onion|romaine|avocado|lemon|lime|basil|cilantro|pepper|fruit|berry/.test(s)) return 'Produce'
-  if (/vodka|tequila|whiskey|bourbon|rum|gin|liqueur|liquor/.test(s)) return 'Liquor'
-  if (/beer|ipa|lager|ale|pilsner|seltzer/.test(s)) return 'Beer'
+  if (
+    /vodka|tequila|whisk(e)?y|bourbon|scotch|rum|gin|liqueur|liquor|mezcal|brandy|cognac|schnapps|triple sec|amaretto|irish cream|blanco|reposado|anejo|añejo|chardonnay|cabernet|merlot|pinot|sauvignon|moscato|riesling|prosecco|champagne|sangria|wine|750\s?ml?|1\.75\s?l/.test(
+      s,
+    )
+  )
+    return 'Liquor'
+  if (/beer|ipa|lager|ale|pilsner|seltzer|coors|budweiser|bud light|miller|michelob|corona|modelo|dos equis|yuengling|blue moon/.test(s)) return 'Beer'
   if (/napkin|to.?go|cup|lid|straw|foil|film|glove|paper|towel|chem/.test(s)) return 'Paper / Supply'
   if (/chicken|beef|pork|shrimp|cheese|fries|bun|bread|sauce|bacon|burger/.test(s)) return 'Food'
   return 'Other'

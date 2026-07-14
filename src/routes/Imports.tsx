@@ -20,6 +20,8 @@ interface Job extends Partial<ReadResult> {
   progress: number
 }
 
+const money2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
 let seq = 0
 
 export function Imports() {
@@ -272,13 +274,12 @@ export function Imports() {
               <CateringImport text={job.text} fileName={job.fileName} />
             )}
 
-            {job.lineItems && job.lineItems.length > 0 && <Receiving lineItems={job.lineItems} fileName={job.fileName} />}
-
-            {job.lineItems && job.lineItems.length > 0 && job.text && (
-              <InvoiceLog text={job.text} fileName={job.fileName} />
+            {/* Invoices/deliveries (lines with quantities) → one-tap receiving.
+                Price sheets (prices but no quantities) → price update only. */}
+            {job.lineItems && job.lineItems.length > 0 && job.lineItems.some((li) => li.qty) && (
+              <Receiving lineItems={job.lineItems} fileName={job.fileName} text={job.text ?? ''} />
             )}
-
-            {job.lineItems && job.lineItems.length > 0 && job.text && (
+            {job.lineItems && job.lineItems.length > 0 && !job.lineItems.some((li) => li.qty) && job.text && (
               <PriceUpdate lineItems={job.lineItems} text={job.text} fileName={job.fileName} />
             )}
 
@@ -344,37 +345,37 @@ interface Row {
   description: string
   qty: number
   price?: number // case cost from the invoice line — carried into the catalog
+  code?: string // vendor item code split off the name
+  size?: string // pack size split off the name (750ml, 4/5LB…)
   // '' = skip, 'NEW' = add to the guide as a new item, otherwise "vendor||itemId"
   target: string
 }
 
-function Receiving({ lineItems, fileName }: { lineItems: LineItem[]; fileName: string }) {
-  const [open, setOpen] = useState(false)
-  const [applied, setApplied] = useState<{ updated: number; added: number } | null>(null)
-  const [rows, setRows] = useState<Row[]>([])
-  const vendorList = useMemo(() => vendors(), [open])
-  const [vendor, setVendor] = useState(vendorList[0] ?? 'US Foods')
+/**
+ * Receiving (owner spec): NOT tied to an order. The invoice comes in, the
+ * table shows item · size · qty · price, and ONE button logs the received
+ * quantities, updates pricing everywhere, and files the invoice.
+ */
+function Receiving({ lineItems, fileName, text }: { lineItems: LineItem[]; fileName: string; text: string }) {
+  const [applied, setApplied] = useState<string | null>(null)
+  const [rows, setRows] = useState<Row[]>(() =>
+    proposeReceipts(lineItems).map((p) => ({
+      description: p.description,
+      qty: p.qty,
+      price: p.price,
+      code: p.code,
+      size: p.size,
+      target: p.match ? `${p.match.vendor}||${p.match.item.id}` : 'NEW',
+    })),
+  )
+  const inv = useMemo(() => parseInvoice(text, fileName), [text, fileName])
+  const vendorList = useMemo(() => vendors(), [])
+  const [vendor, setVendor] = useState(inv.vendor && inv.vendor !== 'Vendor' ? inv.vendor : (vendorList[0] ?? 'US Foods'))
 
   const options = useMemo(() => {
     const data = getOrdering()
-    return Object.entries(data).flatMap(([v, items]) =>
-      items.map((it) => ({ v, id: it.id, label: `${v} · ${it.name}` })),
-    )
-  }, [open])
-
-  const start = () => {
-    const proposed = proposeReceipts(lineItems)
-    setRows(
-      proposed.map((p) => ({
-        description: p.description,
-        qty: p.qty,
-        price: p.price,
-        target: p.match ? `${p.match.vendor}||${p.match.item.id}` : 'NEW',
-      })),
-    )
-    setOpen(true)
-    setApplied(null)
-  }
+    return Object.entries(data).flatMap(([v, items]) => items.map((it) => ({ v, id: it.id, label: it.name })))
+  }, [])
 
   const matched = rows.filter((r) => r.target && r.target !== 'NEW').length
   const toAdd = rows.filter((r) => r.target === 'NEW').length
@@ -388,8 +389,6 @@ function Receiving({ lineItems, fileName }: { lineItems: LineItem[]; fileName: s
         return { vendor: v, itemId, qty: r.qty }
       })
     const updated = applyReceipts(receipts)
-    // One drop does it all: teach the alias (matched once = matched forever)
-    // and push the line's case cost through the whole app + price ticker.
     let repriced = 0
     for (const r of matchedRows) {
       const itemId = r.target.split('||')[1]
@@ -402,93 +401,101 @@ function Receiving({ lineItems, fileName }: { lineItems: LineItem[]; fileName: s
     let added = 0
     rows.filter((r) => r.target === 'NEW').forEach((r) => {
       // registerItem de-dupes by name AND alias — the catalog never doubles up.
-      const ci = registerItem({ name: r.description, unit: 'cs', vendor, cost: r.price })
+      const ci = registerItem({ name: r.description, unit: 'cs', vendor, cost: r.price, code: r.code, size: r.size })
       setOnGuide(ci.id, true)
       setParEntry(ci.id, { onHand: Math.max(0, r.qty) })
       added++
     })
-    setApplied({ updated, added })
-    setOpen(false)
-    logImport(
-      fileName,
-      `${updated} received → on-hand${repriced ? ` · ${repriced} case cost${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}`,
-    )
+    // File the invoice automatically — qty, price, date, done.
+    if (inv.total > 0) {
+      addInvoice({
+        id: `inv${Date.now()}`,
+        vendor,
+        date: inv.date ?? today(),
+        number: inv.number,
+        total: inv.total,
+        paid: false,
+      })
+    }
+    const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${inv.total > 0 ? ` · invoice ${money2(inv.total)} filed` : ''}`
+    setApplied(summary)
+    logImport(fileName, summary)
   }
 
-  if (!open) {
+  if (applied) {
     return (
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button onClick={start} className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white">
-          Post to Ordering →
-        </button>
-        {applied && (
-          <span className="text-sm font-semibold text-up">
-            ✓ {applied.updated} updated{applied.added ? `, ${applied.added} new` : ''}
-          </span>
-        )}
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+        ✓ {applied}
       </div>
     )
   }
 
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs font-bold uppercase tracking-wide text-muted">
-          Review · {matched} matched · {toAdd} new
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-bold uppercase tracking-wide text-muted">
+          Received · {rows.length} lines{inv.date ? ` · ${inv.date}` : ''}
+        </span>
+        <label className="ml-auto flex items-center gap-1.5 text-xs text-ink/70">
+          Vendor
+          <select
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value)}
+            className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs outline-none focus:border-brand"
+          >
+            {[...new Set([vendor, ...vendorList])].map((v) => (
+              <option key={v}>{v}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="grid grid-cols-[minmax(0,2fr)_72px_52px_72px_minmax(110px,1fr)] gap-1.5 border-b border-black/10 pb-1 text-[9px] font-extrabold uppercase tracking-wide text-muted">
+        <span>Item</span>
+        <span>Size</span>
+        <span className="text-center">Qty</span>
+        <span className="text-right">Price</span>
+        <span className="text-right">Goes to</span>
+      </div>
+      {rows.map((r, i) => (
+        <div key={i} className="grid grid-cols-[minmax(0,2fr)_72px_52px_72px_minmax(110px,1fr)] items-center gap-1.5 border-b border-black/5 py-1.5 last:border-0">
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-ink">{r.description}</span>
+            {r.code && <span className="block font-mono text-[9px] text-muted">{r.code}</span>}
+          </span>
+          <span className="truncate text-xs text-muted">{r.size ?? '—'}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={r.qty}
+            onChange={(e) =>
+              setRows((rs) => rs.map((x, j) => (j === i ? { ...x, qty: Math.max(0, parseInt(e.target.value) || 0) } : x)))
+            }
+            className="w-full rounded-lg border border-black/10 bg-white px-1 py-1 text-center text-sm outline-none focus:border-brand"
+          />
+          <span className="text-right font-mono text-xs text-ink">{r.price != null ? `$${r.price.toFixed(2)}` : '—'}</span>
+          <select
+            value={r.target}
+            onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))}
+            className={`w-full rounded-lg border bg-white px-1.5 py-1 text-[11px] outline-none focus:border-brand ${
+              r.target === 'NEW' ? 'border-brand/40 font-semibold text-brand-600' : 'border-black/10'
+            }`}
+          >
+            <option value="">— skip —</option>
+            <option value="NEW">➕ new item</option>
+            {options.map((o) => (
+              <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
-        <button onClick={() => setOpen(false)} className="text-xs text-muted">
-          Cancel
-        </button>
-      </div>
-      <label className="mb-2 flex items-center gap-2 text-xs text-ink/70">
-        New items go to:
-        <select
-          value={vendor}
-          onChange={(e) => setVendor(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs outline-none focus:border-brand"
-        >
-          {vendorList.map((v) => (
-            <option key={v}>{v}</option>
-          ))}
-        </select>
-      </label>
-      <div className="space-y-2">
-        {rows.map((r, i) => (
-          <div key={i} className="grid grid-cols-[1fr_auto] items-center gap-2">
-            <div className="min-w-0">
-              <div className="truncate text-sm text-ink">{r.description}</div>
-              <select
-                value={r.target}
-                onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))}
-                className="mt-1 w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-brand"
-              >
-                <option value="">— skip —</option>
-                <option value="NEW">➕ Add as new item</option>
-                {options.map((o) => (
-                  <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={r.qty}
-              onChange={(e) =>
-                setRows((rs) => rs.map((x, j) => (j === i ? { ...x, qty: Math.max(0, parseInt(e.target.value) || 0) } : x)))
-              }
-              className="w-16 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-center text-sm outline-none focus:border-brand"
-            />
-          </div>
-        ))}
-      </div>
+      ))}
       <button
         onClick={apply}
         disabled={matched + toAdd === 0}
-        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
       >
-        Apply — {matched} on-hand{toAdd ? ` + ${toAdd} new item${toAdd === 1 ? '' : 's'}` : ''}
+        Log received + update prices{inv.total > 0 ? ` + file invoice ${money2(inv.total)}` : ''} ✓
       </button>
     </div>
   )
@@ -577,40 +584,6 @@ function PriceUpdate({ lineItems, text, fileName }: { lineItems: LineItem[]; tex
   )
 }
 
-/** One-tap: log this invoice's total to the Invoices screen. */
-function InvoiceLog({ text, fileName }: { text: string; fileName: string }) {
-  const parsed = useMemo(() => parseInvoice(text, fileName), [text, fileName])
-  const [done, setDone] = useState(false)
-  if (parsed.total <= 0) return null
-  const money = `$${parsed.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-  return (
-    <div className="mt-3 border-t border-black/10 pt-3">
-      {done ? (
-        <span className="text-sm font-semibold text-up">✓ Logged {money} to Invoices</span>
-      ) : (
-        <button
-          onClick={() => {
-            addInvoice({
-              id: `inv${Date.now()}`,
-              vendor: parsed.vendor,
-              date: today(),
-              number: parsed.number,
-              total: parsed.total,
-              paid: false,
-            })
-            setDone(true)
-            logImport(fileName, `${money} → Invoices (${parsed.vendor})`)
-          }}
-          className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-ink"
-        >
-          Also log {money} to Invoices ({parsed.vendor})
-        </button>
-      )}
-    </div>
-  )
-}
-
-/** Turn a dropped ezCater / catering order into a reviewed booking. */
 function CateringImport({ text, fileName }: { text: string; fileName: string }) {
   const [form, setForm] = useState(() => parseCatering(text, fileName))
   const [added, setAdded] = useState<'' | 'added' | 'duplicate'>('')

@@ -19,7 +19,7 @@ export const setInvoices = (r: Invoice[]): void => save(key(), r)
 export const addInvoice = (inv: Invoice): void => setInvoices([...getInvoices(), inv])
 
 /** Guess vendor / total / number from an invoice's text. */
-export function parseInvoice(text: string, fileName = ''): { vendor: string; total: number; number: string } {
+export function parseInvoice(text: string, fileName = ''): { vendor: string; total: number; number: string; date?: string } {
   const vendor = /us\s?foods/i.test(text)
     ? 'US Foods'
     : /gulf\s?coast/i.test(text)
@@ -42,7 +42,16 @@ export function parseInvoice(text: string, fileName = ''): { vendor: string; tot
     total = all.length ? Math.max(...all) : 0
   }
   const number = text.match(/(?:invoice|inv)\s*#?\s*([A-Z0-9][A-Z0-9-]{2,})/i)?.[1] ?? ''
-  return { vendor, total, number }
+  // Invoice date: labeled first, else the first US-style date on the page.
+  let date: string | undefined
+  const d =
+    text.match(/(?:invoice date|date)\s*[:\-]?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i) ||
+    text.match(/\b(\d{1,2})[\/](\d{1,2})[\/](\d{2,4})\b/)
+  if (d) {
+    const yr = d[3].length === 2 ? `20${d[3]}` : d[3]
+    date = `${yr}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`
+  }
+  return { vendor, total, number, date }
 }
 
 function num(s: string): number {

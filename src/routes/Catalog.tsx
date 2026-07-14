@@ -144,6 +144,7 @@ export function Catalog() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium text-ink">{it.name}</div>
                     <div className="text-xs text-muted">
+                      {it.code && <span className="font-mono">{it.code} · </span>}
                       {it.category} · {it.unit}
                       {it.vendor ? ` · ${it.vendor}` : ''}
                       {it.cost != null && (
