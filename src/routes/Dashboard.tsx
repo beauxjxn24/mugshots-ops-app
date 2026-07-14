@@ -197,7 +197,10 @@ export function Dashboard() {
             {/* Gold rule — the prototype's section divider */}
             <div className="h-[3px] rounded-full bg-gradient-to-r from-brand via-brand/40 to-transparent" />
 
-            {/* Row 2 — Food Focus up front where it can be seen, categories beside it */}
+            {/* Row 2 — tracked items from PMIX */}
+            <TrackedBand scope={scope} anchor={latest?.date ?? t} />
+
+            {/* Row 3 — Food Focus up front where it can be seen, categories beside it */}
             <div className="grid gap-6 lg:grid-cols-2">
               <LtoFocus />
               {cats.total > 0 && (
@@ -226,9 +229,6 @@ export function Dashboard() {
                 </Card>
               )}
             </div>
-
-            {/* Row 3 — tracked items from PMIX */}
-            <TrackedBand scope={scope} anchor={latest?.date ?? t} />
           </>
         ) : (
           <Card className="p-8 text-center">
