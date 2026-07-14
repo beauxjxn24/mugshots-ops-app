@@ -121,6 +121,25 @@ export function Imports() {
         subtitle="Drop an invoice, order guide, price sheet, or ezCater order — PDF or a photo"
       />
       <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Catch-up import — the prototype Admin's first-time-setup recipe */}
+        <details className="rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-3">
+          <summary className="cursor-pointer text-sm font-bold text-ink">
+            Catch-up import <span className="ml-1 rounded bg-brand/20 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-brand-600">first-time setup</span>
+            <span className="ml-2 text-xs font-normal text-muted">seed a store with real history in one drop</span>
+          </summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-ink/80">
+            <li>In Toast, set the date range to the <b>last full quarter</b> (about 13 weeks).</li>
+            <li>Export <b>Sales → Sales Summary</b> (a .zip is fine — drop it as-is).</li>
+            <li>Export <b>Labor → Labor cost summary</b> (CSV) for the same range.</li>
+            <li>Export <b>Sales → Product Mix</b> (CSV) — the items report.</li>
+            <li>Drop them all right here, together — order doesn't matter. Each file shows what it loaded below.</li>
+          </ol>
+          <p className="mt-2 text-[11px] font-bold text-down">
+            Every export must be CSV — not Excel. In Toast choose CSV on export. Backfills daily
+            sales, labor, and product mix — reconciles to Toast's own totals, nothing invented.
+          </p>
+        </details>
+
         {/* Drop zone */}
         <div
           onDragOver={(e) => {

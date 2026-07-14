@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Download, Upload } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { useScope, useCurrentNames } from '../lib/scope'
@@ -139,12 +140,81 @@ export function Stores() {
   }
 
   const totalLocs = concepts.reduce((n, c) => n + c.locations.length, 0)
+  const restoreRef = useRef<HTMLInputElement>(null)
+
+  // Export/restore EVERYTHING the app knows (prototype Admin spec): every
+  // mugops: key, one JSON file. The safety net against lost devices.
+  const exportBackup = () => {
+    const data: Record<string, string> = {}
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)!
+      if (k.startsWith('mugops:')) data[k] = localStorage.getItem(k)!
+    }
+    const blob = new Blob([JSON.stringify({ app: 'mugshots-ops', exportedAt: new Date().toISOString(), data }, null, 1)], {
+      type: 'application/json',
+    })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `mugshots-ops-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+  const restoreBackup = async (file: File) => {
+    try {
+      const parsed = JSON.parse(await file.text())
+      const data: Record<string, string> = parsed.data ?? parsed
+      const keys = Object.keys(data).filter((k) => k.startsWith('mugops:'))
+      if (keys.length === 0) {
+        alert('That file has no Mugshots Ops data in it.')
+        return
+      }
+      if (
+        !(await confirmDelete(
+          `Restore ${keys.length} records from this backup?`,
+          'Existing data with the same keys is overwritten. Export a backup first if unsure.',
+          'Restore',
+        ))
+      )
+        return
+      for (const k of keys) localStorage.setItem(k, data[k])
+      location.reload()
+    } catch {
+      alert('Could not read that backup file.')
+    }
+  }
 
   return (
     <>
       <PageHeader
         title="Stores & Concepts"
-        subtitle={`${concepts.length} concept${concepts.length === 1 ? '' : 's'} · ${totalLocs} location${totalLocs === 1 ? '' : 's'}`}
+        subtitle={`${concepts.length} concept${concepts.length === 1 ? '' : 's'} · ${totalLocs} location${totalLocs === 1 ? '' : 's'} · GM & above`}
+        right={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportBackup}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
+            >
+              <Download size={13} /> Export backup
+            </button>
+            <button
+              onClick={() => restoreRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-ink"
+            >
+              <Upload size={13} /> Restore
+            </button>
+            <input
+              ref={restoreRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) restoreBackup(f)
+                e.target.value = ''
+              }}
+            />
+          </div>
+        }
       />
       <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
         <Card className="border-brand/20 bg-brand/5 p-4 text-sm text-ink/80">
