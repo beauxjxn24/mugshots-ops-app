@@ -100,6 +100,60 @@ export function moveGuideItem(
   return sections
 }
 
+// Which section a NEW item belongs in — so invoice adds don't pile up at the
+// bottom of the guide. Score every section by title keywords and by word
+// overlap with the items already living there; best score wins.
+const SECTION_HINTS: Array<[RegExp, RegExp]> = [
+  [/vodka/i, /vodka|tito|goose|absolut|ketel|deep eddy|cathead|pinnacle/i],
+  [/rum/i, /rum|bacardi|morgan|malibu|don q/i],
+  [/whiskey|bourbon/i, /whiskey|bourbon|rye|crown|jack|jim beam|jameson|maker|fireball|woodford|evan williams|elijah|screw ball|ancient age/i],
+  [/scotch/i, /scotch|dewar|johnn?ie? walker/i],
+  [/tequila/i, /tequila|patron|don julio|lunazul|casamigos|two fingers|reposado|blanco|anejo/i],
+  [/gin/i, /\bgin\b|tanqueray|bombay|amsterdam/i],
+  [/liqueur/i, /liqueur|jager|goldschlager|amaretto|schnapps|triple sec|cointreau|grand marnier|curacao|razzmataz|pama|boston/i],
+  [/cream|coffee/i, /baileys|kahlua|cream/i],
+  [/flavor|pur|bitter|mix/i, /puree|purée|bitters|grenadine|ginger beer|finest call|mix\b|juice/i],
+  [/red wine/i, /cab|pinot noir|merlot|malbec/i],
+  [/white wine/i, /grigio|grigo|chardonnay|moscato|riesling|zin|sauv/i],
+  [/champagne/i, /champagne|tott|brut|prosecco/i],
+]
+
+export function bestSectionFor(shelf: GuideShelf, name: string): number {
+  const sections = getGuideSections(shelf)
+  if (sections.length <= 1) return Math.max(0, sections.length - 1)
+  const items = new Map(getCatalog().map((ci) => [ci.id, ci.name]))
+  const words = new Set(name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2))
+  let best = sections.length - 1
+  let bestScore = 0
+  sections.forEach((sec, si) => {
+    let score = 0
+    for (const [titleRe, nameRe] of SECTION_HINTS) {
+      if (titleRe.test(sec.title) && nameRe.test(name)) score += 3
+    }
+    for (const id of sec.ids) {
+      const other = (items.get(id) ?? '').toLowerCase().split(/[^a-z0-9]+/)
+      let shared = 0
+      for (const w of other) if (w.length > 2 && words.has(w)) shared++
+      score = Math.max(score, score + (shared >= 2 ? 2 : shared))
+    }
+    if (score > bestScore) {
+      bestScore = score
+      best = si
+    }
+  })
+  return best
+}
+
+/** Put an (already-registered) item into the right section of its shelf. */
+export function placeItemInGuide(shelf: GuideShelf, id: string, name: string): void {
+  const si = bestSectionFor(shelf, name)
+  const sections = getGuideSections(shelf).map((s) => ({ ...s, ids: [...s.ids] }))
+  for (const s of sections) s.ids = s.ids.filter((x) => x !== id)
+  if (sections.length === 0) sections.push({ title: 'Items', ids: [] })
+  sections[Math.min(si, sections.length - 1)].ids.push(id)
+  setGuideSections(shelf, sections)
+}
+
 /** Register a new item straight into a specific section of a shelf's guide. */
 export function addGuideItem(shelf: GuideShelf, secIdx: number, name: string, unit = 'btl'): void {
   const ci = registerItem({ name, unit, category: shelf === 'Other' ? 'Food' : shelf })

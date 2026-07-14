@@ -204,7 +204,7 @@ export function Ordering() {
                   shelf === s ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-ink'
                 }`}
               >
-                {s}
+                {s === 'Other' ? 'Food & other' : s}
               </button>
             ))}
           </div>

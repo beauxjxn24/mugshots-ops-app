@@ -173,7 +173,9 @@ export function proposeReceipts(lineItems: LineItem[]) {
     // Learned aliases + exact catalog names claim the line before any fuzzing.
     const known = fuzzyExact(li.description, catalog)
     const flatHit = known ? flat.find((f) => f.item.id === known.id) : null
-    const m = flatHit ? { ...flatHit, score: 1 } : bestMatch(li.description, flat)
+    // exact = a learned alias / exact name — safe to auto-confirm; fuzzy
+    // proposals always wait for the owner's Confirm button.
+    const m = flatHit ? { ...flatHit, score: 1, exact: true } : bestMatch(li.description, flat)
     const qty = li.qty ? parseInt(li.qty, 10) : 1
     return {
       description: li.description,

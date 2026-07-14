@@ -11,6 +11,7 @@ import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
+import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
 import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
 
@@ -417,14 +418,20 @@ interface Row {
   price?: number // case cost from the invoice line — carried into the catalog
   code?: string // vendor item code split off the name
   size?: string // pack size split off the name (750ml, 4/5LB…)
-  // '' = skip, 'NEW' = add to the guide as a new item, otherwise "vendor||itemId"
+  // '' = nothing picked, 'NEW' = add to the guide as a new item, otherwise "vendor||itemId"
   target: string
+  // Owner spec: every line gets an explicit decision — confirm the proposed
+  // guide match, add it to the guide, or skip it. Nothing applies silently.
+  resolved: '' | 'confirmed' | 'new' | 'skip'
+  /** Manual-override select open for this row. */
+  picking?: boolean
 }
 
 /**
- * Receiving (owner spec): NOT tied to an order. The invoice comes in, the
- * table shows item · size · qty · price, and ONE button logs the received
- * quantities, updates pricing everywhere, and files the invoice.
+ * Receiving — the invoice→order-guide mapping sheet (owner spec): every line
+ * is tied to a REAL guide item. The reader proposes its best match; you
+ * confirm it (learned forever) or add the line to the guide, where it lands
+ * in the right section — never dumped at the bottom.
  */
 function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]; fileName: string; text: string; docId?: string }) {
   const [applied, setApplied] = useState<string | null>(null)
@@ -436,7 +443,10 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       price: p.price,
       code: p.code,
       size: p.size,
-      target: p.match ? `${p.match.vendor}||${p.match.item.id}` : 'NEW',
+      target: p.match ? `${p.match.vendor}||${p.match.item.id}` : '',
+      // A learned (alias/exact) match confirms itself — it came from a
+      // previous confirmation. Fuzzy proposals wait for the button.
+      resolved: p.match && (p.match as { exact?: boolean }).exact ? 'confirmed' : '',
     })),
   )
   const inv = useMemo(() => parseInvoice(text, fileName), [text, fileName])
@@ -447,13 +457,18 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
     const data = getOrdering()
     return Object.entries(data).flatMap(([v, items]) => items.map((it) => ({ v, id: it.id, label: it.name })))
   }, [])
+  const labelFor = (target: string) => options.find((o) => `${o.v}||${o.id}` === target)?.label ?? '?'
 
-  const matched = rows.filter((r) => r.target && r.target !== 'NEW').length
-  const toAdd = rows.filter((r) => r.target === 'NEW').length
+  const setRow = (i: number, patch: Partial<Row>) =>
+    setRows((rs) => rs.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+
+  const confirmed = rows.filter((r) => r.resolved === 'confirmed' && r.target && r.target !== 'NEW')
+  const adds = rows.filter((r) => r.resolved === 'new' && r.description.trim())
+  const unresolvedMatches = rows.filter((r) => r.resolved === '' && r.target && r.target !== 'NEW').length
+  const unresolved = rows.filter((r) => r.resolved === '').length
 
   const apply = () => {
-    const matchedRows = rows.filter((r) => r.target && r.target !== 'NEW')
-    const receipts: Receipt[] = matchedRows
+    const receipts: Receipt[] = confirmed
       .filter((r) => r.qty > 0)
       .map((r) => {
         const [v, itemId] = r.target.split('||')
@@ -461,7 +476,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       })
     const updated = applyReceipts(receipts, inv.date ?? undefined)
     let repriced = 0
-    for (const r of matchedRows) {
+    for (const r of confirmed) {
       const itemId = r.target.split('||')[1]
       // Learn BOTH spellings: the corrected name and exactly what was read —
       // next invoice, the raw reading auto-matches without a correction.
@@ -473,11 +488,15 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       }
     }
     let added = 0
-    rows.filter((r) => r.target === 'NEW' && r.description.trim()).forEach((r) => {
+    adds.forEach((r) => {
       // registerItem de-dupes by name AND alias — the catalog never doubles up.
       const ci = registerItem({ name: r.description.trim(), unit: 'cs', vendor, cost: r.price, code: r.code, size: r.size })
       if (r.raw !== r.description) addAlias(ci.id, r.raw)
       setOnGuide(ci.id, true)
+      // Slot it into the right SECTION of its shelf's guide (vodka with the
+      // vodkas…), instead of piling up at the bottom.
+      const shelf = (GUIDE_SHELVES as readonly string[]).includes(ci.category) ? (ci.category as GuideShelf) : 'Other'
+      placeItemInGuide(shelf, ci.id, ci.name)
       // Through applyReceipts (not a bare count) so the line lands in the
       // receipts log — the Orders Usage view reads that.
       applyReceipts([{ vendor, itemId: ci.id, qty: Math.max(0, r.qty), cost: r.price }], inv.date ?? undefined)
@@ -530,21 +549,31 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
           </select>
         </label>
       </div>
-      <div className="grid grid-cols-[minmax(0,2fr)_72px_52px_72px_minmax(110px,1fr)] gap-1.5 border-b border-black/10 pb-1 text-[9px] font-extrabold uppercase tracking-wide text-muted">
-        <span>Item</span>
+      {unresolvedMatches > 1 && (
+        <div className="mb-1.5 flex justify-end">
+          <button
+            onClick={() =>
+              setRows((rs) => rs.map((x) => (x.resolved === '' && x.target && x.target !== 'NEW' ? { ...x, resolved: 'confirmed' } : x)))
+            }
+            className="rounded-lg border border-up/40 px-2.5 py-1 text-[11px] font-bold text-up hover:bg-up/10"
+          >
+            ✓ Confirm all {unresolvedMatches} matches
+          </button>
+        </div>
+      )}
+      <div className="grid grid-cols-[minmax(0,1.6fr)_60px_48px_66px_minmax(170px,1.4fr)] gap-1.5 border-b border-black/10 pb-1 text-[9px] font-extrabold uppercase tracking-wide text-muted">
+        <span>Invoice line</span>
         <span>Size</span>
         <span className="text-center">Qty</span>
         <span className="text-right">Price</span>
-        <span className="text-right">Goes to</span>
+        <span className="text-right">Ties to (order guide)</span>
       </div>
       {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,2fr)_72px_52px_72px_minmax(110px,1fr)] items-center gap-1.5 border-b border-black/5 py-1.5 last:border-0">
+        <div key={i} className="grid grid-cols-[minmax(0,1.6fr)_60px_48px_66px_minmax(170px,1.4fr)] items-center gap-1.5 border-b border-black/5 py-1.5 last:border-0">
           <span className="min-w-0">
             <input
               value={r.description}
-              onChange={(e) =>
-                setRows((rs) => rs.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))
-              }
+              onChange={(e) => setRow(i, { description: e.target.value })}
               title="Correct the name if we misread it — the correction is remembered"
               className={`w-full rounded-lg border bg-white px-2 py-1 text-sm font-semibold text-ink outline-none focus:border-brand ${
                 r.description !== r.raw ? 'border-brand/50' : 'border-black/10'
@@ -560,36 +589,109 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
             type="number"
             inputMode="numeric"
             value={r.qty}
-            onChange={(e) =>
-              setRows((rs) => rs.map((x, j) => (j === i ? { ...x, qty: Math.max(0, parseInt(e.target.value) || 0) } : x)))
-            }
+            onChange={(e) => setRow(i, { qty: Math.max(0, parseInt(e.target.value) || 0) })}
             className="w-full rounded-lg border border-black/10 bg-white px-1 py-1 text-center text-sm outline-none focus:border-brand"
           />
           <span className="text-right font-mono text-xs text-ink">{r.price != null ? `$${r.price.toFixed(2)}` : '—'}</span>
-          <select
-            value={r.target}
-            onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))}
-            className={`w-full rounded-lg border bg-white px-1.5 py-1 text-[11px] outline-none focus:border-brand ${
-              r.target === 'NEW' ? 'border-brand/40 font-semibold text-brand-600' : 'border-black/10'
-            }`}
-          >
-            <option value="">— skip —</option>
-            <option value="NEW">➕ new item</option>
-            {options.map((o) => (
-              <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+
+          {/* The mapping cell — confirm the best match, add to guide, or pick */}
+          <span className="flex min-w-0 items-center justify-end gap-1">
+            {r.picking ? (
+              <select
+                autoFocus
+                value={r.target}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setRow(i, {
+                    target: v,
+                    picking: false,
+                    resolved: v === 'NEW' ? 'new' : v === '' ? '' : 'confirmed',
+                  })
+                }}
+                onBlur={() => setRow(i, { picking: false })}
+                className="w-full rounded-lg border border-brand/40 bg-white px-1.5 py-1 text-[11px] outline-none"
+              >
+                <option value="">— pick from the guide —</option>
+                <option value="NEW">➕ add to guide as new item</option>
+                {options.map((o) => (
+                  <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            ) : r.resolved === 'confirmed' ? (
+              <>
+                <span className="min-w-0 truncate rounded-full bg-up/10 px-2 py-1 text-[11px] font-bold text-up">
+                  ✓ {labelFor(r.target)}
+                </span>
+                <button onClick={() => setRow(i, { resolved: '', picking: true })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
+                  change
+                </button>
+              </>
+            ) : r.resolved === 'new' ? (
+              <>
+                <span className="min-w-0 truncate rounded-full bg-brand/15 px-2 py-1 text-[11px] font-bold text-brand-600">
+                  ➕ new — files into its section
+                </span>
+                <button onClick={() => setRow(i, { resolved: '', target: '' })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
+                  undo
+                </button>
+              </>
+            ) : r.resolved === 'skip' ? (
+              <>
+                <span className="rounded-full bg-black/5 px-2 py-1 text-[11px] font-bold text-muted">skipped</span>
+                <button onClick={() => setRow(i, { resolved: '' })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
+                  undo
+                </button>
+              </>
+            ) : r.target && r.target !== 'NEW' ? (
+              <>
+                <span className="min-w-0 truncate text-[11px] text-ink/70" title={`Best match: ${labelFor(r.target)}`}>
+                  → {labelFor(r.target)}?
+                </span>
+                <button
+                  onClick={() => setRow(i, { resolved: 'confirmed' })}
+                  className="shrink-0 rounded-lg bg-up px-2 py-1 text-[11px] font-bold text-white"
+                >
+                  ✓ Confirm
+                </button>
+                <button onClick={() => setRow(i, { picking: true })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
+                  not it
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="shrink-0 text-[11px] text-muted">no match —</span>
+                <button
+                  onClick={() => setRow(i, { resolved: 'new', target: 'NEW' })}
+                  className="shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-bold text-white"
+                >
+                  ➕ Add to guide
+                </button>
+                <button onClick={() => setRow(i, { picking: true })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
+                  pick
+                </button>
+                <button onClick={() => setRow(i, { resolved: 'skip' })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
+                  skip
+                </button>
+              </>
+            )}
+          </span>
         </div>
       ))}
       <button
         onClick={apply}
-        disabled={matched + toAdd === 0}
+        disabled={confirmed.length + adds.length === 0}
         className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
       >
-        Log received + update prices{inv.total > 0 ? ` + file invoice ${money2(inv.total)}` : ''} ✓
+        Log {confirmed.length + adds.length} line{confirmed.length + adds.length === 1 ? '' : 's'} + update prices
+        {inv.total > 0 ? ` + file invoice ${money2(inv.total)}` : ''} ✓
       </button>
+      {unresolved > 0 && (
+        <p className="mt-1.5 text-center text-[11px] text-warn">
+          {unresolved} line{unresolved === 1 ? '' : 's'} not decided yet — confirm, add, or skip each one (undecided lines don't apply).
+        </p>
+      )}
     </div>
   )
 }
