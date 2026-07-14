@@ -10,17 +10,19 @@ import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '
 import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { logImport, useImportLog } from '../lib/importlog'
-import { saveDoc } from '../lib/docs'
+import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { confirmDelete } from '../lib/confirm'
 import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
 
 interface Job extends Partial<ReadResult> {
   id: string
   fileName: string
-  status: 'reading' | 'done' | 'error'
+  status: 'reading' | 'done' | 'error' | 'duplicate'
   progress: number
   /** IndexedDB id of the original document — invoices link back to it. */
   docId?: string
+  /** When status is 'duplicate': the earlier import this file matches. */
+  dupOf?: { name: string; at: string }
 }
 
 const money2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -34,6 +36,42 @@ export function Imports() {
   const cameraRef = useRef<HTMLInputElement>(null)
 
   const recentDrops = useRef<Map<string, number>>(new Map())
+  // Files parked behind a duplicate warning, kept so "Import anyway" works.
+  const parked = useRef<Map<string, File>>(new Map())
+
+  const processOne = useCallback(async (file: File, id: string) => {
+    const docId = `doc${Date.now().toString(36)}${seq}`
+    void saveDoc(docId, file) // keep the original — invoices reopen it
+    setJobs((j) => {
+      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId }
+      return j.some((x) => x.id === id) ? j.map((x) => (x.id === id ? fresh : x)) : [fresh, ...j]
+    })
+    const res = await readFile(file, (p) =>
+      setJobs((j) => j.map((x) => (x.id === id ? { ...x, progress: p } : x))),
+    )
+    setJobs((j) =>
+      j.map((x) =>
+        x.id === id
+          ? { ...x, ...res, status: res.kind === 'unsupported' ? 'error' : 'done', progress: 1 }
+          : x,
+      ),
+    )
+    // Every read lands in the permanent import history.
+    if (res.kind === 'unsupported') {
+      logImport(file.name, `⚠ could not read${res.note ? ` — ${res.note}` : ''}`)
+    } else {
+      const detected = isSalesSummary(res.text)
+        ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
+        : isRosterDoc(res.text)
+          ? 'employee roster — review below'
+          : isCateringDoc(res.text)
+            ? 'catering order — review below'
+            : res.lineItems.length > 0
+              ? `${res.lineItems.length} line items — review below`
+              : 'read'
+      logImport(file.name, `read · ${detected}`)
+    }
+  }, [])
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     // Guard: the same file arriving twice within a few seconds is a double
@@ -68,36 +106,34 @@ export function Imports() {
     }
     for (const file of list) {
       const id = `j${++seq}`
-      const docId = `doc${Date.now().toString(36)}${seq}`
-      void saveDoc(docId, file) // keep the original — invoices reopen it
-      setJobs((j) => [{ id, fileName: file.name, status: 'reading', progress: 0, docId }, ...j])
-      const res = await readFile(file, (p) =>
-        setJobs((j) => j.map((x) => (x.id === id ? { ...x, progress: p } : x))),
-      )
-      setJobs((j) =>
-        j.map((x) =>
-          x.id === id
-            ? { ...x, ...res, status: res.kind === 'unsupported' ? 'error' : 'done', progress: 1 }
-            : x,
-        ),
-      )
-      // Every read lands in the permanent import history.
-      if (res.kind === 'unsupported') {
-        logImport(file.name, `⚠ could not read${res.note ? ` — ${res.note}` : ''}`)
-      } else {
-        const detected = isSalesSummary(res.text)
-          ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
-          : isRosterDoc(res.text)
-            ? 'employee roster — review below'
-            : isCateringDoc(res.text)
-              ? 'catering order — review below'
-              : res.lineItems.length > 0
-                ? `${res.lineItems.length} line items — review below`
-                : 'read'
-        logImport(file.name, `read · ${detected}`)
+      // Duplicate check: the exact same bytes seen before — invoice, spec
+      // card, recipe, any PDF — gets flagged instead of importing twice.
+      const h = await fileHash(file)
+      const seen = findSeenFile(h)
+      if (seen) {
+        parked.current.set(id, file)
+        setJobs((j) => [
+          { id, fileName: file.name, status: 'duplicate', progress: 1, dupOf: { name: seen.name, at: seen.at } },
+          ...j,
+        ])
+        logImport(file.name, `⚠ duplicate of ${seen.name} (imported ${seen.at}) — skipped`)
+        continue
       }
+      recordSeenFile(h, file.name)
+      await processOne(file, id)
     }
-  }, [])
+  }, [processOne])
+
+  const importAnyway = useCallback(
+    (id: string) => {
+      const file = parked.current.get(id)
+      if (!file) return
+      parked.current.delete(id)
+      logImport(file.name, 'duplicate imported anyway')
+      void processOne(file, id)
+    },
+    [processOne],
+  )
 
   // ONE drop path only: the window listener below catches drops anywhere on
   // the page, including on the box. (A second onDrop on the box itself made
@@ -194,7 +230,10 @@ export function Imports() {
             multiple
             accept="application/pdf,image/*,.csv,.txt,.zip,.xls,.xlsx"
             className="hidden"
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            onChange={(e) => {
+              if (e.target.files?.length) handleFiles(e.target.files)
+              e.target.value = '' // so picking the same file again still fires
+            }}
           />
           {/* Camera-only path, offered as an explicit second button. */}
           <input
@@ -203,7 +242,10 @@ export function Imports() {
             accept="image/*"
             capture="environment"
             className="hidden"
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            onChange={(e) => {
+              if (e.target.files?.length) handleFiles(e.target.files)
+              e.target.value = '' // so re-shooting the same photo still fires
+            }}
           />
         </div>
 
@@ -216,9 +258,11 @@ export function Imports() {
                 <div className="text-xs text-muted">
                   {job.status === 'reading'
                     ? `Reading… ${Math.round((job.progress || 0) * 100)}%`
-                    : job.kind === 'unsupported'
-                      ? 'Could not read'
-                      : `${job.kind?.toUpperCase()} · ${job.lineItems?.length ?? 0} line items found`}
+                    : job.status === 'duplicate'
+                      ? 'Nothing was imported'
+                      : job.kind === 'unsupported'
+                        ? 'Could not read'
+                        : `${job.kind?.toUpperCase()} · ${job.lineItems?.length ?? 0} line items found`}
                 </div>
               </div>
               <span
@@ -227,7 +271,9 @@ export function Imports() {
                     ? 'bg-up/10 text-up'
                     : job.status === 'error'
                       ? 'bg-down/10 text-down'
-                      : 'bg-brand/10 text-brand'
+                      : job.status === 'duplicate'
+                        ? 'bg-warn/15 text-warn'
+                        : 'bg-brand/10 text-brand'
                 }`}
               >
                 {job.status === 'reading' ? (
@@ -238,6 +284,10 @@ export function Imports() {
                   <>
                     <FileCheck2 size={12} /> Read
                   </>
+                ) : job.status === 'duplicate' ? (
+                  <>
+                    <CircleAlert size={12} /> Duplicate
+                  </>
                 ) : (
                   <>
                     <CircleAlert size={12} /> Error
@@ -245,6 +295,20 @@ export function Imports() {
                 )}
               </span>
             </div>
+
+            {job.status === 'duplicate' && job.dupOf && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warn/30 bg-warn/[0.07] px-3 py-2.5">
+                <p className="text-sm text-ink">
+                  This exact file was already imported <b>{job.dupOf.at}</b> as <b>{job.dupOf.name}</b>.
+                </p>
+                <button
+                  onClick={() => importAnyway(job.id)}
+                  className="rounded-lg border border-warn/40 px-3 py-1.5 text-xs font-bold text-warn hover:bg-warn/10"
+                >
+                  Import anyway →
+                </button>
+              </div>
+            )}
 
             {job.note && <p className="mt-2 text-xs text-warn">{job.note}</p>}
 

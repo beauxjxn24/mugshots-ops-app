@@ -2,6 +2,9 @@
 // localStorage can't hold files. Each dropped file is saved once; records
 // elsewhere (e.g. an invoice) keep a docId and can reopen the real document.
 
+import { load, save } from './store'
+import { useScope } from './scope'
+
 const DB = 'mugops-docs'
 const STORE = 'docs'
 const KEEP = 60 // most-recent docs kept; older ones pruned
@@ -64,6 +67,44 @@ export async function getDoc(id: string): Promise<DocRecord | null> {
   } catch {
     return null
   }
+}
+
+// ── Duplicate detection ──────────────────────────────────────────────────
+// Every processed drop is fingerprinted (SHA-256 of the bytes). A re-drop of
+// the exact same file — invoice, spec card, recipe, any PDF — is flagged as a
+// duplicate instead of silently importing twice.
+
+export interface SeenFile {
+  h: string
+  name: string
+  at: string // "Jul 13, 9:41 AM"
+}
+
+const seenKey = () => {
+  const s = useScope.getState()
+  return `${s.currentConcept}|${s.currentLocation}::imports:fileHashes`
+}
+
+/** SHA-256 hex of the file's bytes; '' when hashing isn't available. */
+export async function fileHash(file: File): Promise<string> {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  } catch {
+    return ''
+  }
+}
+
+export function findSeenFile(h: string): SeenFile | undefined {
+  if (!h) return undefined
+  return load<SeenFile[]>(seenKey(), []).find((s) => s.h === h)
+}
+
+export function recordSeenFile(h: string, name: string): void {
+  if (!h) return
+  const at = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  const list = [{ h, name, at }, ...load<SeenFile[]>(seenKey(), []).filter((s) => s.h !== h)]
+  save(seenKey(), list.slice(0, 400))
 }
 
 /** Open the stored document in a new tab (the browser renders PDFs/images). */

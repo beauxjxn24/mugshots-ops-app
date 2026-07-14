@@ -476,9 +476,21 @@ body {
   46%, 99.9% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0); }
 }
 /* Catering TILE alert (owner spec): the tile itself blinks (gold glow) and
-   shakes when a catering is coming up. `.urgent` = today. */
-.tile-alert { animation: tileShake 2.6s ease-in-out infinite, caterGlow 2.6s ease-in-out infinite; }
-.tile-alert.urgent { animation-duration: 1.4s, 1.4s; }
+   shakes when a catering is coming up, with the border flashing so it can't
+   be missed. `.urgent` = today, which flashes red. */
+.tile-alert {
+  border-width: 2px;
+  animation:
+    tileShake 2.6s ease-in-out infinite,
+    caterGlow 2.6s ease-in-out infinite,
+    tileBorder 2.6s ease-in-out infinite;
+}
+.tile-alert.urgent { animation-duration: 1.4s, 1.4s, 1.4s; }
+.tile-alert.urgent { --tile-flash: #c1272d; }
+@keyframes tileBorder {
+  0%, 100% { border-color: rgba(184, 134, 11, 0.45); }
+  40%, 60% { border-color: var(--tile-flash, #b8860b); }
+}
 @keyframes tileShake {
   0%, 64%, 100% { transform: translateX(0) rotate(0); }
   66% { transform: translateX(-2px) rotate(-0.6deg); }
@@ -490,6 +502,8 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .bell-ring, .cater-alert, .tile-alert { animation: none; }
+  /* keep the alert visible even without motion */
+  .tile-alert { border-color: var(--tile-flash, #b8860b); }
 }
 
 /* Print: only the sheet — no rail, bars, or buttons. */
