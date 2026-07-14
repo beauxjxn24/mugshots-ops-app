@@ -123,9 +123,28 @@ export function updatePrices(
       pct: oldCost && oldCost > 0 ? ((line.price - oldCost) / oldCost) * 100 : undefined,
     })
   }
-  if (changes.length) setCatalog(items)
+  if (changes.length) {
+    setCatalog(items)
+    // Feed the Orders price ticker — real changes only, capped.
+    const log = getPriceLog()
+    const stamped = changes
+      .filter((c) => c.pct != null && Math.abs(c.pct) >= 0.5)
+      .map((c) => ({ ...c, vendor, date: isoToday() }))
+    save(conceptKey().replace('catalog:items', 'catalog:priceLog'), [...stamped, ...log].slice(0, 40))
+  }
   return { changes, misses }
 }
+
+export interface PriceChange {
+  name: string
+  oldCost?: number
+  newCost: number
+  pct?: number
+  vendor: string
+  date: string
+}
+export const getPriceLog = (): PriceChange[] =>
+  load(conceptKey().replace('catalog:items', 'catalog:priceLog'), [])
 
 /** Case-insensitive word-overlap match against catalog names. */
 export function fuzzyFind(name: string, items: CatalogItem[] = getCatalog()): CatalogItem | null {

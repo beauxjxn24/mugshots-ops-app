@@ -22,6 +22,7 @@ export interface OrderItem {
   par: number
   onHand: number
   category: string
+  cost?: number
 }
 export type OrderingData = Record<string, OrderItem[]>
 
@@ -62,7 +63,7 @@ export function getOrdering(): OrderingData {
     if (!flags[ci.id]) continue
     const vendor = ci.vendor || 'Other'
     const p = pars[ci.id] ?? { par: 0, onHand: 0 }
-    ;(out[vendor] ??= []).push({ id: ci.id, name: ci.name, unit: ci.unit, par: p.par, onHand: p.onHand, category: ci.category })
+    ;(out[vendor] ??= []).push({ id: ci.id, name: ci.name, unit: ci.unit, par: p.par, onHand: p.onHand, category: ci.category, cost: ci.cost })
   }
   return out
 }
