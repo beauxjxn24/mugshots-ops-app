@@ -11,6 +11,21 @@ export interface Booking {
   source?: string // e.g. 'ezCater'
   orderNo?: string // ezCater order # — imports de-dupe on this
   completedAt?: string // set when the event is marked done (Completed events log)
+  status?: 'confirmed' | 'tentative' | 'hold' // prototype status pills
+  deposit?: number
+  depositPaid?: boolean
+  estimate?: number
+  raw?: string // full ticket text from the import — the actual order
+}
+
+/** Dining-room reservations — the prototype keeps these beside caterings. */
+export interface Reservation {
+  id: string
+  name: string
+  date: string
+  time: string
+  party: number
+  notes: string
 }
 
 function scopedKey(): string {

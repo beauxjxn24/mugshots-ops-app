@@ -578,7 +578,8 @@ function CateringImport({ text, fileName }: { text: string; fileName: string }) 
 
   const save = () => {
     if (!form.event.trim() || !form.date) return
-    const result = addBooking({ ...form, id: `c${Date.now()}`, event: form.event.trim() })
+    // Keep the full ticket text on the booking — Catering opens the actual order.
+    const result = addBooking({ ...form, id: `c${Date.now()}`, event: form.event.trim(), raw: text.slice(0, 6000) })
     recordCateringImport(fileName)
     setAdded(result)
     logImport(fileName, result === 'duplicate' ? `duplicate order #${form.orderNo ?? ''} — skipped` : `booking "${form.event.trim()}" → Catering`)
