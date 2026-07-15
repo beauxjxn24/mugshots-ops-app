@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2, ReceiptText } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
@@ -35,6 +35,29 @@ interface Job extends Partial<ReadResult> {
 const money2 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 let seq = 0
+
+// Toast report zips bundle many internal-breakdown CSVs we never import; skip
+// them on extraction (the useful ones — Sales by day, Sales category summary,
+// Items — don't match this).
+const NOISE_REPORT =
+  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|revenue|tip summary|payments summary|service (mode|charge|daypart)|dining options|tax summary|deferred|unpaid orders|void summary|cash (activity|summary)|day of week|time of day|net sales summary|(menu item|check) discounts/i
+
+/** Contains a render crash in one import card so it can't white-screen the page. */
+class CardBoundary extends Component<{ name: string; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    if (this.state.failed)
+      return (
+        <div className="mt-3 rounded-xl border border-warn/30 bg-warn/5 p-3 text-xs font-semibold text-warn">
+          Couldn’t read “{this.props.name}” — skipped. Try a cleaner export or drop it on its own.
+        </div>
+      )
+    return this.props.children
+  }
+}
 
 export function Imports() {
   const [jobs, setJobs] = useState<Job[]>([])
@@ -110,6 +133,12 @@ export function Imports() {
           for (const [path, bytes] of Object.entries(entries)) {
             const name = path.split('/').pop() ?? path
             if (!name || path.endsWith('/') || path.includes('__MACOSX') || name.startsWith('.')) continue
+            // Toast report zips bundle 10–20 CSVs, but only a few carry data we
+            // use (sales by day, sales category summary, product-mix items). The
+            // rest are giant internal breakdowns (All levels, Percentage
+            // breakdown, Modifiers…) — skip them so they don't clutter the
+            // review list or choke a parser on 6,000 rows.
+            if (NOISE_REPORT.test(name)) continue
             list.push({ file: new File([bytes.slice().buffer as ArrayBuffer], name), fromZip: true })
           }
           continue
@@ -380,6 +409,8 @@ export function Imports() {
               </div>
             )}
 
+            {job.text && (
+              <CardBoundary name={job.fileName}>
             {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} fileName={job.fileName} />}
 
             {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} />}
@@ -423,6 +454,8 @@ export function Imports() {
               !(job.lineItems && job.lineItems.some((li) => li.qty)) && (
                 <LogInvoice text={job.text} fileName={job.fileName} docId={job.docId} />
               )}
+              </CardBoundary>
+            )}
 
             {job.text && (
               <details className="mt-3">
