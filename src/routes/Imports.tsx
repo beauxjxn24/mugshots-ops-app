@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { logImport, useImportLog } from '../lib/importlog'
@@ -67,6 +67,8 @@ export function Imports() {
     } else {
       const detected = isCountSheet(res.text)
         ? `inventory count sheet (${parseCountSheet(res.text).length} items) — review below`
+        : isCategorySummary(res.text)
+        ? 'sales category summary — review below'
         : isSalesSummary(res.text)
         ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
         : isRosterDoc(res.text)
@@ -371,7 +373,9 @@ export function Imports() {
 
             {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isSalesSummary(job.text) && <SalesImport text={job.text} fileName={job.fileName} />}
+            {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} />}
+
+            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && <SalesImport text={job.text} fileName={job.fileName} />}
 
             {job.text && isCateringDoc(job.text) && (
               <CateringImport text={job.text} fileName={job.fileName} />
@@ -976,6 +980,55 @@ function SalesImport({ text, fileName }: { text: string; fileName: string }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+/** Import a Toast "Sales category summary" — stores the net-sales mix so the
+ *  dashboard can split any window's sales by category (labelled as an estimate,
+ *  since Toast only breaks categories out per period, not per day). */
+function CategoryImport({ text, fileName }: { text: string; fileName: string }) {
+  const mix = useMemo(() => parseCategorySummary(text), [text])
+  const ran = useRef(false)
+  const [done, setDone] = useState(false)
+  const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+
+  useEffect(() => {
+    if (!mix || ran.current) return
+    ran.current = true
+    setCatMix({ ...mix, importedAt: new Date().toISOString() })
+    setDone(true)
+    logImport(fileName, `sales category mix → Dashboard (${money(mix.net)} net split)`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mix, fileName])
+
+  if (!mix) return null
+  const rows = [
+    ['Food', mix.food, '#E4B84C'],
+    ['Liquor', mix.liquor, '#F472B6'],
+    ['Beer', mix.beer, '#F0A94C'],
+    ['Wine', mix.wine, '#A78BFA'],
+    ['N/A bev', mix.na, '#60A5FA'],
+    ['Other', mix.other, '#94A3B8'],
+  ].filter(([, v]) => (v as number) > 0) as [string, number, string][]
+  return (
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-up">
+        <LineChart size={16} /> Category mix saved — Dashboard now splits sales by category ({money(mix.net)} net).
+      </div>
+      <div className="space-y-1.5 rounded-lg bg-white p-3">
+        {rows.map(([label, v, color]) => (
+          <div key={label} className="flex items-center gap-3 text-sm">
+            <span className="w-16 shrink-0 font-semibold text-ink">{label}</span>
+            <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-black/5">
+              <div className="h-full rounded-full" style={{ width: `${(v / mix.net) * 100}%`, background: color }} />
+            </div>
+            <span className="w-28 shrink-0 text-right font-mono text-[11px] text-muted">
+              {money(v)} · {((v / mix.net) * 100).toFixed(1)}%
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )

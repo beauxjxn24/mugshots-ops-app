@@ -5,7 +5,7 @@ import { useCurrentNames } from '../lib/scope'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import type { Booking } from '../lib/catering'
-import type { Night } from '../lib/nightly'
+import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
@@ -96,6 +96,10 @@ export function Dashboard() {
   const laborPct = laborSum > 0 && net > 0 ? (laborSum / net) * 100 : null
 
   // ---- Sales by category across the scope ----
+  // Real per-night categories win. When a night has none (e.g. days imported
+  // from a "sales by day" file that only carried net), fall back to the Toast
+  // category MIX applied to this window's net sales — flagged as an estimate.
+  const catMix = getCatMix()
   const cats = useMemo(() => {
     const sum = (k: 'food' | 'beer' | 'liquor' | 'wine' | 'na') =>
       win.nights.reduce((s, n) => s + (n[k] ?? 0), 0)
@@ -107,8 +111,21 @@ export function Dashboard() {
       { l: 'N/A bev', v: sum('na'), c: '#60A5FA' },
     ].filter((p) => p.v > 0)
     const total = parts.reduce((s, p) => s + p.v, 0)
-    return { parts, total }
-  }, [win.nights])
+    if (total > 0) return { parts, total, estimated: false }
+    // Fallback: split the window net by the imported category mix.
+    if (catMix && catMix.net > 0 && net > 0) {
+      const r = (v: number) => (v / catMix.net) * net
+      const est = [
+        { l: 'Food', v: r(catMix.food), c: '#E4B84C' },
+        { l: 'Beer', v: r(catMix.beer), c: '#F0A94C' },
+        { l: 'Liquor', v: r(catMix.liquor), c: '#F472B6' },
+        { l: 'Wine', v: r(catMix.wine), c: '#A78BFA' },
+        { l: 'N/A bev', v: r(catMix.na), c: '#60A5FA' },
+      ].filter((p) => p.v > 0)
+      return { parts: est, total: est.reduce((s, p) => s + p.v, 0), estimated: true }
+    }
+    return { parts, total, estimated: false }
+  }, [win.nights, catMix, net])
 
   // Week-to-date, anchored to the Monday of the latest night's week.
   const wtd = useMemo(() => {
@@ -220,6 +237,7 @@ export function Dashboard() {
               <Card className="drift [--i:3] h-full p-5">
                 <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
                   Sales by category · {win.label}
+                  {cats.estimated && <span className="ml-1 normal-case text-[10px] font-semibold text-brand-600">· est. from your category mix</span>}
                 </div>
                 {cats.total > 0 ? (
                   <div className="space-y-3">

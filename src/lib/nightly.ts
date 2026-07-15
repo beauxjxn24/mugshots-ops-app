@@ -41,6 +41,62 @@ function key(): string {
 export const getNights = (): Night[] => load<Night[]>(key(), [])
 export const setNights = (n: Night[]): void => save(key(), n)
 
+// ---- Sales-category mix (from Toast's "Sales category summary") ----
+// A period-level split of net sales by category. Toast doesn't break categories
+// out per day, so we keep the mix (Food/Beer/Liquor/Wine/NA %s) and apply it to
+// whatever window is on screen — labelled as an estimate, never fabricated.
+export interface CatMix {
+  food: number
+  beer: number
+  liquor: number
+  wine: number
+  na: number
+  other: number
+  net: number
+  from?: string
+  to?: string
+  importedAt?: string
+}
+const catMixKey = (): string => {
+  const s = useScope.getState()
+  return `${s.currentConcept}|${s.currentLocation}::nightly:catmix`
+}
+export const getCatMix = (): CatMix | null => load<CatMix | null>(catMixKey(), null)
+export const setCatMix = (m: CatMix): void => save(catMixKey(), m)
+
+/** Is this a Toast "Sales category summary" (category → net sales table)? */
+export function isCategorySummary(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  return /sales\s*category/.test(first) && /net\s*sales/.test(first)
+}
+
+/** Parse a category summary into a net-sales mix (buckets Toast categories). */
+export function parseCategorySummary(text: string): CatMix | null {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase())
+  const iCat = cols.findIndex((h) => h.includes('category'))
+  const iNet = cols.findIndex((h) => h.includes('net sales')) >= 0 ? cols.findIndex((h) => h.includes('net sales')) : cols.findIndex((h) => h.includes('net'))
+  if (iCat < 0 || iNet < 0) return null
+  const out = { food: 0, beer: 0, liquor: 0, wine: 0, na: 0, other: 0 }
+  for (let r = 1; r < lines.length; r++) {
+    const c = splitCsv(lines[r])
+    const cat = (c[iCat] ?? '').toLowerCase().trim()
+    if (!cat || cat === 'total') continue
+    const val = num(c[iNet] ?? '')
+    if (!val) continue
+    if (/wine/.test(cat)) out.wine += val
+    else if (/beer/.test(cat)) out.beer += val
+    else if (/liquor|spirit|cocktail/.test(cat)) out.liquor += val
+    else if (/non-?alc|\bn\/?a\b|beverage|soft drink|soda/.test(cat)) out.na += val
+    else if (/food|shake|kitchen|entree|appetizer|dessert/.test(cat)) out.food += val
+    else out.other += val
+  }
+  const net = out.food + out.beer + out.liquor + out.wine + out.na + out.other
+  if (net <= 0) return null
+  return { ...out, net }
+}
+
 /**
  * One-time data migrations for Mugshots → Flowood.
  * Owner's call (Jul 2026): NO sample data anywhere — the prototype's 2026
