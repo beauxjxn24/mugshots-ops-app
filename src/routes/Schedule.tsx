@@ -22,17 +22,31 @@ interface TimeOff {
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 // Shift codes per the handoff: O open · C close · M mid · OFF · RO requested off ·
-// R✓ granted off · VAC vacation. Picked from a dropdown on each cell.
+// R✓ granted off · VAC vacation. Tap a cell to pick from a colour palette.
 const CODES = ['', 'O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
+/** The seven pickable codes (everything but the empty cell). */
+const PICK_CODES = ['O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
+// Solid, high-contrast shift chips — readable at a glance on the grid and on
+// a printout, the way a 2026 scheduling tool (Sling / 7shifts) shows them.
 const CHIP: Record<string, string> = {
-  '': 'border border-dashed border-black/15 text-muted/50',
-  O: 'bg-brand/15 text-brand-600 font-extrabold',
-  C: 'bg-navy text-white font-extrabold',
-  M: 'bg-sky-100 text-sky-800 font-extrabold',
-  OFF: 'bg-black/5 text-muted font-bold',
-  RO: 'bg-down/10 text-down font-bold',
-  'R✓': 'bg-up/10 text-up font-bold',
-  VAC: 'bg-[#EDE9FE] text-[#6D28D9] font-extrabold',
+  '': 'text-muted/40',
+  O: 'bg-brand text-white font-extrabold shadow-sm',
+  C: 'bg-navy text-white font-extrabold shadow-sm',
+  M: 'bg-sky-500 text-white font-extrabold shadow-sm',
+  OFF: 'bg-slate-200 text-slate-600 font-bold',
+  RO: 'bg-down/15 text-down font-extrabold ring-1 ring-inset ring-down/40',
+  'R✓': 'bg-up text-white font-extrabold shadow-sm',
+  VAC: 'bg-[#7C3AED] text-white font-extrabold shadow-sm',
+}
+/** Full label for each code — shown in the picker and the legend. */
+const CODE_LABEL: Record<string, string> = {
+  O: 'Open',
+  C: 'Close',
+  M: 'Mid',
+  OFF: 'Day off',
+  RO: 'Requested off',
+  'R✓': 'Granted off',
+  VAC: 'Vacation',
 }
 const CODE_HELP = 'O open · C close · M mid · OFF day off · RO requested off · R✓ granted · VAC vacation'
 const DEFAULT_RULES =
@@ -94,7 +108,7 @@ function expandDates(from: string, to: string): string[] {
 
 /**
  * Mgr schedule — runs BY THE PERIOD (prototype): four week tabs, a chip grid
- * where each cell is a dropdown (O/C/M/OFF/RO/R✓/VAC), advance time-off
+ * where each cell taps open a colour palette (O/C/M/OFF/RO/R✓/VAC), advance time-off
  * requests that surface as RO for the GM to grant, period rules, and a live
  * period-balance card.
  */
@@ -121,6 +135,8 @@ export function Schedule() {
   const weekStarts = [0, 1, 2, 3].map((i) => shiftDays(pStart, i * 7))
   const curWeekIdx = weekStarts.findIndex((ws) => t >= ws && t <= shiftDays(ws, 6))
   const [weekIdx, setWeekIdx] = useState(curWeekIdx >= 0 ? curWeekIdx : 0)
+  // Cell picker: which cell is open + where to float the color palette.
+  const [picker, setPicker] = useState<{ uid: string; date: string; code: string; x: number; y: number } | null>(null)
   const weekStart = weekStarts[weekIdx]
   const grid = weeks[weekStart] ?? {}
   const isPublished = !!published[weekStart]
@@ -321,6 +337,16 @@ export function Schedule() {
             </span>
           </div>
 
+          {/* Colour legend — the shift codes at a glance */}
+          <div className="flex flex-wrap items-center gap-1.5 px-4 pb-2.5">
+            {PICK_CODES.map((c) => (
+              <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.03] py-0.5 pl-0.5 pr-2">
+                <span className={`grid h-5 min-w-6 place-items-center rounded-full px-1 text-[10px] ${CHIP[c]}`}>{c}</span>
+                <span className="text-[10px] font-semibold text-muted">{CODE_LABEL[c]}</span>
+              </span>
+            ))}
+          </div>
+
           {/* Grid */}
           <div className="min-w-[900px]">
             <div className="grid grid-cols-[minmax(0,1.4fr)_repeat(7,minmax(66px,1fr))_80px] items-end gap-1 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
@@ -353,35 +379,35 @@ export function Schedule() {
                   const raw = grid[u.id]?.[day] ?? ''
                   const pend = raw === '' && pendingSet.has(`${u.id}|${date}`)
                   const code = pend ? 'RO' : raw
+                  const open = picker?.uid === u.id && picker?.date === date
+                  const chipCls = `flex h-8 min-w-12 items-center justify-center rounded-lg px-2 text-center text-xs tracking-tight ${
+                    code ? CHIP[code] : 'border border-dashed border-black/20 text-muted/50'
+                  } ${pend ? 'ring-1 ring-inset ring-down/50' : ''}`
                   if (!unlocked) {
                     return (
                       <div
                         key={day}
-                        title={pend ? 'Requested off — unlock to grant' : ''}
-                        className={`mx-auto min-w-12 rounded-lg px-2 py-1.5 text-center font-mono text-[11px] ${CHIP[code]} ${
-                          pend ? 'ring-1 ring-dashed ring-down/40' : ''
-                        }`}
+                        title={pend ? 'Requested off — unlock to grant' : CODE_LABEL[code] ?? ''}
+                        className={`mx-auto ${chipCls}`}
                       >
                         {code || '·'}
                       </div>
                     )
                   }
                   return (
-                    <select
+                    <button
                       key={day}
-                      value={code}
-                      onChange={(e) => setCell(u.id, date, e.target.value)}
-                      title={pend ? 'Requested off — pick R✓ or VAC to grant' : 'Pick a shift code'}
-                      className={`mx-auto min-w-12 cursor-pointer appearance-none rounded-lg px-1 py-1.5 text-center font-mono text-[11px] outline-none focus:ring-2 focus:ring-brand ${CHIP[code]} ${
-                        pend ? 'ring-1 ring-dashed ring-down/40' : ''
+                      onClick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect()
+                        setPicker({ uid: u.id, date, code, x: r.left, y: r.bottom + 4 })
+                      }}
+                      title={pend ? 'Requested off — pick R✓ or VAC to grant' : 'Tap to set a shift'}
+                      className={`mx-auto cursor-pointer transition ${chipCls} ${
+                        open ? 'ring-2 ring-brand' : 'hover:brightness-105 hover:ring-1 hover:ring-brand/40'
                       }`}
                     >
-                      {CODES.map((c) => (
-                        <option key={c} value={c}>
-                          {c || '·'}
-                        </option>
-                      ))}
-                    </select>
+                      {code || '+'}
+                    </button>
                   )
                 })}
                 <span className="text-right font-mono text-sm text-ink">{shiftsInWeek(u.id)}</span>
@@ -407,6 +433,47 @@ export function Schedule() {
             <span className="text-[11px] text-muted">Managers come from Admin → Users &amp; privileges.</span>
           </div>
         </Card>
+
+        {/* Floating shift-code palette — big, colour-coded, touch-friendly */}
+        {picker && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setPicker(null)} />
+            <div
+              className="fixed z-50 w-48 rounded-2xl border border-black/10 bg-white p-1.5 shadow-2xl"
+              style={{
+                left: Math.min(picker.x, (typeof window !== 'undefined' ? window.innerWidth : 400) - 200),
+                top: Math.min(picker.y, (typeof window !== 'undefined' ? window.innerHeight : 700) - 360),
+              }}
+            >
+              <div className="flex flex-col gap-0.5">
+                {PICK_CODES.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      setCell(picker.uid, picker.date, c)
+                      setPicker(null)
+                    }}
+                    className={`flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition hover:bg-black/[0.04] ${
+                      picker.code === c ? 'bg-brand/10 ring-1 ring-inset ring-brand/40' : ''
+                    }`}
+                  >
+                    <span className={`grid h-7 min-w-8 place-items-center rounded-lg px-1 text-xs ${CHIP[c]}`}>{c}</span>
+                    <span className="text-[13px] font-semibold text-ink">{CODE_LABEL[c]}</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setCell(picker.uid, picker.date, '')
+                    setPicker(null)
+                  }}
+                  className="mt-0.5 rounded-xl border border-dashed border-black/20 py-1.5 text-[12px] font-semibold text-muted hover:text-down"
+                >
+                  Clear cell
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         <RequestOff users={users} onSubmit={(r) => setRequests((rs) => [r, ...rs])} requests={requests} nameOf={nameOf} />
 
