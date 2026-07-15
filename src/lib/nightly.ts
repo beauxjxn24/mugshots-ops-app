@@ -137,25 +137,44 @@ export function seedFlowoodHistory(): void {
     save(FLAG25, true)
   }
 
-  // Third seed (owner-supplied via chat, Jul 2026): real daily net sales for the
-  // current period (Jun 15 – Jul 14, 2026) from the Toast Sales-summary export,
-  // so Nightly Numbers and the dashboard show the store's actual numbers without
-  // waiting on a re-import. Merges by date; never overwrites a hand-entered night.
-  const FLAG26 = '__flowoodSales2026Seeded'
+  // Third seed (owner-supplied via chat, Jul 2026): real daily numbers for the
+  // current period (Jun 15 – Jul 14, 2026) from the Toast Sales-summary export —
+  // net + covers per day, gross = net (no per-day discounts in the summary), and
+  // a category split allocated from the period's real Toast category mix and
+  // normalized to reconcile exactly to each night's net. So every field on the
+  // Nightly sheet is filled without waiting on a re-import.
+  // v2 flag: also UPGRADES a prior bare seed (net + covers only) with the
+  // category split. Never touches a hand-entered or owner-drop night.
+  const FLAG26 = '__flowoodSales2026Seeded_v2'
   if (!load<boolean>(FLAG26, false)) {
     const cur = load<Night[]>(k, [])
-    const have = new Set(cur.map((n) => n.date))
-    const add: Night[] = (seedSales2026 as Array<{ date: string; net: number; orders: number; guests: number }>)
-      .filter((r) => !have.has(r.date))
-      .map((r) => ({
+    const byDate = new Map(cur.map((n) => [n.date, n]))
+    let changed = false
+    for (const r of seedSales2026 as Array<{
+      date: string; net: number; guests: number; gross: number
+      food: number; na: number; liquor: number; beer: number; wine: number; nocat: number
+    }>) {
+      const ex = byDate.get(r.date)
+      const isBareSeed = !!ex && typeof ex.id === 'string' && ex.id.startsWith('seed26-') && ex.food == null
+      if (ex && !isBareSeed) continue // hand-entered or owner-drop night — leave it
+      byDate.set(r.date, {
         id: `seed26-${r.date}`,
         date: r.date,
         netSales: r.net,
+        gross: r.gross,
         deposit: 0,
         covers: r.guests,
-        notes: 'From Toast sales summary',
-      }))
-    if (add.length) save(k, [...cur, ...add].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+        food: r.food,
+        na: r.na,
+        liquor: r.liquor,
+        beer: r.beer,
+        wine: r.wine,
+        nocat: r.nocat,
+        notes: 'From Toast sales summary (categories est. from period mix)',
+      })
+      changed = true
+    }
+    if (changed) save(k, [...byDate.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
     save(FLAG26, true)
   }
 }

@@ -2,181 +2,361 @@
  {
   "date": "2026-06-15",
   "net": 5759.57,
-  "orders": 167,
-  "guests": 225
+  "guests": 225,
+  "gross": 5759.57,
+  "food": 4889.67,
+  "na": 433.61,
+  "liquor": 218.17,
+  "beer": 201.49,
+  "wine": 13.63,
+  "nocat": 3.0
  },
  {
   "date": "2026-06-16",
   "net": 6627.37,
-  "orders": 165,
-  "guests": 250
+  "guests": 250,
+  "gross": 6627.37,
+  "food": 5626.4,
+  "na": 498.94,
+  "liquor": 251.04,
+  "beer": 231.84,
+  "wine": 15.69,
+  "nocat": 3.46
  },
  {
   "date": "2026-06-17",
   "net": 7394.95,
-  "orders": 173,
-  "guests": 245
+  "guests": 245,
+  "gross": 7394.95,
+  "food": 6278.04,
+  "na": 556.73,
+  "liquor": 280.12,
+  "beer": 258.7,
+  "wine": 17.51,
+  "nocat": 3.85
  },
  {
   "date": "2026-06-18",
   "net": 6638.95,
-  "orders": 169,
-  "guests": 254
+  "guests": 254,
+  "gross": 6638.95,
+  "food": 5636.23,
+  "na": 499.81,
+  "liquor": 251.48,
+  "beer": 232.25,
+  "wine": 15.72,
+  "nocat": 3.46
  },
  {
   "date": "2026-06-19",
   "net": 8964.02,
-  "orders": 229,
-  "guests": 369
+  "guests": 369,
+  "gross": 8964.02,
+  "food": 7610.13,
+  "na": 674.85,
+  "liquor": 339.56,
+  "beer": 313.59,
+  "wine": 21.22,
+  "nocat": 4.67
  },
  {
   "date": "2026-06-20",
   "net": 10586.3,
-  "orders": 209,
-  "guests": 409
+  "guests": 409,
+  "gross": 10586.3,
+  "food": 8987.38,
+  "na": 796.99,
+  "liquor": 401.01,
+  "beer": 370.34,
+  "wine": 25.06,
+  "nocat": 5.52
  },
  {
   "date": "2026-06-21",
   "net": 11655.84,
-  "orders": 245,
-  "guests": 412
+  "guests": 412,
+  "gross": 11655.84,
+  "food": 9895.38,
+  "na": 877.51,
+  "liquor": 441.52,
+  "beer": 407.75,
+  "wine": 27.59,
+  "nocat": 6.09
  },
  {
   "date": "2026-06-22",
   "net": 7004.22,
-  "orders": 160,
-  "guests": 219
+  "guests": 219,
+  "gross": 7004.22,
+  "food": 5946.33,
+  "na": 527.31,
+  "liquor": 265.32,
+  "beer": 245.03,
+  "wine": 16.58,
+  "nocat": 3.65
  },
  {
   "date": "2026-06-23",
   "net": 5785.98,
-  "orders": 154,
-  "guests": 225
+  "guests": 225,
+  "gross": 5785.98,
+  "food": 4912.09,
+  "na": 435.6,
+  "liquor": 219.17,
+  "beer": 202.41,
+  "wine": 13.7,
+  "nocat": 3.01
  },
  {
   "date": "2026-06-24",
   "net": 6189.08,
-  "orders": 174,
-  "guests": 240
+  "guests": 240,
+  "gross": 6189.08,
+  "food": 5254.3,
+  "na": 465.94,
+  "liquor": 234.44,
+  "beer": 216.51,
+  "wine": 14.65,
+  "nocat": 3.24
  },
  {
   "date": "2026-06-25",
   "net": 6137.85,
-  "orders": 175,
-  "guests": 270
+  "guests": 270,
+  "gross": 6137.85,
+  "food": 5210.81,
+  "na": 462.09,
+  "liquor": 232.5,
+  "beer": 214.72,
+  "wine": 14.53,
+  "nocat": 3.2
  },
  {
   "date": "2026-06-26",
   "net": 8665.51,
-  "orders": 213,
-  "guests": 354
+  "guests": 354,
+  "gross": 8665.51,
+  "food": 7356.7,
+  "na": 652.38,
+  "liquor": 328.25,
+  "beer": 303.14,
+  "wine": 20.51,
+  "nocat": 4.53
  },
  {
   "date": "2026-06-27",
   "net": 9007.06,
-  "orders": 209,
-  "guests": 332
+  "guests": 332,
+  "gross": 9007.06,
+  "food": 7646.67,
+  "na": 678.09,
+  "liquor": 341.19,
+  "beer": 315.09,
+  "wine": 21.32,
+  "nocat": 4.7
  },
  {
   "date": "2026-06-28",
   "net": 7582.07,
-  "orders": 197,
-  "guests": 297
+  "guests": 297,
+  "gross": 7582.07,
+  "food": 6436.9,
+  "na": 570.81,
+  "liquor": 287.21,
+  "beer": 265.24,
+  "wine": 17.95,
+  "nocat": 3.96
  },
  {
   "date": "2026-06-29",
   "net": 5819.58,
-  "orders": 153,
-  "guests": 222
+  "guests": 222,
+  "gross": 5819.58,
+  "food": 4940.61,
+  "na": 438.13,
+  "liquor": 220.45,
+  "beer": 203.59,
+  "wine": 13.78,
+  "nocat": 3.02
  },
  {
   "date": "2026-06-30",
   "net": 6612.01,
-  "orders": 193,
-  "guests": 268
+  "guests": 268,
+  "gross": 6612.01,
+  "food": 5613.36,
+  "na": 497.78,
+  "liquor": 250.46,
+  "beer": 231.31,
+  "wine": 15.65,
+  "nocat": 3.45
  },
  {
   "date": "2026-07-01",
   "net": 5945.78,
-  "orders": 163,
-  "guests": 246
+  "guests": 246,
+  "gross": 5945.78,
+  "food": 5047.75,
+  "na": 447.63,
+  "liquor": 225.23,
+  "beer": 208.0,
+  "wine": 14.08,
+  "nocat": 3.09
  },
  {
   "date": "2026-07-02",
   "net": 7168.08,
-  "orders": 187,
-  "guests": 262
+  "guests": 262,
+  "gross": 7168.08,
+  "food": 6085.44,
+  "na": 539.65,
+  "liquor": 271.53,
+  "beer": 250.76,
+  "wine": 16.97,
+  "nocat": 3.73
  },
  {
   "date": "2026-07-03",
   "net": 8044.49,
-  "orders": 181,
-  "guests": 320
+  "guests": 320,
+  "gross": 8044.49,
+  "food": 6829.48,
+  "na": 605.63,
+  "liquor": 304.72,
+  "beer": 281.42,
+  "wine": 19.04,
+  "nocat": 4.2
  },
  {
   "date": "2026-07-04",
   "net": 6760.07,
-  "orders": 163,
-  "guests": 240
+  "guests": 240,
+  "gross": 6760.07,
+  "food": 5739.05,
+  "na": 508.93,
+  "liquor": 256.07,
+  "beer": 236.49,
+  "wine": 16.0,
+  "nocat": 3.53
  },
  {
   "date": "2026-07-05",
   "net": 5215.49,
-  "orders": 137,
-  "guests": 192
+  "guests": 192,
+  "gross": 5215.49,
+  "food": 4427.76,
+  "na": 392.65,
+  "liquor": 197.56,
+  "beer": 182.45,
+  "wine": 12.35,
+  "nocat": 2.72
  },
  {
   "date": "2026-07-06",
   "net": 6627.16,
-  "orders": 162,
-  "guests": 275
+  "guests": 275,
+  "gross": 6627.16,
+  "food": 5626.22,
+  "na": 498.92,
+  "liquor": 251.04,
+  "beer": 231.84,
+  "wine": 15.69,
+  "nocat": 3.45
  },
  {
   "date": "2026-07-07",
   "net": 6749.72,
-  "orders": 177,
-  "guests": 283
+  "guests": 283,
+  "gross": 6749.72,
+  "food": 5730.27,
+  "na": 508.15,
+  "liquor": 255.68,
+  "beer": 236.12,
+  "wine": 15.98,
+  "nocat": 3.52
  },
  {
   "date": "2026-07-08",
   "net": 9183.58,
-  "orders": 216,
-  "guests": 330
+  "guests": 330,
+  "gross": 9183.58,
+  "food": 7796.52,
+  "na": 691.38,
+  "liquor": 347.87,
+  "beer": 321.27,
+  "wine": 21.74,
+  "nocat": 4.8
  },
  {
   "date": "2026-07-09",
   "net": 9087.05,
-  "orders": 214,
-  "guests": 328
+  "guests": 328,
+  "gross": 9087.05,
+  "food": 7714.57,
+  "na": 684.12,
+  "liquor": 344.22,
+  "beer": 317.89,
+  "wine": 21.51,
+  "nocat": 4.74
  },
  {
   "date": "2026-07-10",
   "net": 8143.47,
-  "orders": 214,
-  "guests": 276
+  "guests": 276,
+  "gross": 8143.47,
+  "food": 6913.51,
+  "na": 613.08,
+  "liquor": 308.47,
+  "beer": 284.88,
+  "wine": 19.28,
+  "nocat": 4.25
  },
  {
   "date": "2026-07-11",
   "net": 10347.66,
-  "orders": 219,
-  "guests": 373
+  "guests": 373,
+  "gross": 10347.66,
+  "food": 8784.79,
+  "na": 779.02,
+  "liquor": 391.97,
+  "beer": 361.99,
+  "wine": 24.5,
+  "nocat": 5.39
  },
  {
   "date": "2026-07-12",
   "net": 6934.77,
-  "orders": 176,
-  "guests": 242
+  "guests": 242,
+  "gross": 6934.77,
+  "food": 5887.37,
+  "na": 522.08,
+  "liquor": 262.69,
+  "beer": 242.6,
+  "wine": 16.42,
+  "nocat": 3.61
  },
  {
   "date": "2026-07-13",
   "net": 4635.29,
-  "orders": 153,
-  "guests": 206
+  "guests": 206,
+  "gross": 4635.29,
+  "food": 3935.19,
+  "na": 348.97,
+  "liquor": 175.58,
+  "beer": 162.16,
+  "wine": 10.97,
+  "nocat": 2.42
  },
  {
   "date": "2026-07-14",
   "net": 6495.63,
-  "orders": 170,
-  "guests": 244
+  "guests": 244,
+  "gross": 6495.63,
+  "food": 5514.55,
+  "na": 489.02,
+  "liquor": 246.05,
+  "beer": 227.24,
+  "wine": 15.38,
+  "nocat": 3.39
  }
 ]
