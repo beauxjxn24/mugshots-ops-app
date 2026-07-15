@@ -37,6 +37,39 @@ const EMPTY: Form = {
 }
 const f = (s: string) => parseFloat(s) || 0
 
+/** Build the entry form from a saved night (imported or hand-entered). */
+function formFromNight(n: Night): Form {
+  return {
+    date: n.date,
+    gross: n.gross != null ? String(n.gross) : String(n.netSales),
+    rewards: n.rewards != null ? String(n.rewards) : '',
+    promos: n.promos != null ? String(n.promos) : '',
+    comps: n.comps != null ? String(n.comps) : '',
+    staffDisc: n.staffDisc != null ? String(n.staffDisc) : '',
+    labor: n.labor != null ? String(n.labor) : '',
+    deposit: n.deposit ? String(n.deposit) : '',
+    overUnder: n.overUnder != null ? String(n.overUnder) : '',
+    covers: n.covers ? String(n.covers) : '',
+    notes: n.notes ?? '',
+    food: n.food != null ? String(n.food) : '',
+    beer: n.beer != null ? String(n.beer) : '',
+    liquor: n.liquor != null ? String(n.liquor) : '',
+    wine: n.wine != null ? String(n.wine) : '',
+    na: n.na != null ? String(n.na) : '',
+  }
+}
+
+/** Where the sheet opens: a deep-linked date, else the most recent logged night
+ *  (so a fresh import shows its numbers on sight), else a blank today. */
+function initialForm(focusDate: string | null, log: Night[]): Form {
+  if (focusDate) {
+    const n = log.find((x) => x.date === focusDate)
+    return n ? formFromNight(n) : { ...EMPTY, date: focusDate }
+  }
+  const latest = [...log].filter((n) => n?.date).sort((a, b) => b.date.localeCompare(a.date))[0]
+  return latest ? formFromNight(latest) : EMPTY
+}
+
 /**
  * Nightly Numbers — the prototype's close-out math, ported:
  * gross − (rewards + promos + comps + staff) = net · labor$ → labor % of net
@@ -50,7 +83,7 @@ export function Nightly() {
   // that night's summary (and pre-fills the form if it hasn't been saved yet).
   const [params] = useSearchParams()
   const focusDate = params.get('date')
-  const [form, setForm] = useState<Form>(focusDate ? { ...EMPTY, date: focusDate } : EMPTY)
+  const [form, setForm] = useState<Form>(() => initialForm(focusDate, log))
   const [showCats, setShowCats] = useState(false)
   // History stays out of the way: last 7 nights show; anything older is
   // hidden until looked up by date (or expanded).
@@ -86,24 +119,7 @@ export function Nightly() {
 
   // Clicking a history row loads that night back into the sheet for review.
   const loadNight = (n: Night) => {
-    setForm({
-      date: n.date,
-      gross: n.gross != null ? String(n.gross) : String(n.netSales),
-      rewards: n.rewards != null ? String(n.rewards) : '',
-      promos: n.promos != null ? String(n.promos) : '',
-      comps: n.comps != null ? String(n.comps) : '',
-      staffDisc: n.staffDisc != null ? String(n.staffDisc) : '',
-      labor: n.labor != null ? String(n.labor) : '',
-      deposit: n.deposit ? String(n.deposit) : '',
-      overUnder: n.overUnder != null ? String(n.overUnder) : '',
-      covers: n.covers ? String(n.covers) : '',
-      notes: n.notes ?? '',
-      food: n.food != null ? String(n.food) : '',
-      beer: n.beer != null ? String(n.beer) : '',
-      liquor: n.liquor != null ? String(n.liquor) : '',
-      wine: n.wine != null ? String(n.wine) : '',
-      na: n.na != null ? String(n.na) : '',
-    })
+    setForm(formFromNight(n))
     if ((n.food ?? 0) > 0) setShowCats(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -260,9 +276,22 @@ export function Nightly() {
                 placeholder="Notes — weather, events, callouts, 86'd items…"
                 className={`mt-3 w-full ${cls()}`}
               />
-              <button onClick={save} className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
-                Save night ✓
-              </button>
+              <div className="mt-3 flex gap-2">
+                <button onClick={save} className="flex-1 rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
+                  Save night ✓
+                </button>
+                <button
+                  onClick={() => {
+                    setForm(EMPTY)
+                    setShowCats(false)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  title="Start a fresh entry for today"
+                  className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-ink"
+                >
+                  + New night
+                </button>
+              </div>
             </Card>
           </div>
 
