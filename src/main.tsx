@@ -33,9 +33,18 @@ import { cleanupCatalogNames } from './lib/catalog'
 
 // Owner's real 21-day Flowood sales history (from the design handoff) loads
 // once into an empty Flowood store — Forecast/Period/Dashboard light up day one.
-seedFlowoodHistory()
-applyOwnerDrops()
-cleanupCatalogNames()
+// Best-effort boot migrations — a corrupt/legacy store must never stop the app
+// from mounting. Each is isolated so one failure can't block the others.
+const safeBoot = (label: string, fn: () => void) => {
+  try {
+    fn()
+  } catch (e) {
+    console.error(`boot step "${label}" skipped:`, e)
+  }
+}
+safeBoot('seedFlowoodHistory', seedFlowoodHistory)
+safeBoot('applyOwnerDrops', applyOwnerDrops)
+safeBoot('cleanupCatalogNames', cleanupCatalogNames)
 
 // Keep installed copies fresh: grab new versions the moment they deploy,
 // and keep checking every 5 minutes while the app stays open.

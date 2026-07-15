@@ -22,7 +22,8 @@ export function applyOwnerDrops(): void {
 
   // Nights: upsert by date (owner data is authoritative for its own dates).
   const nk = `${STORE}::nightly:log`
-  const cur = load<Night[]>(nk, [])
+  const curRaw = load<Night[]>(nk, [])
+  const cur = Array.isArray(curRaw) ? curRaw : []
   const byDate = new Map(cur.map((n) => [n.date, n]))
   for (const r of data.nights) {
     const date = String(r.date)
@@ -50,7 +51,8 @@ export function applyOwnerDrops(): void {
 
   // PMIX days: merge (owner drops win for their dates).
   const pk = `${STORE}::pmix:days`
-  const days = load<PmixDays>(pk, {})
+  const daysRaw = load<PmixDays>(pk, {})
+  const days: PmixDays = daysRaw && typeof daysRaw === 'object' && !Array.isArray(daysRaw) ? daysRaw : {}
   for (const [date, day] of Object.entries(data.pmix)) {
     days[date] = { ...day, importedAt: 'baked in from chat drop' }
   }
@@ -80,7 +82,8 @@ export function applyOwnerDrops(): void {
   // Catering bookings from chat-dropped orders — de-duped by ezCater order #.
   if (data.bookings?.length) {
     const bk = `${STORE}::catering:bookings`
-    const cur = load<Booking[]>(bk, [])
+    const curBk = load<Booking[]>(bk, [])
+    const cur = Array.isArray(curBk) ? curBk : []
     const have = new Set(cur.map((b) => b.orderNo).filter(Boolean))
     const add = data.bookings
       .filter((b) => !b.orderNo || !have.has(b.orderNo))
