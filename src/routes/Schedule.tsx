@@ -5,6 +5,11 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
+import { forecastDates, type DayForecast } from '../lib/forecast'
+import type { Night } from '../lib/nightly'
+import type { Booking } from '../lib/catering'
+
+const kfmt = (n: number) => `$${(n / 1000).toFixed(1)}k`
 
 /** week map: weekStart(YYYY-MM-DD, Monday) -> userId -> 7 shift codes (Mon..Sun) */
 export type AllWeeks = Record<string, Record<string, string[]>>
@@ -119,6 +124,12 @@ export function Schedule() {
   const [published, setPublished] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const [rules, setRules] = usePersistentState<string>('mgrsched:rules', DEFAULT_RULES)
   const [rawRequests, setRequests] = usePersistentState<TimeOff[]>('mgrsched:timeoff', [])
+  // Sales forecast context — same store keys the Forecast screen reads, so the
+  // per-day projection under each column matches "Week at a glance" exactly.
+  const [salesLog] = usePersistentState<Night[]>('nightly:log', [])
+  const [bookings] = usePersistentState<Booking[]>('catering:bookings', [])
+  const [fcAdj] = usePersistentState<number>('forecast:adj', 0)
+  const [fcOverrides] = usePersistentState<Record<string, number>>('forecast:overrides', {})
   const requests = (Array.isArray(rawRequests) ? rawRequests : []).map((r) => ({
     ...r,
     dates: Array.isArray(r?.dates) ? r.dates : [],
@@ -140,6 +151,19 @@ export function Schedule() {
   const weekStart = weekStarts[weekIdx]
   const grid = weeks[weekStart] ?? {}
   const isPublished = !!published[weekStart]
+
+  // Projected net + last-year read for each day of the visible week — so the GM
+  // staffs against volume (heavier Fri/Sat get the strong closers).
+  const forecast = useMemo(() => {
+    const dates = Array.from({ length: 7 }, (_, i) => shiftDays(weekStart, i))
+    return forecastDates(dates, { log: salesLog, bookings, adj: fcAdj, overrides: fcOverrides })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, salesLog, bookings, fcAdj, fcOverrides])
+  const peakProjected = useMemo(
+    () => Math.max(0, ...Object.values(forecast).map((f: DayForecast) => f.projected)),
+    [forecast],
+  )
+  const hasForecast = peakProjected > 0
 
   // Pending requests → a lookup of (user|date) that still needs a decision.
   // A date already coded on the grid is considered handled, so it drops out.
@@ -342,8 +366,22 @@ export function Schedule() {
             })}
             <span className="ml-auto text-xs text-muted">
               Week {weekIdx + 1} · {fmtMD(weekStart)} – {fmtMD(shiftDays(weekStart, 6))}
+              {hasForecast && (
+                <>
+                  {' · '}
+                  <span className="font-semibold text-navy/70">
+                    {kfmt(Object.values(forecast).reduce((s, f) => s + (f as DayForecast).projected, 0))} projected
+                  </span>
+                </>
+              )}
             </span>
           </div>
+          {hasForecast && (
+            <p className="px-4 pb-1 text-[10px] text-muted">
+              Under each day: <b className="text-navy/70">projected net</b> from your same-weekday history (★ busiest),
+              with ▲▼ vs last year (LY) or last week (LW). Tune it on the <Link to="/forecast" className="font-semibold text-brand">Forecast</Link> page.
+            </p>
+          )}
 
           {/* Colour legend — the shift codes at a glance */}
           <div className="flex flex-wrap items-center gap-1.5 px-4 pb-2.5">
@@ -362,12 +400,31 @@ export function Schedule() {
               {DOW.map((d, i) => {
                 const date = shiftDays(weekStart, i)
                 const isToday = date === t
+                const f = forecast[date]
+                const isPeak = hasForecast && !!f && f.projected > 0 && f.projected === peakProjected
                 return (
                   <span key={d} className={`text-center ${isToday ? 'text-brand-600' : ''}`}>
                     <span className="block">{d}</span>
                     <span className={`block font-mono text-[9px] font-bold ${isToday ? 'text-brand-600' : 'text-muted/70'}`}>
                       {fmtMD(date)}
                     </span>
+                    {f && f.projected > 0 && (
+                      <span
+                        title={`Projected net ${kfmt(f.projected)}${f.base ? ` · ${f.base === 'ly' ? 'last year' : 'last week'} ${kfmt((f.base === 'ly' ? f.ly : f.lw) ?? 0)}` : ''}${isPeak ? ' · busiest day of the week' : ''}`}
+                        className={`mt-0.5 inline-flex items-center gap-0.5 rounded px-1 py-px font-mono text-[9px] font-extrabold normal-case ${
+                          isPeak ? 'bg-brand/15 text-brand-600' : 'text-navy/70'
+                        }`}
+                      >
+                        {isPeak && <span className="text-[8px]">★</span>}
+                        {kfmt(f.projected)}
+                      </span>
+                    )}
+                    {f && f.vs != null && (
+                      <span className={`block text-[8px] font-bold normal-case ${f.vs >= 0 ? 'text-up' : 'text-down'}`}>
+                        {f.vs >= 0 ? '▲' : '▼'}
+                        {Math.abs(f.vs).toFixed(0)}% {f.base === 'ly' ? 'LY' : 'LW'}
+                      </span>
+                    )}
                   </span>
                 )
               })}
