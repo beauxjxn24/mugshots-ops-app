@@ -11,6 +11,11 @@ export interface Concept {
   locations: Loc[]
 }
 
+/** Sentinel id for a roll-up scope. `currentLocation === ALL` with a real
+ *  concept = that whole concept (all its locations). `currentConcept === ALL`
+ *  = company-wide (every location of every concept). */
+export const ALL = '__all'
+
 // The two concepts. Locations are editable in Stores & Concepts.
 const VICIOUS_BISCUIT: Concept = {
   id: 'vicious-biscuit',
@@ -41,10 +46,14 @@ if (!load<boolean>('__vbSeeded', false)) {
   save('__vbSeeded', true)
 }
 const initConcept =
-  initConcepts.find((c) => c.id === saved?.currentConcept)?.id ?? initConcepts[0].id
+  saved?.currentConcept === ALL
+    ? ALL
+    : initConcepts.find((c) => c.id === saved?.currentConcept)?.id ?? initConcepts[0].id
 const initLocation =
-  initConcepts.find((c) => c.id === initConcept)?.locations.find((l) => l.id === saved?.currentLocation)
-    ?.id ?? initConcepts.find((c) => c.id === initConcept)?.locations[0]?.id ?? ''
+  initConcept === ALL || saved?.currentLocation === ALL
+    ? ALL
+    : initConcepts.find((c) => c.id === initConcept)?.locations.find((l) => l.id === saved?.currentLocation)
+        ?.id ?? initConcepts.find((c) => c.id === initConcept)?.locations[0]?.id ?? ''
 // Persist immediately so the seeded concepts survive without an interaction.
 save('__scope', { concepts: initConcepts, currentConcept: initConcept, currentLocation: initLocation })
 
@@ -139,10 +148,25 @@ export function useScopeKey(): string {
 export function useCurrentNames(): { concept: string; location: string } {
   // Select PRIMITIVES separately — returning a new object from a zustand
   // selector triggers an infinite render loop (each snapshot differs).
-  const concept = useScope((s) => s.concepts.find((x) => x.id === s.currentConcept)?.name ?? '')
+  const concept = useScope((s) =>
+    s.currentConcept === ALL
+      ? 'All concepts'
+      : s.concepts.find((x) => x.id === s.currentConcept)?.name ?? '',
+  )
   const location = useScope((s) => {
+    if (s.currentConcept === ALL) return 'All stores · company'
+    if (s.currentLocation === ALL) return 'All locations'
     const c = s.concepts.find((x) => x.id === s.currentConcept)
     return c?.locations.find((x) => x.id === s.currentLocation)?.name ?? ''
   })
   return { concept, location }
+}
+
+export type RollupLevel = 'single' | 'concept' | 'company'
+
+/** What roll-up level the current scope represents. */
+export function useRollupLevel(): RollupLevel {
+  return useScope((s) =>
+    s.currentConcept === ALL ? 'company' : s.currentLocation === ALL ? 'concept' : 'single',
+  )
 }

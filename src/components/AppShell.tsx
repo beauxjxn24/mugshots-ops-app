@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { NAV, NAV_FLAT, STAFF_SECTIONS, SHIFT_ITEM, bottomItems, type NavSection } from '../lib/nav'
+import { NAV, NAV_FLAT, STAFF_SECTIONS, SHIFT_ITEM, ROLLUP_SECTIONS, bottomItems, type NavSection } from '../lib/nav'
 import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { useRole } from '../lib/role'
+import { useRollupLevel } from '../lib/scope'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -15,9 +16,11 @@ export function AppShell() {
   const [open, setOpen] = useState(false)
   const loc = useLocation()
   const role = useRole((s) => s.role)
-  const sections = role === 'staff' ? STAFF_SECTIONS : NAV
+  const level = useRollupLevel()
+  const rollup = role === 'manager' && level !== 'single'
+  const sections = role === 'staff' ? STAFF_SECTIONS : rollup ? ROLLUP_SECTIONS : NAV
   const current = [...NAV_FLAT, SHIFT_ITEM].find((i) => i.to === loc.pathname)
-  const bottom = bottomItems(role)
+  const bottom = rollup ? ROLLUP_SECTIONS.flatMap((s) => s.items) : bottomItems(role)
 
   // Prevent the browser from navigating away to open a file when one is dropped
   // outside a drop zone (that "print preview" behavior). The Imports screen adds

@@ -127,6 +127,23 @@ export const NAV: NavSection[] = [
 
 export const NAV_FLAT = NAV.flatMap((s) => s.items)
 
+// ---- Roll-up (whole concept / company) experience ----
+// Read-only reporting: the combined dashboard plus store management. Per-store
+// editing screens are hidden so nothing gets written to a phantom "all" store.
+export const ROLLUP_SECTIONS: NavSection[] = [
+  {
+    title: '',
+    items: [{ to: '/', label: 'Combined roll-up', icon: BarChart3, color: '#E4B84C', anim: GridIcon }],
+  },
+  {
+    title: 'Company',
+    items: [
+      { to: '/stores', label: 'Stores & Concepts', icon: Store, color: '#E4B84C', anim: StorefrontIcon },
+      { to: '/connections', label: 'Connections', icon: Cable, color: '#38BDF8', anim: PlugIcon },
+    ],
+  },
+]
+
 // ---- Staff ("My Shift") experience ----
 export const SHIFT_ITEM: NavItem = {
   to: '/shift',

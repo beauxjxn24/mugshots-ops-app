@@ -2,8 +2,10 @@ import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { AppShell } from './components/AppShell'
 import { Dashboard } from './routes/Dashboard'
+import { Combined } from './routes/Combined'
 import { Shift } from './routes/Shift'
 import { useRole } from './lib/role'
+import { useRollupLevel } from './lib/scope'
 import { Specs } from './routes/Specs'
 import { Imports } from './routes/Imports'
 import { Connections } from './routes/Connections'
@@ -41,6 +43,7 @@ const router = createHashRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <Home /> },
+      { path: 'combined', element: <Combined /> },
       { path: 'shift', element: <Shift /> },
       { path: 'specs', element: <Specs /> },
       { path: 'imports', element: <Imports /> },
@@ -75,10 +78,13 @@ const router = createHashRouter([
   },
 ])
 
-/** Role-aware home: managers get the Dashboard, staff get My Shift. */
+/** Role-aware home: staff get My Shift; managers get the single-store Dashboard,
+ *  or the combined roll-up when a whole-concept / company scope is selected. */
 function Home() {
   const role = useRole((s) => s.role)
-  return role === 'staff' ? <Shift /> : <Dashboard />
+  const level = useRollupLevel()
+  if (role === 'staff') return <Shift />
+  return level === 'single' ? <Dashboard /> : <Combined />
 }
 
 export function App() {
