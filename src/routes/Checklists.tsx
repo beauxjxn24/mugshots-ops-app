@@ -1,187 +1,293 @@
 import { useMemo, useState } from 'react'
-import { Pencil, Check } from 'lucide-react'
+import { Pencil, Check, Printer } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
+import { periodWeek } from '../lib/forecast'
+import MAINT from '../data/maintenance-checklists.json'
 
-type Phase = 'Opening' | 'Closing' | 'Weekly'
-const PHASES: Phase[] = ['Opening', 'Closing', 'Weekly']
+type Phase = 'Opening' | 'Closing' | 'Weekly' | 'Period'
+const PHASES: Phase[] = ['Opening', 'Closing', 'Weekly', 'Period']
 
-const DEFAULTS: Record<Phase, string[]> = {
+interface Section {
+  title: string // '' renders with no section header (used for Opening/Closing)
+  items: string[]
+}
+
+// Opening/Closing are the daily shift walkthroughs; Weekly/Period come straight
+// from the owner's maintenance checklist (same source the Maintenance page uses).
+const DEFAULTS: Record<Phase, Section[]> = {
   Opening: [
-    'Disarm alarm, unlock doors',
-    'Turn on all equipment (grills, fryers, ovens)',
-    'Check walk-in & freezer temps, log them',
-    'Verify prep is stocked to par for the day',
-    'Count opening drawer / set up POS',
-    'Walk the dining room & patio — clean and set',
-    'Review reservations, caterings & 86 list',
-    'Pre-shift huddle with staff',
+    {
+      title: '',
+      items: [
+        'Disarm alarm, unlock doors',
+        'Turn on all equipment (grills, fryers, ovens)',
+        'Check walk-in & freezer temps, log them',
+        'Verify prep is stocked to par for the day',
+        'Count opening drawer / set up POS',
+        'Walk the dining room & patio — clean and set',
+        'Review reservations, caterings & 86 list',
+        'Pre-shift huddle with staff',
+      ],
+    },
   ],
   Closing: [
-    'All stations broken down & sanitized',
-    'Reconcile drawers & run end-of-day on POS',
-    'Deposit prepared & logged',
-    'Walk-in / line temps logged',
-    'Trash out, floors swept & mopped',
-    'Equipment off (except overnight units)',
-    'Set alarm, lock all doors',
-    'Confirm tomorrow’s prep & orders are set',
+    {
+      title: '',
+      items: [
+        'All stations broken down & sanitized',
+        'Reconcile drawers & run end-of-day on POS',
+        'Deposit prepared & logged',
+        'Walk-in / line temps logged',
+        'Trash out, floors swept & mopped',
+        'Equipment off (except overnight units)',
+        'Set alarm, lock all doors',
+        'Confirm tomorrow’s prep & orders are set',
+      ],
+    },
   ],
-  Weekly: [
-    'Deep clean fryers / filter oil',
-    'Clean walk-in shelving & floors',
-    'Pull & clean behind the line',
-    'Check first-aid & cleaning supply pars',
-    'Test & date fire suppression / hood cleaning',
-    'Review labor & food cost for the week',
-  ],
+  Weekly: MAINT.weekly as Section[],
+  Period: MAINT.period as Section[],
+}
+
+/** How often each phase's checkmarks reset — daily, weekly (Mon), or by period. */
+const CADENCE: Record<Phase, string> = {
+  Opening: 'resets daily',
+  Closing: 'resets daily',
+  Weekly: 'resets every Monday',
+  Period: 'resets each period',
+}
+
+function mondayOf(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+/** The stamp that scopes a phase's checkmarks, so a new day/week/period is fresh. */
+function scopeFor(phase: Phase): string {
+  const t = today()
+  if (phase === 'Weekly') return mondayOf(t)
+  if (phase === 'Period') return `${t.slice(0, 4)}-P${periodWeek(t).period}`
+  return t
 }
 
 /**
- * Checklists — desktop-first: all three lists side by side, check off as you
- * walk. Edit mode (top right) turns every task into an editable row with
- * remove + add, per list.
+ * Checklists — one page, one toggle: Opening · Closing · Weekly · Period.
+ * Opening/Closing are the daily shift walkthroughs; Weekly/Period are the
+ * owner's maintenance checklist. Each phase's checks reset on its own cadence.
  */
 export function Checklists() {
-  const [data, setData] = usePersistentState<Record<Phase, string[]>>('checklists:data', DEFAULTS)
+  const [data, setData] = usePersistentState<Record<Phase, Section[]>>('checklists:sections', DEFAULTS)
+  const [phase, setPhase] = useState<Phase>('Opening')
+  const [editing, setEditing] = useState(false)
+
+  // Guard against a stale/legacy shape so a bad value never blanks the page.
+  const sections = Array.isArray(data?.[phase]) ? data[phase] : DEFAULTS[phase]
 
   return (
     <>
       <PageHeader
         title="Checklists"
-        subtitle={`Opening & Closing reset daily · Weekly resets each week · ${today()}`}
+        subtitle={`${phase} · ${CADENCE[phase]} · ${today()}`}
+        right={
+          <div className="flex items-center gap-2 print:hidden">
+            <button
+              onClick={() => setEditing((e) => !e)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
+                editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
+              }`}
+            >
+              {editing ? <Check size={13} /> : <Pencil size={12} />} {editing ? 'Done' : 'Edit'}
+            </button>
+            <button
+              onClick={() => window.print()}
+              aria-label="Print this checklist"
+              className="grid size-9 place-items-center rounded-lg border border-black/10 bg-white text-ink"
+            >
+              <Printer size={14} />
+            </button>
+          </div>
+        }
       />
-      <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-        <div className="grid items-start gap-5 lg:grid-cols-3">
-          {PHASES.map((phase) => (
-            <PhaseColumn key={phase} phase={phase} data={data} setData={setData} />
+      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Phase toggle */}
+        <div className="grid grid-cols-4 gap-1 rounded-xl bg-black/5 p-1 print:hidden">
+          {PHASES.map((ph) => (
+            <PhaseTab key={ph} phase={ph} active={ph === phase} data={data} onPick={() => setPhase(ph)} />
           ))}
         </div>
+
+        <ChecklistBody
+          phase={phase}
+          sections={sections}
+          editing={editing}
+          setData={setData}
+        />
+
+        {(phase === 'Weekly' || phase === 'Period') && (
+          <p className="text-[11px] text-muted print:hidden">
+            Find something broken on a walk? Log it as a repair on the{' '}
+            <Link to="/maintenance" className="font-semibold text-brand">
+              Maintenance
+            </Link>{' '}
+            page so it gets chased.
+          </p>
+        )}
       </div>
     </>
   )
 }
 
-function PhaseColumn({
+/** A toggle button that also shows that phase's live progress for its cadence. */
+function PhaseTab({
   phase,
+  active,
   data,
-  setData,
+  onPick,
 }: {
   phase: Phase
-  data: Record<Phase, string[]>
-  setData: React.Dispatch<React.SetStateAction<Record<Phase, string[]>>>
+  active: boolean
+  data: Record<Phase, Section[]>
+  onPick: () => void
 }) {
-  const scope = phase === 'Weekly' ? weekKey() : today()
-  const [done, setDone] = usePersistentState<Record<string, boolean>>(
-    `checklists:done:${phase}:${scope}`,
-    {},
-  )
-  // Per-tile editing: the pencil lives on each column's header.
-  const [editing, setEditing] = useState(false)
-  const [adding, setAdding] = useState('')
-  const items = data[phase] ?? []
-  const doneCount = useMemo(() => items.filter((t) => done[t]).length, [items, done])
-  const complete = items.length > 0 && doneCount === items.length
-
-  const addTask = () => {
-    if (!adding.trim()) return
-    setData((d) => ({ ...d, [phase]: [...(d[phase] ?? []), adding.trim()] }))
-    setAdding('')
-  }
-
+  const [done] = usePersistentState<Record<string, boolean>>(`checklists:done:${phase}:${scopeFor(phase)}`, {})
+  const secs = Array.isArray(data?.[phase]) ? data[phase] : DEFAULTS[phase]
+  const all = secs.flatMap((s) => s.items.map((it) => `${s.title}|${it}`))
+  const doneCount = all.filter((k) => done[k]).length
+  const complete = all.length > 0 && doneCount === all.length
   return (
-    <Card className="overflow-hidden">
-      <div
-        className={`flex items-baseline justify-between border-b px-4 py-3 ${
-          complete ? 'border-up/20 bg-up/10' : 'border-black/5 bg-black/[0.02]'
-        }`}
-      >
-        <span className="font-display text-lg font-semibold text-ink">{phase}</span>
-        <span className="flex items-center gap-2">
-          <span className={`text-xs font-bold ${complete ? 'text-up' : 'text-muted'}`}>
-            {complete ? 'Complete ✓' : `${doneCount}/${items.length}`}
-          </span>
-          <button
-            onClick={() => setEditing((e) => !e)}
-            aria-label={editing ? `Done editing ${phase}` : `Edit ${phase} checklist`}
-            title={editing ? 'Done editing' : 'Edit this list'}
-            className={`grid size-7 place-items-center rounded-lg ${
-              editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-muted hover:text-ink'
-            }`}
-          >
-            {editing ? <Check size={13} /> : <Pencil size={12} />}
-          </button>
-        </span>
-      </div>
-      {items.map((t, i) =>
-        editing ? (
-          <div key={i} className="flex items-center gap-2 border-b border-black/5 px-3 py-2 last:border-0">
-            <input
-              value={t}
-              onChange={(e) =>
-                setData((d) => ({
-                  ...d,
-                  [phase]: (d[phase] ?? []).map((x, j) => (j === i ? e.target.value : x)),
-                }))
-              }
-              className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm outline-none focus:border-brand"
-            />
-            <button
-              onClick={async () => {
-                if (await confirmDelete(`Remove "${t}" from the ${phase} checklist?`))
-                  setData((d) => ({ ...d, [phase]: (d[phase] ?? []).filter((_, j) => j !== i) }))
-              }}
-              aria-label="Remove"
-              className="px-2 text-muted hover:text-down"
-            >
-              ✕
-            </button>
-          </div>
-        ) : (
-          <button
-            key={i}
-            onClick={() => setDone((d) => ({ ...d, [t]: !d[t] }))}
-            className={`flex w-full items-start gap-3 border-b border-black/5 px-4 py-2.5 text-left last:border-0 ${
-              done[t] ? 'bg-up/5' : 'hover:bg-black/[0.02]'
-            }`}
-          >
-            <span
-              className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 text-[10px] transition-colors ${
-                done[t] ? 'border-up bg-up text-white' : 'border-black/20'
-              }`}
-            >
-              {done[t] && '✓'}
-            </span>
-            <span className={`text-sm ${done[t] ? 'text-muted line-through' : 'text-ink'}`}>{t}</span>
-          </button>
-        ),
-      )}
-      {editing && (
-        <div className="flex gap-2 p-3">
-          <input
-            value={adding}
-            onChange={(e) => setAdding(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addTask()}
-            placeholder={`Add a ${phase} task…`}
-            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-          <button onClick={addTask} className="rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-white">
-            Add
-          </button>
-        </div>
-      )}
-    </Card>
+    <button
+      onClick={onPick}
+      className={`rounded-lg px-2 py-2 text-center transition-colors ${
+        active ? 'bg-white shadow-sm' : 'hover:bg-white/50'
+      }`}
+    >
+      <span className={`block text-xs font-bold ${active ? 'text-ink' : 'text-muted'}`}>{phase}</span>
+      <span className={`block text-[10px] font-semibold ${complete ? 'text-up' : active ? 'text-brand-600' : 'text-muted/70'}`}>
+        {complete ? 'done ✓' : `${doneCount}/${all.length}`}
+      </span>
+    </button>
   )
 }
 
-/** Year + ISO week number, e.g. "2026-W28". */
-function weekKey(): string {
-  const d = new Date()
-  const day = (d.getDay() + 6) % 7
-  const thu = new Date(d)
-  thu.setDate(d.getDate() - day + 3)
-  const firstThu = new Date(thu.getFullYear(), 0, 4)
-  const week = 1 + Math.round((thu.getTime() - firstThu.getTime()) / 604800000)
-  return `${thu.getFullYear()}-W${String(week).padStart(2, '0')}`
+/** The checkable body for one phase — its checks are stamped by cadence scope. */
+function ChecklistBody({
+  phase,
+  sections,
+  editing,
+  setData,
+}: {
+  phase: Phase
+  sections: Section[]
+  editing: boolean
+  setData: React.Dispatch<React.SetStateAction<Record<Phase, Section[]>>>
+}) {
+  const [done, setDone] = usePersistentState<Record<string, boolean>>(`checklists:done:${phase}:${scopeFor(phase)}`, {})
+  const [adding, setAdding] = useState<Record<number, string>>({})
+
+  const all = useMemo(() => sections.flatMap((s) => s.items.map((it) => `${s.title}|${it}`)), [sections])
+  const doneCount = all.filter((k) => done[k]).length
+  const pct = all.length ? Math.round((doneCount / all.length) * 100) : 0
+
+  const editItem = (si: number, ii: number, val: string) =>
+    setData((d) => ({
+      ...d,
+      [phase]: d[phase].map((s, x) => (x === si ? { ...s, items: s.items.map((it, y) => (y === ii ? val : it)) } : s)),
+    }))
+  const removeItem = (si: number, ii: number) =>
+    setData((d) => ({ ...d, [phase]: d[phase].map((s, x) => (x === si ? { ...s, items: s.items.filter((_, y) => y !== ii) } : s)) }))
+  const addItem = (si: number) => {
+    const v = (adding[si] ?? '').trim()
+    if (!v) return
+    setData((d) => ({ ...d, [phase]: d[phase].map((s, x) => (x === si ? { ...s, items: [...s.items, v] } : s)) }))
+    setAdding((a) => ({ ...a, [si]: '' }))
+  }
+
+  return (
+    <>
+      {/* Progress */}
+      <Card className="p-4 print:hidden">
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm font-bold text-ink">
+            {doneCount}/{all.length} checked
+          </span>
+          <span className="font-mono text-xs text-muted">{pct}%</span>
+        </div>
+        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-black/5">
+          <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
+        </div>
+      </Card>
+
+      {sections.map((sec, si) => {
+        const secDone = sec.items.filter((it) => done[`${sec.title}|${it}`]).length
+        return (
+          <Card key={sec.title || si} className="overflow-hidden">
+            {sec.title && (
+              <div className="flex items-center justify-between border-b border-black/5 bg-black/[0.02] px-4 py-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600">{sec.title}</span>
+                <span className="text-xs text-muted">
+                  {secDone}/{sec.items.length}
+                </span>
+              </div>
+            )}
+            {sec.items.map((it, ii) => {
+              const k = `${sec.title}|${it}`
+              return editing ? (
+                <div key={ii} className="flex items-center gap-2 border-b border-black/5 px-3 py-2 last:border-0">
+                  <input
+                    value={it}
+                    onChange={(e) => editItem(si, ii, e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm outline-none focus:border-brand"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (await confirmDelete(`Remove "${it}"?`)) removeItem(si, ii)
+                    }}
+                    aria-label="Remove"
+                    className="px-2 text-muted hover:text-down"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  key={ii}
+                  onClick={() => setDone((d) => ({ ...d, [k]: !d[k] }))}
+                  className={`flex w-full items-start gap-3 border-b border-black/5 px-4 py-2.5 text-left last:border-0 ${
+                    done[k] ? 'bg-up/5' : 'hover:bg-black/[0.02]'
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 text-[10px] transition-colors ${
+                      done[k] ? 'border-up bg-up text-white' : 'border-black/20'
+                    }`}
+                  >
+                    {done[k] && '✓'}
+                  </span>
+                  <span className={`text-sm ${done[k] ? 'text-muted line-through' : 'text-ink'}`}>{it}</span>
+                </button>
+              )
+            })}
+            {editing && (
+              <div className="flex gap-2 p-3">
+                <input
+                  value={adding[si] ?? ''}
+                  onChange={(e) => setAdding((a) => ({ ...a, [si]: e.target.value }))}
+                  onKeyDown={(e) => e.key === 'Enter' && addItem(si)}
+                  placeholder="Add an item…"
+                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+                <button onClick={() => addItem(si)} className="rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-white">
+                  Add
+                </button>
+              </div>
+            )}
+          </Card>
+        )
+      })}
+    </>
+  )
 }
