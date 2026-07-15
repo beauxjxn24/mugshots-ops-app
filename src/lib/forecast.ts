@@ -80,10 +80,44 @@ export function forecastDates(
   return out
 }
 
-/** Restaurant calendar: thirteen 4-week periods. Returns {period, week}. */
+// ── The owner's operating calendar ──
+// Thirteen 28-day periods (4 weeks each) per fiscal year, Monday-aligned.
+// Anchor from the owner: Period 8, Week 1 = Monday 2026-07-13 → so FY2026's
+// Period 1, Week 1 begins Monday 2025-12-29. Every fiscal year is 364 days
+// (13×28), so the anchor repeats every 364 days forward and back.
+const FY_LEN = 364
+function dayNum(iso: string): number {
+  const [y, m, d] = (iso ?? '').split('-').map(Number)
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000)
+}
+function isoOfDayNum(n: number): string {
+  const d = new Date(n * 86400000)
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+}
+const FY_BASE = dayNum('2025-12-29') // FY2026 · Period 1 · Week 1 (a Monday)
+
+/** The Monday that starts the fiscal year (Period 1, Week 1) containing `iso`. */
+export function fyStart(iso: string): string {
+  const day = dayNum(iso)
+  let start = FY_BASE + Math.floor((day - FY_BASE) / FY_LEN) * FY_LEN
+  if (day < start) start -= FY_LEN
+  return isoOfDayNum(start)
+}
+
+/** Thirteen 4-week periods. Returns {period 1..13, week 1..4}. */
 export function periodWeek(isoDate: string): { period: number; week: number } {
-  const d = new Date(isoDate + 'T12:00:00')
-  const start = new Date(d.getFullYear(), 0, 1)
-  const doy = Math.floor((d.getTime() - start.getTime()) / 86400000)
-  return { period: Math.min(13, Math.floor(doy / 28) + 1), week: Math.floor((doy % 28) / 7) + 1 }
+  const since = dayNum(isoDate) - dayNum(fyStart(isoDate)) // 0..363
+  return { period: Math.floor(since / 28) + 1, week: Math.floor((since % 28) / 7) + 1 }
+}
+
+/** The Monday that starts the 28-day period containing `iso`. */
+export function periodStart(iso: string): string {
+  const start = dayNum(fyStart(iso))
+  const since = dayNum(iso) - start
+  return isoOfDayNum(start + Math.floor(since / 28) * 28)
+}
+
+/** The Monday that starts period number `p` (1..13) of `iso`'s fiscal year. */
+export function periodStartNum(iso: string, p: number): string {
+  return isoOfDayNum(dayNum(fyStart(iso)) + (p - 1) * 28)
 }

@@ -9,7 +9,7 @@ import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
-import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
+import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
 
@@ -739,15 +739,6 @@ function daysUntil(iso: string): number {
   const then = new Date(y, m - 1, d).getTime()
   const [ty, tm, td] = today().split('-').map(Number)
   return Math.round((then - new Date(ty, tm - 1, td).getTime()) / 86400000)
-}
-/** First day of the 28-day period containing the date (periods from Jan 1). */
-function periodStartOf(iso: string): string {
-  const d = new Date(iso + 'T12:00:00')
-  const start = new Date(d.getFullYear(), 0, 1)
-  const doy = Math.floor((d.getTime() - start.getTime()) / 86400000)
-  const p = Math.min(13, Math.floor(doy / 28) + 1)
-  const ps = new Date(d.getFullYear(), 0, 1 + (p - 1) * 28)
-  return `${ps.getFullYear()}-${String(ps.getMonth() + 1).padStart(2, '0')}-${String(ps.getDate()).padStart(2, '0')}`
 }
 function mondayOf(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)

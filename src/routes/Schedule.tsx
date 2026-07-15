@@ -5,7 +5,7 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
-import { forecastDates, type DayForecast } from '../lib/forecast'
+import { forecastDates, periodWeek, periodStartNum, type DayForecast } from '../lib/forecast'
 import type { Night } from '../lib/nightly'
 import type { Booking } from '../lib/catering'
 
@@ -139,10 +139,9 @@ export function Schedule() {
   const lock = usePin((s) => s.lock)
 
   const t = today()
-  const anchor = firstMonday(Number(t.slice(0, 4)))
-  const curPeriod = Math.floor(daysBetween(anchor, mondayOf(t)) / 28) + 1
+  const curPeriod = periodWeek(t).period
   const [period, setPeriod] = useState(curPeriod)
-  const pStart = shiftDays(anchor, (period - 1) * 28)
+  const pStart = periodStartNum(t, period)
   const weekStarts = [0, 1, 2, 3].map((i) => shiftDays(pStart, i * 7))
   const curWeekIdx = weekStarts.findIndex((ws) => t >= ws && t <= shiftDays(ws, 6))
   const [weekIdx, setWeekIdx] = useState(curWeekIdx >= 0 ? curWeekIdx : 0)

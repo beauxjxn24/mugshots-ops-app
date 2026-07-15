@@ -5,7 +5,7 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { confirmDelete } from '../lib/confirm'
-import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
+import { dowAverages, projectDay, periodWeek, periodStart } from '../lib/forecast'
 import { getPriceLog } from '../lib/catalog'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import type { Night } from '../lib/nightly'
@@ -56,7 +56,7 @@ export function Period() {
   const t = today()
   const pw = periodWeek(t)
   const year = Number(t.slice(0, 4))
-  const pStart = iso(new Date(year, 0, 1 + (pw.period - 1) * 28))
+  const pStart = periodStart(t)
   const pEnd = shiftDays(pStart, 27)
   const [decisions, setDecisions] = usePersistentState<Decision[]>(`period:decisions:${year}-P${pw.period + 1}`, [])
   const [newDecision, setNewDecision] = useState('')

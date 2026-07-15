@@ -18,7 +18,7 @@ import {
 import { usePersistentState, today } from '../lib/store'
 import { useIsPhone } from '../lib/useIsPhone'
 import type { Night } from '../lib/nightly'
-import { periodWeek } from '../lib/forecast'
+import { periodWeek, periodStart } from '../lib/forecast'
 
 const money2 = (n: number) => `$${(n ?? 0).toFixed(2)}`
 const money0 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -33,15 +33,6 @@ interface Row {
   vendor: string
 }
 
-/** First day of the 28-day period containing the date (periods count from Jan 1). */
-function periodStart(iso: string): string {
-  const d = new Date(iso + 'T12:00:00')
-  const start = new Date(d.getFullYear(), 0, 1)
-  const doy = Math.floor((d.getTime() - start.getTime()) / 86400000)
-  const p = Math.min(13, Math.floor(doy / 28) + 1)
-  const ps = new Date(d.getFullYear(), 0, 1 + (p - 1) * 28)
-  return `${ps.getFullYear()}-${String(ps.getMonth() + 1).padStart(2, '0')}-${String(ps.getDate()).padStart(2, '0')}`
-}
 
 /**
  * Orders — one guide per shelf (Liquor / Beer / Produce), mirroring the

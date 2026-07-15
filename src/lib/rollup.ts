@@ -6,6 +6,7 @@ import { ALL, type Concept } from './scope'
 import type { Night } from './nightly'
 import type { Booking } from './catering'
 import { sanitizePmix, type MixItem } from './pmix'
+import { periodStart } from './forecast'
 
 export interface StoreRef {
   concept: string
@@ -62,14 +63,8 @@ export function mondayOf(iso: string): string {
   dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7))
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
-export function periodStartOf(iso: string): string {
-  const d = new Date((iso ?? '') + 'T12:00:00')
-  const start = new Date(d.getFullYear(), 0, 1)
-  const doy = Math.floor((d.getTime() - start.getTime()) / 86400000)
-  const p = Math.min(13, Math.floor(doy / 28) + 1)
-  const ps = new Date(d.getFullYear(), 0, 1 + (p - 1) * 28)
-  return `${ps.getFullYear()}-${String(ps.getMonth() + 1).padStart(2, '0')}-${String(ps.getDate()).padStart(2, '0')}`
-}
+// Period start comes from the shared operating calendar (owner's fiscal periods).
+export const periodStartOf = periodStart
 
 export type Scope = 'day' | 'week' | 'period'
 

@@ -10,13 +10,12 @@ import {
   CODE_LABEL,
   DOW,
   PICK_CODES,
-  daysBetween,
-  firstMonday,
   fmtMD,
   mondayOf,
   shiftDays,
   type AllWeeks,
 } from './Schedule'
+import { periodWeek, periodStartNum } from '../lib/forecast'
 
 /**
  * Posted schedule — the clean, read-only face of the manager schedule. Staff and
@@ -33,10 +32,9 @@ export function Posted() {
   const canEdit = role === 'admin' || role === 'manager'
 
   const t = today()
-  const anchor = firstMonday(Number(t.slice(0, 4)))
-  const curPeriod = Math.floor(daysBetween(anchor, mondayOf(t)) / 28) + 1
+  const curPeriod = periodWeek(t).period
   const [period, setPeriod] = useState(curPeriod)
-  const pStart = shiftDays(anchor, (period - 1) * 28)
+  const pStart = periodStartNum(t, period)
   const weekStarts = [0, 1, 2, 3].map((i) => shiftDays(pStart, i * 7))
 
   // Only the weeks the GM actually published show here.
