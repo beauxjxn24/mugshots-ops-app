@@ -4,6 +4,7 @@ import { Printer, Pencil, Check, GripVertical, Archive } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
+import { BarPrep } from '../components/BarPrep'
 import PREP_SEED from '../data/prep-items.json'
 
 interface PrepItem {
@@ -58,6 +59,7 @@ export function Prep() {
   const [history, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
   const [editingPars, setEditingPars] = useState(false)
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes' })
+  const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
 
   // One-time: sort existing items into their boxes.
   useEffect(() => {
@@ -296,14 +298,36 @@ export function Prep() {
   return (
     <>
       <PageHeader
-        title={`Prep list · ${fmtLong(t)}`}
-        subtitle="Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
+        title={mode === 'bar' ? `Bar prep · ${fmtLong(t)}` : `Prep list · ${fmtLong(t)}`}
+        subtitle={
+          mode === 'bar'
+            ? "Enter on-hands · prep needed = today's par − on hand · tap an item for its recipe"
+            : "Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
+        }
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
-            <Link to="/builds" className="text-xs font-bold text-brand">
-              Line builds →
-            </Link>
-            {actionButtons}
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-black/5 p-1">
+              <button
+                onClick={() => setMode('kitchen')}
+                className={`rounded-md px-3 py-1.5 text-xs font-bold ${mode === 'kitchen' ? 'bg-navy text-white shadow-sm' : 'text-muted'}`}
+              >
+                Kitchen prep
+              </button>
+              <button
+                onClick={() => setMode('bar')}
+                className={`rounded-md px-3 py-1.5 text-xs font-bold ${mode === 'bar' ? 'bg-navy text-white shadow-sm' : 'text-muted'}`}
+              >
+                Bar prep
+              </button>
+            </div>
+            {mode === 'kitchen' && (
+              <>
+                <Link to="/builds" className="text-xs font-bold text-brand">
+                  Line builds →
+                </Link>
+                {actionButtons}
+              </>
+            )}
           </div>
         }
       />
@@ -345,7 +369,13 @@ export function Prep() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden">
+      {mode === 'bar' && (
+        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 print:hidden">
+          <BarPrep />
+        </div>
+      )}
+
+      <div className={`mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden ${mode === 'bar' ? 'hidden' : ''}`}>
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
           <Card className="border-brand/25 bg-brand/[0.06] p-4">
             <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">How pars work here</div>
