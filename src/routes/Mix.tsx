@@ -4,13 +4,13 @@ import { Link } from 'react-router-dom'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
-import { parsePmix, dateFromFilename, type MixItem, type PmixDays } from '../lib/pmix'
+import { parsePmix, dateFromFilename, type MixItem, type PmixDays, sanitizePmix } from '../lib/pmix'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
 
 function fmtShort(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
+  const [y, m, d] = (iso ?? '').split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
@@ -21,8 +21,10 @@ function fmtShort(iso: string): string {
  * stored per day.
  */
 export function Mix() {
-  const [days, setDays] = usePersistentState<PmixDays>('pmix:days', {})
-  const [tracked] = usePersistentState<string[]>('tracked:items', [])
+  const [rawDays, setDays] = usePersistentState<PmixDays>('pmix:days', {})
+  const days = sanitizePmix(rawDays)
+  const [rawTracked] = usePersistentState<string[]>('tracked:items', [])
+  const tracked = Array.isArray(rawTracked) ? rawTracked : []
   const [scope, setScope] = useState<Scope>('week')
   const [q, setQ] = useState('')
   const [msg, setMsg] = useState('')

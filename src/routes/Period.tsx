@@ -9,9 +9,9 @@ import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
 import { getPriceLog } from '../lib/catalog'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import type { Night } from '../lib/nightly'
-import type { PmixDays } from '../lib/pmix'
+import { sanitizePmix, type PmixDays } from '../lib/pmix'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 const kfmt = (n: number) => `$${(n / 1000).toFixed(1)}k`
 
 function iso(d: Date): string {
@@ -47,7 +47,8 @@ interface Decision {
  */
 export function Period() {
   const [nights] = usePersistentState<Night[]>('nightly:log', [])
-  const [days] = usePersistentState<PmixDays>('pmix:days', {})
+  const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
+  const days = sanitizePmix(rawDays)
   const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
   const { concept, location } = useCurrentNames()
   const priceLog = useMemo(() => getPriceLog(), [])
@@ -63,7 +64,7 @@ export function Period() {
   const byDate = useMemo(() => new Map(nights.map((n) => [n.date, n])), [nights])
   const inPeriod = nights
     .filter((n) => n.date >= pStart && n.date <= (pEnd < t ? pEnd : t))
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
 
   const netToDate = inPeriod.reduce((s, n) => s + n.netSales, 0)
   const laborSum = inPeriod.reduce((s, n) => s + (n.labor ?? 0), 0)

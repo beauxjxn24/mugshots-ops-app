@@ -37,7 +37,20 @@ const storeKey = (k: string) => {
   return `${s.currentConcept}|${s.currentLocation}::${k}`
 }
 
-export const getCatalog = (): CatalogItem[] => load(conceptKey(), [])
+export const getCatalog = (): CatalogItem[] => {
+  const raw = load<CatalogItem[]>(conceptKey(), [])
+  if (!Array.isArray(raw)) return []
+  // Never let a corrupt/legacy item (missing name/id) crash a page that maps it.
+  return raw
+    .filter((it) => it && typeof it === 'object' && it.id)
+    .map((it) => ({
+      ...it,
+      name: typeof it.name === 'string' ? it.name : '',
+      unit: typeof it.unit === 'string' ? it.unit : 'cs',
+      category: typeof it.category === 'string' ? it.category : 'Other',
+      vendor: typeof it.vendor === 'string' ? it.vendor : '',
+    }))
+}
 export const setCatalog = (items: CatalogItem[]): void => save(conceptKey(), items)
 export const getFlags = (): Record<string, boolean> => load(storeKey('catalog:flags'), {})
 export const setFlags = (f: Record<string, boolean>): void => save(storeKey('catalog:flags'), f)

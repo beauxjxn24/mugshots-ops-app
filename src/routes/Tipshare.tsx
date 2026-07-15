@@ -41,7 +41,7 @@ interface Live {
 const EMPTY_LIVE: Live = { date: '', meal: 'AM', servers: [], entries: [] }
 
 const ROLE_FROM_STAFF: Record<string, Entry['role']> = { Bartender: 'Bar', Expo: 'Expo', Host: 'Host' }
-const money = (n: number) => `$${n.toFixed(2)}`
+const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
 const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 let seq = 0
 
@@ -56,14 +56,20 @@ const ROLE_CARDS: Array<{ role: Entry['role']; title: string; hint: string; dot:
 export function Tipshare() {
   const t = today()
   const [live, setLive] = usePersistentState<Live>('tips:live', EMPTY_LIVE)
-  const [shifts, setShifts] = usePersistentState<Shift[]>('tips:shifts', [])
+  const [rawShifts, setShifts] = usePersistentState<Shift[]>('tips:shifts', [])
+  const shifts = Array.isArray(rawShifts) ? rawShifts : []
   const [staff] = usePersistentState<Person[]>('staff:list', [])
   const [viewDate, setViewDate] = useState(t)
   const [safeOpen, setSafeOpen] = useState(false)
   const manager = usePin((s) => s.unlockedBy)
 
   // A new day starts fresh (yesterday's unlogged pool doesn't leak forward).
-  const cur: Live = live.date === t ? live : { ...EMPTY_LIVE, date: t, meal: 'AM' }
+  const rawCur: Live = live.date === t ? live : { ...EMPTY_LIVE, date: t, meal: 'AM' }
+  const cur: Live = {
+    ...rawCur,
+    entries: Array.isArray(rawCur.entries) ? rawCur.entries : [],
+    servers: Array.isArray(rawCur.servers) ? rawCur.servers : [],
+  }
   const setCur = (patch: Partial<Live>) => setLive({ ...cur, ...patch })
 
   const amLogged = shifts.some((s) => s.date === t && (s.meal ?? 'AM') === 'AM')
@@ -79,9 +85,10 @@ export function Tipshare() {
   const safe = useMemo(() => {
     const rows: Array<{ shiftId: string | null; entryId: string; name: string; amount: number; when: string }> = []
     for (const s of shifts) {
-      const hrs = s.entries.reduce((x, e) => x + e.hours, 0)
+      const sEntries = Array.isArray(s.entries) ? s.entries : []
+      const hrs = sEntries.reduce((x, e) => x + e.hours, 0)
       const rate = hrs > 0 ? s.pool / hrs : 0
-      for (const e of s.entries)
+      for (const e of sEntries)
         if (!e.pickedUp && rate * e.hours > 0.004)
           rows.push({ shiftId: s.id, entryId: e.id, name: e.name, amount: rate * e.hours, when: `${s.date} ${s.meal ?? ''}` })
     }
@@ -281,7 +288,8 @@ export function Tipshare() {
             </div>
             <div className="space-y-2">
               {dayShifts.map((s) => {
-                const hrs = s.entries.reduce((x, e) => x + e.hours, 0)
+                const sEntries = Array.isArray(s.entries) ? s.entries : []
+                const hrs = sEntries.reduce((x, e) => x + e.hours, 0)
                 return (
                   <Card key={s.id} className="p-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -68,7 +68,8 @@ function WeeklyTargets() {
  * (handoff spec: Admin → Tracked items). Tiles fill from PMIX drops.
  */
 function TrackedItems() {
-  const [tracked, setTracked] = usePersistentState<string[]>('tracked:items', [])
+  const [rawTracked, setTracked] = usePersistentState<string[]>('tracked:items', [])
+  const tracked = Array.isArray(rawTracked) ? rawTracked : []
   const [adding, setAdding] = useState('')
 
   // Predictive text tied to REAL PMIX items — you can only track something

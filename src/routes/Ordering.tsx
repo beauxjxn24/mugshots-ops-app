@@ -20,8 +20,8 @@ import { useIsPhone } from '../lib/useIsPhone'
 import type { Night } from '../lib/nightly'
 import { periodWeek } from '../lib/forecast'
 
-const money2 = (n: number) => `$${n.toFixed(2)}`
-const money0 = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money2 = (n: number) => `$${(n ?? 0).toFixed(2)}`
+const money0 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
 interface Row {
   id: string

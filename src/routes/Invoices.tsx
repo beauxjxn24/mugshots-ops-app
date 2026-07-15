@@ -18,17 +18,17 @@ interface Invoice {
   docId?: string
 }
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 function mondayOf(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
+  const [y, m, d] = (iso ?? '').split('-').map(Number)
   const dt = new Date(y, m - 1, d)
   const day = (dt.getDay() + 6) % 7
   dt.setDate(dt.getDate() - day)
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 function fmtDay(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
+  const [y, m, d] = (iso ?? '').split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short' })
 }
 
@@ -38,13 +38,14 @@ function fmtDay(iso: string): string {
  * right, closes-the-loop explainer. Shorts, credits & price creep feed Costs.
  */
 export function Invoices() {
-  const [rows, setRows] = usePersistentState<Invoice[]>('invoices:list', [])
+  const [rawRows, setRows] = usePersistentState<Invoice[]>('invoices:list', [])
+  const rows = Array.isArray(rawRows) ? rawRows : []
   const [nights] = usePersistentState<Night[]>('nightly:log', [])
   const priceLog = useMemo(() => getPriceLog(), [])
   const [form, setForm] = useState<Omit<Invoice, 'id' | 'paid'>>({ vendor: '', date: today(), number: '', total: 0 })
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'paid'>('all')
 
-  const sorted = useMemo(() => [...rows].sort((a, b) => b.date.localeCompare(a.date)), [rows])
+  const sorted = useMemo(() => [...rows].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [rows])
   const shown = sorted.filter((r) => filter === 'all' || (filter === 'paid' ? r.paid : !r.paid))
   const unpaidTotal = rows.filter((r) => !r.paid).reduce((s, r) => s + r.total, 0)
 

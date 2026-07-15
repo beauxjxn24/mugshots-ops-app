@@ -28,7 +28,7 @@ interface Shift {
   events: string[]
 }
 
-const money = (n: number) => `$${n.toFixed(2)}`
+const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
 const DOT: Record<string, string> = {
   Server: 'bg-brand',
   Bartender: 'bg-sky-400',
@@ -116,7 +116,7 @@ export function Staff() {
             note: e.pickedUp ? `picked up ✓ ${e.pickedUp.by} · ${e.pickedUp.at}` : 'in the safe',
           })
     }
-    return rows.sort((a, b) => b.date.localeCompare(a.date))
+    return rows.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
   }, [sel, shifts])
 
   return (

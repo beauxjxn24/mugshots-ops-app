@@ -43,12 +43,17 @@ function findSpec(name: string, list: typeof SPECS) {
 export function BarPrep() {
   const navigate = useNavigate()
   const drinks = useMemo(() => SPECS.filter(isDrink), [])
-  const [barItems, setBarItems] = usePersistentState<BarPrepItem[]>('barprep:items', BAR_PREP_SEED)
+  const [rawBarItems, setBarItems] = usePersistentState<BarPrepItem[]>('barprep:items', BAR_PREP_SEED)
+  const barItems = (Array.isArray(rawBarItems) ? rawBarItems : BAR_PREP_SEED).map((it) => ({
+    ...it,
+    name: typeof it?.name === 'string' ? it.name : '',
+    pars: Array.isArray(it?.pars) ? it.pars : (Array(7).fill(it?.par ?? 1) as number[]),
+  }))
   const [onHand, setOnHand] = usePersistentState<Record<string, number>>(`barprep:onhand:${today()}`, {})
 
   // One-time: old single-par items grow a full Mon–Sun par row.
   useEffect(() => {
-    if (barItems.some((it) => !Array.isArray(it.pars))) {
+    if (Array.isArray(rawBarItems) && rawBarItems.some((it) => !Array.isArray(it?.pars))) {
       setBarItems((is) => is.map((it) => (Array.isArray(it.pars) ? it : { ...it, pars: Array(7).fill(it.par ?? 1) as number[] })))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

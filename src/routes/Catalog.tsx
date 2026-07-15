@@ -15,7 +15,7 @@ import {
 } from '../lib/catalog'
 import { Pencil } from 'lucide-react'
 
-const money = (n: number) => `$${n.toFixed(2)}`
+const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
 
 /**
  * Item Catalog — THE master list (handoff spec): every item lives here once,
@@ -63,7 +63,7 @@ export function Catalog() {
             i.name.toLowerCase().includes(query) ||
             i.vendor.toLowerCase().includes(query)),
       )
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
   }, [items, flags, q, cat, guide])
 
   const onCount = items.filter((i) => flags[i.id]).length

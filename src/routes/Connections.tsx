@@ -14,7 +14,7 @@ export function Connections() {
       (p) =>
         (cat === 'All' || p.category === cat) &&
         (!query || p.label.toLowerCase().includes(query)),
-    ).sort((a, b) => Number(b.inUse) - Number(a.inUse) || a.label.localeCompare(b.label))
+    ).sort((a, b) => Number(b.inUse) - Number(a.inUse) || (a.label ?? '').localeCompare(b.label ?? ''))
   }, [q, cat])
 
   const mine = PROVIDERS.filter((p) => p.inUse)

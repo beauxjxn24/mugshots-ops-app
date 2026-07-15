@@ -6,14 +6,14 @@ import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
-import type { PmixDays } from '../lib/pmix'
+import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
 
 /** Count the hero dollar up to its value — a little life on every load. */
@@ -40,8 +40,10 @@ function useCountUp(target: number, ms = 750): number {
 
 export function Dashboard() {
   const { concept, location } = useCurrentNames()
-  const [bookings] = usePersistentState<Booking[]>('catering:bookings', [])
-  const [nights] = usePersistentState<Night[]>('nightly:log', [])
+  const [rawBookings] = usePersistentState<Booking[]>('catering:bookings', [])
+  const bookings = Array.isArray(rawBookings) ? rawBookings : []
+  const [rawNights] = usePersistentState<Night[]>('nightly:log', [])
+  const nights = Array.isArray(rawNights) ? rawNights : []
   const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
   const [scope, setScope] = useState<Scope>('day')
 
@@ -52,7 +54,7 @@ export function Dashboard() {
   const todays = upcoming.filter((b) => b.date === t)
   const next = upcoming[0]
 
-  const sorted = useMemo(() => [...nights].sort((a, b) => a.date.localeCompare(b.date)), [nights])
+  const sorted = useMemo(() => [...nights].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')), [nights])
   const latest = sorted[sorted.length - 1]
   const hasReal = !!latest
 
@@ -461,7 +463,8 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
 /** FOOD FOCUS — LTO carousel card (prototype spec): cycle the live LTOs. */
 function LtoFocus() {
   const [idx, setIdx] = useState(0)
-  const [days] = usePersistentState<PmixDays>('pmix:days', {})
+  const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
+  const days = sanitizePmix(rawDays)
   const ltos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
   if (ltos.length === 0) return null
   const s = ltos[((idx % ltos.length) + ltos.length) % ltos.length]
@@ -541,8 +544,10 @@ function LtoFocus() {
  * toggle (handoff spec). Add any item you sell; honest "not in PMIX" states.
  */
 function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
-  const [tracked] = usePersistentState<string[]>('tracked:items', [])
-  const [days] = usePersistentState<PmixDays>('pmix:days', {})
+  const [rawTracked] = usePersistentState<string[]>('tracked:items', [])
+  const tracked = Array.isArray(rawTracked) ? rawTracked : []
+  const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
+  const days = sanitizePmix(rawDays)
 
   const keys = Object.keys(days).sort()
   const inScope = useMemo(() => {

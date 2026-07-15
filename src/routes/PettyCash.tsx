@@ -46,7 +46,7 @@ interface Entry {
   reason: string
 }
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export function PettyCash() {
   const [counts, setCounts] = usePersistentState<Counts>('petty:counts', {})
@@ -298,7 +298,7 @@ function InOutLog() {
   const [reason, setReason] = useState('')
 
   const balance = useMemo(() => rows.reduce((s, r) => s + (r.type === 'in' ? r.amount : -r.amount), 0), [rows])
-  const sorted = useMemo(() => [...rows].sort((a, b) => b.id.localeCompare(a.id)), [rows])
+  const sorted = useMemo(() => [...rows].sort((a, b) => (b.id ?? '').localeCompare(a.id ?? '')), [rows])
 
   const add = () => {
     const amt = parseFloat(amount)

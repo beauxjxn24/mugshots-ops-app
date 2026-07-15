@@ -4,7 +4,7 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { getPriceLog } from '../lib/catalog'
 import type { Night } from '../lib/nightly'
-import type { PmixDays } from '../lib/pmix'
+import { sanitizePmix, type PmixDays } from '../lib/pmix'
 
 interface Invoice {
   id: string
@@ -19,8 +19,8 @@ interface Targets2 {
   pour: number
 }
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-const money2 = (n: number) => `$${n.toFixed(2)}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money2 = (n: number) => `$${(n ?? 0).toFixed(2)}`
 
 function mondayOf(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
@@ -39,7 +39,8 @@ const isBarVendor = (v: string) => /liquor|beverage|package|beer|wine|capital ci
 export function Costs() {
   const [invoices] = usePersistentState<Invoice[]>('invoices:list', [])
   const [nights] = usePersistentState<Night[]>('nightly:log', [])
-  const [days] = usePersistentState<PmixDays>('pmix:days', {})
+  const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
+  const days = sanitizePmix(rawDays)
   const [plate, setPlate] = usePersistentState<Record<string, number>>('costs:plate', {})
   const [targets, setTargets] = usePersistentState<Targets2>('costs:targets', { food: 30, pour: 20 })
   const priceLog = useMemo(() => getPriceLog(), [])

@@ -42,7 +42,7 @@ function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 function shiftDays(isoDate: string, delta: number): string {
-  const [y, m, d] = isoDate.split('-').map(Number)
+  const [y, m, d] = (isoDate ?? '').split('-').map(Number)
   return iso(new Date(y, m - 1, d + delta))
 }
 function firstMonday(year: number): string {
@@ -56,7 +56,7 @@ function mondayOf(dateIso: string): string {
   return iso(d)
 }
 function fmtMD(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-').map(Number)
+  const [y, m, d] = (isoDate ?? '').split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 function daysBetween(a: string, b: string): number {
@@ -99,11 +99,16 @@ function expandDates(from: string, to: string): string[] {
  * period-balance card.
  */
 export function Schedule() {
-  const [users] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
+  const [rawUsers] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
+  const users = Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS
   const [weeks, setWeeks] = usePersistentState<AllWeeks>('mgrsched:weeks', {})
   const [published, setPublished] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const [rules, setRules] = usePersistentState<string>('mgrsched:rules', DEFAULT_RULES)
-  const [requests, setRequests] = usePersistentState<TimeOff[]>('mgrsched:timeoff', [])
+  const [rawRequests, setRequests] = usePersistentState<TimeOff[]>('mgrsched:timeoff', [])
+  const requests = (Array.isArray(rawRequests) ? rawRequests : []).map((r) => ({
+    ...r,
+    dates: Array.isArray(r?.dates) ? r.dates : [],
+  }))
   const unlocked = usePin((s) => Date.now() < s.unlockedUntil)
   const unlockedBy = usePin((s) => s.unlockedBy)
   const lock = usePin((s) => s.lock)
@@ -178,12 +183,13 @@ export function Schedule() {
       let closes = 0
       let weekendOff = 0
       for (const ws of weekStarts) {
-        const row = weeks[ws]?.[u.id] ?? []
+        const raw = weeks[ws]?.[u.id]
+        const row = Array.isArray(raw) ? raw : []
         closes += row.filter((c) => c === 'C').length
         if (off.has(row[5])) weekendOff++
         if (off.has(row[6])) weekendOff++
       }
-      return { name: u.name.split(' ')[0], closes, weekendOff }
+      return { name: (u.name ?? '').split(' ')[0], closes, weekendOff }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, weeks, period])

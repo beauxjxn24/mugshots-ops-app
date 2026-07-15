@@ -54,9 +54,17 @@ function fmtLong(iso: string): string {
 export function Prep() {
   const t = today()
   const di = dayIdx(t)
-  const [items, setItems] = usePersistentState<PrepItem[]>('prep:items', PREP_SEED as PrepItem[])
+  const [rawItems, setItems] = usePersistentState<PrepItem[]>('prep:items', PREP_SEED as PrepItem[])
+  const items = (Array.isArray(rawItems) ? rawItems : (PREP_SEED as PrepItem[])).map((it) => ({
+    ...it,
+    name: typeof it?.name === 'string' ? it.name : '',
+    spec: typeof it?.spec === 'string' ? it.spec : '',
+    unit: typeof it?.unit === 'string' ? it.unit : 'ea',
+    pars: Array.isArray(it?.pars) ? it.pars : [0, 0, 0, 0, 0, 0, 0],
+  }))
   const [onHand, setOnHand] = usePersistentState<Record<string, number>>(`prep:onhand:${t}`, {})
-  const [history, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
+  const [rawHistory, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
+  const history = Array.isArray(rawHistory) ? rawHistory : []
   const [editingPars, setEditingPars] = useState(false)
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes' })
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
@@ -107,7 +115,7 @@ export function Prep() {
       const it = items.find((x) => x.name === name)
       if (it)
         setHistory((h) =>
-          [...h.filter((e) => !(e.date === t && e.name === name)), { date: t, dow: di, name, onHand: v, par: it.pars[di] ?? 0 }].slice(-800),
+          [...(Array.isArray(h) ? h : []).filter((e) => !(e.date === t && e.name === name)), { date: t, dow: di, name, onHand: v, par: it.pars[di] ?? 0 }].slice(-800),
         )
     }
   }

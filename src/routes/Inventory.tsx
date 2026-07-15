@@ -8,7 +8,7 @@ import { getCatalog, getFlags, getPars, registerItem, setOnGuide } from '../lib/
 import { setParEntry } from '../lib/ordering'
 import { useIsPhone } from '../lib/useIsPhone'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
 export const LOCATIONS = ['Walk-in', 'Dry storage', 'Line', 'Bar', 'Freezer'] as const
 type Location = (typeof LOCATIONS)[number]

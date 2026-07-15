@@ -12,7 +12,7 @@ export function dowAverages(log: Night[]): Record<number, number> {
   }
   const avg: Record<number, number> = {}
   for (const [k, arr] of Object.entries(byDow)) {
-    const recent = arr.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4)
+    const recent = arr.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 4)
     avg[+k] = recent.reduce((s, n) => s + n.netSales, 0) / recent.length
   }
   return avg

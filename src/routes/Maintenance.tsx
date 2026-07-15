@@ -56,11 +56,11 @@ export function Maintenance() {
         .filter((r) => !r.resolved)
         .sort((a, b) => {
           const rank = { urgent: 0, normal: 1, low: 2 }
-          return rank[a.priority] - rank[b.priority] || b.date.localeCompare(a.date)
+          return rank[a.priority] - rank[b.priority] || (b.date ?? '').localeCompare(a.date ?? '')
         }),
     [rows],
   )
-  const resolved = useMemo(() => rows.filter((r) => r.resolved).sort((a, b) => b.date.localeCompare(a.date)), [rows])
+  const resolved = useMemo(() => rows.filter((r) => r.resolved).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [rows])
 
   const add = () => {
     if (!form.equipment.trim() || !form.issue.trim()) return

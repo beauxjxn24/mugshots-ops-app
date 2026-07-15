@@ -9,8 +9,8 @@ import type { Night } from '../lib/nightly'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { DEFAULT_USERS, type User } from '../lib/users'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-const money2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money2 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 type Form = {
   date: string
@@ -43,7 +43,8 @@ const f = (s: string) => parseFloat(s) || 0
  * (flagged against the store's target) · deposit over/under.
  */
 export function Nightly() {
-  const [log, setLog] = usePersistentState<Night[]>('nightly:log', [])
+  const [rawLog, setLog] = usePersistentState<Night[]>('nightly:log', [])
+  const log = Array.isArray(rawLog) ? rawLog : []
   const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
   // Deep link from the dashboard chart: /nightly?date=YYYY-MM-DD highlights
   // that night's summary (and pre-fills the form if it hasn't been saved yet).
@@ -66,14 +67,14 @@ export function Nightly() {
   const net = Math.max(0, f(form.gross) - discounts)
   const laborPct = net > 0 && f(form.labor) > 0 ? (f(form.labor) / net) * 100 : 0
 
-  const sorted = useMemo(() => [...log].sort((a, b) => b.date.localeCompare(a.date)), [log])
+  const sorted = useMemo(() => [...log].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [log])
   const weekTotal = useMemo(() => sorted.slice(0, 7).reduce((s, n) => s + n.netSales, 0), [sorted])
 
   // Prototype context: period/week chips + same-day-last-year comparison.
   const pw = periodWeek(form.date)
   const byDate = useMemo(() => new Map(log.map((n) => [n.date, n])), [log])
   const shiftD = (isoDate: string, delta: number) => {
-    const [y, m, d] = isoDate.split('-').map(Number)
+    const [y, m, d] = (isoDate ?? '').split('-').map(Number)
     const dt = new Date(y, m - 1, d + delta)
     return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   }
@@ -445,7 +446,7 @@ function NightlyLog({ log, targets, initialDate }: { log: Night[]; targets: Targ
     const n = log.find((x) => x.date === date)
     const weekNet = log
       .filter((x) => x.date <= date)
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
       .slice(0, 7)
       .reduce((s, x) => s + x.netSales, 0)
     const lp = n?.laborPct ?? (n?.labor && n.netSales ? (n.labor / n.netSales) * 100 : undefined)
@@ -611,6 +612,6 @@ function SheetRow({ label, strong, children }: { label: string; strong?: boolean
   )
 }
 function fmtDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
+  const [y, m, d] = (iso ?? '').split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 }

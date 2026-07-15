@@ -47,7 +47,7 @@ export function buildSnapshot(): string {
   try {
     const nights = load<Night[]>(scoped('nightly:log'), [])
     if (nights.length) {
-      const recent = [...nights].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 45)
+      const recent = [...nights].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 45)
       parts.push('\nDAILY SALES & LABOR (newest first):')
       for (const n of recent) {
         const b = [`net $${Math.round(n.netSales)}`]
@@ -65,7 +65,7 @@ export function buildSnapshot(): string {
   try {
     const bookings = load<Booking[]>(scoped('catering:bookings'), [])
     const t = todayIso()
-    const upcoming = bookings.filter((b) => b.date >= t).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 10)
+    const upcoming = bookings.filter((b) => b.date >= t).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')).slice(0, 10)
     if (upcoming.length) {
       parts.push('\nUPCOMING CATERING:')
       for (const b of upcoming)

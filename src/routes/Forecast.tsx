@@ -7,7 +7,7 @@ import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 const kfmt = (n: number) => `$${(n / 1000).toFixed(1)}k`
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -63,7 +63,7 @@ export function Forecast() {
     }
     const avg: Record<number, number> = {}
     for (const [k, arr] of Object.entries(byDow)) {
-      const recent = arr.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4)
+      const recent = arr.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 4)
       avg[+k] = recent.reduce((s, n) => s + n.netSales, 0) / recent.length
     }
     return avg
@@ -121,7 +121,7 @@ export function Forecast() {
     const flags: Array<{ pct: number; dow: number }> = []
     for (const [k, arr] of Object.entries(byDow)) {
       if (arr.length < 3) continue
-      const sorted = arr.sort((a, b) => b.date.localeCompare(a.date))
+      const sorted = arr.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
       const latest = sorted[0].netSales
       const prior = sorted.slice(1, 5)
       const avg = prior.reduce((s, n) => s + n.netSales, 0) / prior.length

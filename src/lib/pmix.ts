@@ -19,7 +19,18 @@ export type PmixDays = Record<string, PmixDay> // YYYY-MM-DD → that day's mix
 
 export function getPmixDays(): PmixDays {
   const s = useScope.getState()
-  return load<PmixDays>(`${s.currentConcept}|${s.currentLocation}::pmix:days`, {})
+  return sanitizePmix(load<PmixDays>(`${s.currentConcept}|${s.currentLocation}::pmix:days`, {}))
+}
+
+/** Guard against corrupt/legacy shapes — every day must have an items array. */
+export function sanitizePmix(raw: unknown): PmixDays {
+  const out: PmixDays = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const [date, day] of Object.entries(raw as Record<string, unknown>)) {
+    const items = (day as PmixDay)?.items
+    if (Array.isArray(items)) out[date] = { items, file: (day as PmixDay).file ?? '', importedAt: (day as PmixDay).importedAt ?? '' }
+  }
+  return out
 }
 
 /** Pull a YYYY-MM-DD out of a file name, e.g. "pmix 2026-07-12.csv" or "PMIX_07-12-2026". */

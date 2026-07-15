@@ -5,9 +5,9 @@ import { SpecGrid } from '../components/SpecGrid'
 import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
 import { usePersistentState } from '../lib/store'
-import type { PmixDays } from '../lib/pmix'
+import { sanitizePmix, type PmixDays } from '../lib/pmix'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
 /**
  * Signature drinks — prototype layout: three build lists (frozen / shakes &
@@ -16,7 +16,8 @@ const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigi
  */
 export function Drinks() {
   const drinks = useMemo(() => SPECS.filter(isDrink), [])
-  const [days] = usePersistentState<PmixDays>('pmix:days', {})
+  const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
+  const days = sanitizePmix(rawDays)
   const [params] = useSearchParams()
   const [open, setOpen] = useState<string | undefined>(undefined)
 

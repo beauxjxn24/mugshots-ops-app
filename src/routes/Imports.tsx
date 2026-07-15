@@ -28,7 +28,7 @@ interface Job extends Partial<ReadResult> {
   dupOf?: { name: string; at: string }
 }
 
-const money2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const money2 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 let seq = 0
 
@@ -912,7 +912,7 @@ function SalesImport({ text, fileName }: { text: string; fileName: string }) {
   const rows = useMemo(() => parseSalesSummary(text), [text])
   const [added, setAdded] = useState(0)
   const ran = useRef(false)
-  const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+  const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
   // Owner spec: a drop IS the import — no extra button to find. Upserting by
   // date makes this safe to run on sight (same days just refresh in place).

@@ -6,7 +6,7 @@ import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { getLastCateringImport, type Booking, type Reservation } from '../lib/catering'
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
 const STATUS_META: Record<NonNullable<Booking['status']>, { label: string; cls: string }> = {
   confirmed: { label: 'CONFIRMED', cls: 'bg-up/10 text-up' },

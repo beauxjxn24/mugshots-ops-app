@@ -54,7 +54,7 @@ export function seedFlowoodHistory(): void {
   const PURGE = '__sampleNightsPurged'
   if (!load<boolean>(PURGE, false)) {
     const cur = load<Night[]>(k, [])
-    const clean = cur.filter((n) => !n.id.startsWith('seed-'))
+    const clean = cur.filter((n) => !(typeof n?.id === 'string' && n.id.startsWith('seed-')))
     if (clean.length !== cur.length) save(k, clean)
     save(PURGE, true)
   }
@@ -76,7 +76,7 @@ export function seedFlowoodHistory(): void {
         covers: r.guests,
         notes: '',
       }))
-    if (add.length) save(k, [...cur, ...add].sort((a, b) => a.date.localeCompare(b.date)))
+    if (add.length) save(k, [...cur, ...add].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
     save(FLAG25, true)
   }
 }
@@ -105,7 +105,7 @@ export function upsertNights(rows: SalesRow[]): number {
     })
     count++
   }
-  setNights([...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)))
+  setNights([...byDate.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
   return count
 }
 
@@ -147,7 +147,7 @@ export function parseSalesSummary(text: string): SalesRow[] {
 
   const map = new Map<string, SalesRow>()
   rows.forEach((r) => map.set(r.date, r))
-  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date))
+  return [...map.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
 }
 
 // ---- helpers ----

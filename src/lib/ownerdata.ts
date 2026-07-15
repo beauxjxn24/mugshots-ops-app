@@ -46,7 +46,7 @@ export function applyOwnerDrops(): void {
       laborPct: Number(r.laborPct) || undefined,
     })
   }
-  save(nk, [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)))
+  save(nk, [...byDate.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
 
   // PMIX days: merge (owner drops win for their dates).
   const pk = `${STORE}::pmix:days`

@@ -13,7 +13,8 @@ import { DEFAULT_USERS, USER_ROLES, newUserId, type User } from '../lib/users'
  * by design (owner-confirmed).
  */
 export function Users() {
-  const [users, setUsers] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
+  const [rawUsers, setUsers] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
+  const users = Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS
   const [form, setForm] = useState({ name: '', role: 'Manager' as User['role'], pin: '' })
 
   const add = async () => {
@@ -133,6 +134,7 @@ export function Users() {
 }
 
 function initials(n: string): string {
-  const parts = n.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || n.slice(0, 2).toUpperCase()
+  const s = n ?? ''
+  const parts = s.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || s.slice(0, 2).toUpperCase()
 }
