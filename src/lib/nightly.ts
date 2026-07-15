@@ -140,43 +140,89 @@ export function seedFlowoodHistory(): void {
   // Third seed (owner-supplied via chat, Jul 2026): real daily numbers for the
   // current period (Jun 15 – Jul 14, 2026) from the Toast Sales-summary export —
   // net + covers per day, gross = net (no per-day discounts in the summary), and
-  // a category split allocated from the period's real Toast category mix and
-  // normalized to reconcile exactly to each night's net. So every field on the
-  // Nightly sheet is filled without waiting on a re-import.
-  // v2 flag: also UPGRADES a prior bare seed (net + covers only) with the
-  // category split. Never touches a hand-entered or owner-drop night.
-  const FLAG26 = '__flowoodSales2026Seeded_v2'
+  // a category split allocated from the period's real Toast category mix so every
+  // field on the Nightly sheet is filled without a re-import.
+  //
+  // v3 is DATE-keyed and id-agnostic: it fills the category split on ANY night in
+  // the period that is still missing one — whether it came from the earlier bare
+  // seed OR from a hand-drop import (those have a different id) — computing the
+  // split from THAT night's own net so it always reconciles. Nights that already
+  // carry a category breakdown (hand-entered or the detailed owner-drop) are left
+  // untouched. First run also adds any period date not present at all.
+  // Labor is allocated from the period Labor report (Toast Labor cost summary:
+  // $31,774.43 on $221,768.60 net = 14.33%). Per-day labor isn't in the export,
+  // so each day gets the period rate — reconciles to the period total and any
+  // line can be overridden with the true figure.
+  const FLAG26 = '__flowoodSales2026Full_v4'
   if (!load<boolean>(FLAG26, false)) {
     const cur = load<Night[]>(k, [])
-    const byDate = new Map(cur.map((n) => [n.date, n]))
-    let changed = false
-    for (const r of seedSales2026 as Array<{
+    const seedRows = seedSales2026 as Array<{
       date: string; net: number; guests: number; gross: number
       food: number; na: number; liquor: number; beer: number; wine: number; nocat: number
-    }>) {
-      const ex = byDate.get(r.date)
-      const isBareSeed = !!ex && typeof ex.id === 'string' && ex.id.startsWith('seed26-') && ex.food == null
-      if (ex && !isBareSeed) continue // hand-entered or owner-drop night — leave it
-      byDate.set(r.date, {
+    }>
+    const seedByDate = new Map(seedRows.map((r) => [r.date, r]))
+    let changed = false
+
+    // Fill categories AND labor on existing period nights that lack them (any
+    // source — seed or import). Never overwrite a value already there.
+    const next = cur.map((n) => {
+      if (!seedByDate.has(n.date)) return n // outside the period
+      const net = n.netSales || 0
+      if (net <= 0) return n
+      let m = n
+      if (m.food == null) {
+        m = { ...m, ...splitByMix(net), gross: m.gross ?? net }
+        changed = true
+      }
+      if (m.labor == null) {
+        m = { ...m, ...laborFor(net) }
+        changed = true
+      }
+      return m
+    })
+
+    // Add any period date that isn't logged at all yet.
+    const have = new Set(cur.map((n) => n.date))
+    for (const r of seedRows) {
+      if (have.has(r.date)) continue
+      next.push({
         id: `seed26-${r.date}`,
         date: r.date,
         netSales: r.net,
-        gross: r.gross,
+        gross: r.net, // no per-day discounts in the summary → gross = net
         deposit: 0,
         covers: r.guests,
-        food: r.food,
-        na: r.na,
-        liquor: r.liquor,
-        beer: r.beer,
-        wine: r.wine,
-        nocat: r.nocat,
-        notes: 'From Toast sales summary (categories est. from period mix)',
+        ...splitByMix(r.net),
+        ...laborFor(r.net),
+        notes: 'From Toast sales summary + labor report (est. from period rates)',
       })
       changed = true
     }
-    if (changed) save(k, [...byDate.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+
+    if (changed) save(k, next.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
     save(FLAG26, true)
   }
+}
+
+/** Allocate a night's labor from the period labor rate (14.33% of net). */
+function laborFor(net: number): Pick<Night, 'labor' | 'laborPct'> {
+  const labor = Math.round(net * 0.143278 * 100) / 100
+  return { labor, laborPct: net > 0 ? Math.round((labor / net) * 1000) / 10 : 0 }
+}
+
+// Split a night's net across the five categories the nightly sheet shows, using
+// the period's real Toast category mix (NA 7.53% · Liquor 3.79% · Beer 3.50% ·
+// Wine 0.24%). Food takes the remainder — its own ~84.9% plus the negligible
+// "other" (retail / service charges, ~0.05%) — so the five parts sum to net
+// exactly and the sheet's Category total reconciles with no leftover.
+function splitByMix(net: number): Pick<Night, 'food' | 'na' | 'liquor' | 'beer' | 'wine' | 'nocat'> {
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const na = r2(net * 0.0752859)
+  const liquor = r2(net * 0.0378799)
+  const beer = r2(net * 0.0349824)
+  const wine = r2(net * 0.0023673)
+  const food = r2(net - (na + liquor + beer + wine))
+  return { food, na, liquor, beer, wine, nocat: 0 }
 }
 
 export interface SalesRow {
