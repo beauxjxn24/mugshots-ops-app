@@ -167,7 +167,7 @@ export function Nightly() {
         }
       />
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2.4fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2.4fr)]">
           {/* SALES + LABOR / DEPOSIT — the prototype's close-out sheet */}
           <div className="space-y-5">
             <Card className="p-5">

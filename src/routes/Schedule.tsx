@@ -404,7 +404,7 @@ export function Schedule() {
 
         <RequestOff users={users} onSubmit={(r) => setRequests((rs) => [r, ...rs])} requests={requests} nameOf={nameOf} />
 
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <Card className="border-brand/25 bg-brand/[0.06] p-4">
             <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">Period rules</div>
             <textarea

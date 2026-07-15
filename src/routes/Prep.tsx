@@ -376,7 +376,7 @@ export function Prep() {
       )}
 
       <div className={`mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden ${mode === 'bar' ? 'hidden' : ''}`}>
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
           <Card className="border-brand/25 bg-brand/[0.06] p-4">
             <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">How pars work here</div>
             <p className="text-xs leading-relaxed text-ink/80">

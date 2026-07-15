@@ -179,7 +179,7 @@ export function Tipshare() {
         }
       />
       <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
-        <div className="grid items-start gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
           {/* Left: recipient role cards */}
           <div className="space-y-5">
             {ROLE_CARDS.map(({ role, title, hint, dot, btn }) => (

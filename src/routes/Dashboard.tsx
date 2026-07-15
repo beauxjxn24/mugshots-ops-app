@@ -129,7 +129,7 @@ export function Dashboard() {
             {/* Row 1 — catering tiles by the nav (they blink & shake when a
                 catering is coming up) + ONE sales card: hero number on the
                 left, the week's graph beside it */}
-            <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,4.4fr)]">
+            <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,4.4fr)]">
               <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
                 <KpiTile
                   compact

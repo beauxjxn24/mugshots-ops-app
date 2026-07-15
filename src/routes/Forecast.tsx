@@ -264,7 +264,7 @@ export function Forecast() {
               })}
             </div>
 
-            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
               {/* This week's calls */}
               <Card className="p-4">
                 <div className="mb-3 flex items-center gap-2 font-display text-lg font-semibold text-ink">

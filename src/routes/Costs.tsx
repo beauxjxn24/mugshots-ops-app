@@ -166,7 +166,7 @@ export function Costs() {
           </Card>
         </div>
 
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,2.6fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.6fr)_minmax(0,1fr)]">
           {/* Margin × Mix */}
           <Card className="p-5">
             <div className="font-display text-xl font-semibold text-ink">Margin × Mix</div>
@@ -176,6 +176,8 @@ export function Costs() {
                 : 'Drop a PMIX on Imports and your top items appear here with margins.'}
             </p>
             {mix.rows.length > 0 && (
+              <div className="-mx-1 overflow-x-auto px-1">
+                <div className="min-w-[520px]">
               <div className="grid grid-cols-[minmax(0,2fr)_76px_86px_80px_60px_minmax(90px,1fr)] gap-2 border-b border-black/10 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
                 <span>Item</span>
                 <span className="text-right">Avg price</span>
@@ -184,7 +186,6 @@ export function Costs() {
                 <span className="text-right">Mix %</span>
                 <span className="text-right">Verdict</span>
               </div>
-            )}
             {mix.rows.map((r) => {
               const pc = plate[r.name]
               const verdict = verdictOf(r)
@@ -225,6 +226,9 @@ export function Costs() {
                 </div>
               )
             })}
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Right rail */}

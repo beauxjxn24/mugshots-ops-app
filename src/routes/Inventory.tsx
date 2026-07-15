@@ -228,7 +228,7 @@ export function Inventory() {
         </div>
       )}
       <div className={`mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 ${isPhone ? 'hidden' : ''}`}>
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3.2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3.2fr)_minmax(0,1fr)]">
           <Card className="overflow-hidden">
             <div className="grid grid-cols-[minmax(0,1.8fr)_110px_70px_54px_70px_78px_88px] items-center gap-2 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
               <span>Item</span>

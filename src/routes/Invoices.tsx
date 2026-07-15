@@ -77,7 +77,7 @@ export function Invoices() {
         }
       />
       <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,1.7fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,1.7fr)]">
           <div className="space-y-4">
             {/* Log an invoice */}
             <Card className="p-4">
