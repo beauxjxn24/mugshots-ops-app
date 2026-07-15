@@ -1,6 +1,7 @@
 import { load, save } from './store'
 import { useScope } from './scope'
 import seedHistory2025 from '../data/seed-history-2025.json'
+import seedSales2026 from '../data/seed-sales-2026.json'
 
 /**
  * A night's numbers — full prototype shape (see docs/handoff/README.md).
@@ -134,6 +135,28 @@ export function seedFlowoodHistory(): void {
       }))
     if (add.length) save(k, [...cur, ...add].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
     save(FLAG25, true)
+  }
+
+  // Third seed (owner-supplied via chat, Jul 2026): real daily net sales for the
+  // current period (Jun 15 – Jul 14, 2026) from the Toast Sales-summary export,
+  // so Nightly Numbers and the dashboard show the store's actual numbers without
+  // waiting on a re-import. Merges by date; never overwrites a hand-entered night.
+  const FLAG26 = '__flowoodSales2026Seeded'
+  if (!load<boolean>(FLAG26, false)) {
+    const cur = load<Night[]>(k, [])
+    const have = new Set(cur.map((n) => n.date))
+    const add: Night[] = (seedSales2026 as Array<{ date: string; net: number; orders: number; guests: number }>)
+      .filter((r) => !have.has(r.date))
+      .map((r) => ({
+        id: `seed26-${r.date}`,
+        date: r.date,
+        netSales: r.net,
+        deposit: 0,
+        covers: r.guests,
+        notes: 'From Toast sales summary',
+      }))
+    if (add.length) save(k, [...cur, ...add].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+    save(FLAG26, true)
   }
 }
 
