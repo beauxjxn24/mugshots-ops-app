@@ -93,8 +93,12 @@ export function Ordering() {
   // ── click-to-edit ──
   const [editingId, setEditingId] = useState<string | null>(null)
   const [edit, setEdit] = useState({ name: '', unit: '', cost: '' })
-  const openEdit = (r: Row) => {
+  // Which field to land the cursor on when the editor opens — click the name to
+  // edit the name, click the price to edit the price.
+  const [editFocus, setEditFocus] = useState<'name' | 'cost'>('name')
+  const openEdit = (r: Row, focus: 'name' | 'cost' = 'name') => {
     setEditingId(r.id)
+    setEditFocus(focus)
     setEdit({ name: r.name, unit: r.unit, cost: r.cost != null ? String(r.cost) : '' })
   }
   const commitEdit = () => {
@@ -414,15 +418,19 @@ export function Ordering() {
                           <GripVertical size={14} />
                         </span>
                         <button
-                          onClick={() => (editingId === r.id ? setEditingId(null) : openEdit(r))}
+                          onClick={() => (editingId === r.id ? setEditingId(null) : openEdit(r, 'name'))}
                           className="min-w-0 text-left"
                           title="Click to edit this item"
                         >
                           <span className="block truncate text-sm font-medium text-ink group-hover:text-brand-600">{r.name}</span>
                         </button>
-                        <span className="text-right font-mono text-sm text-ink">
-                          {r.cost != null ? money2(r.cost) : <span className="text-muted">—</span>}
-                        </span>
+                        <button
+                          onClick={() => (editingId === r.id ? setEditingId(null) : openEdit(r, 'cost'))}
+                          className="text-right font-mono text-sm text-ink hover:text-brand-600"
+                          title="Click to edit the price"
+                        >
+                          {r.cost != null ? money2(r.cost) : <span className="text-muted underline decoration-dotted underline-offset-2">add $</span>}
+                        </button>
                         <NumCell value={r.par} onChange={(v) => { setParEntry(r.id, { par: v }); refresh() }} />
                         <NumCell value={r.onHand} onChange={(v) => { setParEntry(r.id, { onHand: v }); refresh() }} />
                         <div className={`text-right font-display text-base font-semibold ${need > 0 ? 'text-brand' : 'text-ink/25'}`}>
@@ -434,6 +442,7 @@ export function Ordering() {
                           <label className="min-w-0 flex-1 text-[10px] font-bold uppercase text-muted">
                             Name
                             <input
+                              autoFocus={editFocus === 'name'}
                               value={edit.name}
                               onChange={(e) => setEdit({ ...edit, name: e.target.value })}
                               onKeyDown={(e) => e.key === 'Enter' && commitEdit()}
@@ -451,13 +460,17 @@ export function Ordering() {
                           <label className="w-24 text-[10px] font-bold uppercase text-muted">
                             Cost $
                             <input
+                              autoFocus={editFocus === 'cost'}
+                              onFocus={(e) => e.target.select()}
                               type="number"
                               inputMode="decimal"
                               step="0.01"
                               value={edit.cost}
                               onChange={(e) => setEdit({ ...edit, cost: e.target.value })}
                               onKeyDown={(e) => e.key === 'Enter' && commitEdit()}
-                              className="mt-0.5 w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-right font-mono text-sm text-ink outline-none focus:border-brand"
+                              className={`mt-0.5 w-full rounded-lg border bg-white px-2.5 py-1.5 text-right font-mono text-sm text-ink outline-none focus:border-brand ${
+                                editFocus === 'cost' ? 'border-brand ring-2 ring-brand/30' : 'border-black/10'
+                              }`}
                             />
                           </label>
                           <button onClick={commitEdit} className="rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white">

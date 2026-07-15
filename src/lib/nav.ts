@@ -156,9 +156,9 @@ export const STAFF_SECTIONS: NavSection[] = [
   { title: '', items: [SHIFT_ITEM] },
   { title: 'My Tasks', items: STAFF_ITEMS },
 ]
-/** Bottom-bar items per experience. Managers on a phone live in the
+/** Bottom-bar items per experience. Managers/admins on a phone live in the
  *  invoice → inventory → ordering flow; hourly staff get My Shift + tasks. */
-export const bottomItems = (role: 'manager' | 'staff'): NavItem[] =>
+export const bottomItems = (role: 'admin' | 'manager' | 'staff'): NavItem[] =>
   role === 'staff'
     ? [SHIFT_ITEM, ...STAFF_ITEMS].slice(0, 5)
     : [

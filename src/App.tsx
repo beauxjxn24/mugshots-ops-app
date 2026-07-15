@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { AppShell } from './components/AppShell'
@@ -60,7 +61,7 @@ const router = createHashRouter([
       { path: 'lto', element: <LTO /> },
       { path: 'drinks', element: <Drinks /> },
       { path: 'staff', element: <Staff /> },
-      { path: 'stores', element: <Stores /> },
+      { path: 'stores', element: <AdminOnly><Stores /></AdminOnly> },
       { path: 'checklists', element: <Checklists /> },
       { path: 'invoices', element: <Invoices /> },
       { path: 'costs', element: <Costs /> },
@@ -78,13 +79,21 @@ const router = createHashRouter([
   },
 ])
 
-/** Role-aware home: staff get My Shift; managers get the single-store Dashboard,
- *  or the combined roll-up when a whole-concept / company scope is selected. */
+/** Role-aware home: staff get My Shift; the admin gets the combined roll-up when
+ *  a whole-concept / company scope is selected; everyone else gets their own
+ *  single-store Dashboard. A non-admin can never land on the cross-store view. */
 function Home() {
   const role = useRole((s) => s.role)
   const level = useRollupLevel()
   if (role === 'staff') return <Shift />
-  return level === 'single' ? <Dashboard /> : <Combined />
+  return role === 'admin' && level !== 'single' ? <Combined /> : <Dashboard />
+}
+
+/** Gate a route to the admin (owner). Managers/staff are bounced to their
+ *  own dashboard instead of seeing cross-store management screens. */
+function AdminOnly({ children }: { children: ReactNode }) {
+  const role = useRole((s) => s.role)
+  return role === 'admin' ? <>{children}</> : <Dashboard />
 }
 
 export function App() {

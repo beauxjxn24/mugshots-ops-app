@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { NAV, NAV_FLAT, STAFF_SECTIONS, SHIFT_ITEM, ROLLUP_SECTIONS, bottomItems, type NavSection } from '../lib/nav'
 import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { useRole } from '../lib/role'
-import { useRollupLevel } from '../lib/scope'
+import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -17,10 +17,29 @@ export function AppShell() {
   const loc = useLocation()
   const role = useRole((s) => s.role)
   const level = useRollupLevel()
-  const rollup = role === 'manager' && level !== 'single'
-  const sections = role === 'staff' ? STAFF_SECTIONS : rollup ? ROLLUP_SECTIONS : NAV
+  const isAdmin = role === 'admin'
+  // Only the admin sees roll-ups (whole concept / company). A manager or staff
+  // account is always pinned to a single store.
+  const rollup = isAdmin && level !== 'single'
+  // Managers run one store: full ops, but Stores & Concepts is admin-only.
+  const managerSections = useMemo(
+    () => NAV.map((s) => ({ ...s, items: s.items.filter((i) => i.to !== '/stores') })),
+    [],
+  )
+  const sections = role === 'staff' ? STAFF_SECTIONS : rollup ? ROLLUP_SECTIONS : isAdmin ? NAV : managerSections
   const current = [...NAV_FLAT, SHIFT_ITEM].find((i) => i.to === loc.pathname)
   const bottom = rollup ? ROLLUP_SECTIONS.flatMap((s) => s.items) : bottomItems(role)
+
+  // A non-admin must never sit on a roll-up scope (e.g. left over from an admin
+  // session). Snap them back to a concrete store so their data stays real.
+  const concepts = useScope((s) => s.concepts)
+  const setCurrent = useScope((s) => s.setCurrent)
+  useEffect(() => {
+    if (!isAdmin && level !== 'single') {
+      const c = concepts.find((x) => x.locations.length > 0) ?? concepts[0]
+      if (c && c.locations[0]) setCurrent(c.id, c.locations[0].id)
+    }
+  }, [isAdmin, level, concepts, setCurrent])
 
   // Prevent the browser from navigating away to open a file when one is dropped
   // outside a drop zone (that "print preview" behavior). The Imports screen adds
@@ -41,11 +60,15 @@ export function AppShell() {
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />
         <RoleToggle />
-        {role === 'manager' && (
+        {isAdmin ? (
           <div className="mb-3">
             <StoreSwitcher />
           </div>
-        )}
+        ) : role === 'manager' ? (
+          <div className="mb-3">
+            <StoreLabel />
+          </div>
+        ) : null}
         <Rail sections={sections} onNavigate={() => setOpen(false)} />
         <BuildStamp />
       </aside>
@@ -73,11 +96,15 @@ export function AppShell() {
           <div className="absolute inset-y-0 left-0 w-[82%] max-w-[300px] overflow-y-auto overscroll-contain bg-navy px-3 py-4 text-white/70 shadow-2xl [padding-top:env(safe-area-inset-top)] animate-[slidein_.25s_ease]">
             <Brand />
             <RoleToggle />
-            {role === 'manager' && (
+            {isAdmin ? (
               <div className="mb-3">
                 <StoreSwitcher />
               </div>
-            )}
+            ) : role === 'manager' ? (
+              <div className="mb-3">
+                <StoreLabel />
+              </div>
+            ) : null}
             <Rail sections={sections} onNavigate={() => setOpen(false)} />
             <BuildStamp />
           </div>
@@ -119,6 +146,23 @@ export function AppShell() {
             ),
         )}
       </nav>
+    </div>
+  )
+}
+
+/** Locked store display for managers — shows their store, no switching. */
+function StoreLabel() {
+  const { concept, location } = useCurrentNames()
+  return (
+    <div className="flex w-full items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left">
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
+        {concept.slice(0, 1) || 'M'}
+      </span>
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className="block truncate text-[13px] font-semibold text-white">{location || 'Your store'}</span>
+        <span className="block truncate text-[10px] text-white/50">{concept}</span>
+      </span>
+      <span className="shrink-0 text-white/40" title="Only an admin can switch stores">🔒</span>
     </div>
   )
 }

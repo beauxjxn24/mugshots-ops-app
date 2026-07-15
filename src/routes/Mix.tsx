@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
-import { Upload, CalendarDays } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ScanLine } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageHeader, Card } from '../components/ui'
-import { usePersistentState, today } from '../lib/store'
+import { usePersistentState } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
-import { parsePmix, dateFromFilename, type MixItem, type PmixDays, sanitizePmix } from '../lib/pmix'
+import { type MixItem, type PmixDays, sanitizePmix } from '../lib/pmix'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
@@ -27,9 +27,6 @@ export function Mix() {
   const tracked = Array.isArray(rawTracked) ? rawTracked : []
   const [scope, setScope] = useState<Scope>('week')
   const [q, setQ] = useState('')
-  const [msg, setMsg] = useState('')
-  const [pendingDrop, setPendingDrop] = useState<{ items: MixItem[]; file: string; date: string } | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const dayKeys = useMemo(() => Object.keys(days).sort(), [days])
   const latest = dayKeys[dayKeys.length - 1]
@@ -112,30 +109,6 @@ export function Mix() {
             : fmtShort(latest)
           : latest.slice(0, 7)
 
-  const commitDrop = (items2: MixItem[], file: string, date: string) => {
-    setDays((d) => ({
-      ...d,
-      [date]: {
-        items: items2,
-        file,
-        importedAt: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-      },
-    }))
-    setPendingDrop(null)
-    setMsg(`Filed ${items2.length} items under ${date}.`)
-  }
-
-  const ingest = (text: string, name: string) => {
-    const parsed = parsePmix(text)
-    if (parsed.length === 0) {
-      setMsg('Couldn’t find item/quantity/sales columns — is this a Product Mix export?')
-      return
-    }
-    const fromName = dateFromFilename(name)
-    if (fromName) commitDrop(parsed, name, fromName)
-    else setPendingDrop({ items: parsed, file: name, date: '' })
-  }
-
   const trackedRows = tracked
     .map((name) => {
       const hit = items.find((i) => i.name.toLowerCase() === name.toLowerCase() || i.name.toLowerCase().includes(name.toLowerCase()))
@@ -170,78 +143,31 @@ export function Mix() {
           )
         }
       />
-      <div
-        className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8"
-        onDrop={async (e) => {
-          e.preventDefault()
-          const f = e.dataTransfer.files?.[0]
-          if (f) ingest(await f.text(), f.name)
-        }}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        {/* Which day is this for? */}
-        {pendingDrop && (
-          <Card className="border-brand/40 bg-brand/5 p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
-              <CalendarDays size={16} className="text-brand" />
-              Which day is “{pendingDrop.file}” for?
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="date"
-                value={pendingDrop.date}
-                onChange={(e) => setPendingDrop({ ...pendingDrop, date: e.target.value })}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-              />
-              <button
-                disabled={!pendingDrop.date}
-                onClick={() => commitDrop(pendingDrop.items, pendingDrop.file, pendingDrop.date)}
-                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-              >
-                File {pendingDrop.items.length} items
-              </button>
-              <button onClick={() => setPendingDrop(null)} className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-muted">
-                Cancel
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-muted">
-              Tip: put the date in the file name (e.g. <b>pmix 2026-07-12.csv</b>) and it files itself.
-            </p>
-          </Card>
-        )}
-
-        {/* Import chip + item history search band */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-black/20 bg-white px-3.5 py-2 text-xs font-bold text-ink hover:border-brand"
-          >
-            <Upload size={13} className="text-brand" /> Import PMIX — Toast product-mix CSV
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={async (e) => {
-              const f = e.target.files?.[0]
-              if (f) ingest(await f.text(), f.name)
-            }}
-          />
-          {latest && (
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Product mix is read-only here — all drops go through the Imports page,
+            which files each PMIX by day and tracks it on the daily-reports board. */}
+        {latest && (
+          <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-up/10 px-2.5 py-1 text-[10px] font-bold text-up">
               ● PMIX {scopeLabel} on record
             </span>
-          )}
-          {msg && <span className="text-xs text-muted">{msg}</span>}
-        </div>
+            <Link
+              to="/imports"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-black/20 bg-white px-3.5 py-2 text-xs font-bold text-ink hover:border-brand"
+            >
+              <ScanLine size={13} className="text-brand" /> Add a PMIX on Imports
+            </Link>
+          </div>
+        )}
 
         {!latest ? (
           <Card className="p-8 text-center">
             <p className="mx-auto max-w-md text-sm text-muted text-pretty">
-              In Toast: Reports → Menu → <b>Product Mix</b> → Export CSV, then drop it anywhere on
-              this page (or on Imports). Each day stacks up — the dashboard's tracked tiles and
-              this screen aggregate them.
+              In Toast: Reports → Menu → <b>Product Mix</b> → Export CSV, then drop it on the{' '}
+              <Link to="/imports" className="font-semibold text-brand underline">
+                Imports
+              </Link>{' '}
+              page. Each day stacks up — the dashboard's tracked tiles and this screen aggregate them.
             </p>
           </Card>
         ) : (
