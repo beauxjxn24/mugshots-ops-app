@@ -124,6 +124,16 @@ export function Nightly() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Picking a date jumps to that day: load its saved numbers if we have them,
+  // else a blank sheet ready for entry. (The picker used to only relabel the
+  // date, leaving the previous day's figures on screen — the "not updating" bug.)
+  const pickDate = (d: string) => {
+    if (!d) return
+    const n = byDate.get(d)
+    setForm(n ? formFromNight(n) : { ...EMPTY, date: d })
+    setShowCats(!!(n && (n.food ?? 0) > 0))
+  }
+
   // Which history rows are visible right now.
   const visibleNights = useMemo(() => {
     if (lookup) return sorted.filter((n) => n.date === lookup)
@@ -193,7 +203,7 @@ export function Nightly() {
                 <input
                   type="date"
                   value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  onChange={(e) => pickDate(e.target.value)}
                   className="rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-brand"
                 />
               </div>
