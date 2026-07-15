@@ -7,7 +7,7 @@ import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
 
 /** week map: weekStart(YYYY-MM-DD, Monday) -> userId -> 7 shift codes (Mon..Sun) */
-type AllWeeks = Record<string, Record<string, string[]>>
+export type AllWeeks = Record<string, Record<string, string[]>>
 
 /** A manager's advance time-off request — GM sees it as RO, grants it to R✓/VAC. */
 interface TimeOff {
@@ -20,15 +20,15 @@ interface TimeOff {
   at: string
 }
 
-const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+export const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 // Shift codes per the handoff: O open · C close · M mid · OFF · RO requested off ·
 // R✓ granted off · VAC vacation. Tap a cell to pick from a colour palette.
 const CODES = ['', 'O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
 /** The seven pickable codes (everything but the empty cell). */
-const PICK_CODES = ['O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
+export const PICK_CODES = ['O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
 // Solid, high-contrast shift chips — readable at a glance on the grid and on
 // a printout, the way a 2026 scheduling tool (Sling / 7shifts) shows them.
-const CHIP: Record<string, string> = {
+export const CHIP: Record<string, string> = {
   '': 'text-muted/40',
   O: 'bg-brand text-white font-extrabold shadow-sm',
   C: 'bg-navy text-white font-extrabold shadow-sm',
@@ -39,7 +39,7 @@ const CHIP: Record<string, string> = {
   VAC: 'bg-[#7C3AED] text-white font-extrabold shadow-sm',
 }
 /** Full label for each code — shown in the picker and the legend. */
-const CODE_LABEL: Record<string, string> = {
+export const CODE_LABEL: Record<string, string> = {
   O: 'Open',
   C: 'Close',
   M: 'Mid',
@@ -55,25 +55,25 @@ const DEFAULT_RULES =
 function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-function shiftDays(isoDate: string, delta: number): string {
+export function shiftDays(isoDate: string, delta: number): string {
   const [y, m, d] = (isoDate ?? '').split('-').map(Number)
   return iso(new Date(y, m - 1, d + delta))
 }
-function firstMonday(year: number): string {
+export function firstMonday(year: number): string {
   const d = new Date(year, 0, 1)
   while (d.getDay() !== 1) d.setDate(d.getDate() + 1)
   return iso(d)
 }
-function mondayOf(dateIso: string): string {
+export function mondayOf(dateIso: string): string {
   const d = new Date(dateIso + 'T12:00:00')
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
   return iso(d)
 }
-function fmtMD(isoDate: string): string {
+export function fmtMD(isoDate: string): string {
   const [y, m, d] = (isoDate ?? '').split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
-function daysBetween(a: string, b: string): number {
+export function daysBetween(a: string, b: string): number {
   return Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000)
 }
 
@@ -230,6 +230,9 @@ export function Schedule() {
                 <Lock size={13} /> Unlock to edit
               </button>
             )}
+            <Link to="/posted" className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink">
+              View posted →
+            </Link>
             <Link to="/users" className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink">
               Manage roster →
             </Link>

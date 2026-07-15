@@ -31,6 +31,7 @@ import { Forecast } from './routes/Forecast'
 import { Mix } from './routes/Mix'
 import { Period } from './routes/Period'
 import { Schedule } from './routes/Schedule'
+import { Posted } from './routes/Posted'
 import { Users } from './routes/Users'
 import { LineBuilds } from './routes/LineBuilds'
 import { Printables } from './routes/Printables'
@@ -71,6 +72,7 @@ const router = createHashRouter([
       { path: 'mix', element: <Mix /> },
       { path: 'period', element: <Period /> },
       { path: 'schedule', element: <Schedule /> },
+      { path: 'posted', element: <Posted /> },
       { path: 'users', element: <Users /> },
       { path: 'builds', element: <LineBuilds /> },
       { path: 'printables', element: <Printables /> },
