@@ -7,6 +7,7 @@ import { usePersistentState } from '../lib/store'
 import { requirePin } from '../lib/pin'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { getPmixDays } from '../lib/pmix'
+import { clearImportedNumbers, fullResetStore } from '../lib/reset'
 
 /**
  * Weekly targets — Admin-set per store (handoff spec). Labor ≤ % flags the
@@ -216,6 +217,33 @@ export function Stores() {
     a.click()
     URL.revokeObjectURL(a.href)
   }
+  const { location: storeName } = useCurrentNames()
+  const clearNumbers = async () => {
+    if (!(await requirePin('Clear imported numbers'))) return
+    if (
+      !(await confirmDelete(
+        `Clear all imported numbers for ${storeName}?`,
+        'Wipes sales, product mix, category mix, invoices, prices, received/usage, and the import history — so you can re-drop reports and watch them land. Your count sheets, order guides, roster, recipes, checklists and targets stay. Export a backup first if unsure.',
+        'Clear numbers',
+      ))
+    )
+      return
+    clearImportedNumbers()
+    location.reload()
+  }
+  const fullReset = async () => {
+    if (!(await requirePin('Full reset of this store'))) return
+    if (
+      !(await confirmDelete(
+        `Full reset — wipe EVERYTHING for ${storeName}?`,
+        'Erases every record for this store (numbers AND setup) back to a fresh install: the count sheet and order guide re-seed empty, the item catalog is cleared. This cannot be undone — export a backup first.',
+        'Wipe this store',
+      ))
+    )
+      return
+    fullResetStore()
+    location.reload()
+  }
   const restoreBackup = async (file: File) => {
     try {
       const parsed = JSON.parse(await file.text())
@@ -370,6 +398,39 @@ export function Stores() {
               Add concept
             </button>
           </div>
+        </Card>
+
+        {/* Start fresh — validate the import pipeline from a clean slate. */}
+        <Card className="border-down/25 p-4">
+          <div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-down">Start fresh · {storeName}</div>
+          <p className="mb-3 text-xs text-muted text-pretty">
+            Zero the numbers so you can drop reports and watch each one import. Both actions ask for the
+            GM PIN and a confirm — <b>export a backup first</b> (button up top) so you can roll back.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={clearNumbers}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-down/40 bg-white px-3.5 py-2 text-xs font-bold text-down hover:bg-down/5"
+            >
+              Clear imported numbers
+            </button>
+            <button
+              onClick={fullReset}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-down px-3.5 py-2 text-xs font-bold text-white hover:brightness-95"
+            >
+              Full reset — everything
+            </button>
+          </div>
+          <ul className="mt-3 space-y-1 text-[11px] text-muted">
+            <li>
+              <b className="text-ink/70">Clear imported numbers</b> — sales, product mix, category mix, invoices, prices,
+              received/usage, import history. Keeps count sheets, guides, roster, recipes, checklists, targets.
+            </li>
+            <li>
+              <b className="text-ink/70">Full reset</b> — wipes this store completely; the count sheet &amp; order guide re-seed
+              empty. Use only to rebuild from scratch.
+            </li>
+          </ul>
         </Card>
       </div>
     </>
