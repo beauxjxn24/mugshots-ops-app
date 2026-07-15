@@ -139,14 +139,15 @@ export const STAFF_SECTIONS: NavSection[] = [
   { title: '', items: [SHIFT_ITEM] },
   { title: 'My Tasks', items: STAFF_ITEMS },
 ]
-/** Bottom-bar items per experience. */
+/** Bottom-bar items per experience. Managers on a phone live in the
+ *  invoice → inventory → ordering flow; hourly staff get My Shift + tasks. */
 export const bottomItems = (role: 'manager' | 'staff'): NavItem[] =>
   role === 'staff'
     ? [SHIFT_ITEM, ...STAFF_ITEMS].slice(0, 5)
     : [
         NAV_FLAT[0],
-        NAV_FLAT.find((i) => i.to === '/prep')!,
-        NAV_FLAT.find((i) => i.to === '/ordering')!,
-        NAV_FLAT.find((i) => i.to === '/specs')!,
+        NAV_FLAT.find((i) => i.to === '/imports')!,
         NAV_FLAT.find((i) => i.to === '/inventory')!,
+        NAV_FLAT.find((i) => i.to === '/ordering')!,
+        NAV_FLAT.find((i) => i.to === '/invoices')!,
       ]

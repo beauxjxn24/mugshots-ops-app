@@ -16,6 +16,7 @@ import {
   onShelf,
 } from '../lib/guide'
 import { usePersistentState, today } from '../lib/store'
+import { useIsPhone } from '../lib/useIsPhone'
 import type { Night } from '../lib/nightly'
 import { periodWeek } from '../lib/forecast'
 
@@ -55,6 +56,7 @@ export function Ordering() {
   // Flowood's liquor guide seeds once from the owner's 2025 order sheet.
   useMemo(() => seedLiquorGuide(), [])
 
+  const isPhone = useIsPhone()
   const priceLog = useMemo(() => getPriceLog(), [])
   const [shelf, setShelf] = useState<GuideShelf>('Liquor')
   const [view, setView] = useState<'guide' | 'usage'>('guide')
@@ -137,7 +139,11 @@ export function Ordering() {
     <>
       <PageHeader
         title="Orders"
-        subtitle="One guide per shelf, laid out like your paper sheet · order = par − on hand · click an item to edit it, drag ⠿ to move it"
+        subtitle={
+          isPhone
+            ? 'Count on-hand — order = par − on hand · edit pars, prices & layout on a computer'
+            : 'One guide per shelf, laid out like your paper sheet · order = par − on hand · click an item to edit it, drag ⠿ to move it'
+        }
         right={
           <div className="flex items-center gap-2">
             <div className="grid grid-cols-2 gap-1 rounded-lg bg-black/5 p-1 print:hidden">
@@ -215,6 +221,67 @@ export function Ordering() {
 
         {view === 'usage' ? (
           <Usage shelf={shelf} rows={allRows} />
+        ) : isPhone ? (
+          /* Phone: a fast count list — set on-hand, see the order. Drag,
+             inline price edits and per-section adds stay on the desktop. */
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-4 py-3">
+              <span className="font-display text-base font-semibold text-ink">
+                {shelf} order <span className="text-sm font-normal text-muted">{allRows.length}</span>
+              </span>
+              <button
+                onClick={copyOrder}
+                disabled={needed.length === 0}
+                className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white disabled:opacity-40"
+              >
+                {copied ? '✓ Copied' : `Copy order (${needed.length})`}
+              </button>
+            </div>
+            {allRows.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-muted">Nothing on this guide yet — drop an invoice on Imports, or add items on a computer.</p>
+            )}
+            {sections.map((sec, si) => (
+              <div key={sec.title + si}>
+                <div className="border-b border-brand/20 bg-brand/[0.07] px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-brand-600">
+                  {sec.title}
+                </div>
+                {sec.ids.map((id) => {
+                  const r = byId.get(id)
+                  if (!r) return null
+                  const need = suggested(r)
+                  return (
+                    <div key={id} className="flex items-center gap-3 border-b border-black/5 px-4 py-2.5 last:border-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-ink">{r.name}</div>
+                        <div className="text-[11px] text-muted">
+                          par {r.par}
+                          {r.cost != null ? ` · ${money2(r.cost)}` : ''}
+                        </div>
+                      </div>
+                      <label className="flex shrink-0 flex-col items-center text-[9px] font-bold uppercase text-muted">
+                        On hand
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={r.onHand || ''}
+                          placeholder="0"
+                          onChange={(e) => {
+                            setParEntry(r.id, { onHand: Math.max(0, parseFloat(e.target.value) || 0) })
+                            refresh()
+                          }}
+                          className="mt-0.5 w-16 rounded-lg border border-black/15 bg-white px-1 py-2 text-center font-mono text-base text-ink outline-none focus:border-brand"
+                        />
+                      </label>
+                      <div className={`w-16 shrink-0 text-right font-display text-lg font-semibold ${need > 0 ? 'text-brand' : 'text-ink/25'}`}>
+                        {need > 0 ? `${need} ${r.unit}` : '—'}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+            <p className="px-4 py-2.5 text-[11px] text-muted">Order = par − on hand. Edit pars, prices &amp; layout on a computer.</p>
+          </Card>
         ) : (
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">

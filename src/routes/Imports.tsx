@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2 } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { today } from '../lib/store'
@@ -13,6 +14,7 @@ import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
+import { useIsPhone } from '../lib/useIsPhone'
 import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
 
 interface Job extends Partial<ReadResult> {
@@ -33,6 +35,7 @@ let seq = 0
 export function Imports() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [drag, setDrag] = useState(false)
+  const isPhone = useIsPhone()
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
 
@@ -165,8 +168,31 @@ export function Imports() {
         subtitle="Drop an invoice, order guide, price sheet, or ezCater order — PDF or a photo"
       />
       <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Phone hero: snapping an invoice is the phone app's main job */}
+        {isPhone && (
+          <div className="space-y-3">
+            <button
+              onClick={() => cameraRef.current?.click()}
+              className="flex w-full flex-col items-center gap-2 rounded-2xl bg-brand px-5 py-7 text-white shadow-lg active:scale-[0.99]"
+            >
+              <Camera size={34} />
+              <span className="font-display text-xl font-semibold">Snap an invoice</span>
+              <span className="text-xs font-medium text-white/85">Take a photo — it's read on the phone and logged</span>
+            </button>
+            <button
+              onClick={() => inputRef.current?.click()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-bold text-ink"
+            >
+              <CloudUpload size={16} /> Choose a PDF or saved photo
+            </button>
+            <Link to="/invoices" className="block text-center text-xs font-bold text-brand">
+              View the invoice log →
+            </Link>
+          </div>
+        )}
+
         {/* Catch-up import — the prototype Admin's first-time-setup recipe */}
-        <details className="rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-3">
+        <details className={`rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-3 ${isPhone ? 'hidden' : ''}`}>
           <summary className="cursor-pointer text-sm font-bold text-ink">
             Catch-up import <span className="ml-1 rounded bg-brand/20 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-brand-600">first-time setup</span>
             <span className="ml-2 text-xs font-normal text-muted">seed a store with real history in one drop</span>
@@ -184,7 +210,7 @@ export function Imports() {
           </p>
         </details>
 
-        {/* Drop zone */}
+        {/* Drop zone — desktop / tablet (phone leads with the camera hero above) */}
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -192,7 +218,7 @@ export function Imports() {
           }}
           onDragLeave={() => setDrag(false)}
           onClick={() => inputRef.current?.click()}
-          className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${isPhone ? 'hidden' : ''} ${
             drag ? 'border-brand bg-brand/10' : 'border-black/15 bg-white/60 hover:border-brand/50'
           }`}
         >
@@ -449,6 +475,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       resolved: p.match && (p.match as { exact?: boolean }).exact ? 'confirmed' : '',
     })),
   )
+  const isPhone = useIsPhone()
   const inv = useMemo(() => parseInvoice(text, fileName), [text, fileName])
   const vendorList = useMemo(() => vendors(), [])
   const [vendor, setVendor] = useState(inv.vendor && inv.vendor !== 'Vendor' ? inv.vendor : (vendorList[0] ?? 'US Foods'))
@@ -527,15 +554,118 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
     )
   }
 
+  // The mapping controls (confirm the best match / add to guide / pick / skip),
+  // shared by the desktop row and the phone card. `phone` bumps tap targets.
+  const mapping = (r: Row, i: number, phone: boolean) => {
+    const wrap = phone ? 'flex w-full flex-wrap items-center gap-2' : 'flex min-w-0 items-center justify-end gap-1'
+    const big = phone ? 'px-3 py-2 text-xs' : 'px-2 py-1 text-[11px]'
+    const sm = phone ? 'px-2 py-2 text-xs font-semibold' : 'text-[10px] font-semibold'
+    const chip = phone ? 'px-3 py-2 text-xs' : 'px-2 py-1 text-[11px]'
+    return (
+      <span className={wrap}>
+        {r.picking ? (
+          <select
+            autoFocus
+            value={r.target}
+            onChange={(e) => {
+              const v = e.target.value
+              setRow(i, { target: v, picking: false, resolved: v === 'NEW' ? 'new' : v === '' ? '' : 'confirmed' })
+            }}
+            onBlur={() => setRow(i, { picking: false })}
+            className="w-full rounded-lg border border-brand/40 bg-white px-1.5 py-2 text-sm outline-none"
+          >
+            <option value="">— pick from the guide —</option>
+            <option value="NEW">➕ add to guide as new item</option>
+            {options.map((o) => (
+              <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        ) : r.resolved === 'confirmed' ? (
+          <>
+            <span className={`min-w-0 truncate rounded-full bg-up/10 font-bold text-up ${chip}`}>✓ {labelFor(r.target)}</span>
+            <button onClick={() => setRow(i, { resolved: '', picking: true })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              change
+            </button>
+          </>
+        ) : r.resolved === 'new' ? (
+          <>
+            <span className={`min-w-0 truncate rounded-full bg-brand/15 font-bold text-brand-600 ${chip}`}>➕ new — files into its section</span>
+            <button onClick={() => setRow(i, { resolved: '', target: '' })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              undo
+            </button>
+          </>
+        ) : r.resolved === 'skip' ? (
+          <>
+            <span className={`rounded-full bg-black/5 font-bold text-muted ${chip}`}>skipped</span>
+            <button onClick={() => setRow(i, { resolved: '' })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              undo
+            </button>
+          </>
+        ) : r.target && r.target !== 'NEW' ? (
+          <>
+            <span className="min-w-0 flex-1 truncate text-[11px] text-ink/70" title={`Best match: ${labelFor(r.target)}`}>
+              → {labelFor(r.target)}?
+            </span>
+            <button onClick={() => setRow(i, { resolved: 'confirmed' })} className={`shrink-0 rounded-lg bg-up font-bold text-white ${big}`}>
+              ✓ Confirm
+            </button>
+            <button onClick={() => setRow(i, { picking: true })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              not it
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="shrink-0 text-[11px] text-muted">no match —</span>
+            <button onClick={() => setRow(i, { resolved: 'new', target: 'NEW' })} className={`shrink-0 rounded-lg bg-brand font-bold text-white ${big}`}>
+              ➕ Add to guide
+            </button>
+            <button onClick={() => setRow(i, { picking: true })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              pick
+            </button>
+            <button onClick={() => setRow(i, { resolved: 'skip' })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              skip
+            </button>
+          </>
+        )}
+      </span>
+    )
+  }
+
+  const nameInput = (r: Row, i: number) => (
+    <>
+      <input
+        value={r.description}
+        onChange={(e) => setRow(i, { description: e.target.value })}
+        title="Correct the name if we misread it — the correction is remembered"
+        className={`w-full rounded-lg border bg-white px-2 py-1.5 text-sm font-semibold text-ink outline-none focus:border-brand ${
+          r.description !== r.raw ? 'border-brand/50' : 'border-black/10'
+        }`}
+      />
+      <span className="block truncate font-mono text-[9px] text-muted">
+        {r.code && <>{r.code} · </>}
+        {r.description !== r.raw && <>read as “{r.raw}”</>}
+      </span>
+    </>
+  )
+  const qtyInput = (r: Row, i: number, cls: string) => (
+    <input
+      type="number"
+      inputMode="numeric"
+      value={r.qty}
+      onChange={(e) => setRow(i, { qty: Math.max(0, parseInt(e.target.value) || 0) })}
+      className={cls}
+    />
+  )
+
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-xs font-bold uppercase tracking-wide text-muted">
           Received · {rows.length} lines{inv.date ? ` · ${inv.date}` : ''}
         </span>
-        <span className="text-[11px] text-muted">
-          fix any name we misread — the reader remembers your correction
-        </span>
+        <span className="text-[11px] text-muted">fix any name we misread — the reader remembers your correction</span>
         <label className="ml-auto flex items-center gap-1.5 text-xs text-ink/70">
           Vendor
           <select
@@ -555,134 +685,55 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
             onClick={() =>
               setRows((rs) => rs.map((x) => (x.resolved === '' && x.target && x.target !== 'NEW' ? { ...x, resolved: 'confirmed' } : x)))
             }
-            className="rounded-lg border border-up/40 px-2.5 py-1 text-[11px] font-bold text-up hover:bg-up/10"
+            className={`rounded-lg border border-up/40 font-bold text-up hover:bg-up/10 ${isPhone ? 'w-full py-2.5 text-sm' : 'px-2.5 py-1 text-[11px]'}`}
           >
             ✓ Confirm all {unresolvedMatches} matches
           </button>
         </div>
       )}
-      <div className="grid grid-cols-[minmax(0,1.6fr)_60px_48px_66px_minmax(170px,1.4fr)] gap-1.5 border-b border-black/10 pb-1 text-[9px] font-extrabold uppercase tracking-wide text-muted">
-        <span>Invoice line</span>
-        <span>Size</span>
-        <span className="text-center">Qty</span>
-        <span className="text-right">Price</span>
-        <span className="text-right">Ties to (order guide)</span>
-      </div>
-      {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[minmax(0,1.6fr)_60px_48px_66px_minmax(170px,1.4fr)] items-center gap-1.5 border-b border-black/5 py-1.5 last:border-0">
-          <span className="min-w-0">
-            <input
-              value={r.description}
-              onChange={(e) => setRow(i, { description: e.target.value })}
-              title="Correct the name if we misread it — the correction is remembered"
-              className={`w-full rounded-lg border bg-white px-2 py-1 text-sm font-semibold text-ink outline-none focus:border-brand ${
-                r.description !== r.raw ? 'border-brand/50' : 'border-black/10'
-              }`}
-            />
-            <span className="block truncate font-mono text-[9px] text-muted">
-              {r.code && <>{r.code} · </>}
-              {r.description !== r.raw && <>read as “{r.raw}”</>}
-            </span>
-          </span>
-          <span className="truncate text-xs text-muted">{r.size ?? '—'}</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={r.qty}
-            onChange={(e) => setRow(i, { qty: Math.max(0, parseInt(e.target.value) || 0) })}
-            className="w-full rounded-lg border border-black/10 bg-white px-1 py-1 text-center text-sm outline-none focus:border-brand"
-          />
-          <span className="text-right font-mono text-xs text-ink">{r.price != null ? `$${r.price.toFixed(2)}` : '—'}</span>
 
-          {/* The mapping cell — confirm the best match, add to guide, or pick */}
-          <span className="flex min-w-0 items-center justify-end gap-1">
-            {r.picking ? (
-              <select
-                autoFocus
-                value={r.target}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setRow(i, {
-                    target: v,
-                    picking: false,
-                    resolved: v === 'NEW' ? 'new' : v === '' ? '' : 'confirmed',
-                  })
-                }}
-                onBlur={() => setRow(i, { picking: false })}
-                className="w-full rounded-lg border border-brand/40 bg-white px-1.5 py-1 text-[11px] outline-none"
-              >
-                <option value="">— pick from the guide —</option>
-                <option value="NEW">➕ add to guide as new item</option>
-                {options.map((o) => (
-                  <option key={o.v + o.id} value={`${o.v}||${o.id}`}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            ) : r.resolved === 'confirmed' ? (
-              <>
-                <span className="min-w-0 truncate rounded-full bg-up/10 px-2 py-1 text-[11px] font-bold text-up">
-                  ✓ {labelFor(r.target)}
-                </span>
-                <button onClick={() => setRow(i, { resolved: '', picking: true })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
-                  change
-                </button>
-              </>
-            ) : r.resolved === 'new' ? (
-              <>
-                <span className="min-w-0 truncate rounded-full bg-brand/15 px-2 py-1 text-[11px] font-bold text-brand-600">
-                  ➕ new — files into its section
-                </span>
-                <button onClick={() => setRow(i, { resolved: '', target: '' })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
-                  undo
-                </button>
-              </>
-            ) : r.resolved === 'skip' ? (
-              <>
-                <span className="rounded-full bg-black/5 px-2 py-1 text-[11px] font-bold text-muted">skipped</span>
-                <button onClick={() => setRow(i, { resolved: '' })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
-                  undo
-                </button>
-              </>
-            ) : r.target && r.target !== 'NEW' ? (
-              <>
-                <span className="min-w-0 truncate text-[11px] text-ink/70" title={`Best match: ${labelFor(r.target)}`}>
-                  → {labelFor(r.target)}?
-                </span>
-                <button
-                  onClick={() => setRow(i, { resolved: 'confirmed' })}
-                  className="shrink-0 rounded-lg bg-up px-2 py-1 text-[11px] font-bold text-white"
-                >
-                  ✓ Confirm
-                </button>
-                <button onClick={() => setRow(i, { picking: true })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
-                  not it
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="shrink-0 text-[11px] text-muted">no match —</span>
-                <button
-                  onClick={() => setRow(i, { resolved: 'new', target: 'NEW' })}
-                  className="shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-bold text-white"
-                >
-                  ➕ Add to guide
-                </button>
-                <button onClick={() => setRow(i, { picking: true })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
-                  pick
-                </button>
-                <button onClick={() => setRow(i, { resolved: 'skip' })} className="shrink-0 text-[10px] font-semibold text-muted hover:text-ink">
-                  skip
-                </button>
-              </>
-            )}
-          </span>
+      {isPhone ? (
+        /* Phone: one card per line — name, then size/qty/price, then the mapping */
+        <div className="space-y-2.5">
+          {rows.map((r, i) => (
+            <div key={i} className="rounded-xl border border-black/10 bg-white p-2.5">
+              {nameInput(r, i)}
+              <div className="mt-2 flex items-center gap-3 text-xs text-muted">
+                <span>Size <b className="text-ink">{r.size ?? '—'}</b></span>
+                <label className="flex items-center gap-1">
+                  Qty {qtyInput(r, i, 'w-14 rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center text-sm text-ink outline-none focus:border-brand')}
+                </label>
+                <span className="ml-auto font-mono text-ink">{r.price != null ? `$${r.price.toFixed(2)}` : '—'}</span>
+              </div>
+              <div className="mt-2">{mapping(r, i, true)}</div>
+            </div>
+          ))}
         </div>
-      ))}
+      ) : (
+        <>
+          <div className="grid grid-cols-[minmax(0,1.6fr)_60px_48px_66px_minmax(170px,1.4fr)] gap-1.5 border-b border-black/10 pb-1 text-[9px] font-extrabold uppercase tracking-wide text-muted">
+            <span>Invoice line</span>
+            <span>Size</span>
+            <span className="text-center">Qty</span>
+            <span className="text-right">Price</span>
+            <span className="text-right">Ties to (order guide)</span>
+          </div>
+          {rows.map((r, i) => (
+            <div key={i} className="grid grid-cols-[minmax(0,1.6fr)_60px_48px_66px_minmax(170px,1.4fr)] items-center gap-1.5 border-b border-black/5 py-1.5 last:border-0">
+              <span className="min-w-0">{nameInput(r, i)}</span>
+              <span className="truncate text-xs text-muted">{r.size ?? '—'}</span>
+              {qtyInput(r, i, 'w-full rounded-lg border border-black/10 bg-white px-1 py-1 text-center text-sm outline-none focus:border-brand')}
+              <span className="text-right font-mono text-xs text-ink">{r.price != null ? `$${r.price.toFixed(2)}` : '—'}</span>
+              {mapping(r, i, false)}
+            </div>
+          ))}
+        </>
+      )}
+
       <button
         onClick={apply}
         disabled={confirmed.length + adds.length === 0}
-        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+        className="mt-3 w-full rounded-lg bg-brand px-4 py-3 text-sm font-bold text-white disabled:opacity-40"
       >
         Log {confirmed.length + adds.length} line{confirmed.length + adds.length === 1 ? '' : 's'} + update prices
         {inv.total > 0 ? ` + file invoice ${money2(inv.total)}` : ''} ✓

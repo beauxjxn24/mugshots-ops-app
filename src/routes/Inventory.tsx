@@ -6,6 +6,7 @@ import { usePersistentState, load, save, today } from '../lib/store'
 import { useScope } from '../lib/scope'
 import { getCatalog, getFlags, getPars, registerItem, setOnGuide } from '../lib/catalog'
 import { setParEntry } from '../lib/ordering'
+import { useIsPhone } from '../lib/useIsPhone'
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
@@ -48,6 +49,7 @@ function fmtDay(iso?: string): string {
  * value by location, count schedule.
  */
 export function Inventory() {
+  const isPhone = useIsPhone()
   const [tick, setTick] = useState(0)
   const refresh = () => setTick((t) => t + 1)
   const [schedule, setSchedule] = usePersistentState<string>(
@@ -125,27 +127,107 @@ export function Inventory() {
         subtitle={`On-hand value ${money(totalValue)}${lastFull ? ` · last count ${fmtDay(lastFull)} ${lastFull}` : ' · counts update Ordering directly'}`}
         right={
           <div className="flex items-center gap-2">
-            <div className="flex flex-wrap gap-1 rounded-xl bg-black/5 p-1 print:hidden">
-              {(['All', ...LOCATIONS] as const).map((l) => (
+            {isPhone ? (
+              <select
+                value={loc}
+                onChange={(e) => setLoc(e.target.value as 'All' | Location)}
+                className="rounded-lg border border-black/15 bg-white px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand print:hidden"
+              >
+                {(['All', ...LOCATIONS] as const).map((l) => (
+                  <option key={l} value={l}>
+                    {l === 'All' ? 'All locations' : l}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-1 rounded-xl bg-black/5 p-1 print:hidden">
+                  {(['All', ...LOCATIONS] as const).map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => setLoc(l)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold ${loc === l ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-ink'}`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
                 <button
-                  key={l}
-                  onClick={() => setLoc(l)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold ${loc === l ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-ink'}`}
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white print:hidden"
                 >
-                  {l}
+                  <Printer size={13} /> Count sheet
                 </button>
-              ))}
-            </div>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white print:hidden"
-            >
-              <Printer size={13} /> Count sheet
-            </button>
+              </>
+            )}
           </div>
         }
       />
-      <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+      {isPhone && (
+        <div className="mx-auto max-w-xl p-4">
+          <Card className="overflow-hidden">
+            <div className="border-b border-black/10 px-4 py-2.5 text-sm font-bold text-ink">
+              Count · {loc === 'All' ? 'all locations' : loc} <span className="font-normal text-muted">{shown.length} items</span>
+            </div>
+            {shown.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-muted">
+                Nothing here yet — snap an invoice on{' '}
+                <Link to="/imports" className="font-bold text-brand">
+                  Imports
+                </Link>{' '}
+                and the catalog fills in.
+              </p>
+            )}
+            {shown.map((r) => {
+              const status =
+                r.par <= 0
+                  ? null
+                  : r.onHand <= r.par * 0.25
+                    ? { label: 'Critical', cls: 'text-down' }
+                    : r.onHand < r.par
+                      ? { label: 'Below par', cls: 'text-brand-600' }
+                      : { label: 'OK', cls: 'text-up' }
+              return (
+                <div key={r.id} className="flex items-center gap-3 border-b border-black/5 px-4 py-2.5 last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-ink">{r.name}</div>
+                    <div className="text-[11px] text-muted">
+                      {r.location} · par {r.par} {status && <span className={`font-extrabold ${status.cls}`}>· {status.label}</span>}
+                    </div>
+                  </div>
+                  <label className="flex shrink-0 flex-col items-center text-[9px] font-bold uppercase text-muted">
+                    On hand
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={r.onHand || ''}
+                      placeholder="0"
+                      onChange={(e) => setCount(r.id, Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="mt-0.5 w-20 rounded-lg border border-black/15 bg-white px-1 py-2 text-center font-mono text-base text-ink outline-none focus:border-brand"
+                    />
+                  </label>
+                </div>
+              )
+            })}
+            <div className="flex gap-2 border-t border-black/5 p-3">
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && addItem()}
+                placeholder="Add an item to count…"
+                className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+              <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
+                Add
+              </button>
+            </div>
+          </Card>
+          <p className="mt-2 px-1 text-[11px] text-muted">
+            Counts update Ordering directly. Value, locations &amp; the count schedule are on a computer.
+          </p>
+        </div>
+      )}
+      <div className={`mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 ${isPhone ? 'hidden' : ''}`}>
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3.2fr)_minmax(0,1fr)]">
           <Card className="overflow-hidden">
             <div className="grid grid-cols-[minmax(0,1.8fr)_110px_70px_54px_70px_78px_88px] items-center gap-2 border-b border-black/10 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
