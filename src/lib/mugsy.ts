@@ -10,6 +10,8 @@ import type { Night } from './nightly'
 import type { Booking } from './catering'
 import { getCatalog, getFlags, getPars, getPriceLog } from './catalog'
 import type { Invoice } from './invoices'
+import { SIDEWORK, type Role, type Phase, type Section } from './sidework'
+import CHECKLISTS from '../data/maintenance-checklists.json'
 
 const KEY = '__aiKey' // global (not store-scoped) — one key per device
 
@@ -170,11 +172,46 @@ export function buildSnapshot(): string {
     }
   } catch { /* skip */ }
 
+  try {
+    // Side-duty checklists by role & shift phase — the questions an hourly
+    // server/bartender/host would ask Mugsy ("what's my closing sidework?").
+    // Reads any store-edited version, falling back to the owner's sheet.
+    const data = load<Record<Role, Record<Phase, Section[]>>>(scoped('sidework:data'), SIDEWORK)
+    const roles = Object.keys(data ?? {}) as Role[]
+    if (roles.length) {
+      parts.push('\nSIDEWORK (side duties by role & shift phase):')
+      for (const role of roles) {
+        const phases = data[role] ?? {}
+        for (const phase of Object.keys(phases)) {
+          const secs = Array.isArray(phases[phase]) ? phases[phase] : []
+          const tasks = secs.flatMap((s) => (Array.isArray(s?.tasks) ? s.tasks : []))
+          if (tasks.length) parts.push(`  ${role} · ${phase}: ${tasks.join('; ')}`)
+        }
+      }
+    }
+  } catch { /* skip */ }
+
+  try {
+    // Weekly & period maintenance checklists (owner's sheet) — so Mugsy can
+    // answer "what are this week's maintenance checks?".
+    interface ClSection { title: string; items: string[] }
+    const cl = CHECKLISTS as { weekly: ClSection[]; period: ClSection[] }
+    for (const [label, secs] of [['WEEKLY', cl.weekly], ['PERIOD', cl.period]] as const) {
+      if (Array.isArray(secs) && secs.length) {
+        parts.push(`\n${label} MAINTENANCE CHECKLIST:`)
+        for (const s of secs) {
+          const items = Array.isArray(s?.items) ? s.items : []
+          if (items.length) parts.push(`  ${s.title}: ${items.join('; ')}`)
+        }
+      }
+    }
+  } catch { /* skip */ }
+
   return parts.join('\n').slice(0, 24000)
 }
 
 const SYSTEM =
-  'You are "Mugsy", an assistant embedded in the Mugshots Ops app used by restaurant managers. ' +
+  'You are "Mugsy", an assistant embedded in the Mugshots Ops app used by restaurant managers and hourly staff. ' +
   "You have READ-ONLY access to a snapshot of the app's live data, given below. Use it to answer questions, search, summarize, and advise. " +
   'You cannot take actions, change data, place orders, or send anything — if asked to, explain you can only read and advise, and offer to draft text they can copy. ' +
   'Be concise and concrete: cite the actual numbers, dates, item names, and notes from the snapshot. Prefer short paragraphs and bullet lists. ' +
