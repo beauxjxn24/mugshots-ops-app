@@ -79,10 +79,12 @@ export function Staff() {
       return out.get(k)!
     }
     for (const s of shifts) {
-      const hrs = s.entries.reduce((x, e) => x + e.hours, 0)
+      const entries = Array.isArray(s.entries) ? s.entries : []
+      const servers = Array.isArray(s.servers) ? s.servers : []
+      const hrs = entries.reduce((x, e) => x + e.hours, 0)
       const rate = hrs > 0 ? s.pool / hrs : 0
-      for (const sv of s.servers ?? []) get(sv.name).tippedOut += sv.amount
-      for (const e of s.entries) get(e.name).received += rate * e.hours
+      for (const sv of servers) get(sv.name).tippedOut += sv.amount
+      for (const e of entries) get(e.name).received += rate * e.hours
     }
     return out
   }, [shifts])
@@ -98,11 +100,13 @@ export function Staff() {
     const k = sel.name.toLowerCase()
     const rows: Array<{ date: string; meal?: string; what: string; amount: number; note?: string }> = []
     for (const s of shifts) {
-      const hrs = s.entries.reduce((x, e) => x + e.hours, 0)
+      const entries = Array.isArray(s.entries) ? s.entries : []
+      const servers = Array.isArray(s.servers) ? s.servers : []
+      const hrs = entries.reduce((x, e) => x + e.hours, 0)
       const rate = hrs > 0 ? s.pool / hrs : 0
-      for (const sv of s.servers ?? [])
+      for (const sv of servers)
         if (sv.name.toLowerCase() === k) rows.push({ date: s.date, meal: s.meal, what: 'tipped out', amount: -sv.amount })
-      for (const e of s.entries)
+      for (const e of entries)
         if (e.name.toLowerCase() === k)
           rows.push({
             date: s.date,
