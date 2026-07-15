@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2 } from 'lucide-react'
+import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2, ReceiptText } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { today } from '../lib/store'
 import { readFile, type ReadResult, type LineItem } from '../lib/reader'
@@ -13,7 +13,7 @@ import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
-import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
+import { placeItemInGuide, addGuideItem, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
 import { useIsPhone } from '../lib/useIsPhone'
 import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
@@ -390,6 +390,20 @@ export function Imports() {
             {job.text && !isCountSheet(job.text) && job.lineItems && job.lineItems.length > 0 && !job.lineItems.some((li) => li.qty) && (
               <PriceUpdate lineItems={job.lineItems} text={job.text} fileName={job.fileName} />
             )}
+
+            {/* Always-available fallback: if a drop isn't a recognized report and
+                didn't parse into a Receiving sheet (e.g. a photo of an invoice
+                that OCR couldn't line-itemize), still let it be filed to the
+                Invoices log by hand and its items dropped into an order guide. */}
+            {job.status === 'done' &&
+              job.text &&
+              !isSalesSummary(job.text) &&
+              !isRosterDoc(job.text) &&
+              !isCateringDoc(job.text) &&
+              !isCountSheet(job.text) &&
+              !(job.lineItems && job.lineItems.some((li) => li.qty)) && (
+                <LogInvoice text={job.text} fileName={job.fileName} docId={job.docId} />
+              )}
 
             {job.text && (
               <details className="mt-3">
@@ -1059,6 +1073,129 @@ function CountSheetImport({ text, fileName }: { text: string; fileName: string }
         <button onClick={addNew} className="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-ink">
           Add new items only
         </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Fallback for any dropped document that didn't auto-parse into a receiving
+ * sheet — most often a PHOTO of an invoice OCR couldn't line-itemize. Always
+ * lets the manager (1) file it to the Invoices log by hand (vendor / date /
+ * total / #, with the scan attached so it reopens), and (2) drop its items
+ * straight into an order guide (Beer / Liquor / Produce / Other).
+ */
+function LogInvoice({ text, fileName, docId }: { text: string; fileName: string; docId?: string }) {
+  const guess = useMemo(() => parseInvoice(text, fileName), [text, fileName])
+  const vendorList = useMemo(() => vendors(), [])
+  const [vendor, setVendor] = useState(guess.vendor && guess.vendor !== 'Vendor' ? guess.vendor : (vendorList[0] ?? ''))
+  const [date, setDate] = useState(guess.date ?? today())
+  const [number, setNumber] = useState(guess.number ?? '')
+  const [total, setTotal] = useState(guess.total ? String(guess.total) : '')
+  const [filed, setFiled] = useState(false)
+  // Quick-add items to a guide (for the beer/liquor invoice that didn't parse).
+  const [shelf, setShelf] = useState<GuideShelf>('Beer')
+  const [itemText, setItemText] = useState('')
+  const [addedItems, setAddedItems] = useState(0)
+
+  const fileIt = () => {
+    const amt = parseFloat(total.replace(/[^0-9.]/g, '')) || 0
+    addInvoice({
+      id: `inv${Date.now()}`,
+      vendor: vendor.trim() || 'Vendor',
+      date: date || today(),
+      number: number.trim(),
+      total: amt,
+      paid: false,
+      docId,
+    })
+    logImport(fileName, `invoice filed by hand · ${vendor.trim() || 'Vendor'}${amt ? ` $${amt.toFixed(2)}` : ''}`)
+    setFiled(true)
+  }
+
+  const addItems = () => {
+    const names = itemText.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)
+    if (!names.length) return
+    for (const name of names) addGuideItem(shelf, 999, name, shelf === 'Beer' ? 'case' : 'btl')
+    setAddedItems((n) => n + names.length)
+    logImport(fileName, `${names.length} item${names.length === 1 ? '' : 's'} → ${shelf} order guide`)
+    setItemText('')
+  }
+
+  const inputCls = 'rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand'
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <ReceiptText size={14} /> Log this as an invoice / report
+      </div>
+
+      {filed ? (
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-up/30 bg-up/5 p-2.5 text-sm font-semibold text-up">
+          ✓ Filed to Invoices — {vendor} {date}
+          {total ? ` · $${(parseFloat(total.replace(/[^0-9.]/g, '')) || 0).toFixed(2)}` : ''}. See the Invoices tab.
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-[11px] font-semibold text-muted">
+              Vendor
+              <input list="li-vendors" value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="US Foods…" className={`mt-0.5 w-full ${inputCls}`} />
+              <datalist id="li-vendors">
+                {vendorList.map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
+            </label>
+            <label className="text-[11px] font-semibold text-muted">
+              Invoice date
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`mt-0.5 w-full ${inputCls}`} />
+            </label>
+            <label className="text-[11px] font-semibold text-muted">
+              Invoice #
+              <input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="optional" className={`mt-0.5 w-full ${inputCls}`} />
+            </label>
+            <label className="text-[11px] font-semibold text-muted">
+              Total $
+              <input inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" className={`mt-0.5 w-full text-right font-mono ${inputCls}`} />
+            </label>
+          </div>
+          <button onClick={fileIt} className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
+            File to Invoices{total ? ` · $${(parseFloat(total.replace(/[^0-9.]/g, '')) || 0).toFixed(2)}` : ''}
+          </button>
+        </>
+      )}
+
+      {/* Add the invoice's items to an order guide by hand */}
+      <div className="mt-3 border-t border-black/10 pt-3">
+        <div className="mb-1.5 text-[11px] font-semibold text-muted">
+          Add items to an order guide {addedItems > 0 && <span className="font-bold text-up">· {addedItems} added</span>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <select value={shelf} onChange={(e) => setShelf(e.target.value as GuideShelf)} className={inputCls}>
+            {[...GUIDE_SHELVES, 'Other'].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <input
+            value={itemText}
+            onChange={(e) => setItemText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addItems()}
+            placeholder="Item names, comma-separated (Bud Light, Miller Lite…)"
+            className={`min-w-0 flex-1 ${inputCls}`}
+          />
+          <button onClick={addItems} className="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-bold text-ink">
+            Add to {shelf}
+          </button>
+        </div>
+        <p className="mt-1 text-[11px] text-muted">
+          Lands them on the {shelf} guide in{' '}
+          <Link to="/ordering" className="font-bold text-brand">
+            Ordering
+          </Link>
+          .
+        </p>
       </div>
     </div>
   )
