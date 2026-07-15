@@ -1,6 +1,6 @@
 // Product-mix (PMIX) storage — per day, per the handoff spec ('pmix-days').
 // The Mix screen and the dashboard's tracked tiles both read from here.
-import { load } from './store'
+import { load, save } from './store'
 import { useScope } from './scope'
 
 export interface MixItem {
@@ -44,6 +44,21 @@ export function sanitizePmix(raw: unknown): PmixDays {
   return out
 }
 
+/** Looks like a Toast Product Mix export (item + qty-sold + net-item-amt)? */
+export function isPmixReport(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  return /\bitem\b/.test(first) && /qty|quantity|sold/.test(first) && /net (item )?(amt|amount|sales)/.test(first)
+}
+
+/** Store one day's (or a period's) product mix, merging into the pmix store. */
+export function savePmixDay(date: string, items: MixItem[], file = ''): void {
+  const s = useScope.getState()
+  const k = `${s.currentConcept}|${s.currentLocation}::pmix:days`
+  const days = sanitizePmix(load<PmixDays>(k, {}))
+  days[date] = { items, file, importedAt: new Date().toISOString() }
+  save(k, days)
+}
+
 /** Pull a YYYY-MM-DD out of a file name, e.g. "pmix 2026-07-12.csv" or "PMIX_07-12-2026". */
 export function dateFromFilename(name: string): string {
   let m: RegExpMatchArray | null
@@ -56,12 +71,24 @@ export function dateFromFilename(name: string): string {
 export function parsePmix(text: string): MixItem[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim())
   if (lines.length < 2) return []
-  const header = splitCsv(lines[0]).map((h) => h.toLowerCase())
-  const find = (...keys: string[]) => header.findIndex((h) => keys.some((k) => h.includes(k)))
-  const iName = find('menu item', 'item name', 'item', 'name')
-  const iQty = find('qty', 'quantity', 'sold', 'count', '# ')
-  const iSales = find('net sales', 'net amount', 'gross', 'sales', 'amount', 'total')
-  const iCat = find('sales category', 'category', 'group', 'menu group')
+  const header = splitCsv(lines[0]).map((h) => h.trim().toLowerCase())
+  // Prefer an EXACT column-name match before a loose "contains" one, so Toast's
+  // `itemGuid`/`Sales Category` columns can't be mistaken for the item name or
+  // the net-sales figure.
+  const exact = (...keys: string[]) => header.findIndex((h) => keys.includes(h))
+  const loose = (...keys: string[]) => header.findIndex((h) => keys.some((k) => h.includes(k)))
+  const pick = (exacts: string[], looses: string[]) => {
+    const e = exact(...exacts)
+    return e >= 0 ? e : loose(...looses)
+  }
+  const iName = pick(['item', 'menu item', 'item name', 'name', 'product'], ['menu item', 'item name', 'product name'])
+  const iQty = pick(['qty sold', 'qty', 'quantity', 'count'], ['qty sold', 'quantity', 'sold'])
+  const iSales = pick(
+    ['net item amt', 'net sales', 'net amount', 'net amt', 'net sales amt'],
+    ['net item amt', 'net sales', 'net amt', 'net amount'],
+  )
+  // Category must never resolve to a sales/amount column.
+  const iCat = pick(['sales category', 'category', 'menu group', 'group'], ['category', 'menu group'])
   if (iName < 0 || (iQty < 0 && iSales < 0)) return []
 
   const byName = new Map<string, MixItem>()

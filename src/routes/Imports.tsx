@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2, ReceiptText } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
-import { today } from '../lib/store'
+import { today, usePersistentState } from '../lib/store'
 import { readFile, type ReadResult, type LineItem } from '../lib/reader'
 import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type Receipt } from '../lib/ordering'
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
@@ -11,12 +11,13 @@ import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '
 import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
+import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
 import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { placeItemInGuide, addGuideItem, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
 import { useIsPhone } from '../lib/useIsPhone'
-import { CalendarPlus, PartyPopper, LineChart, Users } from 'lucide-react'
+import { CalendarPlus, PartyPopper, LineChart, Users, PieChart } from 'lucide-react'
 
 interface Job extends Partial<ReadResult> {
   id: string
@@ -25,6 +26,8 @@ interface Job extends Partial<ReadResult> {
   progress: number
   /** IndexedDB id of the original document — invoices link back to it. */
   docId?: string
+  /** True when this file came out of a dropped .zip (a bulk report export). */
+  fromZip?: boolean
   /** When status is 'duplicate': the earlier import this file matches. */
   dupOf?: { name: string; at: string }
 }
@@ -44,11 +47,11 @@ export function Imports() {
   // Files parked behind a duplicate warning, kept so "Import anyway" works.
   const parked = useRef<Map<string, File>>(new Map())
 
-  const processOne = useCallback(async (file: File, id: string) => {
+  const processOne = useCallback(async (file: File, id: string, fromZip = false) => {
     const docId = `doc${Date.now().toString(36)}${seq}`
     void saveDoc(docId, file) // keep the original — invoices reopen it
     setJobs((j) => {
-      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId }
+      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId, fromZip }
       return j.some((x) => x.id === id) ? j.map((x) => (x.id === id ? fresh : x)) : [fresh, ...j]
     })
     const res = await readFile(file, (p) =>
@@ -120,9 +123,12 @@ export function Imports() {
       const id = `j${++seq}`
       // Duplicate check: the exact same bytes seen before — invoice, spec
       // card, recipe, any PDF — gets flagged instead of importing twice.
-      // Zip-extracted exports are exempt (idempotent re-imports).
+      // Data reports (CSV/TSV/TXT) and anything unzipped are ALWAYS re-imported:
+      // their importers upsert by date, so re-dropping a sales summary / PMIX /
+      // count sheet must refresh the numbers, never be skipped as "duplicate".
+      const reimportable = fromZip || /\.(csv|tsv|txt)$/i.test(file.name)
       const h = await fileHash(file)
-      const seen = fromZip ? null : findSeenFile(h)
+      const seen = reimportable ? null : findSeenFile(h)
       if (seen) {
         parked.current.set(id, file)
         setJobs((j) => [
@@ -133,7 +139,7 @@ export function Imports() {
         continue
       }
       recordSeenFile(h, file.name)
-      await processOne(file, id)
+      await processOne(file, id, fromZip)
     }
   }, [processOne])
 
@@ -199,6 +205,9 @@ export function Imports() {
             </Link>
           </div>
         )}
+
+        {/* Daily reports tracker — what still needs to be dropped today */}
+        <DailyReports />
 
         {/* Catch-up import — the prototype Admin's first-time-setup recipe */}
         <details className={`rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-3 ${isPhone ? 'hidden' : ''}`}>
@@ -385,6 +394,10 @@ export function Imports() {
               <CountSheetImport text={job.text} fileName={job.fileName} />
             )}
 
+            {job.text && isPmixReport(job.text) && !isCountSheet(job.text) && (
+              <PmixImport text={job.text} fileName={job.fileName} />
+            )}
+
             {/* Invoices/deliveries (lines with quantities) → one-tap receiving.
                 Price sheets (prices but no quantities) → price update only.
                 A count sheet is neither — it owns its own review card above. */}
@@ -401,7 +414,9 @@ export function Imports() {
                 Invoices log by hand and its items dropped into an order guide. */}
             {job.status === 'done' &&
               job.text &&
+              !job.fromZip &&
               !isSalesSummary(job.text) &&
+              !isCategorySummary(job.text) &&
               !isRosterDoc(job.text) &&
               !isCateringDoc(job.text) &&
               !isCountSheet(job.text) &&
@@ -1250,6 +1265,153 @@ function LogInvoice({ text, fileName, docId }: { text: string; fileName: string;
           .
         </p>
       </div>
+    </div>
+  )
+}
+
+/** Toast Product Mix export → load as a product-mix snapshot. It's a period
+ *  total (Toast doesn't split PMIX per day), so it's dated to today as the
+ *  latest period baseline; daily drops going forward supersede it. */
+function PmixImport({ text, fileName }: { text: string; fileName: string }) {
+  const items = useMemo(() => parsePmix(text), [text])
+  const [done, setDone] = useState(false)
+  const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+  if (items.length === 0) return null
+  const top = [...items].sort((a, b) => b.qty - a.qty).slice(0, 6)
+  const totalQty = items.reduce((s, i) => s + i.qty, 0)
+
+  const load = () => {
+    savePmixDay(today(), items, fileName)
+    setDone(true)
+    logImport(fileName, `product mix → PMIX (${items.length} items · period baseline)`)
+  }
+
+  if (done) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+        <PieChart size={16} /> Loaded {items.length} items into Product Mix as the period baseline — see Product Mix.
+      </div>
+    )
+  }
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <PieChart size={14} /> Product mix — {items.length} items · {totalQty.toLocaleString()} sold
+      </div>
+      <p className="mb-2 text-[11px] text-muted">
+        This is a <b>period total</b> (Toast doesn’t split product mix by day). Load it as your last-period
+        baseline; drop a single-day Product Mix export going forward for day-by-day.
+      </p>
+      <div className="mb-3 grid grid-cols-1 gap-x-6 gap-y-1 rounded-lg bg-white p-3 sm:grid-cols-2">
+        {top.map((i, n) => (
+          <div key={i.name} className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="min-w-0 truncate text-ink">
+              <span className="mr-1.5 text-xs font-bold text-muted">{n + 1}</span>
+              {i.name}
+            </span>
+            <span className="shrink-0">
+              <span className="font-semibold text-ink">{i.qty}</span>
+              <span className="ml-2 text-muted">{money(i.sales)}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+      <button onClick={load} className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
+        Load as last period’s product mix
+      </button>
+    </div>
+  )
+}
+
+interface DailyReport {
+  id: string
+  label: string
+  hint: string
+  match: string[]
+}
+const DEFAULT_DAILY_REPORTS: DailyReport[] = [
+  { id: 'sales', label: 'Daily sales summary', hint: 'Toast → Sales Summary (single day)', match: ['sales summary', '→ nightly', 'sales by day', 'category mix', 'nights'] },
+  { id: 'pmix', label: 'Product mix (PMIX)', hint: 'Toast → Product Mix (single day)', match: ['pmix', 'product mix', 'productmix'] },
+  { id: 'invoices', label: 'Invoices received', hint: 'Snap or drop each delivery', match: ['invoice', 'received', 'receiving'] },
+]
+
+/** Daily-reports tracker: one box per report, ticked when it's been dropped
+ *  today (matched against the import log). Editable so the list is a record of
+ *  exactly which reports need to land each day. */
+function DailyReports() {
+  const [reports, setReports] = usePersistentState<DailyReport[]>('reports:daily', DEFAULT_DAILY_REPORTS)
+  const entries = useImportLog((s) => s.entries)
+  const [editing, setEditing] = useState(false)
+  const [adding, setAdding] = useState('')
+  const list = Array.isArray(reports) ? reports : DEFAULT_DAILY_REPORTS
+
+  const todayPrefix = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric' })
+  const hitFor = (r: DailyReport) =>
+    entries.find(
+      (e) => e.at.startsWith(todayPrefix) && r.match.some((m) => `${e.file} ${e.outcome}`.toLowerCase().includes(m.toLowerCase())),
+    )
+  const doneCount = list.filter(hitFor).length
+
+  const addReport = () => {
+    const label = adding.trim()
+    if (!label) return
+    setReports([...list, { id: `r${Date.now().toString(36)}`, label, hint: 'Drop it daily', match: [label.toLowerCase()] }])
+    setAdding('')
+  }
+  const removeReport = (id: string) => setReports(list.filter((r) => r.id !== id))
+
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_10px_30px_-18px_rgba(23,32,55,0.18)]">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="text-sm font-bold text-ink">Daily reports</span>
+        <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-muted">{todayPrefix}</span>
+        <span className={`text-xs font-bold ${doneCount === list.length ? 'text-up' : 'text-brand-600'}`}>
+          {doneCount}/{list.length} in today
+        </span>
+        <button onClick={() => setEditing((e) => !e)} className="ml-auto text-[11px] font-semibold text-muted hover:text-brand">
+          {editing ? 'Done' : 'Edit list'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {list.map((r) => {
+          const hit = hitFor(r)
+          return (
+            <div
+              key={r.id}
+              className={`flex items-start gap-2.5 rounded-xl border p-3 ${hit ? 'border-up/30 bg-up/5' : 'border-black/10 bg-black/[0.015]'}`}
+            >
+              <span className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${hit ? 'bg-up text-white' : 'border-2 border-dashed border-black/25 text-transparent'}`}>
+                ✓
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-bold text-ink">{r.label}</div>
+                <div className="truncate text-[11px] text-muted">{hit ? `dropped ${hit.at}` : r.hint}</div>
+              </div>
+              {editing && (
+                <button onClick={() => removeReport(r.id)} className="shrink-0 text-muted hover:text-down" aria-label={`Remove ${r.label}`}>
+                  <CircleAlert size={14} />
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {editing && (
+        <div className="mt-2 flex gap-2">
+          <input
+            value={adding}
+            onChange={(e) => setAdding(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addReport()}
+            placeholder="Add a report to track daily…"
+            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <button onClick={addReport} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
+            Add
+          </button>
+        </div>
+      )}
     </div>
   )
 }
