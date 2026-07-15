@@ -129,6 +129,49 @@ function splitCsv(line: string): string[] {
   return out
 }
 
+/** The holding area received deliveries land in until they're put away. */
+export const RECEIVING_AREA = 'Receiving'
+
+export interface ReceivedLine {
+  name: string
+  qty: number
+  uom?: string
+}
+
+/**
+ * Receive invoice lines into inventory (the "receive to dock" pattern): each
+ * delivered line adds its quantity to a Receiving-area count for that item, so
+ * the manager sees what came in and moves it to the real storage area during
+ * the count. Existing counts in other areas are never touched. Returns the
+ * number of lines received. Item identity is name-based and case-insensitive,
+ * so the same item stacks in Receiving instead of duplicating.
+ */
+export function receiveIntoInventory(lines: ReceivedLine[], dateIso: string): number {
+  const got = lines.filter((l) => l && typeof l.name === 'string' && l.name.trim() && (l.qty ?? 0) > 0)
+  if (!got.length) return 0
+  let sheet = getCountSheet()
+  for (const l of got) {
+    const name = l.name.trim()
+    const uom = (l.uom && l.uom.trim()) || 'Each'
+    const idx = sheet.findIndex(
+      (it) => it.location === RECEIVING_AREA && it.name.toLowerCase() === name.toLowerCase(),
+    )
+    if (idx >= 0) {
+      const it = sheet[idx]
+      const ui = it.units.findIndex((u) => u.uom.toLowerCase() === uom.toLowerCase())
+      const units =
+        ui >= 0
+          ? it.units.map((u, j) => (j === ui ? { ...u, qty: u.qty + l.qty } : u))
+          : [...it.units, { uom, qty: l.qty }]
+      sheet = sheet.map((x, j) => (j === idx ? { ...x, units, lastCount: dateIso } : x))
+    } else {
+      sheet = [...sheet, { id: newCountId(), location: RECEIVING_AREA, name, units: [{ uom, qty: l.qty }], lastCount: dateIso }]
+    }
+  }
+  setCountSheet(sheet)
+  return got.length
+}
+
 /** One-time: seed Flowood's kitchen count sheet from the owner's export. */
 export function seedCountSheet(): void {
   const s = useScope.getState()

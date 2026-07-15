@@ -5,7 +5,7 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useIsPhone } from '../lib/useIsPhone'
 import { confirmDelete } from '../lib/confirm'
-import { sanitizeSheet, sheetLocations, newCountId, type CountItem } from '../lib/countsheet'
+import { sanitizeSheet, sheetLocations, newCountId, RECEIVING_AREA, type CountItem } from '../lib/countsheet'
 
 const LOC_COLORS = ['#b8860b', '#4c7fb8', '#2f6b4f', '#8b6bb8', '#d4a94c', '#c2564c', '#4c9db8']
 function fmtDay(iso?: string): string {
@@ -34,7 +34,8 @@ export function Inventory() {
     (acc, it) => (it.lastCount && (!acc || it.lastCount > acc) ? it.lastCount : acc),
     undefined,
   )
-  const colorFor = (l: string) => LOC_COLORS[Math.max(0, locations.indexOf(l)) % LOC_COLORS.length]
+  const colorFor = (l: string) =>
+    l === RECEIVING_AREA ? '#c2564c' : LOC_COLORS[Math.max(0, locations.indexOf(l)) % LOC_COLORS.length]
 
   const setQty = (id: string, ui: number, v: number) =>
     setItems((list) =>
@@ -60,6 +61,32 @@ export function Inventory() {
     if (!(await confirmDelete(`Remove “${it.name}” from the count sheet?`))) return
     setItems((list) => sanitizeSheet(list).filter((x) => x.id !== it.id))
   }
+
+  // Put-away / re-file: move an item to another area. If that area already has
+  // the same item, merge the counts into it (matching units add) instead of
+  // leaving a duplicate — the natural "put the delivery away" action.
+  const moveItem = (id: string, toArea: string) =>
+    setItems((list) => {
+      const arr = sanitizeSheet(list)
+      const it = arr.find((x) => x.id === id)
+      if (!it || it.location === toArea) return arr
+      const target = arr.find(
+        (x) => x.id !== id && x.location === toArea && x.name.toLowerCase() === it.name.toLowerCase(),
+      )
+      if (!target) return arr.map((x) => (x.id === id ? { ...x, location: toArea, lastCount: today() } : x))
+      const units = target.units.map((u) => ({ ...u }))
+      for (const u of it.units) {
+        const mi = units.findIndex((m) => m.uom.toLowerCase() === u.uom.toLowerCase())
+        if (mi >= 0) units[mi].qty += u.qty
+        else units.push({ ...u })
+      }
+      return arr.filter((x) => x.id !== id).map((x) => (x.id === target.id ? { ...x, units, lastCount: today() } : x))
+    })
+
+  const moveTargets = useMemo(() => {
+    const base = locations.filter((l) => l !== RECEIVING_AREA)
+    return base.length ? base : ['Freezer', 'Cooler', 'Dry Storage']
+  }, [locations])
 
   // Group the shown items by storage location, preserving sheet order.
   const groups = useMemo(() => {
@@ -139,15 +166,21 @@ export function Inventory() {
               className="flex items-center justify-between px-4 py-2.5 text-white"
               style={{ background: colorFor(g.location) }}
             >
-              <span className="font-display text-base font-semibold">{g.location}</span>
+              <span className="font-display text-base font-semibold">
+                {g.location}
+                {g.location === RECEIVING_AREA && (
+                  <span className="ml-2 text-[11px] font-semibold text-white/80">just delivered — put away →</span>
+                )}
+              </span>
               <span className="text-[11px] font-semibold text-white/80">{g.items.length} items</span>
             </div>
 
             {/* Column header (desktop) */}
             {!isPhone && (
-              <div className="grid grid-cols-[minmax(0,1fr)_360px_36px] items-center gap-2 border-b border-black/10 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <div className="grid grid-cols-[minmax(0,1fr)_240px_128px_30px] items-center gap-2 border-b border-black/10 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
                 <span>Item</span>
                 <span>Count</span>
+                <span>Move to</span>
                 <span />
               </div>
             )}
@@ -156,7 +189,7 @@ export function Inventory() {
               <div
                 key={it.id}
                 className={`items-center gap-2 border-b border-black/5 px-4 py-2 last:border-0 ${
-                  isPhone ? 'flex flex-wrap' : 'grid grid-cols-[minmax(0,1fr)_360px_36px]'
+                  isPhone ? 'flex flex-wrap' : 'grid grid-cols-[minmax(0,1fr)_240px_128px_30px]'
                 }`}
               >
                 <div className="min-w-0 flex-1">
@@ -178,6 +211,21 @@ export function Inventory() {
                     </label>
                   ))}
                 </div>
+                <select
+                  value=""
+                  onChange={(e) => e.target.value && moveItem(it.id, e.target.value)}
+                  title="Move this item to another storage area"
+                  className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs text-ink/80 outline-none focus:border-brand print:hidden"
+                >
+                  <option value="">{it.location === RECEIVING_AREA ? 'Put away…' : 'Move…'}</option>
+                  {moveTargets
+                    .filter((l) => l !== it.location)
+                    .map((l) => (
+                      <option key={l} value={l}>
+                        {l}
+                      </option>
+                    ))}
+                </select>
                 <button
                   onClick={() => void removeItem(it)}
                   aria-label={`Remove ${it.name}`}

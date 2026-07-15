@@ -10,7 +10,7 @@ import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
 import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
-import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, type CountItem } from '../lib/countsheet'
+import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
@@ -537,6 +537,12 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       applyReceipts([{ vendor, itemId: ci.id, qty: Math.max(0, r.qty), cost: r.price }], inv.date ?? undefined)
       added++
     })
+    // Tie the delivery into Inventory: every received line lands in the
+    // Receiving area with its quantity, ready to put away during the count.
+    const receivedInv = receiveIntoInventory(
+      [...confirmed, ...adds].map((r) => ({ name: r.description.trim(), qty: r.qty, uom: r.size })),
+      inv.date ?? today(),
+    )
     // File the invoice automatically — qty, price, date, done.
     if (inv.total > 0) {
       addInvoice({
@@ -549,7 +555,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
         docId,
       })
     }
-    const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${inv.total > 0 ? ` · invoice ${money2(inv.total)} filed` : ''}`
+    const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${receivedInv ? ` · ${receivedInv} → Inventory · Receiving` : ''}${inv.total > 0 ? ` · invoice ${money2(inv.total)} filed` : ''}`
     setApplied(summary)
     logImport(fileName, summary)
   }

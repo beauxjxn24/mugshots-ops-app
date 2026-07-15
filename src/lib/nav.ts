@@ -88,6 +88,7 @@ export const NAV: NavSection[] = [
       { to: '/ordering', label: 'Ordering', icon: PackageOpen, color: '#F0A94C', anim: BoxIcon },
       { to: '/invoices', label: 'Invoices', icon: ReceiptText, color: '#A78BFA', anim: ReceiptIcon },
       { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },
+      { to: '/printables', label: 'Printables', icon: ReceiptText, color: '#94A3B8', anim: ScanDocIcon },
     ],
   },
   {
@@ -118,7 +119,6 @@ export const NAV: NavSection[] = [
       { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays, color: '#60A5FA', anim: ClockIcon },
       { to: '/staff', label: 'Staff', icon: Users, color: '#F472B6', anim: PeopleIcon },
       { to: '/users', label: 'Users & PINs', icon: Users, color: '#E4B84C', anim: KeyTurnIcon },
-      { to: '/printables', label: 'Printables', icon: ReceiptText, color: '#94A3B8', anim: ScanDocIcon },
       { to: '/stores', label: 'Stores & Concepts', icon: Store, color: '#E4B84C', anim: StorefrontIcon },
       { to: '/connections', label: 'Connections', icon: Cable, color: '#38BDF8', anim: PlugIcon },
     ],

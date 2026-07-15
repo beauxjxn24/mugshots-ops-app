@@ -373,6 +373,20 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
               LW <b className="font-mono">${(lwTotal / 1000).toFixed(1)}k</b>
             </span>
           )}
+          {cols.some((c) => c.kind === 'ly') && (
+            <span className="ml-auto flex items-center gap-2.5 text-[11px]">
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-3.5 rounded-sm bg-brand" /> This year
+              </span>
+              <span className="flex items-center gap-1">
+                <span
+                  className="inline-block h-2.5 w-3.5 rounded-sm border border-slate-400"
+                  style={{ background: 'repeating-linear-gradient(45deg, #cbd5e1 0 3px, #94a3b8 3px 6px)' }}
+                />
+                Last year
+              </span>
+            </span>
+          )}
         </div>
       )}
       <div className="flex items-end justify-around gap-2" style={{ height: H + 22 }}>
@@ -403,13 +417,18 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
                 <div className="mb-1 text-[11px] text-muted/60">no data</div>
               ) : (
                 <div className="mb-1 font-mono text-[13px] font-semibold text-muted">
+                  {c.kind === 'ly' && <span className="mr-0.5 rounded bg-slate-200 px-1 text-[9px] font-bold not-italic tracking-wide text-slate-600">LY</span>}
                   {c.kind === 'ly' ? '' : '~'}${(c.value / 1000).toFixed(1)}k
                 </div>
               )}
               {c.kind === 'ly' && (
                 <div
-                  className="rise w-8 rounded-t-[4px] bg-navy/20 sm:w-9"
-                  style={{ height: h, '--i': ci } as React.CSSProperties}
+                  className="rise w-8 rounded-t-[4px] border border-slate-400 sm:w-9"
+                  style={{
+                    height: h,
+                    '--i': ci,
+                    background: 'repeating-linear-gradient(45deg, #cbd5e1 0 5px, #94a3b8 5px 10px)',
+                  } as React.CSSProperties}
                   title={`${c.date} · last year ${money(c.value)} — logs tonight's number over it`}
                 />
               )}
