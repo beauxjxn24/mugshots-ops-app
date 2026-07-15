@@ -156,13 +156,17 @@ export function buildSnapshot(): string {
   } catch { /* skip */ }
 
   try {
-    interface PmixRow { name: string; qty: number; net: number }
-    const days = load<Record<string, PmixRow[]>>(scoped('pmix:days'), {})
+    // pmix:days is { [date]: { items: MixItem[] } } and each item carries
+    // `sales`, not `net` — read the real shape so Mugsy sees product mix.
+    interface MixRow { name: string; qty: number; sales: number }
+    interface PmixDay { items: MixRow[] }
+    const days = load<Record<string, PmixDay>>(scoped('pmix:days'), {})
     const latest = Object.keys(days).sort().pop()
-    if (latest && days[latest]?.length) {
-      const top = [...days[latest]].sort((a, b) => b.qty - a.qty).slice(0, 12)
+    const items = latest ? days[latest]?.items : undefined
+    if (items && items.length) {
+      const top = [...items].sort((a, b) => b.qty - a.qty).slice(0, 15)
       parts.push(`\nPRODUCT MIX (${latest}, top sellers):`)
-      for (const r of top) parts.push(`  ${r.name}: ${r.qty} sold · $${Math.round(r.net)}`)
+      for (const r of top) parts.push(`  ${r.name}: ${r.qty} sold · $${Math.round(r.sales ?? 0)}`)
     }
   } catch { /* skip */ }
 
