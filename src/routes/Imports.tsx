@@ -92,8 +92,11 @@ export function Imports() {
     })
     if (fresh.length === 0) return
     // Toast exports arrive zipped — expand them and feed every file inside
-    // through the same reader, so a dropped .zip "just works".
-    const list: File[] = []
+    // through the same reader, so a dropped .zip "just works". Files pulled out
+    // of a zip are re-importable bulk exports (sales summaries upsert by date),
+    // so they skip the duplicate guard — re-dropping a Toast export must always
+    // refresh the numbers, never get silently skipped as "already imported".
+    const list: { file: File; fromZip: boolean }[] = []
     for (const file of fresh) {
       if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
         try {
@@ -102,21 +105,22 @@ export function Imports() {
           for (const [path, bytes] of Object.entries(entries)) {
             const name = path.split('/').pop() ?? path
             if (!name || path.endsWith('/') || path.includes('__MACOSX') || name.startsWith('.')) continue
-            list.push(new File([bytes.slice().buffer as ArrayBuffer], name))
+            list.push({ file: new File([bytes.slice().buffer as ArrayBuffer], name), fromZip: true })
           }
           continue
         } catch {
           /* fall through — the reader reports it honestly */
         }
       }
-      list.push(file)
+      list.push({ file, fromZip: false })
     }
-    for (const file of list) {
+    for (const { file, fromZip } of list) {
       const id = `j${++seq}`
       // Duplicate check: the exact same bytes seen before — invoice, spec
       // card, recipe, any PDF — gets flagged instead of importing twice.
+      // Zip-extracted exports are exempt (idempotent re-imports).
       const h = await fileHash(file)
-      const seen = findSeenFile(h)
+      const seen = fromZip ? null : findSeenFile(h)
       if (seen) {
         parked.current.set(id, file)
         setJobs((j) => [

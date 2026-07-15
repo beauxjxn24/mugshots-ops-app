@@ -217,11 +217,11 @@ export function Dashboard() {
             {/* Row 3 — Food Focus up front where it can be seen, categories beside it */}
             <div className="grid gap-6 lg:grid-cols-2">
               <LtoFocus />
-              {cats.total > 0 && (
-                <Card className="drift [--i:3] h-full p-5">
-                  <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
-                    Sales by category · {win.label}
-                  </div>
+              <Card className="drift [--i:3] h-full p-5">
+                <div className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">
+                  Sales by category · {win.label}
+                </div>
+                {cats.total > 0 ? (
                   <div className="space-y-3">
                     {[...cats.parts]
                       .sort((a, b) => b.v - a.v)
@@ -240,8 +240,20 @@ export function Dashboard() {
                         )
                       })}
                   </div>
-                </Card>
-              )}
+                ) : (
+                  <div className="flex h-[calc(100%-1.5rem)] min-h-24 flex-col justify-center text-sm text-muted">
+                    <p className="font-semibold text-ink">No category split for this day yet</p>
+                    <p className="mt-1 text-xs">
+                      Food / beer / liquor / wine fills in from a nightly report that has the breakdown.
+                      Imported sales summaries only carry the net total — enter a night on{' '}
+                      <Link to="/nightly" className="font-bold text-brand">
+                        Nightly Numbers
+                      </Link>{' '}
+                      with categories to light this up.
+                    </p>
+                  </div>
+                )}
+              </Card>
             </div>
           </>
         ) : (
@@ -306,60 +318,57 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
   const H = h // px, plot height
   const t = today()
 
-  // Current-week mode (prototype): Mon–Sun of this week — real bars where
-  // nights exist, dashed ~forecast bars for the days still ahead. If this week
-  // has no data yet, fall back to the last 7 logged nights.
+  // Paired-pillar week view: for each day, THIS YEAR's bar (gold, clickable to
+  // the nightly report; dashed when it's a forecast for a day not yet logged)
+  // sits next to the PRIOR bar (striped grey — last year if that history
+  // exists, otherwise last week). Two distinct pillars, never an overlay.
   const monday = mondayOf(t)
   const weekDates = Array.from({ length: 7 }, (_, i) => shiftDays(monday, i))
   const weekActuals = weekDates.filter((d) => byDate.has(d))
-  // Stay in Mon–Sun mode even before the first night of the week is logged —
-  // last year's week fills the frame until the gold bars land on it.
-  const currentWeekMode = weekActuals.length > 0 || weekDates.some((d) => byDate.has(shiftDays(d, -364)))
+  const currentWeekMode =
+    weekActuals.length > 0 ||
+    weekDates.some((d) => byDate.has(shiftDays(d, -364)) || byDate.has(shiftDays(d, -7)))
   const avg = dowAverages(nights)
 
-  type Col = { date: string; value: number; kind: 'actual' | 'ly' | 'forecast' | 'none'; delta: number | null; deltaAbs: number | null }
-  let usedLY = false
-  let usedLW = false
+  type Col = {
+    date: string
+    actual: number | null
+    forecast: number | null
+    prior: number | null
+    priorKind: 'ly' | 'lw' | null
+    delta: number | null
+    deltaAbs: number | null
+  }
   const mkCol = (date: string): Col => {
     const n = byDate.get(date)
-    if (n) {
-      const ly = byDate.get(shiftDays(date, -364))
-      const lw = byDate.get(shiftDays(date, -7))
-      const base = ly ?? lw
-      if (ly) usedLY = true
-      else if (lw) usedLW = true
-      const delta = base && base.netSales > 0 ? ((n.netSales - base.netSales) / base.netSales) * 100 : null
-      return { date, value: n.netSales, kind: 'actual', delta, deltaAbs: base ? n.netSales - base.netSales : null }
-    }
-    // Owner spec: an unlogged day shows LAST YEAR's sales for that day as a
-    // quiet grey bar — the gold bar takes its place once the night is logged
-    // (falls back to last week, then the forecast, when LY isn't there yet).
-    const ly364 = byDate.get(shiftDays(date, -364))
-    const lyN = ly364 ?? byDate.get(shiftDays(date, -7))
-    if (lyN && lyN.netSales > 0) {
-      if (ly364) usedLY = true
-      return { date, value: lyN.netSales, kind: 'ly', delta: null, deltaAbs: null }
-    }
-    if (date >= t) {
-      const proj = projectDay(avg, date)
-      return { date, value: proj, kind: proj > 0 ? 'forecast' : 'none', delta: null, deltaAbs: null }
-    }
-    return { date, value: 0, kind: 'none', delta: null, deltaAbs: null }
+    const ly = byDate.get(shiftDays(date, -364))
+    const lw = byDate.get(shiftDays(date, -7))
+    const priorN = ly ?? lw
+    const prior = priorN && priorN.netSales > 0 ? priorN.netSales : null
+    const priorKind: 'ly' | 'lw' | null = ly ? 'ly' : lw ? 'lw' : null
+    const actual = n ? n.netSales : null
+    const forecast = !n && date >= t ? projectDay(avg, date) || null : null
+    const delta = actual != null && prior != null ? ((actual - prior) / prior) * 100 : null
+    const deltaAbs = actual != null && prior != null ? actual - prior : null
+    return { date, actual, forecast, prior, priorKind, delta, deltaAbs }
   }
 
-  const cols: Col[] = currentWeekMode
-    ? weekDates.map(mkCol)
-    : nights.slice(-7).map((n) => mkCol(n.date))
+  const cols: Col[] = currentWeekMode ? weekDates.map(mkCol) : nights.slice(-7).map((n) => mkCol(n.date))
 
-  const max = Math.max(...cols.map((c) => c.value), 1)
-  const wtd = cols.filter((c) => c.kind === 'actual').reduce((s, c) => s + c.value, 0)
-  const pacing = cols.reduce((s, c) => s + (c.kind === 'none' ? 0 : c.value), 0)
+  const max = Math.max(...cols.flatMap((c) => [c.actual ?? 0, c.forecast ?? 0, c.prior ?? 0]), 1)
+  const wtd = cols.reduce((s, c) => s + (c.actual ?? 0), 0)
+  const pacing = cols.reduce((s, c) => s + (c.actual ?? c.forecast ?? 0), 0)
   const lwTotal = weekDates.reduce((s, d) => s + (byDate.get(shiftDays(d, -7))?.netSales ?? 0), 0)
+  const hasLY = cols.some((c) => c.priorKind === 'ly')
+  const hasLW = cols.some((c) => c.priorKind === 'lw')
+  const hasPrior = hasLY || hasLW
+  const priorWord = hasLY && hasLW ? 'Last yr / wk' : hasLY ? 'Last year' : 'Last week'
+  const STRIPE = 'repeating-linear-gradient(45deg, #cbd5e1 0 5px, #94a3b8 5px 10px)'
 
   return (
     <div>
       {currentWeekMode && (
-        <div className="mb-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-muted">
+        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[13px] text-muted">
           <span>
             WTD <b className="font-mono text-ink">{money(wtd)}</b>
           </span>
@@ -373,106 +382,105 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
               LW <b className="font-mono">${(lwTotal / 1000).toFixed(1)}k</b>
             </span>
           )}
-          {cols.some((c) => c.kind === 'ly') && (
+          {hasPrior && (
             <span className="ml-auto flex items-center gap-2.5 text-[11px]">
               <span className="flex items-center gap-1">
                 <span className="inline-block h-2.5 w-3.5 rounded-sm bg-brand" /> This year
               </span>
               <span className="flex items-center gap-1">
-                <span
-                  className="inline-block h-2.5 w-3.5 rounded-sm border border-slate-400"
-                  style={{ background: 'repeating-linear-gradient(45deg, #cbd5e1 0 3px, #94a3b8 3px 6px)' }}
-                />
-                Last year
+                <span className="inline-block h-2.5 w-3.5 rounded-sm border border-slate-400" style={{ background: STRIPE }} />
+                {priorWord}
               </span>
             </span>
           )}
         </div>
       )}
-      <div className="flex items-end justify-around gap-2" style={{ height: H + 22 }}>
+
+      <div className="flex items-end justify-around gap-1.5" style={{ height: H + 34 }}>
         {cols.map((c, ci) => {
-          const h = Math.max(6, (c.value / max) * H)
-          if (c.kind === 'actual') {
-            // Clickable bar → the nightly report for that day
-            return (
-              <Link
-                key={c.date}
-                to={`/nightly?date=${c.date}`}
-                title={`${c.date} · ${money(c.value)} — open nightly report`}
-                className="group flex min-w-0 flex-1 flex-col items-center justify-end"
-              >
-                <div className="mb-1 font-mono text-[13px] font-semibold text-ink/80 group-hover:text-ink">
-                  ${(c.value / 1000).toFixed(1)}k
-                </div>
-                <div
-                  className="rise w-8 rounded-t-[4px] bg-brand transition-all group-hover:bg-brand-600 group-hover:ring-2 group-hover:ring-brand/30 sm:w-9"
-                  style={{ height: h, '--i': ci } as React.CSSProperties}
-                />
-              </Link>
-            )
-          }
+          const aVal = c.actual ?? c.forecast
+          const aH = aVal ? Math.max(6, (aVal / max) * H) : 0
+          const pH = c.prior ? Math.max(6, (c.prior / max) * H) : 0
           return (
-            <div key={c.date} className="flex flex-1 flex-col items-center justify-end">
-              {c.kind === 'none' ? (
-                <div className="mb-1 text-[11px] text-muted/60">no data</div>
-              ) : (
-                <div className="mb-1 font-mono text-[13px] font-semibold text-muted">
-                  {c.kind === 'ly' && <span className="mr-0.5 rounded bg-slate-200 px-1 text-[9px] font-bold not-italic tracking-wide text-slate-600">LY</span>}
-                  {c.kind === 'ly' ? '' : '~'}${(c.value / 1000).toFixed(1)}k
-                </div>
-              )}
-              {c.kind === 'ly' && (
-                <div
-                  className="rise w-8 rounded-t-[4px] border border-slate-400 sm:w-9"
-                  style={{
-                    height: h,
-                    '--i': ci,
-                    background: 'repeating-linear-gradient(45deg, #cbd5e1 0 5px, #94a3b8 5px 10px)',
-                  } as React.CSSProperties}
-                  title={`${c.date} · last year ${money(c.value)} — logs tonight's number over it`}
-                />
-              )}
-              {c.kind === 'forecast' && (
-                <div
-                  className="rise w-8 rounded-t-[4px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-9"
-                  style={{ height: h, '--i': ci } as React.CSSProperties}
-                  title={`${c.date} · forecast ${money(c.value)}`}
-                />
-              )}
-              {c.kind === 'none' && <div className="w-8 border-b-2 border-black/10 sm:w-9" />}
+            <div key={c.date} className="flex min-w-0 flex-1 flex-col items-center justify-end">
+              {/* value labels above each pillar */}
+              <div className="mb-1 flex items-end justify-center gap-1 font-mono text-[10px] font-semibold leading-none sm:text-[11px]">
+                {aVal != null && (
+                  <span className={c.actual != null ? 'text-ink' : 'text-muted'}>
+                    {c.actual == null ? '~' : ''}${(aVal / 1000).toFixed(1)}k
+                  </span>
+                )}
+                {c.prior != null && <span className="text-slate-500">${(c.prior / 1000).toFixed(1)}k</span>}
+              </div>
+
+              {/* the two pillars, side by side */}
+              <div className="flex items-end justify-center gap-1">
+                {aVal != null ? (
+                  c.actual != null ? (
+                    <Link
+                      to={`/nightly?date=${c.date}`}
+                      title={`${c.date} · this year ${money(c.actual)} — open nightly report`}
+                      aria-label={`${c.date} this year ${money(c.actual)}`}
+                    >
+                      <div
+                        className="rise w-4 rounded-t-[3px] bg-brand transition-all hover:bg-brand-600 hover:ring-2 hover:ring-brand/30 sm:w-5"
+                        style={{ height: aH, '--i': ci } as React.CSSProperties}
+                      />
+                    </Link>
+                  ) : (
+                    <div
+                      className="rise w-4 rounded-t-[3px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-5"
+                      style={{ height: aH, '--i': ci } as React.CSSProperties}
+                      title={`${c.date} · forecast ${money(aVal)}`}
+                    />
+                  )
+                ) : (
+                  <div className="w-4 sm:w-5" />
+                )}
+                {c.prior != null ? (
+                  <div
+                    className="rise w-4 rounded-t-[3px] border border-slate-400 sm:w-5"
+                    style={{ height: pH, '--i': ci, background: STRIPE } as React.CSSProperties}
+                    title={`${c.date} · ${c.priorKind === 'ly' ? 'last year' : 'last week'} ${money(c.prior)}`}
+                  />
+                ) : (
+                  <div className="w-4 sm:w-5" />
+                )}
+              </div>
             </div>
           )
         })}
       </div>
-      <div className="mt-1.5 flex justify-around gap-2 border-t border-black/5 pt-1.5">
+
+      <div className="mt-1.5 flex justify-around gap-1.5 border-t border-black/5 pt-1.5">
         {cols.map((c) => (
           <div key={c.date} className="flex-1 text-center">
             <div className="text-[12px] font-bold text-ink/80">{weekday(c.date)}</div>
             <div className="text-[11px] text-muted">{c.date.slice(5).replace('-', '/')}</div>
-            {c.kind === 'ly' ? (
-              <div className="text-[11px] font-semibold text-muted">last yr</div>
-            ) : c.kind === 'forecast' ? (
-              <div className="text-[11px] font-semibold text-muted">forecast</div>
-            ) : c.delta != null ? (
+            {c.delta != null ? (
               <div className={`text-[12px] font-bold ${c.delta >= 0 ? 'text-up' : 'text-down'}`}>
-                {c.delta >= 0 ? '▲ +' : '▼ −'}
+                {c.delta >= 0 ? '▲+' : '▼−'}
                 {Math.abs(c.delta).toFixed(0)}%
-                {c.deltaAbs != null && (
-                  <span className="font-semibold"> · {c.deltaAbs >= 0 ? '+' : '−'}${(Math.abs(c.deltaAbs) / 1000).toFixed(1)}k</span>
-                )}
               </div>
+            ) : c.forecast != null ? (
+              <div className="text-[11px] font-semibold text-muted">forecast</div>
+            ) : c.prior != null && c.actual == null ? (
+              <div className="text-[11px] font-semibold text-muted">{c.priorKind === 'ly' ? 'last yr' : 'last wk'}</div>
             ) : (
               <div className="text-[12px] text-muted">—</div>
             )}
           </div>
         ))}
       </div>
+
       <p className="mt-2 text-center text-[11px] text-muted">
-        {usedLY
-          ? 'Grey bars = the same day last year — each turns gold with ▲▼ as the night is logged'
-          : usedLW
-            ? '▲▼ vs the same day last week — switches to last year once that history exists (drop old Toast sales summaries on Imports to backfill)'
-            : 'Comparisons appear once there are matching prior days'}
+        {hasLY && !hasLW
+          ? 'Gold = this year · striped = the same day last year. ▲▼ compares them.'
+          : hasLW && !hasLY
+            ? 'Gold = this year · striped = the same day LAST WEEK (no last-year history yet — drop last year’s Toast sales summaries on Imports to compare year-over-year).'
+            : hasPrior
+              ? 'Gold = this year · striped = last year where that history exists, otherwise last week.'
+              : 'Comparison pillars appear once there are matching prior days.'}
       </p>
     </div>
   )
