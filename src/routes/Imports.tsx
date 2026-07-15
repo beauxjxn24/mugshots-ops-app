@@ -239,7 +239,7 @@ export function Imports() {
         <DailyReports />
 
         {/* Catch-up import — the prototype Admin's first-time-setup recipe */}
-        <details className={`rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-3 ${isPhone ? 'hidden' : ''}`}>
+        <details open className={`rounded-2xl border border-brand/25 bg-brand/[0.06] px-4 py-3 ${isPhone ? 'hidden' : ''}`}>
           <summary className="cursor-pointer text-sm font-bold text-ink">
             Catch-up import <span className="ml-1 rounded bg-brand/20 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-brand-600">first-time setup</span>
             <span className="ml-2 text-xs font-normal text-muted">seed a store with real history in one drop</span>
@@ -265,27 +265,27 @@ export function Imports() {
           }}
           onDragLeave={() => setDrag(false)}
           onClick={() => inputRef.current?.click()}
-          className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${isPhone ? 'hidden' : ''} ${
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-14 text-center transition-colors ${isPhone ? 'hidden' : ''} ${
             drag ? 'border-brand bg-brand/10' : 'border-black/15 bg-white/60 hover:border-brand/50'
           }`}
         >
-          <div className="mb-3 flex items-center justify-center gap-3 text-brand">
-            <span className="grid size-12 place-items-center rounded-2xl bg-brand/10">
-              <FileText size={22} />
+          <div className="mb-4 flex items-center justify-center gap-4 text-brand">
+            <span className="grid size-14 place-items-center rounded-2xl bg-brand/10">
+              <FileText size={26} />
             </span>
-            <span className="grid size-12 place-items-center rounded-2xl bg-brand/10">
-              <Camera size={22} />
+            <span className="grid size-14 place-items-center rounded-2xl bg-brand/10">
+              <Camera size={26} />
             </span>
-            <span className="grid size-12 place-items-center rounded-2xl bg-brand/10">
-              <CloudUpload size={22} />
+            <span className="grid size-14 place-items-center rounded-2xl bg-brand/10">
+              <CloudUpload size={26} />
             </span>
           </div>
-          <div className="mt-2 font-display text-lg font-semibold text-ink">
+          <div className="mt-2 font-display text-2xl font-semibold text-ink">
             Drop files here, or tap to choose
           </div>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted text-pretty">
-            PDFs are read instantly. Photos of invoices are read with on-device OCR — snap a picture
-            of a US Foods or Gulf Coast delivery ticket and drop it in.
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-muted text-pretty">
+            Drop a whole batch at once — sales summaries, PMIX, invoices, order guides. PDFs read
+            instantly; photos of invoices read with on-device OCR. Each file shows what it loaded below.
           </p>
           <button
             onClick={(e) => {

@@ -30,6 +30,17 @@ export function AppShell() {
   const current = [...NAV_FLAT, SHIFT_ITEM].find((i) => i.to === loc.pathname)
   const bottom = rollup ? ROLLUP_SECTIONS.flatMap((s) => s.items) : bottomItems(role)
 
+  // Collapsible nav groups — remembered across navigation (device-wide, not
+  // store-scoped) so a manager can fold the sections they don't use.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(loadNavCollapsed()))
+  const toggleSection = (title: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      next.has(title) ? next.delete(title) : next.add(title)
+      saveNavCollapsed([...next])
+      return next
+    })
+
   // A non-admin must never sit on a roll-up scope (e.g. left over from an admin
   // session). Snap them back to a concrete store so their data stays real.
   const concepts = useScope((s) => s.concepts)
@@ -69,7 +80,7 @@ export function AppShell() {
             <StoreLabel />
           </div>
         ) : null}
-        <Rail sections={sections} onNavigate={() => setOpen(false)} />
+        <Rail sections={sections} collapsed={collapsed} onToggle={toggleSection} onNavigate={() => setOpen(false)} />
         <BuildStamp />
       </aside>
 
@@ -105,7 +116,7 @@ export function AppShell() {
                 <StoreLabel />
               </div>
             ) : null}
-            <Rail sections={sections} onNavigate={() => setOpen(false)} />
+            <Rail sections={sections} collapsed={collapsed} onToggle={toggleSection} onNavigate={() => setOpen(false)} />
             <BuildStamp />
           </div>
           <style>{`@keyframes slidein{from{transform:translateX(-105%)}to{transform:translateX(0)}}`}</style>
@@ -191,18 +202,58 @@ function Brand() {
   )
 }
 
-function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: () => void }) {
+const NAV_COLLAPSE_KEY = 'mugops:navCollapsed'
+function loadNavCollapsed(): string[] {
+  try {
+    const raw = localStorage.getItem(NAV_COLLAPSE_KEY)
+    const arr = raw ? JSON.parse(raw) : []
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+function saveNavCollapsed(titles: string[]): void {
+  try {
+    localStorage.setItem(NAV_COLLAPSE_KEY, JSON.stringify(titles))
+  } catch {
+    /* storage unavailable — collapse state just won't persist */
+  }
+}
+
+function Rail({
+  sections,
+  onNavigate,
+  collapsed,
+  onToggle,
+}: {
+  sections: NavSection[]
+  onNavigate: () => void
+  collapsed: Set<string>
+  onToggle: (title: string) => void
+}) {
   let n = 0
   return (
     <div className="flex flex-col gap-0.5">
-      {sections.map((sec, i) => (
+      {sections.map((sec, i) => {
+        const isCollapsed = !!sec.title && collapsed.has(sec.title)
+        return (
         <div key={i}>
           {sec.title && (
-            <div className="px-3 pb-1 pt-4 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-white/35">
+            <button
+              onClick={() => onToggle(sec.title)}
+              className="flex w-full items-center gap-1.5 px-3 pb-1 pt-4 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-white/35 hover:text-white/60"
+            >
+              <span
+                className={`inline-block text-[8px] transition-transform ${isCollapsed ? '-rotate-90' : ''}`}
+                aria-hidden
+              >
+                ▾
+              </span>
               {sec.title}
-            </div>
+            </button>
           )}
-          {sec.items.map((it) => {
+          {!isCollapsed &&
+          sec.items.map((it) => {
             const idle = it.idle ?? 'idle-pulse'
             const delay = `${(n * 0.13).toFixed(2)}s`
             n++
@@ -241,7 +292,8 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
             )
           })}
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
