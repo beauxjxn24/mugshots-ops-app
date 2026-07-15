@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Copy, Printer, Lock, LockOpen, CheckCircle2, CalendarClock, Check, X } from 'lucide-react'
+import { Copy, Printer, Lock, LockOpen, CheckCircle2, CalendarClock, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
@@ -233,32 +233,37 @@ export function Schedule() {
             <Link to="/users" className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink">
               Manage roster →
             </Link>
-            <div className="grid grid-cols-3 gap-1 rounded-lg bg-black/5 p-1">
-              {[period - 1, period, period + 1].map((p) => (
-                <button
-                  key={p}
-                  disabled={p < 1 || p > 13}
-                  onClick={() => {
-                    setPeriod(p)
-                    setWeekIdx(0)
-                  }}
-                  className={`rounded-md px-2.5 py-1.5 text-xs font-bold ${p === period ? 'bg-white text-ink shadow-sm' : 'text-muted disabled:opacity-30'}`}
-                >
-                  P{p}
-                </button>
-              ))}
-            </div>
-            {period < 13 && (
+            {/* Period stepper — arrows make it obvious you can move between
+                periods (and draft the next one ahead of time). */}
+            <div className="inline-flex items-center gap-1 rounded-lg bg-black/5 p-1">
+              <button
+                onClick={() => {
+                  setPeriod(period - 1)
+                  setWeekIdx(0)
+                }}
+                disabled={period <= 1}
+                aria-label="Previous period"
+                className="grid size-7 place-items-center rounded-md bg-white text-ink shadow-sm disabled:opacity-25"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="min-w-[76px] text-center text-xs font-extrabold text-ink">
+                Period {period}
+                {period === curPeriod && <span className="ml-1 text-[10px] font-bold text-brand">now</span>}
+              </span>
               <button
                 onClick={() => {
                   setPeriod(period + 1)
                   setWeekIdx(0)
                 }}
-                className="rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
+                disabled={period >= 13}
+                aria-label="Next period"
+                title={period < 13 ? `Work on Period ${period + 1}` : undefined}
+                className="grid size-7 place-items-center rounded-md bg-white text-ink shadow-sm disabled:opacity-25"
               >
-                Work on P{period + 1} →
+                <ChevronRight size={16} />
               </button>
-            )}
+            </div>
             <button onClick={() => window.print()} aria-label="Print" className="grid size-9 place-items-center rounded-lg border border-black/10 bg-white text-ink">
               <Printer size={14} />
             </button>

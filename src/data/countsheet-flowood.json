@@ -1,0 +1,1254 @@
+[
+{
+"location": "Freezer",
+"name": "BUN Hot Dog",
+"units": [
+{
+"uom": "Each",
+"qty": 96.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BUN White",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "Case-96 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BUN Kids Menu",
+"units": [
+{
+"uom": "Each",
+"qty": 224.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BUN Wheat",
+"units": [
+{
+"uom": "Each",
+"qty": 114.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BEEF Patty 5.33oz TNT",
+"units": [
+{
+"uom": "Each",
+"qty": 40.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Bread Pudding",
+"units": [
+{
+"uom": "Case - 4 pack/121 Each",
+"qty": 0.75
+}
+]
+},
+{
+"location": "Freezer",
+"name": "CHEESE Mozzarella",
+"units": [
+{
+"uom": "LB",
+"qty": 105.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "CHEESE Pepper Jack Loaf",
+"units": [
+{
+"uom": "LB",
+"qty": 75.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BEEF Steak Philly",
+"units": [
+{
+"uom": "Each",
+"qty": 85.0
+},
+{
+"uom": "Case-32 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "CHICKEN Philly",
+"units": [
+{
+"uom": "Each",
+"qty": 23.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BURGER Turkey",
+"units": [
+{
+"uom": "Each",
+"qty": 22.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "BURGER Veggie",
+"units": [
+{
+"uom": "Each",
+"qty": 23.0
+},
+{
+"uom": "LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Hot Dog",
+"units": [
+{
+"uom": "LB",
+"qty": 10.0
+},
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Shrimp Peeled",
+"units": [
+{
+"uom": "LB",
+"qty": 12.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Shrimp Breaded",
+"units": [
+{
+"uom": "LB",
+"qty": 24.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Mahi Mahi",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "LB",
+"qty": 8.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Potato Fry",
+"units": [
+{
+"uom": "LB",
+"qty": 360.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Onion Rings",
+"units": [
+{
+"uom": "LB",
+"qty": 30.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "SAUCE Cheese American",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Potato Mashed",
+"units": [
+{
+"uom": "LB",
+"qty": 24.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "Macaroni and Cheese",
+"units": [
+{
+"uom": "LB",
+"qty": 24.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "WAFFLE FRY SWEET POTATO",
+"units": [
+{
+"uom": "LB",
+"qty": 45.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "POTATO Tater Tot",
+"units": [
+{
+"uom": "LB",
+"qty": 35.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "APP Eggroll",
+"units": [
+{
+"uom": "Case - 15 LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Freezer",
+"name": "CHIP Tortilla",
+"units": [
+{
+"uom": "LB",
+"qty": 30.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHIP Tortilla",
+"units": [
+{
+"uom": "LB",
+"qty": 12.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "BEEF Patty 7oz",
+"units": [
+{
+"uom": "Each",
+"qty": 55.0
+},
+{
+"uom": "Case - 24 CT",
+"qty": 17.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "BEEF Patty 4oz",
+"units": [
+{
+"uom": "Each",
+"qty": 8.0
+},
+{
+"uom": "Case-48 CT",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Pork Bacon",
+"units": [
+{
+"uom": "LB",
+"qty": 15.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Hot Dog",
+"units": [
+{
+"uom": "LB",
+"qty": 5.0
+},
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Turkey Breast",
+"units": [
+{
+"uom": "LB",
+"qty": 12.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Eggs",
+"units": [
+{
+"uom": "Dozen",
+"qty": 10.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHICKEN Tenders",
+"units": [
+{
+"uom": "LB",
+"qty": 70.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHICKEN Breast",
+"units": [
+{
+"uom": "LB",
+"qty": 10.0
+},
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHICKEN Wings",
+"units": [
+{
+"uom": "LB",
+"qty": 65.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "APP Eggroll",
+"units": [
+{
+"uom": "Case - 15 LB",
+"qty": 2.75
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Cheddar Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 18.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Swiss Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 18.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Pepper Jack Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 20.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE American Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 8.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Pepper Jack Loaf",
+"units": [
+{
+"uom": "LB",
+"qty": 10.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE American (Queso) Loaf",
+"units": [
+{
+"uom": "LB",
+"qty": 55.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Mozzarella",
+"units": [
+{
+"uom": "LB",
+"qty": 6.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Shredded",
+"units": [
+{
+"uom": "LB",
+"qty": 10.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Blue",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "CHEESE Parmesan",
+"units": [
+{
+"uom": "LB",
+"qty": 15.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "MILK Buttermilk",
+"units": [
+{
+"uom": "1/2 Gallon",
+"qty": 9.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "HALF & HALF",
+"units": [
+{
+"uom": "Quart",
+"qty": 15.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Sour Cream",
+"units": [
+{
+"uom": "LB",
+"qty": 5.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "BUN Hot Dog",
+"units": [
+{
+"uom": "Each",
+"qty": 32.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "BUN Gluten Free",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "BUN Kids Menu",
+"units": [
+{
+"uom": "Each",
+"qty": 32.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "BUN Wheat",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Potato Mashed",
+"units": [
+{
+"uom": "LB",
+"qty": 26.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Macaroni and Cheese",
+"units": [
+{
+"uom": "LB",
+"qty": 4.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "Mahi Mahi",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooler",
+"name": "SAUCE Cheese American",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "LB",
+"qty": 14.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "POTATO Tater Tot",
+"units": [
+{
+"uom": "LB",
+"qty": 8.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Potato Fry",
+"units": [
+{
+"uom": "LB",
+"qty": 40.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Onion Rings",
+"units": [
+{
+"uom": "LB",
+"qty": 13.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Shrimp Breaded",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Shrimp Peeled",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Bread Pudding",
+"units": [
+{
+"uom": "Case - 4 pack/121 Each",
+"qty": 0.1
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Mozzarella",
+"units": [
+{
+"uom": "LB",
+"qty": 16.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Pepper Jack Loaf",
+"units": [
+{
+"uom": "LB",
+"qty": 16.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE American (Queso) Loaf",
+"units": [
+{
+"uom": "LB",
+"qty": 3.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE American Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Cheddar Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 4.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Pepper Jack Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Swiss Sliced",
+"units": [
+{
+"uom": "LB",
+"qty": 3.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Parmesan",
+"units": [
+{
+"uom": "LB",
+"qty": 5.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Shredded",
+"units": [
+{
+"uom": "LB",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHEESE Blue",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BUN Gluten Free",
+"units": [
+{
+"uom": "Each",
+"qty": 3.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BUN Hot Dog",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BUN Kids Menu",
+"units": [
+{
+"uom": "Each",
+"qty": 29.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BUN Wheat",
+"units": [
+{
+"uom": "Each",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "TORTILLA Flour",
+"units": [
+{
+"uom": "Each",
+"qty": 10.0
+},
+{
+"uom": "Pack - 12 CT",
+"qty": 0.0
+},
+{
+"uom": "Pack - 24 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Bread - Sliced",
+"units": [
+{
+"uom": "Slice",
+"qty": 13.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BUN White",
+"units": [
+{
+"uom": "Each",
+"qty": 88.0
+},
+{
+"uom": "Case-96 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Macaroni and Cheese",
+"units": [
+{
+"uom": "LB",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Potato Mashed",
+"units": [
+{
+"uom": "LB",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BEEF Patty 4oz",
+"units": [
+{
+"uom": "Each",
+"qty": 6.0
+},
+{
+"uom": "Case-48 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BEEF Patty 7oz",
+"units": [
+{
+"uom": "Each",
+"qty": 16.0
+},
+{
+"uom": "Case - 24 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BURGER Turkey",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BURGER Veggie",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "BEEF Steak Philly",
+"units": [
+{
+"uom": "Each",
+"qty": 5.0
+},
+{
+"uom": "Case-32 CT",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHICKEN Philly",
+"units": [
+{
+"uom": "Each",
+"qty": 7.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Hot Dog",
+"units": [
+{
+"uom": "LB",
+"qty": 0.0
+},
+{
+"uom": "Each",
+"qty": 3.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHICKEN Tenders",
+"units": [
+{
+"uom": "LB",
+"qty": 5.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHICKEN Wings",
+"units": [
+{
+"uom": "LB",
+"qty": 8.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Turkey Breast",
+"units": [
+{
+"uom": "LB",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Mahi Mahi",
+"units": [
+{
+"uom": "Each",
+"qty": 11.0
+},
+{
+"uom": "LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Sour Cream",
+"units": [
+{
+"uom": "LB",
+"qty": 1.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Eggs",
+"units": [
+{
+"uom": "Dozen",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "WAFFLE FRY SWEET POTATO",
+"units": [
+{
+"uom": "LB",
+"qty": 5.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "SAUCE Cheese American",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "LB",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "APP Eggroll",
+"units": [
+{
+"uom": "Case - 15 LB",
+"qty": 0.8
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "Pork Bacon",
+"units": [
+{
+"uom": "LB",
+"qty": 6.0
+}
+]
+},
+{
+"location": "Cooks Line",
+"name": "CHICKEN Breast",
+"units": [
+{
+"uom": "LB",
+"qty": 4.0
+},
+{
+"uom": "Each",
+"qty": 4.0
+}
+]
+},
+{
+"location": "Dry Storage",
+"name": "DRY Shortening",
+"units": [
+{
+"uom": "Gallon",
+"qty": 125.0
+},
+{
+"uom": "Gallon",
+"qty": 0.0
+},
+{
+"uom": "Case-35 LB",
+"qty": 0.0
+}
+]
+},
+{
+"location": "Dry Storage",
+"name": "BUN White",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "Case-96 CT",
+"qty": 5.0
+}
+]
+},
+{
+"location": "Dry Storage",
+"name": "TORTILLA Flour",
+"units": [
+{
+"uom": "Each",
+"qty": 0.0
+},
+{
+"uom": "Pack - 12 CT",
+"qty": 12.0
+},
+{
+"uom": "Pack - 24 CT",
+"qty": 2.0
+}
+]
+},
+{
+"location": "Dry Storage",
+"name": "Bread - Sliced",
+"units": [
+{
+"uom": "Slice",
+"qty": 85.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "CHIP Potato",
+"units": [
+{
+"uom": "Each",
+"qty": 43.0
+},
+{
+"uom": "Case-104 CT",
+"qty": 2.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "Cookie Choc Chip 2.5oz Bag",
+"units": [
+{
+"uom": "Each",
+"qty": 194.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "HALF & HALF",
+"units": [
+{
+"uom": "Quart",
+"qty": 0.25
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "Strawberry Daquiri Mix",
+"units": [
+{
+"uom": "Each",
+"qty": 1.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "TEA Sweet",
+"units": [
+{
+"uom": "Case - 8 CT",
+"qty": 0.0
+},
+{
+"uom": "Each",
+"qty": 1.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "TEA Iced",
+"units": [
+{
+"uom": "Case-24 CT",
+"qty": 0.0
+},
+{
+"uom": "Each",
+"qty": 21.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "COFFEE Regular",
+"units": [
+{
+"uom": "Case-40 CT",
+"qty": 0.0
+},
+{
+"uom": "Case-20 CT",
+"qty": 0.0
+},
+{
+"uom": "Each",
+"qty": 11.0
+}
+]
+},
+{
+"location": "To Go Room/ Expo Line",
+"name": "COOKIE Monster",
+"units": [
+{
+"uom": "Each",
+"qty": 31.0
+}
+]
+}
+]

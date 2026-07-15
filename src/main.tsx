@@ -30,6 +30,7 @@ import { App } from './App'
 import { seedFlowoodHistory } from './lib/nightly'
 import { applyOwnerDrops } from './lib/ownerdata'
 import { cleanupCatalogNames } from './lib/catalog'
+import { seedCountSheet } from './lib/countsheet'
 
 // Owner's real 21-day Flowood sales history (from the design handoff) loads
 // once into an empty Flowood store — Forecast/Period/Dashboard light up day one.
@@ -45,6 +46,7 @@ const safeBoot = (label: string, fn: () => void) => {
 safeBoot('seedFlowoodHistory', seedFlowoodHistory)
 safeBoot('applyOwnerDrops', applyOwnerDrops)
 safeBoot('cleanupCatalogNames', cleanupCatalogNames)
+safeBoot('seedCountSheet', seedCountSheet)
 
 // Keep installed copies fresh: grab new versions the moment they deploy,
 // and keep checking every 5 minutes while the app stays open.

@@ -10,6 +10,7 @@ import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
 import { isSalesSummary, parseSalesSummary, upsertNights } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
+import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, type CountItem } from '../lib/countsheet'
 import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
@@ -64,7 +65,9 @@ export function Imports() {
     if (res.kind === 'unsupported') {
       logImport(file.name, `⚠ could not read${res.note ? ` — ${res.note}` : ''}`)
     } else {
-      const detected = isSalesSummary(res.text)
+      const detected = isCountSheet(res.text)
+        ? `inventory count sheet (${parseCountSheet(res.text).length} items) — review below`
+        : isSalesSummary(res.text)
         ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
         : isRosterDoc(res.text)
           ? 'employee roster — review below'
@@ -370,12 +373,17 @@ export function Imports() {
               <CateringImport text={job.text} fileName={job.fileName} />
             )}
 
+            {job.text && isCountSheet(job.text) && (
+              <CountSheetImport text={job.text} fileName={job.fileName} />
+            )}
+
             {/* Invoices/deliveries (lines with quantities) → one-tap receiving.
-                Price sheets (prices but no quantities) → price update only. */}
-            {job.lineItems && job.lineItems.length > 0 && job.lineItems.some((li) => li.qty) && (
+                Price sheets (prices but no quantities) → price update only.
+                A count sheet is neither — it owns its own review card above. */}
+            {job.text && !isCountSheet(job.text) && job.lineItems && job.lineItems.length > 0 && job.lineItems.some((li) => li.qty) && (
               <Receiving lineItems={job.lineItems} fileName={job.fileName} text={job.text ?? ''} docId={job.docId} />
             )}
-            {job.lineItems && job.lineItems.length > 0 && !job.lineItems.some((li) => li.qty) && job.text && (
+            {job.text && !isCountSheet(job.text) && job.lineItems && job.lineItems.length > 0 && !job.lineItems.some((li) => li.qty) && (
               <PriceUpdate lineItems={job.lineItems} text={job.text} fileName={job.fileName} />
             )}
 
@@ -985,6 +993,63 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
       >
         Import {people.length} to Staff
       </button>
+    </div>
+  )
+}
+
+/** Inventory count sheet → load its storage areas into Inventory. Replace swaps
+ *  the whole sheet; Add-new keeps current counts and only appends items not
+ *  already present (matched by area + name, so the same item in two areas stays
+ *  two separate lines). */
+function CountSheetImport({ text, fileName }: { text: string; fileName: string }) {
+  const parsed = useMemo(() => parseCountSheet(text), [text])
+  const areas = useMemo(() => sheetLocations(parsed), [parsed])
+  const [done, setDone] = useState<string>('')
+  if (parsed.length === 0) return null
+
+  const replaceAll = async () => {
+    const cur = getCountSheet()
+    if (cur.length > 0 && !(await confirmDelete(`Replace the current count sheet (${cur.length} items) with this one (${parsed.length} items)?`))) return
+    setCountSheet(parsed)
+    setDone(`Loaded ${parsed.length} items across ${areas.length} areas`)
+    logImport(fileName, `count sheet → Inventory (replaced · ${parsed.length} items)`)
+  }
+  const addNew = () => {
+    const cur = getCountSheet()
+    const have = new Set(cur.map((it) => `${it.location.toLowerCase()}|${it.name.toLowerCase()}`))
+    const fresh = parsed.filter((it) => !have.has(`${it.location.toLowerCase()}|${it.name.toLowerCase()}`))
+    setCountSheet([...cur, ...fresh] as CountItem[])
+    setDone(`Added ${fresh.length} new item${fresh.length === 1 ? '' : 's'} (kept existing counts)`)
+    logImport(fileName, `count sheet → Inventory (added ${fresh.length} new)`)
+  }
+
+  if (done) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+        <FileCheck2 size={16} /> {done} — see Inventory.
+      </div>
+    )
+  }
+  return (
+    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <FileCheck2 size={14} /> Inventory count sheet — {parsed.length} items · {areas.length} areas
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {areas.map((a) => (
+          <span key={a} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-ink">
+            {a} · {parsed.filter((it) => it.location === a).length}
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => void replaceAll()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+          Replace inventory
+        </button>
+        <button onClick={addNew} className="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-ink">
+          Add new items only
+        </button>
+      </div>
     </div>
   )
 }
