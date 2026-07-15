@@ -59,11 +59,18 @@ export function applyOwnerDrops(): void {
   // Tracked tiles: if the owner hasn't picked any yet, start with the real
   // top sellers from his own PMIX (derived from HIS data — not samples).
   const tk = `${STORE}::tracked:items`
-  if (load<string[]>(tk, []).length === 0) {
-    const latest = Object.keys(days).sort().reverse()[0]
+  const curTracked = load<string[]>(tk, [])
+  if (!Array.isArray(curTracked) || curTracked.length === 0) {
+    // Only real days (array items) can seed tracked — a corrupt/legacy key must
+    // never bake `undefined` names into the tiles.
+    const latest = Object.keys(days)
+      .filter((k) => Array.isArray(days[k]?.items))
+      .sort()
+      .reverse()[0]
     if (latest) {
       const top = [...days[latest].items]
-        .sort((a, b) => b.sales - a.sales)
+        .filter((i) => typeof i?.name === 'string' && i.name.trim())
+        .sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0))
         .slice(0, 5)
         .map((i) => i.name)
       if (top.length) save(tk, top)

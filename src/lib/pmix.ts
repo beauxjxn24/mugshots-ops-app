@@ -22,13 +22,24 @@ export function getPmixDays(): PmixDays {
   return sanitizePmix(load<PmixDays>(`${s.currentConcept}|${s.currentLocation}::pmix:days`, {}))
 }
 
-/** Guard against corrupt/legacy shapes — every day must have an items array. */
+/** Guard against corrupt/legacy shapes — every day must have an items array,
+ * and every item must have a string name and numeric qty/sales, so no consumer
+ * ever hits `.toLowerCase()` of null or NaN math. */
 export function sanitizePmix(raw: unknown): PmixDays {
   const out: PmixDays = {}
   if (!raw || typeof raw !== 'object') return out
   for (const [date, day] of Object.entries(raw as Record<string, unknown>)) {
     const items = (day as PmixDay)?.items
-    if (Array.isArray(items)) out[date] = { items, file: (day as PmixDay).file ?? '', importedAt: (day as PmixDay).importedAt ?? '' }
+    if (!Array.isArray(items)) continue
+    const clean = items
+      .filter((i) => i && typeof (i as MixItem).name === 'string' && (i as MixItem).name.trim())
+      .map((i) => ({
+        name: (i as MixItem).name,
+        category: typeof (i as MixItem).category === 'string' ? (i as MixItem).category : '',
+        qty: Number((i as MixItem).qty) || 0,
+        sales: Number((i as MixItem).sales) || 0,
+      }))
+    out[date] = { items: clean, file: (day as PmixDay).file ?? '', importedAt: (day as PmixDay).importedAt ?? '' }
   }
   return out
 }

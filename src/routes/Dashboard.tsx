@@ -567,6 +567,7 @@ function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
     let net = 0
     for (const k of inScope) {
       for (const it of days[k]?.items ?? []) {
+        if (typeof it?.name !== 'string') continue
         net += it.sales
         const cur = byName.get(it.name.toLowerCase())
         if (cur) {
@@ -581,6 +582,7 @@ function TrackedBand({ scope, anchor }: { scope: Scope; anchor: string }) {
   if (tracked.length === 0 && keys.length === 0) return null
 
   const find = (name: string) => {
+    if (typeof name !== 'string') return null
     const n = name.toLowerCase()
     for (const [k, v] of agg.byName) if (k === n || k.includes(n)) return v
     return null
