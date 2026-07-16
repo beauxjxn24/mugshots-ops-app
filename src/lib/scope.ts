@@ -27,7 +27,14 @@ const VICIOUS_BISCUIT: Concept = {
   ],
 }
 const DEFAULT_CONCEPTS: Concept[] = [
-  { id: 'mugshots', name: 'Mugshots Grill & Bar', locations: [{ id: 'flowood', name: 'Flowood, MS' }] },
+  {
+    id: 'mugshots',
+    name: 'Mugshots Grill & Bar',
+    locations: [
+      { id: 'flowood', name: 'Flowood, MS' },
+      { id: 'pearl', name: 'Pearl, MS' },
+    ],
+  },
   VICIOUS_BISCUIT,
 ]
 
@@ -44,6 +51,15 @@ if (!load<boolean>('__vbSeeded', false)) {
     initConcepts = [...initConcepts, VICIOUS_BISCUIT]
   }
   save('__vbSeeded', true)
+}
+// One-time: add the Pearl location to Mugshots for installs that predate it.
+if (!load<boolean>('__pearlSeeded', false)) {
+  initConcepts = initConcepts.map((c) =>
+    c.id === 'mugshots' && !c.locations.some((l) => l.id === 'pearl')
+      ? { ...c, locations: [...c.locations, { id: 'pearl', name: 'Pearl, MS' }] }
+      : c,
+  )
+  save('__pearlSeeded', true)
 }
 const initConcept =
   saved?.currentConcept === ALL
