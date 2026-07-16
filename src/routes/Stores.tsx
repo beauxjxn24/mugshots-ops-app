@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download, Upload } from 'lucide-react'
+import { Download, Upload, ClipboardPaste } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { useScope, useCurrentNames } from '../lib/scope'
@@ -199,6 +199,8 @@ export function Stores() {
 
   const totalLocs = concepts.reduce((n, c) => n + c.locations.length, 0)
   const restoreRef = useRef<HTMLInputElement>(null)
+  const [pasteText, setPasteText] = useState('')
+  const [showPaste, setShowPaste] = useState(false)
 
   // Export/restore EVERYTHING the app knows (prototype Admin spec): every
   // mugops: key, one JSON file. The safety net against lost devices.
@@ -244,14 +246,14 @@ export function Stores() {
     fullResetStore()
     location.reload()
   }
-  const restoreBackup = async (file: File) => {
+  const restoreFromText = async (text: string): Promise<boolean> => {
     try {
-      const parsed = JSON.parse(await file.text())
+      const parsed = JSON.parse(text)
       const data: Record<string, string> = parsed.data ?? parsed
       const keys = Object.keys(data).filter((k) => k.startsWith('mugops:'))
       if (keys.length === 0) {
-        alert('That file has no Mugshots Ops data in it.')
-        return
+        alert('That backup has no Mugshots Ops data in it.')
+        return false
       }
       if (
         !(await confirmDelete(
@@ -260,12 +262,17 @@ export function Stores() {
           'Restore',
         ))
       )
-        return
+        return false
       for (const k of keys) localStorage.setItem(k, data[k])
       location.reload()
+      return true
     } catch {
-      alert('Could not read that backup file.')
+      alert('Could not read that backup — make sure you copied the whole file, from the first { to the last }.')
+      return false
     }
+  }
+  const restoreBackup = async (file: File) => {
+    await restoreFromText(await file.text())
   }
 
   return (
@@ -287,10 +294,17 @@ export function Stores() {
             >
               <Upload size={13} /> Restore
             </button>
+            <button
+              onClick={() => setShowPaste((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-ink"
+            >
+              <ClipboardPaste size={13} /> Paste backup
+            </button>
+            {/* No accept filter — iPad Files often greys out .json otherwise;
+                restoreFromText validates the contents anyway. */}
             <input
               ref={restoreRef}
               type="file"
-              accept="application/json,.json"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0]
@@ -302,6 +316,37 @@ export function Stores() {
         }
       />
       <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {showPaste && (
+          <Card className="border-brand/30 bg-white p-4">
+            <div className="mb-1 text-sm font-bold text-ink">Move a device over — paste its backup</div>
+            <p className="mb-2 text-xs text-muted text-pretty">
+              On the other device, tap <b>Export backup</b>, open the saved file, select all and copy. Then paste it
+              here and tap Restore. (The backup looks like a wall of code — that's normal; you don't read it, you paste it.)
+            </p>
+            <textarea
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder='Paste the backup here — it starts with {"app":"mugshots-ops"…'
+              className="h-28 w-full resize-y rounded-lg border border-black/10 bg-white p-2 font-mono text-[11px] outline-none focus:border-brand"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  if (!pasteText.trim()) return
+                  const ok = await restoreFromText(pasteText.trim())
+                  if (ok) setPasteText('')
+                }}
+                disabled={!pasteText.trim()}
+                className="rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white disabled:opacity-40"
+              >
+                Restore from pasted backup
+              </button>
+              <button onClick={() => { setShowPaste(false); setPasteText('') }} className="text-xs font-semibold text-muted">
+                Cancel
+              </button>
+            </div>
+          </Card>
+        )}
         <Card className="border-brand/20 bg-brand/5 p-4 text-sm text-ink/80">
           Each location keeps its own prep, inventory, tips, checklists, and numbers. Switch between
           them anytime from the store menu at the top of the nav. Add as many concepts and locations
