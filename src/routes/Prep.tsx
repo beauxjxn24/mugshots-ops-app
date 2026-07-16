@@ -26,10 +26,10 @@ interface HistEntry {
 
 const DOWS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const SECTIONS = ['Recipes', 'Test items', 'LTO'] as const
-// Owner's real line stations. Existing installs that still have the first-pass
-// default (Fry side / Grill side) are migrated to these once; assignments to
-// the old names are remapped (see the migration effect).
-const DEFAULT_STATIONS = ['Slice and Dice', 'Grill/Setup', 'Fry', 'Flat', 'Portion/Pan']
+// Line stations are OPT-IN per store — some locations run stations, some just
+// print one sheet. A store with no stations prints the plain one-page split;
+// add stations (one-tap "standard set" below, or your own) to split the print.
+const STANDARD_STATIONS = ['Slice and Dice', 'Grill/Setup', 'Fry', 'Flat', 'Portion/Pan']
 const OLD_STATION_MAP: Record<string, string> = { 'Fry side': 'Fry', 'Grill side': 'Grill/Setup' }
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
@@ -74,7 +74,7 @@ export function Prep() {
   const [editingPars, setEditingPars] = useState(false)
   // Line stations (owner spec): each prep item can be assigned to a station so
   // fry side and grill side can print — and work off — their own sheet.
-  const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', DEFAULT_STATIONS)
+  const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', [])
   const [stationsVer, setStationsVer] = usePersistentState<number>('prep:stationsVer', 0)
   const stations = Array.isArray(rawStations) ? rawStations.filter((s) => typeof s === 'string' && s.trim()) : []
   // '' = show/print every station together; a station name = just that one.
@@ -83,17 +83,18 @@ export function Prep() {
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
 
-  // One-time: move installs off the first-pass default (Fry side / Grill side)
-  // onto the owner's real stations, remapping any items already assigned.
+  // One-time: a store that still has the first-pass default (Fry side / Grill
+  // side) is upgraded to the standard set, remapping its assignments. Stores
+  // with no stations stay that way — stations are opt-in per location.
   useEffect(() => {
-    if (stationsVer >= 2) return
+    if (stationsVer >= 3) return
     const cur = Array.isArray(rawStations) ? rawStations : []
     const isOldDefault = cur.length === 2 && cur[0] === 'Fry side' && cur[1] === 'Grill side'
-    if (cur.length === 0 || isOldDefault) {
-      setStations(DEFAULT_STATIONS)
+    if (isOldDefault) {
+      setStations(STANDARD_STATIONS)
       setItems((is) => is.map((it) => (it.station && OLD_STATION_MAP[it.station] ? { ...it, station: OLD_STATION_MAP[it.station] } : it)))
     }
-    setStationsVer(2)
+    setStationsVer(3)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -156,6 +157,7 @@ export function Prep() {
     setStations((xs) => [...(Array.isArray(xs) ? xs : []), s])
     setNewStation('')
   }
+  const useStandardStations = () => setStations(STANDARD_STATIONS)
   const removeStation = async (s: string) => {
     if (!(await confirmDelete(`Remove the “${s}” station?`, 'Items assigned to it become unassigned — nothing is deleted.', 'Remove station'))) return
     setStations((xs) => (Array.isArray(xs) ? xs : []).filter((x) => x !== s))
@@ -394,7 +396,9 @@ export function Prep() {
             ? "Enter on-hands · prep needed = today's par − on hand · tap an item for its recipe"
             : station
               ? `${station} only · prints just this station's items — switch stations up top`
-              : "Enter on-hands · prep needed = today's par − on hand · printing All puts each station on its own page"
+              : stations.length > 0
+                ? "Enter on-hands · prep needed = today's par − on hand · printing All puts each used station on its own page + the rest together"
+                : "Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
         }
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -448,31 +452,48 @@ export function Prep() {
           separate page to every station. A selected station prints just its page. */}
       <div className="prep-print hidden">
         {(() => {
-          // A page is a station's worth of prep. Build the sections that have
-          // something to prep, dropping empty ones.
+          const printable = (it: PrepItem) => (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0)
+          // Sections (Recipes / Test / LTO) with something to prep for a page.
           const secsFor = (match: (it: PrepItem) => boolean) =>
             SECTIONS.map((sec) => ({
               sec,
-              rows: active.filter(
-                (it) => (it.section ?? 'Recipes') === sec && match(it) && (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0),
-              ),
+              rows: active.filter((it) => (it.section ?? 'Recipes') === sec && printable(it) && match(it)),
             })).filter((s) => s.rows.length > 0)
 
-          const pages = station
-            ? [{ title: station, secs: secsFor((it) => (it.station ?? '') === station) }]
-            : [
-                ...stations.map((st) => ({ title: st, secs: secsFor((it) => (it.station ?? '') === st) })),
-                { title: 'Unassigned', secs: secsFor((it) => !it.station) },
-              ].filter((p) => p.secs.length > 0)
+          const known = new Set(stations)
+          const hasStation = (it: PrepItem) => !!it.station && known.has(it.station)
+          let pages: Array<{ title: string; secs: ReturnType<typeof secsFor> }>
+          if (station) {
+            // One station selected in the toggle → just its page.
+            pages = [{ title: `${station} prep`, secs: secsFor((it) => it.station === station) }]
+          } else {
+            // "All": group each station that's actually used onto its own sheet,
+            // and put everything not on a station on one combined sheet. A store
+            // using no stations just gets the single default split sheet.
+            const used = stations.filter((st) => active.some((it) => it.station === st && printable(it)))
+            const restExists = active.some((it) => printable(it) && !hasStation(it))
+            if (used.length === 0) {
+              pages = [{ title: 'Prep list', secs: secsFor(() => true) }]
+            } else {
+              pages = [
+                ...used.map((st) => ({ title: `${st} prep`, secs: secsFor((it) => it.station === st) })),
+                ...(restExists ? [{ title: 'Everything else', secs: secsFor((it) => !hasStation(it)) }] : []),
+              ]
+            }
+          }
+          pages = pages.filter((p) => p.secs.length > 0)
 
           if (pages.length === 0)
             return <p className="text-[12px]">Nothing to prep — every item is at par for {fmtLong(t)}.</p>
 
           return pages.map((page, pi) => (
             <div key={page.title} style={pi < pages.length - 1 ? { breakAfter: 'page' } : undefined}>
-              <div className="mb-2 flex items-baseline justify-between border-b-2 border-black pb-1">
-                <span className="text-[16px] font-bold">{page.title} prep · {fmtLong(t)}</span>
-                <span className="text-[10px]">par − on hand = prep · Mugshots Flowood</span>
+              <div className="mb-2 border-b-2 border-black pb-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[16px] font-bold">{page.title}</span>
+                  <span className="text-[11px] font-semibold">{fmtLong(t)}</span>
+                </div>
+                <div className="text-[8.5px] text-black/60">par − on hand = prep · Mugshots Flowood</div>
               </div>
               <div style={{ columns: 2, columnGap: '22px' }}>
                 {page.secs.map(({ sec, rows }) => (
@@ -644,8 +665,22 @@ export function Prep() {
           <summary className="cursor-pointer text-sm font-bold text-ink">
             Line stations
             <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">{stations.length}</span>
-            <span className="ml-2 text-xs font-normal text-muted">fry side, grill side… each prints its own sheet</span>
+            <span className="ml-2 text-xs font-normal text-muted">optional — set them up here to split the print by station</span>
           </summary>
+          {stations.length === 0 && (
+            <div className="mt-3 rounded-lg bg-black/[0.03] p-3">
+              <p className="text-xs text-ink/80 text-pretty">
+                This location prints one combined prep sheet. Turn on stations to split the print — each used station
+                gets its own sheet, everything else prints together.
+              </p>
+              <button
+                onClick={useStandardStations}
+                className="mt-2 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
+              >
+                Use standard set (Slice and Dice · Grill/Setup · Fry · Flat · Portion/Pan)
+              </button>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {stations.map((s) => {
               const count = active.filter((it) => (it.station ?? '') === s).length
@@ -673,10 +708,10 @@ export function Prep() {
               Add station
             </button>
           </div>
-          {active.some((it) => !it.station) && (
+          {stations.length > 0 && active.some((it) => !it.station) && (
             <p className="mt-2 text-[11px] text-muted">
-              {active.filter((it) => !it.station).length} item{active.filter((it) => !it.station).length === 1 ? '' : 's'} not assigned to a
-              station yet — they show on “All” but won't print on a single-station sheet.
+              {active.filter((it) => !it.station).length} item{active.filter((it) => !it.station).length === 1 ? '' : 's'} not on a station —
+              they print together on the “Everything else” sheet.
             </p>
           )}
         </details>
