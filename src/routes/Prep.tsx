@@ -13,6 +13,7 @@ interface PrepItem {
   unit: string
   pars: number[] // Mon..Sun
   section?: string // Recipes | Test items | LTO
+  station?: string // Fry side | Grill side | … — which line station preps it
   parked?: boolean // archived — kept, hidden, one tap to bring back
 }
 interface HistEntry {
@@ -66,8 +67,30 @@ export function Prep() {
   const [rawHistory, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
   const history = Array.isArray(rawHistory) ? rawHistory : []
   const [editingPars, setEditingPars] = useState(false)
-  const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes' })
+  // Line stations (owner spec): each prep item can be assigned to a station so
+  // fry side and grill side can print — and work off — their own sheet.
+  const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', ['Fry side', 'Grill side'])
+  const stations = Array.isArray(rawStations) ? rawStations.filter((s) => typeof s === 'string' && s.trim()) : []
+  // '' = show/print every station together; a station name = just that one.
+  const [station, setStation] = useState('')
+  const [newStation, setNewStation] = useState('')
+  const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
+
+  // If the selected station gets renamed/removed out from under us, fall back to All.
+  useEffect(() => {
+    if (station && !stations.includes(station)) setStation('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawStations])
+  // New items default to the station you're filtered to; switch the toggle and
+  // the add form follows (you can still override it per add).
+  useEffect(() => {
+    setAdding((a) => ({ ...a, station }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [station])
+
+  const onStation = (it: PrepItem) => !station || (it.station ?? '') === station
+  const stationLabel = station || 'All stations'
 
   // One-time: sort existing items into their boxes.
   useEffect(() => {
@@ -79,7 +102,7 @@ export function Prep() {
 
   const active = items.filter((it) => !it.parked)
   const parked = items.filter((it) => it.parked)
-  const inSection = (sec: string) => active.filter((it) => (it.section ?? 'Recipes') === sec)
+  const inSection = (sec: string) => active.filter((it) => (it.section ?? 'Recipes') === sec && onStation(it))
 
   const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
 
@@ -103,6 +126,21 @@ export function Prep() {
 
   const park = (name: string, on: boolean) =>
     setItems((is) => is.map((x) => (x.name === name ? { ...x, parked: on } : x)))
+
+  const setItemStation = (name: string, st: string) =>
+    setItems((is) => is.map((x) => (x.name === name ? { ...x, station: st || undefined } : x)))
+
+  const addStation = () => {
+    const s = newStation.trim()
+    if (!s || stations.some((x) => x.toLowerCase() === s.toLowerCase())) return
+    setStations((xs) => [...(Array.isArray(xs) ? xs : []), s])
+    setNewStation('')
+  }
+  const removeStation = async (s: string) => {
+    if (!(await confirmDelete(`Remove the “${s}” station?`, 'Items assigned to it become unassigned — nothing is deleted.', 'Remove station'))) return
+    setStations((xs) => (Array.isArray(xs) ? xs : []).filter((x) => x !== s))
+    setItems((is) => is.map((x) => (x.station === s ? { ...x, station: undefined } : x)))
+  }
 
   const setCount = (name: string, v: number | undefined) => {
     setOnHand((o) => {
@@ -166,7 +204,14 @@ export function Prep() {
     if (items.some((x) => x.name.toLowerCase() === adding.name.trim().toLowerCase())) return
     setItems((is) => [
       ...is,
-      { name: adding.name.trim(), spec: adding.spec.trim(), unit: adding.unit || 'pans', pars: [1, 1, 1, 1, 1, 1, 1], section: adding.section },
+      {
+        name: adding.name.trim(),
+        spec: adding.spec.trim(),
+        unit: adding.unit || 'pans',
+        pars: [1, 1, 1, 1, 1, 1, 1],
+        section: adding.section,
+        station: adding.station || undefined,
+      },
     ])
     setAdding((a) => ({ ...a, name: '', spec: '' }))
   }
@@ -188,7 +233,7 @@ export function Prep() {
         onClick={() => window.print()}
         className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
       >
-        <Printer size={13} /> Print prep sheet
+        <Printer size={13} /> {station ? `Print ${station} sheet` : 'Print prep sheet'}
       </button>
     </>
   )
@@ -234,6 +279,23 @@ export function Prep() {
           <div className="truncate text-sm font-bold text-ink">{it.name}</div>
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="truncate">{it.spec || it.unit}</span>
+            {stations.length > 0 && (
+              <select
+                value={it.station ?? ''}
+                onChange={(e) => setItemStation(it.name, e.target.value)}
+                title="Which line station preps this — it prints on that station's sheet"
+                className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-bold outline-none ${
+                  it.station ? 'border-navy/25 bg-navy/5 text-navy' : 'border-black/10 bg-white text-muted'
+                }`}
+              >
+                <option value="">— station —</option>
+                {stations.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            )}
             <button
               onClick={() => park(it.name, true)}
               title="Park it — off the list and the print, kept in the Parked box below"
@@ -310,7 +372,9 @@ export function Prep() {
         subtitle={
           mode === 'bar'
             ? "Enter on-hands · prep needed = today's par − on hand · tap an item for its recipe"
-            : "Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
+            : station
+              ? `${station} only · prints just this station's items — switch stations up top`
+              : "Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
         }
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -330,6 +394,25 @@ export function Prep() {
             </div>
             {mode === 'kitchen' && (
               <>
+                {stations.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 rounded-lg bg-black/5 p-1">
+                    <button
+                      onClick={() => setStation('')}
+                      className={`rounded-md px-3 py-1.5 text-xs font-bold ${station === '' ? 'bg-white text-ink shadow-sm' : 'text-muted'}`}
+                    >
+                      All
+                    </button>
+                    {stations.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStation(s)}
+                        className={`rounded-md px-3 py-1.5 text-xs font-bold ${station === s ? 'bg-navy text-white shadow-sm' : 'text-muted'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <Link to="/builds" className="text-xs font-bold text-brand">
                   Line builds →
                 </Link>
@@ -343,7 +426,9 @@ export function Prep() {
           keep their boxes, and the list flows into TWO columns. */}
       <div className="prep-print hidden">
         <div className="mb-2 flex items-baseline justify-between border-b-2 border-black pb-1">
-          <span className="text-[16px] font-bold">Prep list · {fmtLong(t)}</span>
+          <span className="text-[16px] font-bold">
+            {station ? `${station} prep` : 'Prep list'} · {fmtLong(t)}
+          </span>
           <span className="text-[10px]">par − on hand = prep · Mugshots Flowood</span>
         </div>
         <div style={{ columns: 2, columnGap: '22px' }}>
@@ -494,10 +579,67 @@ export function Prep() {
               <option key={s}>{s}</option>
             ))}
           </select>
+          {stations.length > 0 && (
+            <select
+              value={adding.station}
+              onChange={(e) => setAdding({ ...adding, station: e.target.value })}
+              className="rounded-lg border border-black/10 bg-white px-2 py-2 text-sm outline-none focus:border-brand"
+            >
+              <option value="">No station</option>
+              {stations.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          )}
           <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
             Add
           </button>
         </Card>
+
+        {/* Manage line stations — add / remove; renaming happens by removing and
+            re-adding, and each item's station picker moves it. */}
+        <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
+          <summary className="cursor-pointer text-sm font-bold text-ink">
+            Line stations
+            <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">{stations.length}</span>
+            <span className="ml-2 text-xs font-normal text-muted">fry side, grill side… each prints its own sheet</span>
+          </summary>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {stations.map((s) => {
+              const count = active.filter((it) => (it.station ?? '') === s).length
+              return (
+                <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-navy/20 bg-navy/5 py-1 pl-3 pr-1.5 text-xs font-bold text-navy">
+                  {s} <span className="font-mono text-[10px] font-semibold text-muted">{count}</span>
+                  <button
+                    onClick={() => removeStation(s)}
+                    aria-label={`Remove ${s}`}
+                    className="grid size-4 place-items-center rounded-full text-muted hover:bg-black/10 hover:text-down"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )
+            })}
+            <input
+              value={newStation}
+              onChange={(e) => setNewStation(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addStation()}
+              placeholder="Add a station…"
+              className="w-40 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand"
+            />
+            <button onClick={addStation} className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm font-bold text-ink">
+              Add station
+            </button>
+          </div>
+          {active.some((it) => !it.station) && (
+            <p className="mt-2 text-[11px] text-muted">
+              {active.filter((it) => !it.station).length} item{active.filter((it) => !it.station).length === 1 ? '' : 's'} not assigned to a
+              station yet — they show on “All” but won't print on a single-station sheet.
+            </p>
+          )}
+        </details>
 
         {/* Parked — archived, never lost */}
         <details className="rounded-2xl border border-black/10 bg-white px-4 py-3">
