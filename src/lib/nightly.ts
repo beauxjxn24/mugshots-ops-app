@@ -138,50 +138,56 @@ export function seedFlowoodHistory(): void {
   }
 
   // Third seed (owner-supplied via chat, Jul 2026): real daily numbers for the
-  // current period (Jun 15 – Jul 14, 2026) from the Toast Sales-summary export —
-  // net + covers per day, gross = net (no per-day discounts in the summary), and
-  // a category split allocated from the period's real Toast category mix so every
-  // field on the Nightly sheet is filled without a re-import.
+  // current period (Jun 15 – Jul 14, 2026) from the owner's Toast exports —
+  //  · Sales by day       → net + covers
+  //  · Labor cost by day  → real gross, real labor $, real labor % (per DAY)
+  //  · Sales category summary → the period category mix (categories aren't broken
+  //                             out per day, so each night is split by that mix)
+  // So every field on the Nightly sheet fills without a re-import: gross, net,
+  // discounts (gross − net, booked to comps), the category split, covers, and
+  // real per-day labor. Only the deposit is left for the manager.
   //
-  // v3 is DATE-keyed and id-agnostic: it fills the category split on ANY night in
-  // the period that is still missing one — whether it came from the earlier bare
-  // seed OR from a hand-drop import (those have a different id) — computing the
-  // split from THAT night's own net so it always reconciles. Nights that already
-  // carry a category breakdown (hand-entered or the detailed owner-drop) are left
-  // untouched. First run also adds any period date not present at all.
-  // Labor is allocated from the period Labor report (Toast Labor cost summary:
-  // $31,774.43 on $221,768.60 net = 14.33%). Per-day labor isn't in the export,
-  // so each day gets the period rate — reconciles to the period total and any
-  // line can be overridden with the true figure.
-  const FLAG26 = '__flowoodSales2026Full_v4'
+  // v5 is DATE-keyed / id-agnostic (works for seed OR hand-drop imports) and it
+  // UPGRADES the earlier flat-14.33% labor estimate to the real per-day figure
+  // (a flat night is recognised by laborPct ≈ 14.3). It never overwrites a night
+  // that already carries real detail — the owner-drop's 7/11 is restored by
+  // applyOwnerDrops right after this runs.
+  const FLAG26 = '__flowoodSales2026Real_v5'
   if (!load<boolean>(FLAG26, false)) {
     const cur = load<Night[]>(k, [])
     const seedRows = seedSales2026 as Array<{
-      date: string; net: number; guests: number; gross: number
-      food: number; na: number; liquor: number; beer: number; wine: number; nocat: number
+      date: string; net: number; guests: number; gross: number; comps: number; labor: number; laborPct: number
     }>
     const seedByDate = new Map(seedRows.map((r) => [r.date, r]))
+    const isFlat = (pct?: number) => pct != null && Math.abs(pct - 14.3) < 0.05 // the old estimate
     let changed = false
 
-    // Fill categories AND labor on existing period nights that lack them (any
-    // source — seed or import). Never overwrite a value already there.
     const next = cur.map((n) => {
-      if (!seedByDate.has(n.date)) return n // outside the period
-      const net = n.netSales || 0
+      const r = seedByDate.get(n.date)
+      if (!r) return n // outside the period
+      const net = n.netSales || r.net
       if (net <= 0) return n
       let m = n
+      // Categories: fill only when missing (preserve real per-category detail).
       if (m.food == null) {
-        m = { ...m, ...splitByMix(net), gross: m.gross ?? net }
+        m = { ...m, ...splitByMix(net) }
         changed = true
       }
-      if (m.labor == null) {
-        m = { ...m, ...laborFor(net) }
+      // Real per-day labor: fill when missing or replace the flat estimate.
+      if (m.labor == null || isFlat(m.laborPct)) {
+        m = { ...m, labor: r.labor, laborPct: r.laborPct }
+        changed = true
+      }
+      // Real gross + discount total: fill when missing or when a prior seed had
+      // set gross = net (no discount detail).
+      if (m.gross == null || m.gross === m.netSales) {
+        m = { ...m, gross: r.gross, comps: m.comps ?? r.comps }
         changed = true
       }
       return m
     })
 
-    // Add any period date that isn't logged at all yet.
+    // Add any period date not logged at all yet, fully populated.
     const have = new Set(cur.map((n) => n.date))
     for (const r of seedRows) {
       if (have.has(r.date)) continue
@@ -189,12 +195,14 @@ export function seedFlowoodHistory(): void {
         id: `seed26-${r.date}`,
         date: r.date,
         netSales: r.net,
-        gross: r.net, // no per-day discounts in the summary → gross = net
+        gross: r.gross,
+        comps: r.comps,
         deposit: 0,
         covers: r.guests,
+        labor: r.labor,
+        laborPct: r.laborPct,
         ...splitByMix(r.net),
-        ...laborFor(r.net),
-        notes: 'From Toast sales summary + labor report (est. from period rates)',
+        notes: 'From Toast sales, labor & category reports',
       })
       changed = true
     }
@@ -202,12 +210,6 @@ export function seedFlowoodHistory(): void {
     if (changed) save(k, next.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
     save(FLAG26, true)
   }
-}
-
-/** Allocate a night's labor from the period labor rate (14.33% of net). */
-function laborFor(net: number): Pick<Night, 'labor' | 'laborPct'> {
-  const labor = Math.round(net * 0.143278 * 100) / 100
-  return { labor, laborPct: net > 0 ? Math.round((labor / net) * 1000) / 10 : 0 }
 }
 
 // Split a night's net across the five categories the nightly sheet shows, using
