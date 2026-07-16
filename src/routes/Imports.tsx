@@ -14,10 +14,10 @@ import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocat
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
 import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
-import { placeItemInGuide, addGuideItem, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
+import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
 import { useIsPhone } from '../lib/useIsPhone'
-import { CalendarPlus, PartyPopper, LineChart, Users, PieChart } from 'lucide-react'
+import { CalendarPlus, PartyPopper, LineChart, Users, PieChart, Plus } from 'lucide-react'
 
 interface Job extends Partial<ReadResult> {
   id: string
@@ -435,31 +435,23 @@ export function Imports() {
               <PmixImport text={job.text} fileName={job.fileName} />
             )}
 
-            {/* Invoices/deliveries (lines with quantities) → one-tap receiving.
-                Price sheets (prices but no quantities) → price update only.
-                A count sheet is neither — it owns its own review card above. */}
-            {job.text && !isCountSheet(job.text) && job.lineItems && job.lineItems.length > 0 && job.lineItems.some((li) => li.qty) && (
-              <Receiving lineItems={job.lineItems} fileName={job.fileName} text={job.text ?? ''} docId={job.docId} />
-            )}
-            {job.text && !isCountSheet(job.text) && job.lineItems && job.lineItems.length > 0 && !job.lineItems.some((li) => li.qty) && (
-              <PriceUpdate lineItems={job.lineItems} text={job.text} fileName={job.fileName} />
-            )}
-
-            {/* Always-available fallback: if a drop isn't a recognized report and
-                didn't parse into a Receiving sheet (e.g. a photo of an invoice
-                that OCR couldn't line-itemize), still let it be filed to the
-                Invoices log by hand and its items dropped into an order guide. */}
-            {job.status === 'done' &&
-              job.text &&
-              !job.fromZip &&
-              !isSalesSummary(job.text) &&
-              !isCategorySummary(job.text) &&
-              !isRosterDoc(job.text) &&
-              !isCateringDoc(job.text) &&
-              !isCountSheet(job.text) &&
-              !(job.lineItems && job.lineItems.some((li) => li.qty)) && (
-                <LogInvoice text={job.text} fileName={job.fileName} docId={job.docId} />
-              )}
+            {/* EVERY invoice / delivery scan → the Receiving sheet, where each
+                line is matched to the order guide and confirmed (or added). A
+                photo whose lines OCR couldn't read still opens the sheet — add
+                the items by hand there. Only a vendor PRICE sheet (prices, no
+                order qty, from a CSV/Excel) routes to a price-only update. */}
+            {(() => {
+              const t = job.text ?? ''
+              if (!t || job.status !== 'done') return null
+              const recognized =
+                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
+              if (recognized) return null
+              const hasQtyLines = !!job.lineItems?.some((li) => li.qty)
+              const scan = job.kind === 'image' || job.kind === 'pdf'
+              const priceSheet = !scan && !hasQtyLines && !!job.lineItems && job.lineItems.length > 0
+              if (priceSheet) return <PriceUpdate lineItems={job.lineItems!} text={t} fileName={job.fileName} />
+              return <Receiving lineItems={job.lineItems ?? []} fileName={job.fileName} text={t} docId={job.docId} />
+            })()}
               </CardBoundary>
             )}
 
@@ -570,6 +562,15 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
   const inv = useMemo(() => parseInvoice(text, fileName), [text, fileName])
   const vendorList = useMemo(() => vendors(), [])
   const [vendor, setVendor] = useState(inv.vendor && inv.vendor !== 'Vendor' ? inv.vendor : (vendorList[0] ?? 'US Foods'))
+  // Editable invoice header — OCR often misses the total / number, so the manager
+  // can complete them here before filing.
+  const [invTotal, setInvTotal] = useState(inv.total ? String(inv.total) : '')
+  const [invNumber, setInvNumber] = useState(inv.number ?? '')
+  const [invDate, setInvDate] = useState(inv.date ?? today())
+  const total = parseFloat((invTotal || '').replace(/[^0-9.]/g, '')) || 0
+  const addRow = () =>
+    setRows((rs) => [...rs, { description: '', raw: '', qty: 1, target: '', resolved: '', picking: true }])
+  const removeRow = (i: number) => setRows((rs) => rs.filter((_, j) => j !== i))
 
   const options = useMemo(() => {
     const data = getOrdering()
@@ -583,7 +584,8 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
   const confirmed = rows.filter((r) => r.resolved === 'confirmed' && r.target && r.target !== 'NEW')
   const adds = rows.filter((r) => r.resolved === 'new' && r.description.trim())
   const unresolvedMatches = rows.filter((r) => r.resolved === '' && r.target && r.target !== 'NEW').length
-  const unresolved = rows.filter((r) => r.resolved === '').length
+  // Blank rows (a just-added line the manager hasn't typed yet) don't block apply.
+  const unresolved = rows.filter((r) => r.resolved === '' && r.description.trim()).length
 
   const apply = () => {
     const receipts: Receipt[] = confirmed
@@ -592,7 +594,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
         const [v, itemId] = r.target.split('||')
         return { vendor: v, itemId, qty: r.qty, cost: r.price }
       })
-    const updated = applyReceipts(receipts, inv.date ?? undefined)
+    const updated = applyReceipts(receipts, invDate || undefined)
     let repriced = 0
     for (const r of confirmed) {
       const itemId = r.target.split('||')[1]
@@ -617,29 +619,29 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       placeItemInGuide(shelf, ci.id, ci.name)
       // Through applyReceipts (not a bare count) so the line lands in the
       // receipts log — the Orders Usage view reads that.
-      applyReceipts([{ vendor, itemId: ci.id, qty: Math.max(0, r.qty), cost: r.price }], inv.date ?? undefined)
+      applyReceipts([{ vendor, itemId: ci.id, qty: Math.max(0, r.qty), cost: r.price }], invDate || undefined)
       added++
     })
     // Tie the delivery into Inventory: every received line lands in the
     // Receiving area with its quantity, ready to put away during the count.
     const receivedInv = receiveIntoInventory(
       [...confirmed, ...adds].map((r) => ({ name: r.description.trim(), qty: r.qty, uom: r.size })),
-      inv.date ?? today(),
+      invDate || today(),
     )
-    // File the invoice automatically — qty, price, date, done.
-    if (inv.total > 0) {
+    // File the invoice — qty, price, date, done.
+    if (total > 0) {
       addInvoice({
         id: `inv${Date.now()}`,
         vendor,
-        date: inv.date ?? today(),
-        number: inv.number,
-        total: inv.total,
+        date: invDate || today(),
+        number: invNumber,
+        total,
         paid: false,
         docId,
       })
     }
-    const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${receivedInv ? ` · ${receivedInv} → Inventory · Receiving` : ''}${inv.total > 0 ? ` · invoice ${money2(inv.total)} filed` : ''}`
-    setApplied({ received: updated + added, repriced, added, receivedInv, invoiceTotal: inv.total, vendor })
+    const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${receivedInv ? ` · ${receivedInv} → Inventory · Receiving` : ''}${total > 0 ? ` · invoice ${money2(total)} filed` : ''}`
+    setApplied({ received: updated + added, repriced, added, receivedInv, invoiceTotal: total, vendor })
     logImport(fileName, summary)
   }
 
@@ -688,6 +690,16 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
     const big = phone ? 'px-3 py-2 text-xs' : 'px-2 py-1 text-[11px]'
     const sm = phone ? 'px-2 py-2 text-xs font-semibold' : 'text-[10px] font-semibold'
     const chip = phone ? 'px-3 py-2 text-xs' : 'px-2 py-1 text-[11px]'
+    const remove = (
+      <button
+        onClick={() => removeRow(i)}
+        title="Remove this line"
+        aria-label="Remove this line"
+        className={`shrink-0 rounded-lg text-muted hover:bg-black/5 hover:text-down ${phone ? 'px-2 py-2 text-sm' : 'px-1.5 py-1 text-xs'}`}
+      >
+        ✕
+      </button>
+    )
     return (
       <span className={wrap}>
         {r.picking ? (
@@ -756,6 +768,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
             </button>
           </>
         )}
+        {remove}
       </span>
     )
   }
@@ -788,22 +801,37 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
 
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
-      <div className="mb-2 flex flex-wrap items-center gap-2">
+      <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-xs font-bold uppercase tracking-wide text-muted">
-          Received · {rows.length} lines{inv.date ? ` · ${inv.date}` : ''}
+          Receiving · match every line to your order guide
         </span>
-        <span className="text-[11px] text-muted">fix any name we misread — the reader remembers your correction</span>
-        <label className="ml-auto flex items-center gap-1.5 text-xs text-ink/70">
+        <span className="text-[11px] text-muted">confirm each item — add it if it’s not on the guide yet</span>
+      </div>
+      {/* Editable invoice header — vendor / #, date, total (OCR often misses these) */}
+      <div className="mb-2 flex flex-wrap items-end gap-2 rounded-lg bg-white/70 p-2">
+        <label className="text-[10px] font-bold uppercase text-muted">
           Vendor
           <select
             value={vendor}
             onChange={(e) => setVendor(e.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs outline-none focus:border-brand"
+            className="mt-0.5 block rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm outline-none focus:border-brand"
           >
             {[...new Set([vendor, ...vendorList])].map((v) => (
               <option key={v}>{v}</option>
             ))}
           </select>
+        </label>
+        <label className="text-[10px] font-bold uppercase text-muted">
+          Invoice #
+          <input value={invNumber} onChange={(e) => setInvNumber(e.target.value)} placeholder="optional" className="mt-0.5 block w-28 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm outline-none focus:border-brand" />
+        </label>
+        <label className="text-[10px] font-bold uppercase text-muted">
+          Date
+          <input type="date" value={invDate} onChange={(e) => setInvDate(e.target.value)} className="mt-0.5 block rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm outline-none focus:border-brand" />
+        </label>
+        <label className="text-[10px] font-bold uppercase text-muted">
+          Total $
+          <input inputMode="decimal" value={invTotal} onChange={(e) => setInvTotal(e.target.value)} placeholder="0.00" className="mt-0.5 block w-24 rounded-lg border border-black/10 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-brand" />
         </label>
       </div>
       {unresolvedMatches > 1 && (
@@ -819,7 +847,15 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
         </div>
       )}
 
-      {isPhone ? (
+      {rows.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-black/15 bg-white/60 px-3 py-6 text-center">
+          <p className="text-sm font-semibold text-ink">No lines read from this invoice</p>
+          <p className="mx-auto mt-1 max-w-xs text-[11px] text-muted text-pretty">
+            The scan may be faint or handwritten. Add each item by hand below — you’ll still map every one to the
+            order guide (or add it if it’s new).
+          </p>
+        </div>
+      ) : isPhone ? (
         /* Phone: one card per line — name, then size/qty/price, then the mapping */
         <div className="space-y-2.5">
           {rows.map((r, i) => (
@@ -858,12 +894,19 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       )}
 
       <button
+        onClick={addRow}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-brand/40 bg-white/60 px-4 py-2.5 text-xs font-bold text-brand-600 hover:bg-brand/5"
+      >
+        <Plus size={14} /> Add a line the scan missed
+      </button>
+
+      <button
         onClick={apply}
         disabled={confirmed.length + adds.length === 0}
         className="mt-3 w-full rounded-lg bg-brand px-4 py-3 text-sm font-bold text-white disabled:opacity-40"
       >
         Log {confirmed.length + adds.length} line{confirmed.length + adds.length === 1 ? '' : 's'} + update prices
-        {inv.total > 0 ? ` + file invoice ${money2(inv.total)}` : ''} ✓
+        {total > 0 ? ` + file invoice ${money2(total)}` : ''} ✓
       </button>
       {unresolved > 0 && (
         <p className="mt-1.5 text-center text-[11px] text-warn">
@@ -1217,140 +1260,6 @@ function CountSheetImport({ text, fileName }: { text: string; fileName: string }
         <button onClick={addNew} className="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-ink">
           Add new items only
         </button>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Fallback for any dropped document that didn't auto-parse into a receiving
- * sheet — most often a PHOTO of an invoice OCR couldn't line-itemize. Always
- * lets the manager (1) file it to the Invoices log by hand (vendor / date /
- * total / #, with the scan attached so it reopens), and (2) drop its items
- * straight into an order guide (Beer / Liquor / Produce / Other).
- */
-function LogInvoice({ text, fileName, docId }: { text: string; fileName: string; docId?: string }) {
-  const guess = useMemo(() => parseInvoice(text, fileName), [text, fileName])
-  const vendorList = useMemo(() => vendors(), [])
-  const [vendor, setVendor] = useState(guess.vendor && guess.vendor !== 'Vendor' ? guess.vendor : (vendorList[0] ?? ''))
-  const [date, setDate] = useState(guess.date ?? today())
-  const [number, setNumber] = useState(guess.number ?? '')
-  const [total, setTotal] = useState(guess.total ? String(guess.total) : '')
-  const [filed, setFiled] = useState(false)
-  // Quick-add items to a guide (for the beer/liquor invoice that didn't parse).
-  const [shelf, setShelf] = useState<GuideShelf>('Beer')
-  const [itemText, setItemText] = useState('')
-  const [addedItems, setAddedItems] = useState(0)
-
-  const fileIt = () => {
-    const amt = parseFloat(total.replace(/[^0-9.]/g, '')) || 0
-    addInvoice({
-      id: `inv${Date.now()}`,
-      vendor: vendor.trim() || 'Vendor',
-      date: date || today(),
-      number: number.trim(),
-      total: amt,
-      paid: false,
-      docId,
-    })
-    logImport(fileName, `invoice filed by hand · ${vendor.trim() || 'Vendor'}${amt ? ` $${amt.toFixed(2)}` : ''}`)
-    setFiled(true)
-  }
-
-  const addItems = () => {
-    const names = itemText.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)
-    if (!names.length) return
-    for (const name of names) addGuideItem(shelf, 999, name, shelf === 'Beer' ? 'case' : 'btl')
-    setAddedItems((n) => n + names.length)
-    logImport(fileName, `${names.length} item${names.length === 1 ? '' : 's'} → ${shelf} order guide`)
-    setItemText('')
-  }
-
-  const inputCls = 'rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand'
-  return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
-      <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
-        <ReceiptText size={14} /> File this invoice
-      </div>
-      <p className="mb-2 text-[11px] text-muted">
-        Couldn’t read the line items on this one (usually a photo or a PDF without a text table), so it
-        skips the line-by-line match. Check the details, file it, then add its items to your guide below.
-      </p>
-
-      {filed ? (
-        <div className="mb-3 rounded-lg border border-up/40 bg-up/5 p-2.5">
-          <div className="flex items-center gap-2 text-sm font-bold text-up">
-            <FileCheck2 size={15} /> Invoice filed — {vendor} {date}
-            {total ? ` · $${(parseFloat(total.replace(/[^0-9.]/g, '')) || 0).toFixed(2)}` : ''}
-          </div>
-          <div className="mt-1 text-[11px] text-ink/70">
-            It’s on your{' '}
-            <Link to="/invoices" className="font-bold text-brand">Invoices</Link>{' '}
-            tab. {addedItems > 0 ? `${addedItems} item${addedItems === 1 ? '' : 's'} added to your order guide.` : 'Add its items to a guide below if you want them tracked.'}
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-[11px] font-semibold text-muted">
-              Vendor
-              <input list="li-vendors" value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="US Foods…" className={`mt-0.5 w-full ${inputCls}`} />
-              <datalist id="li-vendors">
-                {vendorList.map((v) => (
-                  <option key={v} value={v} />
-                ))}
-              </datalist>
-            </label>
-            <label className="text-[11px] font-semibold text-muted">
-              Invoice date
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`mt-0.5 w-full ${inputCls}`} />
-            </label>
-            <label className="text-[11px] font-semibold text-muted">
-              Invoice #
-              <input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="optional" className={`mt-0.5 w-full ${inputCls}`} />
-            </label>
-            <label className="text-[11px] font-semibold text-muted">
-              Total $
-              <input inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" className={`mt-0.5 w-full text-right font-mono ${inputCls}`} />
-            </label>
-          </div>
-          <button onClick={fileIt} className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
-            File to Invoices{total ? ` · $${(parseFloat(total.replace(/[^0-9.]/g, '')) || 0).toFixed(2)}` : ''}
-          </button>
-        </>
-      )}
-
-      {/* Add the invoice's items to an order guide by hand */}
-      <div className="mt-3 border-t border-black/10 pt-3">
-        <div className="mb-1.5 text-[11px] font-semibold text-muted">
-          Add items to an order guide {addedItems > 0 && <span className="font-bold text-up">· {addedItems} added</span>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <select value={shelf} onChange={(e) => setShelf(e.target.value as GuideShelf)} className={inputCls}>
-            {[...GUIDE_SHELVES, 'Other'].map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <input
-            value={itemText}
-            onChange={(e) => setItemText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addItems()}
-            placeholder="Item names, comma-separated (Bud Light, Miller Lite…)"
-            className={`min-w-0 flex-1 ${inputCls}`}
-          />
-          <button onClick={addItems} className="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-bold text-ink">
-            Add to {shelf}
-          </button>
-        </div>
-        <p className="mt-1 text-[11px] text-muted">
-          Lands them on the {shelf} guide in{' '}
-          <Link to="/ordering" className="font-bold text-brand">
-            Ordering
-          </Link>
-          .
-        </p>
       </div>
     </div>
   )

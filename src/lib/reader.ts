@@ -129,22 +129,27 @@ export function parseLineItems(text: string): LineItem[] {
   const unit = /(\d{1,4})\s*(cs|ct|ea|lb|lbs|case|cases|each|pk|bg|dz|gal|#)\b/gi
   const skip = /\b(sub-?total|total|tax|amount\s*due|balance|invoice|account|page|remit|terms)\b/i
 
+  // A row worth showing has a NAME plus some numeric signal — a price OR an order
+  // qty. Scanned invoices (OCR) often lose the clean "$0.00" price, so a line
+  // with just a qty still counts; the manager confirms/fixes it on the sheet.
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim()
     if (line.length < 4 || skip.test(line)) continue
     const prices = line.match(money)
-    if (!prices) continue
-    const price = prices[prices.length - 1]
+    const price = prices ? prices[prices.length - 1] : undefined
 
     let last: RegExpExecArray | null = null
     const re = new RegExp(unit)
     for (let m = re.exec(line); m; m = re.exec(line)) last = m
     const qty = last?.[1]
 
+    if (!price && !qty) continue // no numeric signal at all — probably not a line item
+
     let description = line.replace(money, '')
     if (last) description = description.replace(last[0], ' ')
     description = description.replace(/\s{2,}/g, ' ').trim()
-    if (description.length < 3) continue
+    // Needs a couple of real letters to be a product name (not a stray number row).
+    if ((description.match(/[a-z]/gi) || []).length < 3) continue
 
     // Scrub OCR noise, pull the vendor code out of the name, and drop lines
     // too garbled to trust — garbage must never reach the catalog.
