@@ -274,17 +274,23 @@ export interface LaborRow {
   labor: number
   laborPct?: number
   gross?: number
+  net?: number
 }
 
-/** Parse per-day labor cost / % (and gross) from a "Labor cost by day" export. */
+/**
+ * Parse per-day labor cost / % from a "Labor cost by day" export. Toast puts the
+ * day's NET and GROSS sales in the same file, so we pull those too — the labor
+ * report can fill the sales line on Nightly all by itself.
+ */
 export function parseLaborByDay(text: string): LaborRow[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim())
   if (lines.length < 2) return []
-  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase())
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
   const iDay = cols.findIndex((h) => h === 'day')
   const iCost = cols.findIndex((h) => h.includes('total cost'))
   const iPct = cols.findIndex((h) => h.includes('labor % (net)'))
-  const iGross = cols.findIndex((h) => h.includes('gross sales'))
+  const iGross = cols.findIndex((h) => h === 'gross sales')
+  const iNet = cols.findIndex((h) => h === 'net sales')
   if (iDay < 0 || iCost < 0) return []
   const out: LaborRow[] = []
   for (let r = 1; r < lines.length; r++) {
@@ -298,29 +304,39 @@ export function parseLaborByDay(text: string): LaborRow[] {
       labor,
       laborPct: iPct >= 0 ? num(c[iPct]) : undefined,
       gross: iGross >= 0 ? num(c[iGross]) || undefined : undefined,
+      net: iNet >= 0 ? num(c[iNet]) || undefined : undefined,
     })
   }
   return out
 }
 
-/** Fill real labor $ / % (and gross) onto the matching nights. Returns count. */
+/**
+ * Fill labor $ / % — plus net & gross sales — onto the matching nights from a
+ * labor report. Existing real sales (from a sales-summary import) win; the labor
+ * report only fills a night that's still blank, so nothing already entered gets
+ * clobbered. Returns count.
+ */
 export function applyLaborRows(rows: LaborRow[]): number {
   const byDate = new Map(getNights().map((n) => [n.date, n]))
   let count = 0
   for (const r of rows) {
     if (!r.date || !(r.labor > 0)) continue
     const ex = byDate.get(r.date)
+    // Fill sales from the labor file when the night has none yet — a real
+    // sales-summary value (> 0) is left untouched.
+    const netSales = ex?.netSales && ex.netSales > 0 ? ex.netSales : r.net ?? 0
+    const gross = ex?.gross && ex.gross > 0 ? ex.gross : r.gross ?? ex?.gross
     byDate.set(r.date, {
       id: ex?.id ?? `n-${r.date}`,
       date: r.date,
-      netSales: ex?.netSales ?? 0,
       deposit: ex?.deposit ?? 0,
       covers: ex?.covers ?? 0,
       notes: ex?.notes ?? 'From Toast labor report',
       ...ex,
+      netSales,
+      gross,
       labor: r.labor,
       laborPct: r.laborPct ?? ex?.laborPct,
-      gross: ex?.gross ?? r.gross,
     })
     count++
   }
