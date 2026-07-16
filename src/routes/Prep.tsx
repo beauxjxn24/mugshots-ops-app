@@ -83,18 +83,31 @@ export function Prep() {
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
 
-  // One-time: a store that still has the first-pass default (Fry side / Grill
-  // side) is upgraded to the standard set, remapping its assignments. Stores
-  // with no stations stay that way — stations are opt-in per location.
+  // One-time station migrations, per location:
+  //  • v3: a store still on the first-pass default (Fry side / Grill side) is
+  //    upgraded to the standard set, remapping its assignments.
+  //  • v4: a store that has stations but has NEVER assigned an item to one was
+  //    auto-seeded by an earlier build, not deliberately set up — clear it back
+  //    to the plain one-sheet default. A store with real assignments (Pearl) is
+  //    left alone. After this runs once, stations only exist where turned on.
   useEffect(() => {
-    if (stationsVer >= 3) return
     const cur = Array.isArray(rawStations) ? rawStations : []
-    const isOldDefault = cur.length === 2 && cur[0] === 'Fry side' && cur[1] === 'Grill side'
-    if (isOldDefault) {
-      setStations(STANDARD_STATIONS)
-      setItems((is) => is.map((it) => (it.station && OLD_STATION_MAP[it.station] ? { ...it, station: OLD_STATION_MAP[it.station] } : it)))
+    if (stationsVer < 3) {
+      const isOldDefault = cur.length === 2 && cur[0] === 'Fry side' && cur[1] === 'Grill side'
+      if (isOldDefault) {
+        setStations(STANDARD_STATIONS)
+        setItems((is) => is.map((it) => (it.station && OLD_STATION_MAP[it.station] ? { ...it, station: OLD_STATION_MAP[it.station] } : it)))
+      }
     }
-    setStationsVer(3)
+    if (stationsVer < 4) {
+      const known = new Set(cur)
+      const everUsed = items.some((it) => it.station && known.has(it.station))
+      // Not old-default (that path just assigned above) and nothing ever
+      // assigned → this store never opted in; clear the seeded stations.
+      const wasOldDefault = cur.length === 2 && cur[0] === 'Fry side' && cur[1] === 'Grill side'
+      if (cur.length > 0 && !everUsed && !wasOldDefault) setStations([])
+    }
+    setStationsVer(4)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
