@@ -495,20 +495,26 @@ export function Prep() {
                 </div>
                 <div className="text-[8.5px] text-black/60">par − on hand = prep · Mugshots Flowood</div>
               </div>
-              <div style={{ columns: 2, columnGap: '22px' }}>
+              {/* Single full-width column — CSS multi-column prints unreliably
+                  (iOS/Safari balances into one half-width column and spills into
+                  dozens of near-blank pages). A plain list fills the whole sheet
+                  and paginates cleanly on every printer. */}
+              <div>
                 {page.secs.map(({ sec, rows }) => (
-                  <div key={sec} style={{ breakInside: 'avoid' }}>
-                    <div className="mt-1 border-b border-black py-[2px] text-[9.5px] font-extrabold uppercase tracking-wider">{sec}</div>
+                  <div key={sec}>
+                    <div className="mt-2 border-b border-black py-[2px] text-[10px] font-extrabold uppercase tracking-wider" style={{ breakInside: 'avoid', breakAfter: 'avoid' }}>
+                      {sec}
+                    </div>
                     {rows.map((it) => (
-                      <div key={it.name} className="flex items-center gap-2 border-b border-black/25 py-[3px]" style={{ breakInside: 'avoid' }}>
+                      <div key={it.name} className="flex items-center gap-2 border-b border-black/25 py-[4px]" style={{ breakInside: 'avoid' }}>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[11px] font-bold leading-[13px]">{it.name}</span>
-                          <span className="block truncate text-[8.5px] leading-[10px] text-black/60">{it.spec || it.unit}</span>
+                          <span className="block text-[12px] font-bold leading-[14px]">{it.name}</span>
+                          <span className="block text-[9px] leading-[11px] text-black/60">{it.spec || it.unit}</span>
                         </span>
-                        <span className="w-14 shrink-0 text-right font-mono text-[11px] font-bold">
+                        <span className="w-16 shrink-0 text-right font-mono text-[12px] font-bold">
                           {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
                         </span>
-                        <span className="h-[15px] w-9 shrink-0 rounded-[3px] border border-black/50" />
+                        <span className="h-[16px] w-10 shrink-0 rounded-[3px] border border-black/50" />
                       </div>
                     ))}
                   </div>
