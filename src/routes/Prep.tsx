@@ -253,7 +253,7 @@ export function Prep() {
         onClick={() => window.print()}
         className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
       >
-        <Printer size={13} /> {station ? `Print ${station} sheet` : 'Print prep sheet'}
+        <Printer size={13} /> {station ? `Print ${station} sheet` : stations.length > 0 ? 'Print all — a page per station' : 'Print prep sheet'}
       </button>
     </>
   )
@@ -394,7 +394,7 @@ export function Prep() {
             ? "Enter on-hands · prep needed = today's par − on hand · tap an item for its recipe"
             : station
               ? `${station} only · prints just this station's items — switch stations up top`
-              : "Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
+              : "Enter on-hands · prep needed = today's par − on hand · printing All puts each station on its own page"
         }
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -443,43 +443,63 @@ export function Prep() {
         }
       />
       {/* Print-only prep sheet (owner spec): zero items never print, sections
-          keep their boxes, and the list flows into TWO columns. */}
+          keep their boxes, the list flows into TWO columns, and — when printing
+          All — each station lands on ITS OWN PAGE so you print once and hand a
+          separate page to every station. A selected station prints just its page. */}
       <div className="prep-print hidden">
-        <div className="mb-2 flex items-baseline justify-between border-b-2 border-black pb-1">
-          <span className="text-[16px] font-bold">
-            {station ? `${station} prep` : 'Prep list'} · {fmtLong(t)}
-          </span>
-          <span className="text-[10px]">par − on hand = prep · Mugshots Flowood</span>
-        </div>
-        <div style={{ columns: 2, columnGap: '22px' }}>
-          {SECTIONS.map((sec) => {
-            const rows = inSection(sec).filter((it) => (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0))
-            if (rows.length === 0) return null
-            return (
-              <div key={sec}>
-                <div className="mt-1 border-b border-black py-[2px] text-[9.5px] font-extrabold uppercase tracking-wider">
-                  {sec}
-                </div>
-                {rows.map((it) => (
-                  <div key={it.name} className="flex items-center gap-2 border-b border-black/25 py-[3px]" style={{ breakInside: 'avoid' }}>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[11px] font-bold leading-[13px]">{it.name}</span>
-                      <span className="block truncate text-[8.5px] leading-[10px] text-black/60">{it.spec || it.unit}</span>
-                    </span>
-                    <span className="w-14 shrink-0 text-right font-mono text-[11px] font-bold">
-                      {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
-                    </span>
-                    <span className="h-[15px] w-9 shrink-0 rounded-[3px] border border-black/50" />
+        {(() => {
+          // A page is a station's worth of prep. Build the sections that have
+          // something to prep, dropping empty ones.
+          const secsFor = (match: (it: PrepItem) => boolean) =>
+            SECTIONS.map((sec) => ({
+              sec,
+              rows: active.filter(
+                (it) => (it.section ?? 'Recipes') === sec && match(it) && (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0),
+              ),
+            })).filter((s) => s.rows.length > 0)
+
+          const pages = station
+            ? [{ title: station, secs: secsFor((it) => (it.station ?? '') === station) }]
+            : [
+                ...stations.map((st) => ({ title: st, secs: secsFor((it) => (it.station ?? '') === st) })),
+                { title: 'Unassigned', secs: secsFor((it) => !it.station) },
+              ].filter((p) => p.secs.length > 0)
+
+          if (pages.length === 0)
+            return <p className="text-[12px]">Nothing to prep — every item is at par for {fmtLong(t)}.</p>
+
+          return pages.map((page, pi) => (
+            <div key={page.title} style={pi < pages.length - 1 ? { breakAfter: 'page' } : undefined}>
+              <div className="mb-2 flex items-baseline justify-between border-b-2 border-black pb-1">
+                <span className="text-[16px] font-bold">{page.title} prep · {fmtLong(t)}</span>
+                <span className="text-[10px]">par − on hand = prep · Mugshots Flowood</span>
+              </div>
+              <div style={{ columns: 2, columnGap: '22px' }}>
+                {page.secs.map(({ sec, rows }) => (
+                  <div key={sec} style={{ breakInside: 'avoid' }}>
+                    <div className="mt-1 border-b border-black py-[2px] text-[9.5px] font-extrabold uppercase tracking-wider">{sec}</div>
+                    {rows.map((it) => (
+                      <div key={it.name} className="flex items-center gap-2 border-b border-black/25 py-[3px]" style={{ breakInside: 'avoid' }}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11px] font-bold leading-[13px]">{it.name}</span>
+                          <span className="block truncate text-[8.5px] leading-[10px] text-black/60">{it.spec || it.unit}</span>
+                        </span>
+                        <span className="w-14 shrink-0 text-right font-mono text-[11px] font-bold">
+                          {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
+                        </span>
+                        <span className="h-[15px] w-9 shrink-0 rounded-[3px] border border-black/50" />
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            )
-          })}
-        </div>
-        <div className="mt-1.5 text-[8.5px] text-black/60">
-          Number shown = {Object.keys(onHand).length ? 'prep needed (on-hands already counted in the app)' : "today's par"} ·
-          box = done ✓ · items with nothing to prep don't print
-        </div>
+              <div className="mt-1.5 text-[8.5px] text-black/60">
+                Number shown = {Object.keys(onHand).length ? 'prep needed (on-hands already counted in the app)' : "today's par"} ·
+                box = done ✓ · items with nothing to prep don't print
+              </div>
+            </div>
+          ))
+        })()}
       </div>
 
       {mode === 'bar' && (
