@@ -544,7 +544,14 @@ interface Row {
  * in the right section — never dumped at the bottom.
  */
 function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]; fileName: string; text: string; docId?: string }) {
-  const [applied, setApplied] = useState<string | null>(null)
+  const [applied, setApplied] = useState<{
+    received: number
+    repriced: number
+    added: number
+    receivedInv: number
+    invoiceTotal: number
+    vendor: string
+  } | null>(null)
   const [rows, setRows] = useState<Row[]>(() =>
     proposeReceipts(lineItems).map((p) => ({
       description: p.description,
@@ -632,14 +639,44 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       })
     }
     const summary = `${updated + added} received${repriced ? ` · ${repriced} price${repriced === 1 ? '' : 's'} updated` : ''}${added ? ` · ${added} new → Catalog` : ''}${receivedInv ? ` · ${receivedInv} → Inventory · Receiving` : ''}${inv.total > 0 ? ` · invoice ${money2(inv.total)} filed` : ''}`
-    setApplied(summary)
+    setApplied({ received: updated + added, repriced, added, receivedInv, invoiceTotal: inv.total, vendor })
     logImport(fileName, summary)
   }
 
   if (applied) {
+    const Line = ({ ok, children }: { ok: boolean; children: ReactNode }) =>
+      ok ? (
+        <div className="flex items-center gap-2 text-sm text-ink">
+          <span className="grid size-4 shrink-0 place-items-center rounded-full bg-up text-[9px] text-white">✓</span>
+          {children}
+        </div>
+      ) : null
     return (
-      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
-        ✓ {applied}
+      <div className="mt-3 rounded-xl border border-up/40 bg-up/5 p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm font-extrabold text-up">
+          <FileCheck2 size={16} /> Delivery received — all set.
+        </div>
+        <div className="space-y-1.5">
+          <Line ok={applied.invoiceTotal > 0}>
+            Invoice <b>{money2(applied.invoiceTotal)}</b> filed under <b>{applied.vendor}</b> →{' '}
+            <Link to="/invoices" className="font-bold text-brand">Invoices</Link>
+          </Line>
+          <Line ok={applied.receivedInv > 0}>
+            <b>{applied.receivedInv}</b> line{applied.receivedInv === 1 ? '' : 's'} put on the receiving dock →{' '}
+            <Link to="/inventory" className="font-bold text-brand">Inventory</Link>
+          </Line>
+          <Line ok={applied.added > 0}>
+            <b>{applied.added}</b> new item{applied.added === 1 ? '' : 's'} added to the catalog &amp; order guide →{' '}
+            <Link to="/ordering" className="font-bold text-brand">Ordering</Link>
+          </Line>
+          <Line ok={applied.repriced > 0}>
+            <b>{applied.repriced}</b> price{applied.repriced === 1 ? '' : 's'} updated everywhere →{' '}
+            <Link to="/costs" className="font-bold text-brand">Costs</Link>
+          </Line>
+        </div>
+        <p className="mt-2.5 text-[11px] text-muted">
+          Nothing more to do here — put the delivery away during your next inventory count.
+        </p>
       </div>
     )
   }
@@ -1232,14 +1269,25 @@ function LogInvoice({ text, fileName, docId }: { text: string; fileName: string;
   const inputCls = 'rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand'
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
-        <ReceiptText size={14} /> Log this as an invoice / report
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+        <ReceiptText size={14} /> File this invoice
       </div>
+      <p className="mb-2 text-[11px] text-muted">
+        Couldn’t read the line items on this one (usually a photo or a PDF without a text table), so it
+        skips the line-by-line match. Check the details, file it, then add its items to your guide below.
+      </p>
 
       {filed ? (
-        <div className="mb-3 flex items-center gap-2 rounded-lg border border-up/30 bg-up/5 p-2.5 text-sm font-semibold text-up">
-          ✓ Filed to Invoices — {vendor} {date}
-          {total ? ` · $${(parseFloat(total.replace(/[^0-9.]/g, '')) || 0).toFixed(2)}` : ''}. See the Invoices tab.
+        <div className="mb-3 rounded-lg border border-up/40 bg-up/5 p-2.5">
+          <div className="flex items-center gap-2 text-sm font-bold text-up">
+            <FileCheck2 size={15} /> Invoice filed — {vendor} {date}
+            {total ? ` · $${(parseFloat(total.replace(/[^0-9.]/g, '')) || 0).toFixed(2)}` : ''}
+          </div>
+          <div className="mt-1 text-[11px] text-ink/70">
+            It’s on your{' '}
+            <Link to="/invoices" className="font-bold text-brand">Invoices</Link>{' '}
+            tab. {addedItems > 0 ? `${addedItems} item${addedItems === 1 ? '' : 's'} added to your order guide.` : 'Add its items to a guide below if you want them tracked.'}
+          </div>
         </div>
       ) : (
         <>
