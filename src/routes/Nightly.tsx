@@ -21,6 +21,7 @@ type Form = {
   staffDisc: string
   labor: string
   deposit: string
+  expected: string
   overUnder: string
   covers: string
   notes: string
@@ -32,7 +33,7 @@ type Form = {
 }
 const EMPTY: Form = {
   date: today(), gross: '', rewards: '', promos: '', comps: '', staffDisc: '',
-  labor: '', deposit: '', overUnder: '', covers: '', notes: '',
+  labor: '', deposit: '', expected: '', overUnder: '', covers: '', notes: '',
   food: '', beer: '', liquor: '', wine: '', na: '',
 }
 const f = (s: string) => parseFloat(s) || 0
@@ -48,6 +49,7 @@ function formFromNight(n: Night): Form {
     staffDisc: n.staffDisc != null ? String(n.staffDisc) : '',
     labor: n.labor != null ? String(n.labor) : '',
     deposit: n.deposit ? String(n.deposit) : '',
+    expected: n.expected != null ? String(n.expected) : '',
     overUnder: n.overUnder != null ? String(n.overUnder) : '',
     covers: n.covers ? String(n.covers) : '',
     notes: n.notes ?? '',
@@ -99,6 +101,12 @@ export function Nightly() {
   const discounts = f(form.rewards) + f(form.promos) + f(form.comps) + f(form.staffDisc)
   const net = Math.max(0, f(form.gross) - discounts)
   const laborPct = net > 0 && f(form.labor) > 0 ? (f(form.labor) / net) * 100 : 0
+  // Deposit reconciles itself: cash counted − expected drawer (POS). The manager
+  // types only the counted cash; over/under computes, no mental math.
+  const overUnder =
+    form.deposit !== '' && form.expected !== '' ? Math.round((f(form.deposit) - f(form.expected)) * 100) / 100 : null
+  // A night that arrived from an import/seed (has gross) is already auto-filled.
+  const autoFilled = f(form.gross) > 0
 
   const sorted = useMemo(() => [...log].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [log])
   const weekTotal = useMemo(() => sorted.slice(0, 7).reduce((s, n) => s + n.netSales, 0), [sorted])
@@ -162,7 +170,8 @@ export function Nightly() {
       staffDisc: f(form.staffDisc) || undefined,
       labor: f(form.labor) || undefined,
       laborPct: laborPct > 0 ? Math.round(laborPct * 100) / 100 : undefined,
-      overUnder: form.overUnder !== '' ? f(form.overUnder) : undefined,
+      expected: f(form.expected) || undefined,
+      overUnder: overUnder != null ? overUnder : undefined,
       food: f(form.food) || undefined,
       beer: f(form.beer) || undefined,
       liquor: f(form.liquor) || undefined,
@@ -198,8 +207,13 @@ export function Nightly() {
           {/* SALES + LABOR / DEPOSIT — the prototype's close-out sheet */}
           <div className="space-y-5">
             <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Sales</span>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Sales</span>
+                  {autoFilled && (
+                    <span className="rounded-full bg-up/10 px-2 py-0.5 text-[10px] font-extrabold text-up">auto-filled</span>
+                  )}
+                </span>
                 <input
                   type="date"
                   value={form.date}
@@ -266,20 +280,23 @@ export function Nightly() {
               <p className="text-[11px] text-muted">Drop the Toast Labor report (by day) on Imports to fill this automatically.</p>
               <div className="my-3 border-t border-black/10" />
               <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted">Deposit</div>
-              <SheetRow label="Deposit">
-                <MoneyInput value={form.deposit} onChange={(v) => setForm({ ...form, deposit: v })} />
+              <SheetRow label="Expected cash (POS)">
+                <MoneyInput value={form.expected} onChange={(v) => setForm({ ...form, expected: v })} allowNegative />
               </SheetRow>
-              <SheetRow label="Over / under">
-                <MoneyInput value={form.overUnder} onChange={(v) => setForm({ ...form, overUnder: v })} allowNegative />
+              <SheetRow label="Actual cash counted" highlight>
+                <MoneyInput value={form.deposit} onChange={(v) => setForm({ ...form, deposit: v })} allowNegative highlight />
               </SheetRow>
-              {form.overUnder !== '' && (
+              {overUnder != null && (
                 <div className="flex items-baseline justify-between pt-1">
                   <span className="font-display text-base font-semibold text-ink">Over / Under</span>
-                  <span className={`font-display text-2xl font-semibold ${Math.abs(f(form.overUnder)) < 5 ? 'text-up' : 'text-down'}`}>
-                    {f(form.overUnder) >= 0 ? '+' : '−'}${Math.abs(f(form.overUnder)).toFixed(2)}
+                  <span className={`font-display text-2xl font-semibold ${Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'}`}>
+                    {overUnder >= 0 ? '+' : '−'}${Math.abs(overUnder).toFixed(2)}
                   </span>
                 </div>
               )}
+              <p className="mt-1 text-[11px] text-muted">
+                Type only the <b className="text-ink/70">cash you counted</b> — over/under does the math.
+              </p>
               <input
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -621,7 +638,17 @@ function Pill({ label, value, tone, strong }: { label: string; value: string; to
   )
 }
 
-function MoneyInput({ value, onChange, allowNegative }: { value: string; onChange: (v: string) => void; allowNegative?: boolean }) {
+function MoneyInput({
+  value,
+  onChange,
+  allowNegative,
+  highlight,
+}: {
+  value: string
+  onChange: (v: string) => void
+  allowNegative?: boolean
+  highlight?: boolean
+}) {
   return (
     <div className="relative">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted">$</span>
@@ -631,21 +658,24 @@ function MoneyInput({ value, onChange, allowNegative }: { value: string; onChang
         min={allowNegative ? undefined : 0}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full ${cls()} pl-6`}
+        className={`w-full ${cls(highlight)} pl-6`}
       />
     </div>
   )
 }
 
-function cls(): string {
-  return 'rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand'
+// Manager-entered fields (the two on the sheet) get a green tint, like the
+// prototype — a cue that everything else is filled automatically.
+function cls(highlight?: boolean): string {
+  const base = 'rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand'
+  return highlight ? `${base} border-up/40 bg-up/5` : `${base} border-black/10 bg-white`
 }
 
 /** One line of the close-out sheet: label left, slim input right. */
-function SheetRow({ label, strong, children }: { label: string; strong?: boolean; children: React.ReactNode }) {
+function SheetRow({ label, strong, highlight, children }: { label: string; strong?: boolean; highlight?: boolean; children: React.ReactNode }) {
   return (
     <label className="flex items-center justify-between gap-3 border-b border-black/5 py-1.5 last:border-0">
-      <span className={`text-sm ${strong ? 'font-bold text-ink' : 'text-ink/80'}`}>{label}</span>
+      <span className={`text-sm ${strong ? 'font-bold text-ink' : highlight ? 'font-semibold text-ink' : 'text-ink/80'}`}>{label}</span>
       <span className="w-36 shrink-0">{children}</span>
     </label>
   )

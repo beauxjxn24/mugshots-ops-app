@@ -32,6 +32,7 @@ export interface Night {
   // labor + deposit
   labor?: number
   laborPct?: number
+  expected?: number // expected cash from the POS (drawer)
   overUnder?: number
 }
 
