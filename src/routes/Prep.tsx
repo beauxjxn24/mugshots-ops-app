@@ -26,6 +26,11 @@ interface HistEntry {
 
 const DOWS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const SECTIONS = ['Recipes', 'Test items', 'LTO'] as const
+// Owner's real line stations. Existing installs that still have the first-pass
+// default (Fry side / Grill side) are migrated to these once; assignments to
+// the old names are remapped (see the migration effect).
+const DEFAULT_STATIONS = ['Slice and Dice', 'Grill/Setup', 'Fry', 'Flat', 'Portion/Pan']
+const OLD_STATION_MAP: Record<string, string> = { 'Fry side': 'Fry', 'Grill side': 'Grill/Setup' }
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
 /** First-run classification (owner spec): brined chicken / queso meat /
@@ -69,13 +74,28 @@ export function Prep() {
   const [editingPars, setEditingPars] = useState(false)
   // Line stations (owner spec): each prep item can be assigned to a station so
   // fry side and grill side can print — and work off — their own sheet.
-  const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', ['Fry side', 'Grill side'])
+  const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', DEFAULT_STATIONS)
+  const [stationsVer, setStationsVer] = usePersistentState<number>('prep:stationsVer', 0)
   const stations = Array.isArray(rawStations) ? rawStations.filter((s) => typeof s === 'string' && s.trim()) : []
   // '' = show/print every station together; a station name = just that one.
   const [station, setStation] = useState('')
   const [newStation, setNewStation] = useState('')
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
+
+  // One-time: move installs off the first-pass default (Fry side / Grill side)
+  // onto the owner's real stations, remapping any items already assigned.
+  useEffect(() => {
+    if (stationsVer >= 2) return
+    const cur = Array.isArray(rawStations) ? rawStations : []
+    const isOldDefault = cur.length === 2 && cur[0] === 'Fry side' && cur[1] === 'Grill side'
+    if (cur.length === 0 || isOldDefault) {
+      setStations(DEFAULT_STATIONS)
+      setItems((is) => is.map((it) => (it.station && OLD_STATION_MAP[it.station] ? { ...it, station: OLD_STATION_MAP[it.station] } : it)))
+    }
+    setStationsVer(2)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // If the selected station gets renamed/removed out from under us, fall back to All.
   useEffect(() => {
