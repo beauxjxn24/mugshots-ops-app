@@ -511,9 +511,15 @@ body {
   aside, header, nav, .print\:hidden { display: none !important; }
   main { padding: 0 !important; }
   body { background: #fff !important; }
+  /* The app pins html/body/#root to height:100% for the on-screen scroll
+     layout — in print that clips everything past the first page. Release the
+     whole ancestor chain so long sheets flow onto as many pages as they need. */
+  html, body, #root { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+  #root > div { display: block !important; min-height: 0 !important; height: auto !important; }
+  main { display: block !important; overflow: visible !important; height: auto !important; }
   /* Dedicated print sheets (e.g. .prep-print) become the whole page —
      everything else on that screen, including the page header, drops out. */
-  .prep-print { display: block !important; padding: 0; }
+  .prep-print { display: block !important; padding: 0; overflow: visible !important; }
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }
   @page { margin: 6mm; }
 }
