@@ -257,7 +257,75 @@ export function upsertNights(rows: SalesRow[]): number {
 }
 
 export function isSalesSummary(text: string): boolean {
+  if (isLaborReport(text)) return false // a labor-by-day report also has "net sales"
   return /\b(sales summary|net sales|gross sales|daily sales|sales by day)\b/i.test(text)
+}
+
+// ---- Labor report (Toast "Labor cost by day") ----
+/** Toast "Labor cost by day" export: first column Day, plus a labor-cost + %. */
+export function isLaborReport(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  const cols = first.split(',').map((s) => s.trim())
+  return cols[0] === 'day' && /labor\s*%/.test(first) && /(total cost|labor cost)/.test(first)
+}
+
+export interface LaborRow {
+  date: string
+  labor: number
+  laborPct?: number
+  gross?: number
+}
+
+/** Parse per-day labor cost / % (and gross) from a "Labor cost by day" export. */
+export function parseLaborByDay(text: string): LaborRow[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return []
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase())
+  const iDay = cols.findIndex((h) => h === 'day')
+  const iCost = cols.findIndex((h) => h.includes('total cost'))
+  const iPct = cols.findIndex((h) => h.includes('labor % (net)'))
+  const iGross = cols.findIndex((h) => h.includes('gross sales'))
+  if (iDay < 0 || iCost < 0) return []
+  const out: LaborRow[] = []
+  for (let r = 1; r < lines.length; r++) {
+    const c = splitCsv(lines[r])
+    const d = (c[iDay] ?? '').trim()
+    if (!/^\d{8}$/.test(d)) continue // skip subtotal / blank-day rows
+    const labor = num(c[iCost] ?? '')
+    if (!(labor > 0)) continue
+    out.push({
+      date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`,
+      labor,
+      laborPct: iPct >= 0 ? num(c[iPct]) : undefined,
+      gross: iGross >= 0 ? num(c[iGross]) || undefined : undefined,
+    })
+  }
+  return out
+}
+
+/** Fill real labor $ / % (and gross) onto the matching nights. Returns count. */
+export function applyLaborRows(rows: LaborRow[]): number {
+  const byDate = new Map(getNights().map((n) => [n.date, n]))
+  let count = 0
+  for (const r of rows) {
+    if (!r.date || !(r.labor > 0)) continue
+    const ex = byDate.get(r.date)
+    byDate.set(r.date, {
+      id: ex?.id ?? `n-${r.date}`,
+      date: r.date,
+      netSales: ex?.netSales ?? 0,
+      deposit: ex?.deposit ?? 0,
+      covers: ex?.covers ?? 0,
+      notes: ex?.notes ?? 'From Toast labor report',
+      ...ex,
+      labor: r.labor,
+      laborPct: r.laborPct ?? ex?.laborPct,
+      gross: ex?.gross ?? r.gross,
+    })
+    count++
+  }
+  setNights([...byDate.values()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return count
 }
 
 /** Parse a Toast-style sales summary (CSV or text) into per-day rows. */

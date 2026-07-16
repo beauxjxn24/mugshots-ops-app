@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, isLaborReport, parseLaborByDay, applyLaborRows } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -95,6 +95,8 @@ export function Imports() {
         ? `inventory count sheet (${parseCountSheet(res.text).length} items) — review below`
         : isCategorySummary(res.text)
         ? 'sales category summary — review below'
+        : isLaborReport(res.text)
+        ? `labor report (${parseLaborByDay(res.text).length} days) — review below`
         : isSalesSummary(res.text)
         ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
         : isRosterDoc(res.text)
@@ -415,7 +417,11 @@ export function Imports() {
 
             {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && <SalesImport text={job.text} fileName={job.fileName} />}
+            {job.text && isLaborReport(job.text) && <LaborImport text={job.text} fileName={job.fileName} />}
+
+            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && (
+              <SalesImport text={job.text} fileName={job.fileName} />
+            )}
 
             {job.text && isCateringDoc(job.text) && (
               <CateringImport text={job.text} fileName={job.fileName} />
@@ -1307,35 +1313,29 @@ function LogInvoice({ text, fileName, docId }: { text: string; fileName: string;
  *  latest period baseline; daily drops going forward supersede it. */
 function PmixImport({ text, fileName }: { text: string; fileName: string }) {
   const items = useMemo(() => parsePmix(text), [text])
-  const [done, setDone] = useState(false)
+  const ran = useRef(false)
   const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+
+  // Owner spec: a drop IS the import — auto-load on sight (same as the sales
+  // summary), so it lands in Product Mix and ticks the daily-reports box with no
+  // extra button to find.
+  useEffect(() => {
+    if (items.length === 0 || ran.current) return
+    ran.current = true
+    savePmixDay(today(), items, fileName)
+    logImport(fileName, `product mix → PMIX (${items.length} items)`)
+  }, [items, fileName])
+
   if (items.length === 0) return null
   const top = [...items].sort((a, b) => b.qty - a.qty).slice(0, 6)
   const totalQty = items.reduce((s, i) => s + i.qty, 0)
 
-  const load = () => {
-    savePmixDay(today(), items, fileName)
-    setDone(true)
-    logImport(fileName, `product mix → PMIX (${items.length} items · period baseline)`)
-  }
-
-  if (done) {
-    return (
-      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
-        <PieChart size={16} /> Loaded {items.length} items into Product Mix as the period baseline — see Product Mix.
-      </div>
-    )
-  }
   return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
-      <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
-        <PieChart size={14} /> Product mix — {items.length} items · {totalQty.toLocaleString()} sold
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-up">
+        <PieChart size={16} /> Product mix imported — {items.length} items · {totalQty.toLocaleString()} sold. Product Mix is live.
       </div>
-      <p className="mb-2 text-[11px] text-muted">
-        This is a <b>period total</b> (Toast doesn’t split product mix by day). Load it as your last-period
-        baseline; drop a single-day Product Mix export going forward for day-by-day.
-      </p>
-      <div className="mb-3 grid grid-cols-1 gap-x-6 gap-y-1 rounded-lg bg-white p-3 sm:grid-cols-2">
+      <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 rounded-lg bg-white p-3 sm:grid-cols-2">
         {top.map((i, n) => (
           <div key={i.name} className="flex items-baseline justify-between gap-3 text-sm">
             <span className="min-w-0 truncate text-ink">
@@ -1349,9 +1349,29 @@ function PmixImport({ text, fileName }: { text: string; fileName: string }) {
           </div>
         ))}
       </div>
-      <button onClick={load} className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
-        Load as last period’s product mix
-      </button>
+    </div>
+  )
+}
+
+/** Toast "Labor cost by day" → fills real labor $ / % onto each night. Auto-
+ *  applies on drop, like the sales summary. */
+function LaborImport({ text, fileName }: { text: string; fileName: string }) {
+  const rows = useMemo(() => parseLaborByDay(text), [text])
+  const [n, setN] = useState(0)
+  const ran = useRef(false)
+  useEffect(() => {
+    if (rows.length === 0 || ran.current) return
+    ran.current = true
+    const c = applyLaborRows(rows)
+    setN(c)
+    logImport(fileName, `labor filled for ${c} day${c === 1 ? '' : 's'} → Nightly Numbers`)
+  }, [rows, fileName])
+  if (rows.length === 0) return null
+  const avg = rows.reduce((s, r) => s + (r.laborPct ?? 0), 0) / rows.length
+  return (
+    <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
+      <ReceiptText size={16} /> Labor imported — {n || rows.length} day{(n || rows.length) === 1 ? '' : 's'} · avg{' '}
+      {avg.toFixed(1)}% of net. Nightly labor is live.
     </div>
   )
 }
@@ -1363,8 +1383,9 @@ interface DailyReport {
   match: string[]
 }
 const DEFAULT_DAILY_REPORTS: DailyReport[] = [
-  { id: 'sales', label: 'Daily sales summary', hint: 'Toast → Sales Summary (single day)', match: ['sales summary', '→ nightly', 'sales by day', 'category mix', 'nights'] },
-  { id: 'pmix', label: 'Product mix (PMIX)', hint: 'Toast → Product Mix (single day)', match: ['pmix', 'product mix', 'productmix'] },
+  { id: 'sales', label: 'Daily sales summary', hint: 'Toast → Sales Summary (single day)', match: ['sales summary', 'sales by day', 'category mix', 'nights →'] },
+  { id: 'pmix', label: 'Product mix (PMIX)', hint: 'Toast → Product Mix', match: ['pmix', 'product mix', 'productmix'] },
+  { id: 'labor', label: 'Labor report', hint: 'Toast → Labor cost by day', match: ['labor'] },
   { id: 'invoices', label: 'Invoices received', hint: 'Snap or drop each delivery', match: ['invoice', 'received', 'receiving'] },
 ]
 
@@ -1376,7 +1397,17 @@ function DailyReports() {
   const entries = useImportLog((s) => s.entries)
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState('')
-  const list = Array.isArray(reports) ? reports : DEFAULT_DAILY_REPORTS
+  const stored = Array.isArray(reports) ? reports : DEFAULT_DAILY_REPORTS
+  // Surface any new default box (e.g. Labor) for installs made before it existed,
+  // without disturbing the manager's own edits/order.
+  const list = useMemo(() => {
+    const missing = DEFAULT_DAILY_REPORTS.filter((d) => !stored.some((s) => s.id === d.id))
+    if (missing.length === 0) return stored
+    const salesIdx = stored.findIndex((s) => s.id === 'sales')
+    const out = [...stored]
+    out.splice(salesIdx >= 0 ? salesIdx + missing.length : out.length, 0, ...missing)
+    return out
+  }, [stored])
 
   const todayPrefix = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric' })
   const hitFor = (r: DailyReport) =>
