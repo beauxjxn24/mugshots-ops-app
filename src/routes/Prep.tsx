@@ -31,6 +31,16 @@ const SECTIONS = ['Recipes', 'Test items', 'LTO'] as const
 // add stations (one-tap "standard set" below, or your own) to split the print.
 const STANDARD_STATIONS = ['Slice and Dice', 'Grill/Setup', 'Fry', 'Flat', 'Portion/Pan']
 const OLD_STATION_MAP: Record<string, string> = { 'Fry side': 'Fry', 'Grill side': 'Grill/Setup' }
+// Per-station colors (owner spec) — used on the toggle, the row chip, and the
+// printed sheet header so each station is recognizable at a glance.
+const STATION_HEX: Record<string, string> = {
+  'Slice and Dice': '#16a34a', // green
+  'Grill/Setup': '#db2777', // pink
+  Fry: '#7c3aed', // purple
+  Flat: '#2563eb', // blue
+  'Portion/Pan': '#ea580c', // orange
+}
+const stationHex = (s: string): string | undefined => STATION_HEX[s]
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
 /** First-run classification (owner spec): brined chicken / queso meat /
@@ -314,23 +324,28 @@ export function Prep() {
           <div className="truncate text-sm font-bold text-ink">{it.name}</div>
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="truncate">{it.spec || it.unit}</span>
-            {stations.length > 0 && (
-              <select
-                value={it.station ?? ''}
-                onChange={(e) => setItemStation(it.name, e.target.value)}
-                title="Which line station preps this — it prints on that station's sheet"
-                className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-bold outline-none ${
-                  it.station ? 'border-navy/25 bg-navy/5 text-navy' : 'border-black/10 bg-white text-muted'
-                }`}
-              >
-                <option value="">— station —</option>
-                {stations.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            )}
+            {stations.length > 0 &&
+              (() => {
+                const hex = it.station ? stationHex(it.station) : undefined
+                return (
+                  <select
+                    value={it.station ?? ''}
+                    onChange={(e) => setItemStation(it.name, e.target.value)}
+                    title="Which line station preps this — it prints on that station's sheet"
+                    style={hex ? { color: hex, borderColor: hex, background: `${hex}14` } : undefined}
+                    className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-bold outline-none ${
+                      it.station ? '' : 'border-black/10 bg-white text-muted'
+                    }`}
+                  >
+                    <option value="">— station —</option>
+                    {stations.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                )
+              })()}
             <button
               onClick={() => park(it.name, true)}
               title="Park it — off the list and the print, kept in the Parked box below"
@@ -439,15 +454,29 @@ export function Prep() {
                     >
                       All
                     </button>
-                    {stations.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setStation(s)}
-                        className={`rounded-md px-3 py-1.5 text-xs font-bold ${station === s ? 'bg-navy text-white shadow-sm' : 'text-muted'}`}
-                      >
-                        {s}
-                      </button>
-                    ))}
+                    {stations.map((s) => {
+                      const hex = stationHex(s)
+                      const active = station === s
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => setStation(s)}
+                          style={
+                            hex
+                              ? active
+                                ? { background: hex, color: '#fff' }
+                                : { color: hex }
+                              : undefined
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold shadow-sm ${
+                            active ? (hex ? '' : 'bg-navy text-white') : hex ? 'bg-white' : 'text-muted'
+                          }`}
+                        >
+                          {hex && !active && <span className="inline-block size-2 rounded-full" style={{ background: hex }} />}
+                          {s}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
                 <Link to="/builds" className="text-xs font-bold text-brand">
@@ -475,10 +504,10 @@ export function Prep() {
 
           const known = new Set(stations)
           const hasStation = (it: PrepItem) => !!it.station && known.has(it.station)
-          let pages: Array<{ title: string; secs: ReturnType<typeof secsFor> }>
+          let pages: Array<{ title: string; station: string; secs: ReturnType<typeof secsFor> }>
           if (station) {
             // One station selected in the toggle → just its page.
-            pages = [{ title: `${station} prep`, secs: secsFor((it) => it.station === station) }]
+            pages = [{ title: `${station} prep`, station, secs: secsFor((it) => it.station === station) }]
           } else {
             // "All": group each station that's actually used onto its own sheet,
             // and put everything not on a station on one combined sheet. A store
@@ -486,11 +515,11 @@ export function Prep() {
             const used = stations.filter((st) => active.some((it) => it.station === st && printable(it)))
             const restExists = active.some((it) => printable(it) && !hasStation(it))
             if (used.length === 0) {
-              pages = [{ title: 'Prep list', secs: secsFor(() => true) }]
+              pages = [{ title: 'Prep list', station: '', secs: secsFor(() => true) }]
             } else {
               pages = [
-                ...used.map((st) => ({ title: `${st} prep`, secs: secsFor((it) => it.station === st) })),
-                ...(restExists ? [{ title: 'Everything else', secs: secsFor((it) => !hasStation(it)) }] : []),
+                ...used.map((st) => ({ title: `${st} prep`, station: st, secs: secsFor((it) => it.station === st) })),
+                ...(restExists ? [{ title: 'Everything else', station: '', secs: secsFor((it) => !hasStation(it)) }] : []),
               ]
             }
           }
@@ -501,9 +530,20 @@ export function Prep() {
 
           return pages.map((page, pi) => (
             <div key={page.title} style={pi < pages.length - 1 ? { breakAfter: 'page' } : undefined}>
-              <div className="mb-2 border-b-2 border-black pb-1">
+              <div className="mb-2 pb-1" style={{ borderBottom: `3px solid ${stationHex(page.station) ?? '#000'}` }}>
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-[16px] font-bold">{page.title}</span>
+                  <span className="flex items-center gap-2 text-[16px] font-bold">
+                    {stationHex(page.station) && (
+                      <span
+                        aria-hidden
+                        style={{ background: stationHex(page.station), WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                        className="inline-block size-3.5 rounded-[3px]"
+                      />
+                    )}
+                    <span style={stationHex(page.station) ? { color: stationHex(page.station), WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } : undefined}>
+                      {page.title}
+                    </span>
+                  </span>
                   <span className="text-[11px] font-semibold">{fmtLong(t)}</span>
                 </div>
                 <div className="text-[8.5px] text-black/60">par − on hand = prep · Mugshots Flowood</div>

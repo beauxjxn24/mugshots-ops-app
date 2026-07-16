@@ -519,7 +519,12 @@ body {
   main { display: block !important; overflow: visible !important; height: auto !important; }
   /* Dedicated print sheets (e.g. .prep-print) become the whole page —
      everything else on that screen, including the page header, drops out. */
-  .prep-print { display: block !important; padding: 0; overflow: visible !important; }
+  /* Inset the sheet from the paper edge — 6mm alone rode inside many printers'
+     unprintable border and chopped the first/last characters on both sides.
+     Internal padding also protects the content if the print dialog's margins
+     are set to "None" (which zeroes @page margin). */
+  .prep-print { display: block !important; padding: 0 5mm !important; overflow: visible !important; }
+  .prep-print * { overflow-wrap: anywhere; }
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }
-  @page { margin: 6mm; }
+  @page { margin: 11mm; }
 }
