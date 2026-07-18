@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, isLaborReport, parseLaborByDay, applyLaborRows } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, isLaborReport, parseLaborByDay, applyLaborRows, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -39,8 +39,10 @@ let seq = 0
 // Toast report zips bundle many internal-breakdown CSVs we never import; skip
 // them on extraction (the useful ones — Sales by day, Sales category summary,
 // Items — don't match this).
+// "Cash summary" (expected cash) and "Menu item discounts" (comps/staff/promos)
+// are NOT noise — they fill Nightly, so they're intentionally absent here.
 const NOISE_REPORT =
-  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|revenue|tip summary|payments summary|service (mode|charge|daypart)|dining options|tax summary|deferred|unpaid orders|void summary|cash (activity|summary)|day of week|time of day|net sales summary|(menu item|check) discounts/i
+  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|revenue|tip summary|payments summary|service (mode|charge|daypart)|dining options|tax summary|deferred|unpaid orders|void summary|cash activity|day of week|time of day|net sales summary|check discounts/i
 
 /** Contains a render crash in one import card so it can't white-screen the page. */
 class CardBoundary extends Component<{ name: string; children: ReactNode }, { failed: boolean }> {
@@ -419,7 +421,11 @@ export function Imports() {
 
             {job.text && isLaborReport(job.text) && <LaborImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && (
+            {job.text && isCashSummary(job.text) && <CashImport text={job.text} fileName={job.fileName} />}
+
+            {job.text && isDiscountReport(job.text) && <DiscountImport text={job.text} fileName={job.fileName} />}
+
+            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && (
               <SalesImport text={job.text} fileName={job.fileName} />
             )}
 
@@ -444,7 +450,7 @@ export function Imports() {
               const t = job.text ?? ''
               if (!t || job.status !== 'done') return null
               const recognized =
-                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
+                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isCashSummary(t) || isDiscountReport(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
               if (recognized) return null
               const hasQtyLines = !!job.lineItems?.some((li) => li.qty)
               const scan = job.kind === 'image' || job.kind === 'pdf'
@@ -1333,6 +1339,80 @@ function LaborImport({ text, fileName }: { text: string; fileName: string }) {
   )
 }
 
+/**
+ * Toast "Cash summary" → the day's Expected cash (POS) on Nightly. The file has
+ * no date, so it fills the night being closed (the latest logged night); the
+ * manager can re-target the day if they're backfilling.
+ */
+function CashImport({ text, fileName }: { text: string; fileName: string }) {
+  const expected = useMemo(() => parseCashExpected(text), [text])
+  const [date, setDate] = useState(() => latestNightDate() ?? today())
+  const [done, setDone] = useState<string | null>(null)
+  const ran = useRef(false)
+  useEffect(() => {
+    if (expected == null || ran.current) return
+    ran.current = true
+    const d = applyCashExpected(expected, date)
+    if (d) { setDone(d); logImport(fileName, `expected cash ${money2(expected)} → Nightly (${d})`) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expected])
+  if (expected == null) return null
+  const retarget = (d: string) => { setDate(d); const r = applyCashExpected(expected, d); if (r) setDone(r) }
+  return (
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="flex items-center gap-2 text-sm font-bold text-up">
+        <ReceiptText size={16} /> Expected cash {money2(expected)} → Nightly
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
+        Fills the drawer for
+        <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
+        {done && <span className="text-up">✓ set</span>}
+      </label>
+      <p className="mt-1 text-[11px] text-muted">Count the drawer and enter “Actual cash counted” on Nightly — the Over/Under fills itself.</p>
+    </div>
+  )
+}
+
+/**
+ * Toast "Menu Item Discounts" → the Rewards / Promos / Comps / Staff-meal lines
+ * on Nightly, bucketed by discount name. Dated like the cash summary above.
+ */
+function DiscountImport({ text, fileName }: { text: string; fileName: string }) {
+  const buckets = useMemo(() => parseDiscounts(text), [text])
+  const [date, setDate] = useState(() => latestNightDate() ?? today())
+  const [done, setDone] = useState<string | null>(null)
+  const ran = useRef(false)
+  useEffect(() => {
+    if (!buckets || ran.current) return
+    ran.current = true
+    const d = applyDiscounts(buckets, date)
+    if (d) { setDone(d); logImport(fileName, `discounts → Nightly deductions (${d})`) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buckets])
+  if (!buckets) return null
+  const total = buckets.rewards + buckets.promos + buckets.comps + buckets.staffDisc
+  const retarget = (d: string) => { setDate(d); const r = applyDiscounts(buckets, d); if (r) setDone(r) }
+  const parts = [
+    buckets.comps > 0 && `Comps ${money2(buckets.comps)}`,
+    buckets.staffDisc > 0 && `Staff ${money2(buckets.staffDisc)}`,
+    buckets.promos > 0 && `Promos ${money2(buckets.promos)}`,
+    buckets.rewards > 0 && `Rewards ${money2(buckets.rewards)}`,
+  ].filter(Boolean)
+  return (
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="flex items-center gap-2 text-sm font-bold text-up">
+        <ReceiptText size={16} /> Discounts {money2(total)} → Nightly
+      </div>
+      <div className="mt-1 text-[11px] text-ink/70">{parts.join(' · ') || 'no priced discounts'}</div>
+      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
+        Fills the deductions for
+        <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
+        {done && <span className="text-up">✓ set</span>}
+      </label>
+    </div>
+  )
+}
+
 interface DailyReport {
   id: string
   label: string
@@ -1343,6 +1423,8 @@ const DEFAULT_DAILY_REPORTS: DailyReport[] = [
   { id: 'sales', label: 'Daily sales summary', hint: 'Toast → Sales Summary (single day)', match: ['sales summary', 'sales by day', 'category mix', 'nights →'] },
   { id: 'pmix', label: 'Product mix (PMIX)', hint: 'Toast → Product Mix', match: ['pmix', 'product mix', 'productmix'] },
   { id: 'labor', label: 'Labor report', hint: 'Toast → Labor cost by day', match: ['labor'] },
+  { id: 'cash', label: 'Cash summary', hint: 'Toast → Cash summary (expected cash)', match: ['expected cash', 'cash summary'] },
+  { id: 'discounts', label: 'Discounts', hint: 'Toast → Menu Item Discounts (comps/promos)', match: ['discount'] },
   { id: 'invoices', label: 'Invoices received', hint: 'Snap or drop each delivery', match: ['invoice', 'received', 'receiving'] },
 ]
 

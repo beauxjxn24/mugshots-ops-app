@@ -344,6 +344,98 @@ export function applyLaborRows(rows: LaborRow[]): number {
   return count
 }
 
+/** The most recent night on record — the one a manager is closing. */
+export function latestNightDate(): string | null {
+  const ns = getNights()
+  return ns.length ? ns[ns.length - 1].date : null // getNights is stored date-ascending
+}
+
+// ---- Cash summary (Toast "Cash summary") → Expected cash on the drawer ----
+/** Toast "Cash summary": one row with Expected deposit / Expected closeout cash. */
+export function isCashSummary(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  return /expected deposit|expected closeout cash/.test(first)
+}
+/** Pull the expected cash figure (the deposit the manager should have to count). */
+export function parseCashExpected(text: string): number | null {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const vals = splitCsv(lines[1])
+  const iDep = cols.findIndex((h) => h === 'expected deposit')
+  const iClose = cols.findIndex((h) => h === 'expected closeout cash')
+  const v = iDep >= 0 ? num(vals[iDep]) : iClose >= 0 ? num(vals[iClose]) : NaN
+  return Number.isFinite(v) && v !== 0 ? v : null
+}
+/** Fill Expected cash (POS) onto a night. Returns the date filled, or null. */
+export function applyCashExpected(expected: number, date: string): string | null {
+  if (!date || !Number.isFinite(expected)) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  if (i >= 0) nights[i] = { ...nights[i], expected }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', expected })
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return date
+}
+
+// ---- Discounts (Toast "Menu Item Discounts" / "Check Discounts") ----
+/** A Toast discount report: first column "Discount", plus an "Amount" column. */
+export function isDiscountReport(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  const cols = first.split(',').map((s) => s.trim())
+  return cols[0] === 'discount' && cols.includes('amount')
+}
+export interface DiscountBuckets {
+  rewards: number
+  promos: number
+  comps: number
+  staffDisc: number
+}
+/**
+ * Bucket the day's discounts into the Nightly deduction lines by name. Names are
+ * matched loosely (Toast lets you name your own discounts), so this is a best
+ * effort — the manager can still adjust a line.
+ */
+export function parseDiscounts(text: string): DiscountBuckets | null {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const iName = cols.findIndex((h) => h === 'discount')
+  const iAmt = cols.findIndex((h) => h === 'amount')
+  if (iName < 0 || iAmt < 0) return null
+  const b: DiscountBuckets = { rewards: 0, promos: 0, comps: 0, staffDisc: 0 }
+  let any = false
+  for (let r = 1; r < lines.length; r++) {
+    const c = splitCsv(lines[r])
+    const name = (c[iName] ?? '').toLowerCase().trim()
+    if (!name || name === 'total') continue
+    const amt = Math.abs(num(c[iAmt] ?? ''))
+    if (!(amt > 0)) continue
+    any = true
+    if (/training|staff|employee|shift meal|manager meal|team member|emp\b/.test(name)) b.staffDisc += amt
+    else if (/reward|loyalty|points|birthday|anniversary|vip/.test(name)) b.rewards += amt
+    else if (/comp|walk ?out|void|remake|re-?fire|recovery|manager|on the house|otoh/.test(name)) b.comps += amt
+    else b.promos += amt
+  }
+  return any ? b : null
+}
+/** Fill the discount deduction lines onto a night. Returns the date, or null. */
+export function applyDiscounts(b: DiscountBuckets, date: string): string | null {
+  if (!date) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  // Only write buckets that actually have a value — never overwrite a line with undefined.
+  const patch: Partial<Night> = {}
+  if (b.rewards > 0) patch.rewards = b.rewards
+  if (b.promos > 0) patch.promos = b.promos
+  if (b.comps > 0) patch.comps = b.comps
+  if (b.staffDisc > 0) patch.staffDisc = b.staffDisc
+  if (i >= 0) nights[i] = { ...nights[i], ...patch }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', ...patch })
+  setNights(nights.sort((a, b2) => (a.date ?? '').localeCompare(b2.date ?? '')))
+  return date
+}
+
 /** Parse a Toast-style sales summary (CSV or text) into per-day rows. */
 export function parseSalesSummary(text: string): SalesRow[] {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
