@@ -5,7 +5,7 @@ import { periodWeek } from '../lib/forecast'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
-import type { Night } from '../lib/nightly'
+import { catMixSplit, type Night } from '../lib/nightly'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { DEFAULT_USERS, type User } from '../lib/users'
 
@@ -43,6 +43,13 @@ const f = (s: string) => parseFloat(s) || 0
 
 /** Build the entry form from a saved night (imported or hand-entered). */
 function formFromNight(n: Night): Form {
+  // If the night has no saved category split, fall back to the store's imported
+  // category mix so Categories show for every night once a mix has been imported
+  // (Toast has no per-day categories — this is the same estimate the seed uses).
+  const cat =
+    n.food == null && n.netSales > 0 ? catMixSplit(n.netSales) : null
+  const catVal = (saved: number | undefined, est: number | undefined) =>
+    saved != null ? String(saved) : est != null ? String(est) : ''
   return {
     date: n.date,
     // Real gross only — never fake gross = net (Toast's sales-by-day has no gross).
@@ -58,11 +65,11 @@ function formFromNight(n: Night): Form {
     overUnder: n.overUnder != null ? String(n.overUnder) : '',
     covers: n.covers ? String(n.covers) : '',
     notes: n.notes ?? '',
-    food: n.food != null ? String(n.food) : '',
-    beer: n.beer != null ? String(n.beer) : '',
-    liquor: n.liquor != null ? String(n.liquor) : '',
-    wine: n.wine != null ? String(n.wine) : '',
-    na: n.na != null ? String(n.na) : '',
+    food: catVal(n.food, cat?.food),
+    beer: catVal(n.beer, cat?.beer),
+    liquor: catVal(n.liquor, cat?.liquor),
+    wine: catVal(n.wine, cat?.wine),
+    na: catVal(n.na, cat?.na),
   }
 }
 

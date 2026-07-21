@@ -73,6 +73,19 @@ export const setCatMix = (m: CatMix): void => save(catMixKey(), m)
  * it always sums to that night's net (the remainder folds into Food). Returns
  * the number of nights filled.
  */
+/** Split a net figure by the STORED category mix (for display when a night has
+ *  no saved per-category values). Returns null if no mix has been imported. */
+export function catMixSplit(net: number): Pick<Night, 'food' | 'na' | 'beer' | 'liquor' | 'wine'> | null {
+  const mix = getCatMix()
+  if (!mix || !(mix.net > 0) || !(net > 0)) return null
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const na = r2(net * (mix.na / mix.net))
+  const liquor = r2(net * (mix.liquor / mix.net))
+  const beer = r2(net * (mix.beer / mix.net))
+  const wine = r2(net * (mix.wine / mix.net))
+  return { food: r2(net - (na + liquor + beer + wine)), na, liquor, beer, wine }
+}
+
 export function applyCatMixToNights(mix: CatMix): number {
   if (!mix || !(mix.net > 0)) return 0
   const fr = { na: mix.na / mix.net, liquor: mix.liquor / mix.net, beer: mix.beer / mix.net, wine: mix.wine / mix.net }
