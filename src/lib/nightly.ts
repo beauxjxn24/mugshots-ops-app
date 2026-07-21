@@ -285,7 +285,12 @@ export function upsertNights(rows: SalesRow[]): number {
   for (const r of rows) {
     if (!r.date) continue
     const ex = byDate.get(r.date)
+    // Spread ex FIRST so labor, categories, discounts, expected cash and gross
+    // set by other report files in the same drop survive — this importer only
+    // owns net sales, covers and deposit. (Toast zips extract alphabetically, so
+    // "Sales by day" often lands after the discount/cash files.)
     byDate.set(r.date, {
+      ...ex,
       id: ex?.id ?? `n-${r.date}`,
       date: r.date,
       netSales: r.netSales,
