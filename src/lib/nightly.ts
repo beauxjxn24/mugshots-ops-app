@@ -66,6 +66,36 @@ const catMixKey = (): string => {
 export const getCatMix = (): CatMix | null => load<CatMix | null>(catMixKey(), null)
 export const setCatMix = (m: CatMix): void => save(catMixKey(), m)
 
+/**
+ * Split every night's net sales by the imported category mix, filling the
+ * per-night Food/NA/Beer/Liquor/Wine fields the Nightly page shows. Toast has no
+ * per-day category breakdown, so this is an estimate from the period mix — but
+ * it always sums to that night's net (the remainder folds into Food). Returns
+ * the number of nights filled.
+ */
+export function applyCatMixToNights(mix: CatMix): number {
+  if (!mix || !(mix.net > 0)) return 0
+  const fr = { na: mix.na / mix.net, liquor: mix.liquor / mix.net, beer: mix.beer / mix.net, wine: mix.wine / mix.net }
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const nights = getNights()
+  let count = 0
+  for (const n of nights) {
+    if (!(n.netSales > 0)) continue
+    const na = r2(n.netSales * fr.na)
+    const liquor = r2(n.netSales * fr.liquor)
+    const beer = r2(n.netSales * fr.beer)
+    const wine = r2(n.netSales * fr.wine)
+    n.food = r2(n.netSales - (na + liquor + beer + wine))
+    n.na = na
+    n.liquor = liquor
+    n.beer = beer
+    n.wine = wine
+    count++
+  }
+  setNights(nights)
+  return count
+}
+
 /** Is this a Toast "Sales category summary" (category → net sales table)? */
 export function isCategorySummary(text: string): boolean {
   const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''

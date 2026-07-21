@@ -15,6 +15,9 @@ const money2 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFrac
 type Form = {
   date: string
   gross: string
+  // The net Toast reported for the day (authoritative). Toast's "Sales by day"
+  // gives net directly with no gross, so we keep it instead of faking gross=net.
+  netImported: string
   rewards: string
   promos: string
   comps: string
@@ -32,7 +35,7 @@ type Form = {
   na: string
 }
 const EMPTY: Form = {
-  date: today(), gross: '', rewards: '', promos: '', comps: '', staffDisc: '',
+  date: today(), gross: '', netImported: '', rewards: '', promos: '', comps: '', staffDisc: '',
   labor: '', deposit: '', expected: '', overUnder: '', covers: '', notes: '',
   food: '', beer: '', liquor: '', wine: '', na: '',
 }
@@ -42,7 +45,9 @@ const f = (s: string) => parseFloat(s) || 0
 function formFromNight(n: Night): Form {
   return {
     date: n.date,
-    gross: n.gross != null ? String(n.gross) : String(n.netSales),
+    // Real gross only — never fake gross = net (Toast's sales-by-day has no gross).
+    gross: n.gross != null ? String(n.gross) : '',
+    netImported: n.netSales != null ? String(n.netSales) : '',
     rewards: n.rewards != null ? String(n.rewards) : '',
     promos: n.promos != null ? String(n.promos) : '',
     comps: n.comps != null ? String(n.comps) : '',
@@ -99,14 +104,16 @@ export function Nightly() {
   }, [focusDate])
 
   const discounts = f(form.rewards) + f(form.promos) + f(form.comps) + f(form.staffDisc)
-  const net = Math.max(0, f(form.gross) - discounts)
+  // Net is what Toast reported (authoritative). Only when there's no imported net
+  // — a hand-built night — do we derive it from gross − discounts.
+  const net = f(form.netImported) > 0 ? f(form.netImported) : Math.max(0, f(form.gross) - discounts)
   const laborPct = net > 0 && f(form.labor) > 0 ? (f(form.labor) / net) * 100 : 0
   // Deposit reconciles itself: cash counted − expected drawer (POS). The manager
   // types only the counted cash; over/under computes, no mental math.
   const overUnder =
     form.deposit !== '' && form.expected !== '' ? Math.round((f(form.deposit) - f(form.expected)) * 100) / 100 : null
-  // A night that arrived from an import/seed (has gross) is already auto-filled.
-  const autoFilled = f(form.gross) > 0
+  // A night that arrived from an import/seed (has gross or an imported net) is auto-filled.
+  const autoFilled = f(form.gross) > 0 || f(form.netImported) > 0
 
   const sorted = useMemo(() => [...log].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [log])
   const weekTotal = useMemo(() => sorted.slice(0, 7).reduce((s, n) => s + n.netSales, 0), [sorted])

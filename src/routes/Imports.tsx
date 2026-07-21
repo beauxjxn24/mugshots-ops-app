@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, isLaborReport, parseLaborByDay, applyLaborRows, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, latestNightDate } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -1138,8 +1138,9 @@ function CategoryImport({ text, fileName }: { text: string; fileName: string }) 
     if (!mix || ran.current) return
     ran.current = true
     setCatMix({ ...mix, importedAt: new Date().toISOString() })
+    const filled = applyCatMixToNights(mix)
     setDone(true)
-    logImport(fileName, `sales category mix → Dashboard (${money(mix.net)} net split)`)
+    logImport(fileName, `sales category mix → Dashboard + ${filled} night${filled === 1 ? '' : 's'} (${money(mix.net)} net split)`)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mix, fileName])
 
