@@ -380,6 +380,65 @@ export function latestNightDate(): string | null {
   return ns.length ? ns[ns.length - 1].date : null // getNights is stored date-ascending
 }
 
+// ---- Labor cost SUMMARY (Toast single-day export) ----
+// A single-day labor export ships "Labor cost summary.csv" (one row: Net sales,
+// Gross sales, Labor cost, Labor %) instead of the month export's "Labor cost by
+// day.csv". It has no date, so it fills the night being closed like the cash file.
+export function isLaborSummary(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  const cols = first.split(',').map((s) => s.trim())
+  return cols[0] === 'net sales' && cols.some((c) => c.includes('labor cost')) && /labor\s*%/.test(first)
+}
+export interface LaborSummary {
+  net?: number
+  gross?: number
+  labor: number
+  laborPct?: number
+}
+export function parseLaborSummary(text: string): LaborSummary | null {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const vals = splitCsv(lines[1])
+  const iNet = cols.findIndex((h) => h === 'net sales')
+  const iGross = cols.findIndex((h) => h === 'gross sales')
+  const iCost = cols.findIndex((h) => h.includes('labor cost'))
+  const iPct = cols.findIndex((h) => h.includes('labor % (net)'))
+  const labor = iCost >= 0 ? num(vals[iCost]) : NaN
+  if (!(labor > 0)) return null
+  return {
+    net: iNet >= 0 ? num(vals[iNet]) || undefined : undefined,
+    gross: iGross >= 0 ? num(vals[iGross]) || undefined : undefined,
+    labor,
+    laborPct: iPct >= 0 ? num(vals[iPct]) || undefined : undefined,
+  }
+}
+/** Fill labor (+ net/gross if the night has none) onto a night. Returns the date. */
+export function applyLaborSummary(s: LaborSummary, date: string): string | null {
+  if (!date || !(s.labor > 0)) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  const ex = i >= 0 ? nights[i] : undefined
+  const netSales = ex?.netSales && ex.netSales > 0 ? ex.netSales : s.net ?? ex?.netSales ?? 0
+  const gross = ex?.gross && ex.gross > 0 ? ex.gross : s.gross ?? ex?.gross
+  const filled: Night = {
+    id: ex?.id ?? `n-${date}`,
+    date,
+    deposit: ex?.deposit ?? 0,
+    covers: ex?.covers ?? 0,
+    notes: ex?.notes ?? 'From Toast labor summary',
+    ...ex,
+    netSales,
+    gross,
+    labor: s.labor,
+    laborPct: s.laborPct ?? ex?.laborPct,
+  }
+  if (i >= 0) nights[i] = filled
+  else nights.push(filled)
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return date
+}
+
 // ---- Cash summary (Toast "Cash summary") → Expected cash on the drawer ----
 /** Toast "Cash summary": one row with Expected deposit / Expected closeout cash. */
 export function isCashSummary(text: string): boolean {
