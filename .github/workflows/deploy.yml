@@ -3,13 +3,21 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+# Official GitHub Pages pipeline. The old force-push-to-gh-pages method left the
+# Pages CDN frozen on a stale build; configure-pages (enablement) flips the site
+# to Actions-based deployment and deploy-pages properly publishes + invalidates.
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
   group: pages
   cancel-in-progress: true
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,14 +27,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      # Publish by force-pushing the built site to gh-pages — the branch GitHub
-      # Pages serves. Works with the default token; no Pages API calls needed.
-      - name: Push to gh-pages
-        run: |
-          cd dist
-          git init -b gh-pages
-          git config user.name "github-actions"
-          git config user.email "actions@users.noreply.github.com"
-          git add -A
-          git commit -m "Deploy ${GITHUB_SHA::7}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" gh-pages
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
