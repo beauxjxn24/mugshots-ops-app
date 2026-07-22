@@ -180,8 +180,10 @@ function StoreLabel() {
 
 function BuildStamp() {
   return (
-    <div className="mt-auto px-3 pt-6 text-[9.5px] tracking-wide text-white/30">
-      Updated {__BUILD_DATE__}
+    <div className="mt-auto px-3 pt-6">
+      <span className="rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold tracking-wide text-white/70">
+        Build {__BUILD_DATE__}
+      </span>
     </div>
   )
 }
