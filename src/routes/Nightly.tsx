@@ -48,21 +48,22 @@ function formFromNight(n: Night): Form {
   // (Toast has no per-day categories — this is the same estimate the seed uses).
   const cat =
     n.food == null && n.netSales > 0 ? catMixSplit(n.netSales) : null
-  const catVal = (saved: number | undefined, est: number | undefined) =>
-    saved != null ? String(saved) : est != null ? String(est) : ''
+  // Money → clean 2-decimal string (kills floating-point tails like 55.48000004).
+  const m = (v: number | undefined) => (v != null ? String(Math.round(v * 100) / 100) : '')
+  const catVal = (saved: number | undefined, est: number | undefined) => (saved != null ? m(saved) : est != null ? m(est) : '')
   return {
     date: n.date,
     // Real gross only — never fake gross = net (Toast's sales-by-day has no gross).
-    gross: n.gross != null ? String(n.gross) : '',
-    netImported: n.netSales != null ? String(n.netSales) : '',
-    rewards: n.rewards != null ? String(n.rewards) : '',
-    promos: n.promos != null ? String(n.promos) : '',
-    comps: n.comps != null ? String(n.comps) : '',
-    staffDisc: n.staffDisc != null ? String(n.staffDisc) : '',
-    labor: n.labor != null ? String(n.labor) : '',
-    deposit: n.deposit ? String(n.deposit) : '',
-    expected: n.expected != null ? String(n.expected) : '',
-    overUnder: n.overUnder != null ? String(n.overUnder) : '',
+    gross: m(n.gross),
+    netImported: m(n.netSales),
+    rewards: m(n.rewards),
+    promos: m(n.promos),
+    comps: m(n.comps),
+    staffDisc: m(n.staffDisc),
+    labor: m(n.labor),
+    deposit: n.deposit ? m(n.deposit) : '',
+    expected: m(n.expected),
+    overUnder: m(n.overUnder),
     covers: n.covers ? String(n.covers) : '',
     notes: n.notes ?? '',
     food: catVal(n.food, cat?.food),
@@ -255,8 +256,9 @@ export function Nightly() {
                   type="number"
                   inputMode="numeric"
                   value={form.covers}
+                  placeholder="0"
                   onChange={(e) => setForm({ ...form, covers: e.target.value })}
-                  className={`w-full ${cls()}`}
+                  className={`w-full pr-3 text-right font-mono tabular-nums placeholder:text-muted/40 ${cls()}`}
                 />
               </SheetRow>
               <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-3">
@@ -671,8 +673,9 @@ function MoneyInput({
         inputMode="decimal"
         min={allowNegative ? undefined : 0}
         value={value}
+        placeholder="0.00"
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full ${cls(highlight)} pl-6`}
+        className={`w-full pl-6 pr-3 text-right font-mono tabular-nums placeholder:text-muted/40 ${cls(highlight)}`}
       />
     </div>
   )

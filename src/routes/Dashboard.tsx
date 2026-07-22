@@ -508,9 +508,22 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
 /** FOOD FOCUS — LTO carousel card (prototype spec): cycle the live LTOs. */
 function LtoFocus() {
   const [idx, setIdx] = useState(0)
+  const [paused, setPaused] = useState(false)
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
-  const ltos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
+  const allLtos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
+  // Rotate through items that actually HAVE a photo, so the tile always shows a
+  // real dish pic (falling back to all LTOs only if no photos exist yet).
+  const withPhoto = allLtos.filter((s) => dishPhoto(s.name))
+  const ltos = withPhoto.length ? withPhoto : allLtos
+
+  // Auto-scroll the food photos every few seconds (pause on hover/tap).
+  useEffect(() => {
+    if (paused || ltos.length <= 1) return
+    const id = setInterval(() => setIdx((i) => i + 1), 5000)
+    return () => clearInterval(id)
+  }, [paused, ltos.length])
+
   if (ltos.length === 0) return null
   const s = ltos[((idx % ltos.length) + ltos.length) % ltos.length]
   const photo = dishPhoto(s.name)
@@ -529,7 +542,11 @@ function LtoFocus() {
   // Prototype spec: navy card, gold FOOD FOCUS header, white serif item name,
   // gold deal chip, product photo on the right.
   return (
-    <Card className="drift [--i:4] flex h-full flex-col border-navy !bg-navy p-5">
+    <Card
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      className="drift [--i:4] flex h-full flex-col border-navy !bg-navy p-5"
+    >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-[#e0b23c]">
           <Flame size={14} /> Food focus · LTO
@@ -544,7 +561,7 @@ function LtoFocus() {
           </button>
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 items-stretch gap-4">
+      <div key={s.name} className="flex min-h-0 flex-1 items-stretch gap-4 animate-[ltoFade_.5s_ease]">
         <div className="flex min-w-0 flex-1 flex-col">
           {s.yields && (
             <span className="mb-2 self-start rounded-md bg-brand px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white">
