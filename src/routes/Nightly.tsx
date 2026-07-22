@@ -262,8 +262,8 @@ export function Nightly() {
                 />
               </SheetRow>
               <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-3">
-                <span className="font-display text-lg font-semibold text-ink">Net Sales</span>
-                <span className="border-b-[3px] border-brand pb-0.5 font-display text-3xl font-semibold text-ink">
+                <span className="font-sans tabular-nums text-lg font-semibold text-ink">Net Sales</span>
+                <span className="border-b-[3px] border-brand pb-0.5 font-sans tabular-nums text-3xl font-semibold text-ink">
                   {money2(net)}
                 </span>
               </div>
@@ -289,7 +289,7 @@ export function Nightly() {
               </SheetRow>
               <div className="flex items-baseline justify-between py-1.5">
                 <span className="text-sm font-bold text-ink">Labor %</span>
-                <span className={`font-display text-xl font-semibold ${laborPct === 0 ? 'text-muted' : laborPct <= targets.laborPct ? 'text-up' : 'text-down'}`}>
+                <span className={`font-sans tabular-nums text-xl font-semibold ${laborPct === 0 ? 'text-muted' : laborPct <= targets.laborPct ? 'text-up' : 'text-down'}`}>
                   {laborPct > 0 ? `${laborPct.toFixed(2)}%` : '—'}
                 </span>
               </div>
@@ -304,8 +304,8 @@ export function Nightly() {
               </SheetRow>
               {overUnder != null && (
                 <div className="flex items-baseline justify-between pt-1">
-                  <span className="font-display text-base font-semibold text-ink">Over / Under</span>
-                  <span className={`font-display text-2xl font-semibold ${Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'}`}>
+                  <span className="font-sans tabular-nums text-base font-semibold text-ink">Over / Under</span>
+                  <span className={`font-sans tabular-nums text-2xl font-semibold ${Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'}`}>
                     {overUnder >= 0 ? '+' : '−'}${Math.abs(overUnder).toFixed(2)}
                   </span>
                 </div>
@@ -366,7 +366,7 @@ export function Nightly() {
               ))}
               <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-2.5">
                 <span className="text-sm font-bold text-ink">Category total</span>
-                <span className="font-display text-xl font-semibold text-ink">{money2(catTotal)}</span>
+                <span className="font-sans tabular-nums text-xl font-semibold text-ink">{money2(catTotal)}</span>
               </div>
               <p className="mt-1.5 text-[11px] text-muted">
                 Mapped from Toast sales categories on import — check must equal net, same as your sheet.
@@ -451,7 +451,7 @@ export function Nightly() {
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="font-semibold text-ink">{fmtDate(n.date)}</span>
-                    <span className="font-display text-lg font-semibold text-brand">{money(n.netSales)}</span>
+                    <span className="font-sans tabular-nums text-lg font-semibold text-brand">{money(n.netSales)}</span>
                   </div>
                   <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted">
                     {n.gross != null && <span>gross {money(n.gross)}</span>}
@@ -647,7 +647,7 @@ function Pill({ label, value, tone, strong }: { label: string; value: string; to
   return (
     <span className="inline-flex items-baseline gap-1.5">
       <span className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{label}</span>
-      <span className={`font-display font-semibold ${strong ? 'text-lg text-ink' : 'text-sm'} ${tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : strong ? '' : 'text-ink'}`}>
+      <span className={`font-sans tabular-nums font-semibold ${strong ? 'text-lg text-ink' : 'text-sm'} ${tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : strong ? '' : 'text-ink'}`}>
         {value}
       </span>
     </span>
