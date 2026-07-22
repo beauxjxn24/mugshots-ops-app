@@ -27,6 +27,7 @@ type Form = {
   expected: string
   overUnder: string
   covers: string
+  togo: string
   notes: string
   food: string
   beer: string
@@ -36,7 +37,7 @@ type Form = {
 }
 const EMPTY: Form = {
   date: today(), gross: '', netImported: '', rewards: '', promos: '', comps: '', staffDisc: '',
-  labor: '', deposit: '', expected: '', overUnder: '', covers: '', notes: '',
+  labor: '', deposit: '', expected: '', overUnder: '', covers: '', togo: '', notes: '',
   food: '', beer: '', liquor: '', wine: '', na: '',
 }
 const f = (s: string) => parseFloat(s) || 0
@@ -65,6 +66,7 @@ function formFromNight(n: Night): Form {
     expected: m(n.expected),
     overUnder: m(n.overUnder),
     covers: n.covers ? String(n.covers) : '',
+    togo: m(n.togo),
     notes: n.notes ?? '',
     food: catVal(n.food, cat?.food),
     beer: catVal(n.beer, cat?.beer),
@@ -183,6 +185,7 @@ export function Nightly() {
       promos: f(form.promos) || undefined,
       comps: f(form.comps) || undefined,
       staffDisc: f(form.staffDisc) || undefined,
+      togo: f(form.togo) || undefined,
       labor: f(form.labor) || undefined,
       laborPct: laborPct > 0 ? Math.round(laborPct * 100) / 100 : undefined,
       expected: f(form.expected) || undefined,
@@ -260,6 +263,9 @@ export function Nightly() {
                   onChange={(e) => setForm({ ...form, covers: e.target.value })}
                   className={`w-full pr-3 text-right font-mono tabular-nums placeholder:text-muted/40 ${cls()}`}
                 />
+              </SheetRow>
+              <SheetRow label="ToGo sales">
+                <MoneyInput value={form.togo} onChange={(v) => setForm({ ...form, togo: v })} />
               </SheetRow>
               <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-3">
                 <span className="font-sans tabular-nums text-lg font-semibold text-ink">Net Sales</span>
@@ -380,22 +386,28 @@ export function Nightly() {
                   ${discounts.toFixed(2)}
                 </span>
               </div>
-              {(
-                [
-                  ['rewards', 'Rewards'],
-                  ['promos', 'Promos'],
-                  ['comps', 'Comps'],
-                  ['staffDisc', 'Staff meals'],
-                ] as const
-              ).map(([k, label]) => (
-                <div key={k} className="flex items-baseline justify-between border-b border-black/5 py-1.5 text-sm last:border-0">
-                  <span className="text-ink/80">{label}</span>
-                  <span className="font-mono text-xs font-semibold text-ink">${f(form[k]).toFixed(2)}</span>
-                </div>
-              ))}
+              {(() => {
+                // Every discount by name, exactly as it appears on the Toast
+                // Menu Item Discounts report; fall back to the 4 buckets for
+                // older nights that only stored totals.
+                const lines = byDate.get(form.date)?.discountLines ?? []
+                const rows = lines.length
+                  ? lines.map((l) => [l.name, l.amount] as [string, number])
+                  : ([
+                      ['Rewards', f(form.rewards)],
+                      ['Promos', f(form.promos)],
+                      ['Comps', f(form.comps)],
+                      ['Staff meals', f(form.staffDisc)],
+                    ] as [string, number][])
+                return rows.map(([label, amt], i) => (
+                  <div key={label + i} className="flex items-baseline justify-between gap-3 border-b border-black/5 py-1.5 text-sm last:border-0">
+                    <span className="min-w-0 truncate text-ink/80">{label}</span>
+                    <span className="shrink-0 font-mono text-xs font-semibold text-ink">${amt.toFixed(2)}</span>
+                  </div>
+                ))
+              })()}
               <p className="mt-2 text-[11px] text-muted">
-                Every deduction from the Sales card — imports fill these from Toast's Check + Menu Item
-                Discounts, nothing typed.
+                Every discount as it appears on Toast's Menu Item Discounts report — imported, nothing typed.
               </p>
             </Card>
           </div>

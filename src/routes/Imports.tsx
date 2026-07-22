@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, latestNightDate } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseTogo, applyTogo, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -54,7 +54,7 @@ let seq = 0
 // "Cash summary" (expected cash) and "Menu item discounts" (comps/staff/promos)
 // are NOT noise — they fill Nightly, so they're intentionally absent here.
 const NOISE_REPORT =
-  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|revenue|tip summary|payments summary|service (mode|charge|daypart)|dining options|tax summary|deferred|unpaid orders|void summary|cash activity|day of week|time of day|net sales summary|check discounts|labor cost by job/i
+  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|revenue|tip summary|payments summary|service (mode|charge|daypart)|tax summary|deferred|unpaid orders|void summary|cash activity|day of week|time of day|net sales summary|check discounts|labor cost by job/i
 
 /** Contains a render crash in one import card so it can't white-screen the page. */
 class CardBoundary extends Component<{ name: string; children: ReactNode }, { failed: boolean }> {
@@ -440,6 +440,8 @@ export function Imports() {
 
             {job.text && isDiscountReport(job.text) && <DiscountImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
 
+            {job.text && isDiningOptions(job.text) && <DiningImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+
             {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isLaborSummary(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && (
               <SalesImport text={job.text} fileName={job.fileName} />
             )}
@@ -465,7 +467,7 @@ export function Imports() {
               const t = job.text ?? ''
               if (!t || job.status !== 'done') return null
               const recognized =
-                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
+                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
               if (recognized) return null
               const hasQtyLines = !!job.lineItems?.some((li) => li.qty)
               const scan = job.kind === 'image' || job.kind === 'pdf'
@@ -1459,6 +1461,35 @@ function DiscountImport({ text, fileName, hintDate }: { text: string; fileName: 
       <div className="mt-1 text-[11px] text-ink/70">{parts.join(' · ') || 'no priced discounts'}</div>
       <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
         Fills the deductions for
+        <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
+        {done && <span className="text-up">✓ set</span>}
+      </label>
+    </div>
+  )
+}
+
+/** Toast "Dining options summary" → ToGo (off-premise) net sales on Nightly. */
+function DiningImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+  const togo = useMemo(() => parseTogo(text), [text])
+  const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
+  const [done, setDone] = useState<string | null>(null)
+  const ran = useRef(false)
+  useEffect(() => {
+    if (togo == null || ran.current) return
+    ran.current = true
+    const d = applyTogo(togo, date)
+    if (d) { setDone(d); logImport(fileName, `togo sales ${money2(togo)} → Nightly (${d})`) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [togo])
+  if (togo == null) return null
+  const retarget = (d: string) => { setDate(d); const r = applyTogo(togo, d); if (r) setDone(r) }
+  return (
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="flex items-center gap-2 text-sm font-bold text-up">
+        <ReceiptText size={16} /> ToGo sales {money2(togo)} → Nightly
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
+        Fills the night of
         <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
         {done && <span className="text-up">✓ set</span>}
       </label>

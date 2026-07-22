@@ -34,6 +34,10 @@ export interface Night {
   laborPct?: number
   expected?: number // expected cash from the POS (drawer)
   overUnder?: number
+  // off-premise (takeout + delivery) net, and every discount by name as it
+  // appears on the Toast report
+  togo?: number
+  discountLines?: { name: string; amount: number }[]
 }
 
 function key(): string {
@@ -497,6 +501,8 @@ export interface DiscountBuckets {
   promos: number
   comps: number
   staffDisc: number
+  /** Every discount by name, exactly as it appears on the Toast report. */
+  lines: { name: string; amount: number }[]
 }
 /**
  * Bucket the day's discounts into the Nightly deduction lines by name. Names are
@@ -510,21 +516,21 @@ export function parseDiscounts(text: string): DiscountBuckets | null {
   const iName = cols.findIndex((h) => h === 'discount')
   const iAmt = cols.findIndex((h) => h === 'amount')
   if (iName < 0 || iAmt < 0) return null
-  const b: DiscountBuckets = { rewards: 0, promos: 0, comps: 0, staffDisc: 0 }
-  let any = false
+  const b: DiscountBuckets = { rewards: 0, promos: 0, comps: 0, staffDisc: 0, lines: [] }
   for (let r = 1; r < lines.length; r++) {
     const c = splitCsv(lines[r])
-    const name = (c[iName] ?? '').toLowerCase().trim()
+    const raw = (c[iName] ?? '').trim()
+    const name = raw.toLowerCase()
     if (!name || name === 'total') continue
     const amt = Math.abs(num(c[iAmt] ?? ''))
     if (!(amt > 0)) continue
-    any = true
+    b.lines.push({ name: raw, amount: Math.round(amt * 100) / 100 })
     if (/training|staff|employee|shift meal|manager meal|team member|emp\b/.test(name)) b.staffDisc += amt
     else if (/reward|loyalty|points|birthday|anniversary|vip/.test(name)) b.rewards += amt
     else if (/comp|walk ?out|void|remake|re-?fire|recovery|manager|on the house|otoh/.test(name)) b.comps += amt
     else b.promos += amt
   }
-  return any ? b : null
+  return b.lines.length ? b : null
 }
 /** Fill the discount deduction lines onto a night. Returns the date, or null. */
 export function applyDiscounts(b: DiscountBuckets, date: string): string | null {
@@ -537,9 +543,47 @@ export function applyDiscounts(b: DiscountBuckets, date: string): string | null 
   if (b.promos > 0) patch.promos = b.promos
   if (b.comps > 0) patch.comps = b.comps
   if (b.staffDisc > 0) patch.staffDisc = b.staffDisc
+  if (b.lines.length) patch.discountLines = b.lines
   if (i >= 0) nights[i] = { ...nights[i], ...patch }
   else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', ...patch })
   setNights(nights.sort((a, b2) => (a.date ?? '').localeCompare(b2.date ?? '')))
+  return date
+}
+
+// ---- Dining options (Toast) → ToGo (off-premise) net sales ----
+/** Toast "Dining options summary": first column "Dining option", plus net sales. */
+export function isDiningOptions(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  const cols = first.split(',').map((s) => s.trim())
+  return cols[0] === 'dining option' && cols.some((c) => c.includes('net sales'))
+}
+/** ToGo = every dining option that isn't Dine In (takeout + delivery), summed. */
+export function parseTogo(text: string): number | null {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const iOpt = cols.findIndex((h) => h === 'dining option')
+  const iNet = cols.findIndex((h) => h === 'net sales')
+  if (iOpt < 0 || iNet < 0) return null
+  let togo = 0
+  let saw = false
+  for (let r = 1; r < lines.length; r++) {
+    const c = splitCsv(lines[r])
+    const opt = (c[iOpt] ?? '').toLowerCase().trim()
+    if (!opt || opt === 'total') continue
+    saw = true
+    if (/dine\s*-?\s*in/.test(opt)) continue // on-premise
+    togo += num(c[iNet] ?? '')
+  }
+  return saw ? Math.round(togo * 100) / 100 : null
+}
+export function applyTogo(togo: number, date: string): string | null {
+  if (!date || togo == null) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  if (i >= 0) nights[i] = { ...nights[i], togo }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', togo })
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
   return date
 }
 
