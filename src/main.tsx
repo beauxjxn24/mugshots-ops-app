@@ -58,6 +58,17 @@ registerSW({
   },
 })
 
+// When a freshly-installed service worker takes control, reload once so the
+// running page swaps to the new assets instead of waiting for the next launch.
+if ('serviceWorker' in navigator) {
+  let reloaded = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return
+    reloaded = true
+    location.reload()
+  })
+}
+
 // Self-healing updater: if the server's index.html references a different JS
 // bundle than the one running, the browser is serving a stale copy — wipe
 // every cache + service worker and reload once. Ends "old version stuck"
@@ -66,7 +77,11 @@ async function selfHeal() {
   try {
     const current = document.querySelector('script[src*="assets/"]')?.getAttribute('src')
     if (!current) return
-    const res = await fetch('./index.html', { cache: 'no-store' })
+    // Unique query param so the request DOESN'T match the service worker's
+    // precached index.html — otherwise the SW serves the stale copy and this
+    // check compares old-to-old and never detects a deploy. This is the bug
+    // that made "the page won't update" stick.
+    const res = await fetch(`./index.html?_fresh=${Date.now()}`, { cache: 'no-store' })
     if (!res.ok) return
     const html = await res.text()
     const m = html.match(/src="?\.?\/?(assets\/[^"\s>]+\.js)/)
