@@ -34,10 +34,17 @@ export interface Night {
   laborPct?: number
   expected?: number // expected cash from the POS (drawer)
   overUnder?: number
-  // off-premise (takeout + delivery) net, and every discount by name as it
-  // appears on the Toast report
+  // off-premise (takeout + delivery) net
   togo?: number
-  discountLines?: { name: string; amount: number }[]
+  // Toast "Net sales summary": rolled-up discount + refund totals (Gross −
+  // discounts − refunds = Net), for the clean summary card.
+  salesDiscounts?: number
+  refunds?: number
+  // Raw Toast report tables, stored so the Nightly page can mirror each report
+  // card exactly (imported, read-only).
+  discountLines?: { name: string; count?: number; amount: number }[]
+  categoryRows?: { name: string; items: number; net: number; gross: number }[]
+  diningRows?: { name: string; orders: number; net: number; gross: number }[]
 }
 
 function key(): string {
@@ -111,6 +118,43 @@ export function applyCatMixToNights(mix: CatMix): number {
   }
   setNights(nights)
   return count
+}
+
+/**
+ * Full category table (per category: items, net, gross) — mirrors the Toast
+ * "Sales category summary" report row-for-row for the Nightly card.
+ */
+export function parseCategoryRows(text: string): { name: string; items: number; net: number; gross: number }[] {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  if (lines.length < 2) return []
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const iCat = cols.findIndex((h) => h.includes('category'))
+  const iItems = cols.findIndex((h) => h === 'items' || h.includes('item'))
+  const iNet = cols.findIndex((h) => h.includes('net sales')) >= 0 ? cols.findIndex((h) => h.includes('net sales')) : cols.findIndex((h) => h === 'net')
+  const iGross = cols.findIndex((h) => h.includes('gross sales')) >= 0 ? cols.findIndex((h) => h.includes('gross sales')) : cols.findIndex((h) => h === 'gross')
+  if (iCat < 0 || iNet < 0) return []
+  const out: { name: string; items: number; net: number; gross: number }[] = []
+  for (let r = 1; r < lines.length; r++) {
+    const c = splitCsv(lines[r])
+    const name = (c[iCat] ?? '').trim()
+    if (!name || name.toLowerCase() === 'total') continue
+    const net = Math.round(num(c[iNet] ?? '') * 100) / 100
+    const gross = iGross >= 0 ? Math.round(num(c[iGross] ?? '') * 100) / 100 : 0
+    const items = iItems >= 0 ? Math.round(num(c[iItems] ?? '')) : 0
+    if (net === 0 && gross === 0 && items === 0) continue
+    out.push({ name, items, net, gross })
+  }
+  return out
+}
+/** Store the full category table on a night (read-only mirror of the report). */
+export function applyCategoryRows(rows: { name: string; items: number; net: number; gross: number }[], date: string): string | null {
+  if (!date || !rows.length) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  if (i >= 0) nights[i] = { ...nights[i], categoryRows: rows }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', categoryRows: rows })
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return date
 }
 
 /** Is this a Toast "Sales category summary" (category → net sales table)? */
@@ -496,13 +540,32 @@ export function isDiscountReport(text: string): boolean {
   const cols = first.split(',').map((s) => s.trim())
   return cols[0] === 'discount' && cols.includes('amount')
 }
+export interface DiscountLine {
+  name: string
+  count?: number
+  amount: number
+}
 export interface DiscountBuckets {
   rewards: number
   promos: number
   comps: number
   staffDisc: number
   /** Every discount by name, exactly as it appears on the Toast report. */
-  lines: { name: string; amount: number }[]
+  lines: DiscountLine[]
+}
+/** Bucket a discount line into a Nightly deduction category by its name. */
+function classifyDiscount(name: string): 'rewards' | 'promos' | 'comps' | 'staffDisc' {
+  const n = name.toLowerCase()
+  if (/training|staff|employee|shift meal|manager meal|team member|emp\b/.test(n)) return 'staffDisc'
+  if (/reward|loyalty|points|birthday|anniversary|vip/.test(n)) return 'rewards'
+  if (/comp|walk ?out|void|remake|re-?fire|recovery|manager|on the house|otoh/.test(n)) return 'comps'
+  return 'promos'
+}
+/** Roll a set of discount lines up into the four deduction buckets. */
+function bucketsFromLines(lines: DiscountLine[]): Pick<DiscountBuckets, 'rewards' | 'promos' | 'comps' | 'staffDisc'> {
+  const b = { rewards: 0, promos: 0, comps: 0, staffDisc: 0 }
+  for (const l of lines) b[classifyDiscount(l.name)] += l.amount
+  return b
 }
 /**
  * Bucket the day's discounts into the Nightly deduction lines by name. Names are
@@ -515,36 +578,40 @@ export function parseDiscounts(text: string): DiscountBuckets | null {
   const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
   const iName = cols.findIndex((h) => h === 'discount')
   const iAmt = cols.findIndex((h) => h === 'amount')
+  const iCount = cols.findIndex((h) => h === 'count')
   if (iName < 0 || iAmt < 0) return null
-  const b: DiscountBuckets = { rewards: 0, promos: 0, comps: 0, staffDisc: 0, lines: [] }
+  const rows: DiscountLine[] = []
   for (let r = 1; r < lines.length; r++) {
     const c = splitCsv(lines[r])
     const raw = (c[iName] ?? '').trim()
-    const name = raw.toLowerCase()
-    if (!name || name === 'total') continue
+    if (!raw || raw.toLowerCase() === 'total') continue
     const amt = Math.abs(num(c[iAmt] ?? ''))
     if (!(amt > 0)) continue
-    b.lines.push({ name: raw, amount: Math.round(amt * 100) / 100 })
-    if (/training|staff|employee|shift meal|manager meal|team member|emp\b/.test(name)) b.staffDisc += amt
-    else if (/reward|loyalty|points|birthday|anniversary|vip/.test(name)) b.rewards += amt
-    else if (/comp|walk ?out|void|remake|re-?fire|recovery|manager|on the house|otoh/.test(name)) b.comps += amt
-    else b.promos += amt
+    rows.push({ name: raw, count: iCount >= 0 ? Math.round(num(c[iCount] ?? '')) || undefined : undefined, amount: Math.round(amt * 100) / 100 })
   }
-  return b.lines.length ? b : null
+  if (!rows.length) return null
+  return { ...bucketsFromLines(rows), lines: rows }
 }
-/** Fill the discount deduction lines onto a night. Returns the date, or null. */
+/**
+ * Merge the day's discounts onto a night. Toast splits discounts across two
+ * files (Menu Item Discounts + Check Discounts), so lines are merged by name
+ * (re-importing the same file just replaces its own lines — idempotent) and the
+ * four deduction buckets are recomputed from the full merged set.
+ */
 export function applyDiscounts(b: DiscountBuckets, date: string): string | null {
-  if (!date) return null
+  if (!date || !b.lines.length) return null
   const nights = getNights()
   const i = nights.findIndex((n) => n.date === date)
-  // Only write buckets that actually have a value — never overwrite a line with undefined.
-  const patch: Partial<Night> = {}
-  if (b.rewards > 0) patch.rewards = b.rewards
-  if (b.promos > 0) patch.promos = b.promos
-  if (b.comps > 0) patch.comps = b.comps
-  if (b.staffDisc > 0) patch.staffDisc = b.staffDisc
-  if (b.lines.length) patch.discountLines = b.lines
-  if (i >= 0) nights[i] = { ...nights[i], ...patch }
+  const ex = i >= 0 ? nights[i] : undefined
+  const merged: DiscountLine[] = [...(ex?.discountLines ?? [])]
+  for (const line of b.lines) {
+    const at = merged.findIndex((m) => m.name.toLowerCase() === line.name.toLowerCase())
+    if (at >= 0) merged[at] = line
+    else merged.push(line)
+  }
+  const buckets = bucketsFromLines(merged)
+  const patch: Partial<Night> = { discountLines: merged, ...buckets }
+  if (i >= 0) nights[i] = { ...ex, ...patch } as Night
   else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', ...patch })
   setNights(nights.sort((a, b2) => (a.date ?? '').localeCompare(b2.date ?? '')))
   return date
@@ -557,32 +624,95 @@ export function isDiningOptions(text: string): boolean {
   const cols = first.split(',').map((s) => s.trim())
   return cols[0] === 'dining option' && cols.some((c) => c.includes('net sales'))
 }
-/** ToGo = every dining option that isn't Dine In (takeout + delivery), summed. */
-export function parseTogo(text: string): number | null {
+export interface DiningRow {
+  name: string
+  orders: number
+  net: number
+  gross: number
+}
+/** Full dining-option table (per option: orders, net, gross). */
+export function parseDiningRows(text: string): DiningRow[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim())
-  if (lines.length < 2) return null
+  if (lines.length < 2) return []
   const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
   const iOpt = cols.findIndex((h) => h === 'dining option')
   const iNet = cols.findIndex((h) => h === 'net sales')
-  if (iOpt < 0 || iNet < 0) return null
-  let togo = 0
-  let saw = false
+  const iGross = cols.findIndex((h) => h === 'gross sales')
+  const iOrd = cols.findIndex((h) => h === 'orders')
+  if (iOpt < 0 || iNet < 0) return []
+  const out: DiningRow[] = []
   for (let r = 1; r < lines.length; r++) {
     const c = splitCsv(lines[r])
-    const opt = (c[iOpt] ?? '').toLowerCase().trim()
-    if (!opt || opt === 'total') continue
-    saw = true
-    if (/dine\s*-?\s*in/.test(opt)) continue // on-premise
-    togo += num(c[iNet] ?? '')
+    const name = (c[iOpt] ?? '').trim()
+    if (!name || name.toLowerCase() === 'total') continue
+    out.push({
+      name,
+      orders: iOrd >= 0 ? Math.round(num(c[iOrd] ?? '')) : 0,
+      net: Math.round(num(c[iNet] ?? '') * 100) / 100,
+      gross: iGross >= 0 ? Math.round(num(c[iGross] ?? '') * 100) / 100 : 0,
+    })
   }
-  return saw ? Math.round(togo * 100) / 100 : null
+  return out
 }
-export function applyTogo(togo: number, date: string): string | null {
-  if (!date || togo == null) return null
+/** ToGo = every dining option that isn't Dine In (takeout + delivery), summed. */
+export function togoFromDining(rows: DiningRow[]): number {
+  return Math.round(rows.filter((r) => !/dine\s*-?\s*in/.test(r.name.toLowerCase())).reduce((s, r) => s + r.net, 0) * 100) / 100
+}
+export function applyDining(rows: DiningRow[], date: string): string | null {
+  if (!date || !rows.length) return null
   const nights = getNights()
   const i = nights.findIndex((n) => n.date === date)
-  if (i >= 0) nights[i] = { ...nights[i], togo }
-  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', togo })
+  const patch = { diningRows: rows, togo: togoFromDining(rows) }
+  if (i >= 0) nights[i] = { ...nights[i], ...patch }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', ...patch })
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return date
+}
+
+// ---- Net sales summary (Toast) → Gross / discounts / refunds / Net ----
+export function isNetSalesSummary(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  const cols = first.split(',').map((s) => s.trim())
+  return cols[0] === 'gross sales' && cols.includes('net sales') && cols.some((c) => c.includes('discount'))
+}
+export interface NetSummary {
+  gross: number
+  discounts: number
+  refunds: number
+  net: number
+}
+export function parseNetSummary(text: string): NetSummary | null {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const v = splitCsv(lines[1])
+  const iG = cols.findIndex((h) => h === 'gross sales')
+  const iD = cols.findIndex((h) => h.includes('discount'))
+  const iR = cols.findIndex((h) => h.includes('refund'))
+  const iN = cols.findIndex((h) => h === 'net sales')
+  if (iG < 0 || iN < 0) return null
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const s = {
+    gross: r2(num(v[iG] ?? '')),
+    discounts: iD >= 0 ? Math.abs(r2(num(v[iD] ?? ''))) : 0,
+    refunds: iR >= 0 ? Math.abs(r2(num(v[iR] ?? ''))) : 0,
+    net: r2(num(v[iN] ?? '')),
+  }
+  return s.gross > 0 || s.net > 0 ? s : null
+}
+export function applyNetSummary(s: NetSummary, date: string): string | null {
+  if (!date) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  const ex = i >= 0 ? nights[i] : undefined
+  const patch = {
+    gross: s.gross || ex?.gross,
+    netSales: ex?.netSales && ex.netSales > 0 ? ex.netSales : s.net || ex?.netSales || 0,
+    salesDiscounts: s.discounts,
+    refunds: s.refunds,
+  }
+  if (i >= 0) nights[i] = { ...ex, ...patch } as Night
+  else nights.push({ id: `n-${date}`, date, deposit: 0, covers: 0, notes: '', ...patch } as Night)
   setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
   return date
 }

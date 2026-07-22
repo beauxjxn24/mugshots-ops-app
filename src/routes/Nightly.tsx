@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { Mail, Check } from 'lucide-react'
+import { Mail, Check, FileDown } from 'lucide-react'
 import { periodWeek } from '../lib/forecast'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
@@ -11,101 +11,38 @@ import { DEFAULT_USERS, type User } from '../lib/users'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 const money2 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-type Form = {
-  date: string
-  gross: string
-  // The net Toast reported for the day (authoritative). Toast's "Sales by day"
-  // gives net directly with no gross, so we keep it instead of faking gross=net.
-  netImported: string
-  rewards: string
-  promos: string
-  comps: string
-  staffDisc: string
-  labor: string
-  deposit: string
-  expected: string
-  overUnder: string
-  covers: string
-  togo: string
-  notes: string
-  food: string
-  beer: string
-  liquor: string
-  wine: string
-  na: string
-}
-const EMPTY: Form = {
-  date: today(), gross: '', netImported: '', rewards: '', promos: '', comps: '', staffDisc: '',
-  labor: '', deposit: '', expected: '', overUnder: '', covers: '', togo: '', notes: '',
-  food: '', beer: '', liquor: '', wine: '', na: '',
-}
+const int = (n: number) => (n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })
 const f = (s: string) => parseFloat(s) || 0
 
-/** Build the entry form from a saved night (imported or hand-entered). */
-function formFromNight(n: Night): Form {
-  // If the night has no saved category split, fall back to the store's imported
-  // category mix so Categories show for every night once a mix has been imported
-  // (Toast has no per-day categories — this is the same estimate the seed uses).
-  const cat =
-    n.food == null && n.netSales > 0 ? catMixSplit(n.netSales) : null
-  // Money → clean 2-decimal string (kills floating-point tails like 55.48000004).
-  const m = (v: number | undefined) => (v != null ? String(Math.round(v * 100) / 100) : '')
-  const catVal = (saved: number | undefined, est: number | undefined) => (saved != null ? m(saved) : est != null ? m(est) : '')
-  return {
-    date: n.date,
-    // Real gross only — never fake gross = net (Toast's sales-by-day has no gross).
-    gross: m(n.gross),
-    netImported: m(n.netSales),
-    rewards: m(n.rewards),
-    promos: m(n.promos),
-    comps: m(n.comps),
-    staffDisc: m(n.staffDisc),
-    labor: m(n.labor),
-    deposit: n.deposit ? m(n.deposit) : '',
-    expected: m(n.expected),
-    overUnder: m(n.overUnder),
-    covers: n.covers ? String(n.covers) : '',
-    togo: m(n.togo),
-    notes: n.notes ?? '',
-    food: catVal(n.food, cat?.food),
-    beer: catVal(n.beer, cat?.beer),
-    liquor: catVal(n.liquor, cat?.liquor),
-    wine: catVal(n.wine, cat?.wine),
-    na: catVal(n.na, cat?.na),
-  }
-}
-
-/** Where the sheet opens: a deep-linked date, else the most recent logged night
- *  (so a fresh import shows its numbers on sight), else a blank today. */
-function initialForm(focusDate: string | null, log: Night[]): Form {
-  if (focusDate) {
-    const n = log.find((x) => x.date === focusDate)
-    return n ? formFromNight(n) : { ...EMPTY, date: focusDate }
-  }
-  const latest = [...log].filter((n) => n?.date).sort((a, b) => b.date.localeCompare(a.date))[0]
-  return latest ? formFromNight(latest) : EMPTY
-}
-
 /**
- * Nightly Numbers — the prototype's close-out math, ported:
- * gross − (rewards + promos + comps + staff) = net · labor$ → labor % of net
- * (flagged against the store's target) · deposit over/under.
+ * Nightly Numbers — a clean, read-only mirror of the four Toast reports the
+ * manager closes on: Net Sales Summary, Sales Category Summary, Dining Option
+ * Summary, and Discount Summary. Everything on these cards is imported (drop the
+ * Toast export on Imports) — nothing is typed. The only manual step left is
+ * counting the drawer, so the Over/Under can reconcile itself.
  */
 export function Nightly() {
   const [rawLog, setLog] = usePersistentState<Night[]>('nightly:log', [])
   const log = Array.isArray(rawLog) ? rawLog : []
   const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
-  // Deep link from the dashboard chart: /nightly?date=YYYY-MM-DD highlights
-  // that night's summary (and pre-fills the form if it hasn't been saved yet).
   const [params] = useSearchParams()
   const focusDate = params.get('date')
-  const [form, setForm] = useState<Form>(() => initialForm(focusDate, log))
-  const [showCats, setShowCats] = useState(false)
-  // History stays out of the way: last 7 nights show; anything older is
-  // hidden until looked up by date (or expanded).
-  const [lookup, setLookup] = useState('')
-  const [showAll, setShowAll] = useState(false)
+
+  const sorted = useMemo(() => [...log].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [log])
+  const byDate = useMemo(() => new Map(log.map((n) => [n.date, n])), [log])
+  // The night on screen: a deep-linked date, else the most recent logged night.
+  const [date, setDate] = useState<string>(() => focusDate ?? sorted[0]?.date ?? today())
+  const vn = byDate.get(date) ?? null
+
+  // The only manual entry left — the counted drawer + a note. Loaded from the
+  // viewed night, editable, saved back onto it.
+  const [cash, setCash] = useState('')
+  const [notes, setNotes] = useState('')
+  useEffect(() => {
+    setCash(vn?.deposit ? String(Math.round(vn.deposit * 100) / 100) : '')
+    setNotes(vn?.notes ?? '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, vn?.id])
 
   useEffect(() => {
     if (!focusDate) return
@@ -113,53 +50,40 @@ export function Nightly() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [focusDate])
 
-  const discounts = f(form.rewards) + f(form.promos) + f(form.comps) + f(form.staffDisc)
-  // Net is what Toast reported (authoritative). Only when there's no imported net
-  // — a hand-built night — do we derive it from gross − discounts.
-  const net = f(form.netImported) > 0 ? f(form.netImported) : Math.max(0, f(form.gross) - discounts)
-  const laborPct = net > 0 && f(form.labor) > 0 ? (f(form.labor) / net) * 100 : 0
-  // Deposit reconciles itself: cash counted − expected drawer (POS). The manager
-  // types only the counted cash; over/under computes, no mental math.
-  const overUnder =
-    form.deposit !== '' && form.expected !== '' ? Math.round((f(form.deposit) - f(form.expected)) * 100) / 100 : null
-  // A night that arrived from an import/seed (has gross or an imported net) is auto-filled.
-  const autoFilled = f(form.gross) > 0 || f(form.netImported) > 0
+  const [lookup, setLookup] = useState('')
+  const [showAll, setShowAll] = useState(false)
 
-  const sorted = useMemo(() => [...log].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [log])
+  const net = vn?.netSales ?? 0
+  const gross = vn?.gross ?? 0
+  const laborPct = vn?.laborPct ?? (vn?.labor && net > 0 ? (vn.labor / net) * 100 : 0)
+  const expected = vn?.expected
+  const overUnder = cash !== '' && expected != null ? Math.round((f(cash) - expected) * 100) / 100 : null
+
+  const pw = periodWeek(date)
   const weekTotal = useMemo(() => sorted.slice(0, 7).reduce((s, n) => s + n.netSales, 0), [sorted])
 
-  // Prototype context: period/week chips + same-day-last-year comparison.
-  const pw = periodWeek(form.date)
-  const byDate = useMemo(() => new Map(log.map((n) => [n.date, n])), [log])
   const shiftD = (isoDate: string, delta: number) => {
     const [y, m, d] = (isoDate ?? '').split('-').map(Number)
     const dt = new Date(y, m - 1, d + delta)
     return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   }
-  const lyNight = byDate.get(shiftD(form.date, -364)) ?? null
-  const lwNight = byDate.get(shiftD(form.date, -7)) ?? null
+  const lyNight = byDate.get(shiftD(date, -364)) ?? null
+  const lwNight = byDate.get(shiftD(date, -7)) ?? null
   const cmpNight = lyNight ?? lwNight
-  const catTotal = f(form.food) + f(form.beer) + f(form.liquor) + f(form.wine) + f(form.na)
-  const catDiff = catTotal - net
 
-  // Clicking a history row loads that night back into the sheet for review.
-  const loadNight = (n: Night) => {
-    setForm(formFromNight(n))
-    if ((n.food ?? 0) > 0) setShowCats(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const saveDrawer = () => {
+    if (!vn) return
+    const overUnderVal =
+      cash !== '' && expected != null ? Math.round((f(cash) - expected) * 100) / 100 : vn.overUnder
+    const updated: Night = {
+      ...vn,
+      deposit: f(cash),
+      notes: notes.trim(),
+      overUnder: overUnderVal,
+    }
+    setLog((l) => l.map((x) => (x.date === date ? updated : x)))
   }
 
-  // Picking a date jumps to that day: load its saved numbers if we have them,
-  // else a blank sheet ready for entry. (The picker used to only relabel the
-  // date, leaving the previous day's figures on screen — the "not updating" bug.)
-  const pickDate = (d: string) => {
-    if (!d) return
-    const n = byDate.get(d)
-    setForm(n ? formFromNight(n) : { ...EMPTY, date: d })
-    setShowCats(!!(n && (n.food ?? 0) > 0))
-  }
-
-  // Which history rows are visible right now.
   const visibleNights = useMemo(() => {
     if (lookup) return sorted.filter((n) => n.date === lookup)
     if (showAll) return sorted
@@ -171,40 +95,10 @@ export function Nightly() {
     return recent
   }, [sorted, lookup, showAll, focusDate])
 
-  const save = () => {
-    if (!form.date || (f(form.gross) === 0 && net === 0)) return
-    const n: Night = {
-      id: `n${Date.now()}`,
-      date: form.date,
-      netSales: net,
-      deposit: f(form.deposit),
-      covers: parseInt(form.covers) || 0,
-      notes: form.notes.trim(),
-      gross: f(form.gross) || undefined,
-      rewards: f(form.rewards) || undefined,
-      promos: f(form.promos) || undefined,
-      comps: f(form.comps) || undefined,
-      staffDisc: f(form.staffDisc) || undefined,
-      togo: f(form.togo) || undefined,
-      labor: f(form.labor) || undefined,
-      laborPct: laborPct > 0 ? Math.round(laborPct * 100) / 100 : undefined,
-      expected: f(form.expected) || undefined,
-      overUnder: overUnder != null ? overUnder : undefined,
-      food: f(form.food) || undefined,
-      beer: f(form.beer) || undefined,
-      liquor: f(form.liquor) || undefined,
-      wine: f(form.wine) || undefined,
-      na: f(form.na) || undefined,
-    }
-    setLog((l) => [...l.filter((x) => x.date !== form.date), n])
-    setForm(EMPTY)
-    setShowCats(false)
-  }
-
   return (
     <>
       <PageHeader
-        title={`Nightly Numbers · ${fmtDate(form.date)}`}
+        title="Nightly Numbers"
         subtitle={`Period ${pw.period} · Week ${pw.week} · last 7 nights ${money(weekTotal)} net`}
         right={
           <div className="flex flex-wrap items-center gap-1.5">
@@ -220,198 +114,151 @@ export function Nightly() {
           </div>
         }
       />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2.4fr)]">
-          {/* SALES + LABOR / DEPOSIT — the prototype's close-out sheet */}
-          <div className="space-y-5">
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Sales</span>
-                  {autoFilled && (
-                    <span className="rounded-full bg-up/10 px-2 py-0.5 text-[10px] font-extrabold text-up">auto-filled</span>
-                  )}
-                </span>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => pickDate(e.target.value)}
-                  className="rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-brand"
-                />
-              </div>
-              <SheetRow label="Gross Sales" strong>
-                <MoneyInput value={form.gross} onChange={(v) => setForm({ ...form, gross: v })} />
-              </SheetRow>
-              <SheetRow label="− Rewards">
-                <MoneyInput value={form.rewards} onChange={(v) => setForm({ ...form, rewards: v })} />
-              </SheetRow>
-              <SheetRow label="− Promos">
-                <MoneyInput value={form.promos} onChange={(v) => setForm({ ...form, promos: v })} />
-              </SheetRow>
-              <SheetRow label="− Comps">
-                <MoneyInput value={form.comps} onChange={(v) => setForm({ ...form, comps: v })} />
-              </SheetRow>
-              <SheetRow label="− Staff meals">
-                <MoneyInput value={form.staffDisc} onChange={(v) => setForm({ ...form, staffDisc: v })} />
-              </SheetRow>
-              <SheetRow label="Covers">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={form.covers}
-                  placeholder="0"
-                  onChange={(e) => setForm({ ...form, covers: e.target.value })}
-                  className={`w-full pr-3 text-right font-mono tabular-nums placeholder:text-muted/40 ${cls()}`}
-                />
-              </SheetRow>
-              <SheetRow label="ToGo sales">
-                <MoneyInput value={form.togo} onChange={(v) => setForm({ ...form, togo: v })} />
-              </SheetRow>
-              <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-3">
-                <span className="font-sans tabular-nums text-lg font-semibold text-ink">Net Sales</span>
-                <span className="border-b-[3px] border-brand pb-0.5 font-sans tabular-nums text-3xl font-semibold text-ink">
-                  {money2(net)}
-                </span>
-              </div>
-              {cmpNight && cmpNight.netSales > 0 && net > 0 && (
-                <div className="mt-3 flex items-center justify-between rounded-lg bg-black/[0.04] px-3 py-2 text-xs">
-                  <span className="font-semibold text-muted">
-                    vs last {lyNight ? 'year' : 'week'} ({fmtDate(lyNight ? shiftD(form.date, -364) : shiftD(form.date, -7)).split(',')[0]} {money(cmpNight.netSales)})
-                  </span>
-                  <span className={`font-bold ${net >= cmpNight.netSales ? 'text-up' : 'text-down'}`}>
-                    {net >= cmpNight.netSales ? '▲ +' : '▼ −'}
-                    {Math.abs(((net - cmpNight.netSales) / cmpNight.netSales) * 100).toFixed(1)}% ·{' '}
-                    {net >= cmpNight.netSales ? '+' : '−'}
-                    {money(Math.abs(net - cmpNight.netSales))}
-                  </span>
-                </div>
-              )}
-            </Card>
 
-            <Card className="p-5">
-              <div className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted">Labor</div>
-              <SheetRow label="Labor $">
-                <MoneyInput value={form.labor} onChange={(v) => setForm({ ...form, labor: v })} />
-              </SheetRow>
-              <div className="flex items-baseline justify-between py-1.5">
-                <span className="text-sm font-bold text-ink">Labor %</span>
-                <span className={`font-sans tabular-nums text-xl font-semibold ${laborPct === 0 ? 'text-muted' : laborPct <= targets.laborPct ? 'text-up' : 'text-down'}`}>
-                  {laborPct > 0 ? `${laborPct.toFixed(2)}%` : '—'}
-                </span>
-              </div>
-              <p className="text-[11px] text-muted">Drop the Toast Labor report (by day) on Imports to fill this automatically.</p>
-              <div className="my-3 border-t border-black/10" />
-              <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted">Deposit</div>
-              <SheetRow label="Expected cash (POS)">
-                <MoneyInput value={form.expected} onChange={(v) => setForm({ ...form, expected: v })} allowNegative />
-              </SheetRow>
-              <SheetRow label="Actual cash counted" highlight>
-                <MoneyInput value={form.deposit} onChange={(v) => setForm({ ...form, deposit: v })} allowNegative highlight />
-              </SheetRow>
-              {overUnder != null && (
-                <div className="flex items-baseline justify-between pt-1">
-                  <span className="font-sans tabular-nums text-base font-semibold text-ink">Over / Under</span>
-                  <span className={`font-sans tabular-nums text-2xl font-semibold ${Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'}`}>
-                    {overUnder >= 0 ? '+' : '−'}${Math.abs(overUnder).toFixed(2)}
-                  </span>
-                </div>
-              )}
-              <p className="mt-1 text-[11px] text-muted">
-                Type only the <b className="text-ink/70">cash you counted</b> — over/under does the math.
-              </p>
-              <input
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Notes — weather, events, callouts, 86'd items…"
-                className={`mt-3 w-full ${cls()}`}
-              />
-              <div className="mt-3 flex gap-2">
-                <button onClick={save} className="flex-1 rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
-                  Save night ✓
-                </button>
-                <button
-                  onClick={() => {
-                    setForm(EMPTY)
-                    setShowCats(false)
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  title="Start a fresh entry for today"
-                  className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm font-bold text-ink"
-                >
-                  + New night
-                </button>
-              </div>
-            </Card>
+      <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Date selector — which night's reports are on screen */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-sans text-2xl font-bold tracking-tight text-ink">{fmtDate(date)}</div>
+            <div className="text-xs font-medium text-muted">
+              {vn ? 'Imported from Toast — read-only' : 'No reports imported for this day yet'}
+            </div>
           </div>
-
-          {/* CATEGORIES + DISCOUNTS — right rail, checked against net */}
-          <div className="space-y-5">
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Categories</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                    catTotal === 0 ? 'bg-black/5 text-muted' : Math.abs(catDiff) < 1 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'
-                  }`}
-                >
-                  {catTotal === 0 ? 'from your sheet' : Math.abs(catDiff) < 1 ? '✓ check = 0' : `${catDiff > 0 ? '+' : '−'}${money2(Math.abs(catDiff))} vs net`}
-                </span>
-              </div>
-              {(
-                [
-                  ['food', 'Food (incl. shakes)'],
-                  ['na', 'NA Bev'],
-                  ['beer', 'Beer'],
-                  ['liquor', 'Liquor'],
-                  ['wine', 'Wine'],
-                ] as const
-              ).map(([k, label]) => (
-                <SheetRow key={k} label={label}>
-                  <MoneyInput value={form[k]} onChange={(v) => setForm({ ...form, [k]: v })} />
-                </SheetRow>
+          <div className="flex items-center gap-2">
+            <select
+              value={sorted.some((n) => n.date === date) ? date : ''}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+              className="rounded-lg border border-black/10 bg-white px-2.5 py-2 text-xs font-semibold text-ink outline-none focus:border-brand"
+            >
+              {!sorted.some((n) => n.date === date) && <option value="">{fmtDate(date)}</option>}
+              {sorted.map((n) => (
+                <option key={n.date} value={n.date}>
+                  {fmtDate(n.date)} · {money(n.netSales)}
+                </option>
               ))}
-              <div className="mt-2 flex items-baseline justify-between border-t border-black/10 pt-2.5">
-                <span className="text-sm font-bold text-ink">Category total</span>
-                <span className="font-sans tabular-nums text-xl font-semibold text-ink">{money2(catTotal)}</span>
-              </div>
-              <p className="mt-1.5 text-[11px] text-muted">
-                Mapped from Toast sales categories on import — check must equal net, same as your sheet.
-              </p>
-            </Card>
-
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Discounts</span>
-                <span className={`rounded-lg px-2 py-0.5 font-mono text-xs font-bold ${discounts > 0 ? 'bg-down/10 text-down' : 'bg-black/5 text-muted'}`}>
-                  ${discounts.toFixed(2)}
-                </span>
-              </div>
-              {(() => {
-                // Every discount by name, exactly as it appears on the Toast
-                // Menu Item Discounts report; fall back to the 4 buckets for
-                // older nights that only stored totals.
-                const lines = byDate.get(form.date)?.discountLines ?? []
-                const rows = lines.length
-                  ? lines.map((l) => [l.name, l.amount] as [string, number])
-                  : ([
-                      ['Rewards', f(form.rewards)],
-                      ['Promos', f(form.promos)],
-                      ['Comps', f(form.comps)],
-                      ['Staff meals', f(form.staffDisc)],
-                    ] as [string, number][])
-                return rows.map(([label, amt], i) => (
-                  <div key={label + i} className="flex items-baseline justify-between gap-3 border-b border-black/5 py-1.5 text-sm last:border-0">
-                    <span className="min-w-0 truncate text-ink/80">{label}</span>
-                    <span className="shrink-0 font-mono text-xs font-semibold text-ink">${amt.toFixed(2)}</span>
-                  </div>
-                ))
-              })()}
-              <p className="mt-2 text-[11px] text-muted">
-                Every discount as it appears on Toast's Menu Item Discounts report — imported, nothing typed.
-              </p>
-            </Card>
+            </select>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+              className="rounded-lg border border-black/10 bg-white px-2.5 py-2 text-xs font-semibold outline-none focus:border-brand"
+            />
           </div>
         </div>
+
+        {!vn ? (
+          <Card className="p-10 text-center">
+            <div className="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-brand/10 text-brand">
+              <FileDown size={24} />
+            </div>
+            <div className="font-sans text-lg font-bold text-ink">Nothing to show for {fmtDate(date)}</div>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted text-pretty">
+              Export the day's reports from Toast and drop them on the Imports screen — the four
+              summaries fill themselves here.
+            </p>
+            <Link
+              to="/imports"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white"
+            >
+              <FileDown size={15} /> Go to Imports
+            </Link>
+          </Card>
+        ) : (
+          <>
+            {/* vs last year / last week */}
+            {cmpNight && cmpNight.netSales > 0 && net > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-[0_10px_30px_-22px_rgba(23,32,55,0.3)]">
+                <span className="font-semibold text-muted">
+                  Net vs last {lyNight ? 'year' : 'week'} ·{' '}
+                  {fmtDate(lyNight ? shiftD(date, -364) : shiftD(date, -7)).split(',')[0]}{' '}
+                  {money(cmpNight.netSales)}
+                </span>
+                <span className={`font-bold ${net >= cmpNight.netSales ? 'text-up' : 'text-down'}`}>
+                  {net >= cmpNight.netSales ? '▲ +' : '▼ −'}
+                  {Math.abs(((net - cmpNight.netSales) / cmpNight.netSales) * 100).toFixed(1)}% ·{' '}
+                  {net >= cmpNight.netSales ? '+' : '−'}
+                  {money(Math.abs(net - cmpNight.netSales))}
+                </span>
+              </div>
+            )}
+
+            {/* The four Toast report cards */}
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+              <NetSalesCard n={vn} />
+              <CategoryCard n={vn} />
+              <DiningCard n={vn} />
+              <DiscountCard n={vn} />
+            </div>
+
+            {/* Labor + Deposit — labor is imported, drawer is the one manual step */}
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+              <ReportCard title="Labor" subtitle={`target ≤ ${targets.laborPct}% of net`}>
+                <div className="divide-y divide-black/5">
+                  <LineRow label="Net sales" value={money2(net)} />
+                  <LineRow label="Labor cost" value={vn.labor != null ? money2(vn.labor) : '—'} />
+                  <div className="flex items-baseline justify-between px-4 py-3">
+                    <span className="font-sans text-base font-bold text-ink">Labor %</span>
+                    <span
+                      className={`font-sans text-2xl font-bold tabular-nums ${
+                        laborPct === 0 ? 'text-muted' : laborPct <= targets.laborPct ? 'text-up' : 'text-down'
+                      }`}
+                    >
+                      {laborPct > 0 ? `${laborPct.toFixed(2)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+                {vn.labor == null && (
+                  <p className="px-4 pb-3 text-[11px] text-muted">
+                    Drop the Toast <b>Labor</b> report on Imports to fill this.
+                  </p>
+                )}
+              </ReportCard>
+
+              <ReportCard title="Deposit" subtitle="count the drawer">
+                <div className="divide-y divide-black/5">
+                  <LineRow label="Expected cash (POS)" value={expected != null ? money2(expected) : '—'} />
+                  <label className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <span className="text-sm font-semibold text-ink">Actual cash counted</span>
+                    <span className="w-36 shrink-0">
+                      <MoneyInput value={cash} onChange={setCash} allowNegative highlight />
+                    </span>
+                  </label>
+                  {overUnder != null && (
+                    <div className="flex items-baseline justify-between px-4 py-3">
+                      <span className="font-sans text-base font-bold text-ink">Over / Under</span>
+                      <span
+                        className={`font-sans text-2xl font-bold tabular-nums ${
+                          Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'
+                        }`}
+                      >
+                        {overUnder >= 0 ? '+' : '−'}${Math.abs(overUnder).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="px-4 py-3">
+                  <input
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Notes — weather, events, callouts, 86'd items…"
+                    className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                  />
+                  <button
+                    onClick={saveDrawer}
+                    className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white"
+                  >
+                    Save drawer &amp; notes ✓
+                  </button>
+                  {expected == null && (
+                    <p className="mt-2 text-[11px] text-muted">
+                      Drop the Toast <b>Cash summary</b> on Imports for the expected figure — over/under fills itself.
+                    </p>
+                  )}
+                </div>
+              </ReportCard>
+            </div>
+          </>
+        )}
 
         <NightlyLog log={log} targets={targets} initialDate={focusDate ?? undefined} />
 
@@ -420,7 +267,11 @@ export function Nightly() {
             <div className="flex flex-wrap items-center gap-2 border-b border-black/10 bg-black/[0.02] px-4 py-3">
               <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Night history</span>
               <span className="text-[11px] text-muted">
-                {lookup ? `showing ${fmtDate(lookup)}` : showAll ? `all ${sorted.length} nights` : `last 7 of ${sorted.length} — older nights are tucked away`}
+                {lookup
+                  ? `showing ${fmtDate(lookup)}`
+                  : showAll
+                    ? `all ${sorted.length} nights`
+                    : `last 7 of ${sorted.length} — older nights are tucked away`}
               </span>
               <div className="ml-auto flex items-center gap-2">
                 <input
@@ -447,9 +298,7 @@ export function Nightly() {
                 )}
               </div>
             </div>
-            {visibleNights.length === 0 && (
-              <p className="p-4 text-sm text-muted">No night saved for that date.</p>
-            )}
+            {visibleNights.length === 0 && <p className="p-4 text-sm text-muted">No night saved for that date.</p>}
             {visibleNights.map((n) => {
               const lp = n.laborPct ?? (n.labor && n.netSales ? (n.labor / n.netSales) * 100 : 0)
               const focused = n.date === focusDate
@@ -457,28 +306,32 @@ export function Nightly() {
                 <div
                   key={n.id}
                   id={`night-${n.date}`}
-                  onClick={() => loadNight(n)}
-                  title="Open this night in the sheet above"
-                  className={`cursor-pointer border-b border-black/5 p-4 last:border-0 hover:bg-brand/5 ${focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''}`}
+                  onClick={() => {
+                    setDate(n.date)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  title="Open this night's reports above"
+                  className={`cursor-pointer border-b border-black/5 p-4 last:border-0 hover:bg-brand/5 ${
+                    focused || n.date === date ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''
+                  }`}
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="font-semibold text-ink">{fmtDate(n.date)}</span>
-                    <span className="font-sans tabular-nums text-lg font-semibold text-brand">{money(n.netSales)}</span>
+                    <span className="font-sans text-lg font-bold tabular-nums text-brand">{money(n.netSales)}</span>
                   </div>
                   <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted">
                     {n.gross != null && <span>gross {money(n.gross)}</span>}
                     {lp > 0 && (
-                      <span className={lp <= targets.laborPct ? 'text-up' : 'text-down'}>
-                        labor {lp.toFixed(1)}%
-                      </span>
+                      <span className={lp <= targets.laborPct ? 'text-up' : 'text-down'}>labor {lp.toFixed(1)}%</span>
                     )}
                     {n.overUnder != null && (
                       <span className={Math.abs(n.overUnder) < 5 ? '' : 'text-down'}>
-                        drawer {n.overUnder >= 0 ? '+' : ''}{money2(n.overUnder)}
+                        drawer {n.overUnder >= 0 ? '+' : ''}
+                        {money2(n.overUnder)}
                       </span>
                     )}
                     {n.covers > 0 && <span>{n.covers} covers</span>}
-                    {n.deposit > 0 && <span>deposit {money(n.deposit)}</span>}
+                    {(n.togo ?? 0) > 0 && <span>togo {money(n.togo!)}</span>}
                   </div>
                   {(n.food ?? 0) > 0 && <CatBar n={n} />}
                   {n.notes && <div className="mt-1 text-sm text-ink/70">{n.notes}</div>}
@@ -489,6 +342,209 @@ export function Nightly() {
         )}
       </div>
     </>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Toast-style report cards — clean header, zebra rows, bold total.
+// ---------------------------------------------------------------------------
+
+function ReportCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <Card className="overflow-hidden p-0">
+      <div className="flex items-baseline justify-between gap-2 bg-navy px-4 py-2.5">
+        <h3 className="font-sans text-sm font-bold tracking-wide text-white">{title}</h3>
+        {subtitle && <span className="text-[11px] font-medium text-white/55">{subtitle}</span>}
+      </div>
+      {children}
+    </Card>
+  )
+}
+
+/** A single label→value line (used by the summary + labor/deposit cards). */
+function LineRow({ label, value, tone, strong }: { label: string; value: string; tone?: 'down' | 'muted'; strong?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+      <span className={`text-sm ${strong ? 'font-bold text-ink' : 'text-ink/80'}`}>{label}</span>
+      <span
+        className={`font-sans tabular-nums ${strong ? 'text-lg font-bold' : 'text-sm font-semibold'} ${
+          tone === 'down' ? 'text-down' : tone === 'muted' ? 'text-muted' : 'text-ink'
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+/** A generic zebra table for the multi-column reports. */
+type Col = { label: string; right?: boolean }
+function ReportTable({
+  head,
+  rows,
+  total,
+  empty,
+}: {
+  head: Col[]
+  rows: (string | number)[][]
+  total?: (string | number)[]
+  empty?: string
+}) {
+  if (rows.length === 0)
+    return <div className="px-4 py-6 text-center text-sm text-muted">{empty ?? 'Nothing to show.'}</div>
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-black/10">
+            {head.map((c, i) => (
+              <th
+                key={i}
+                className={`px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted ${
+                  c.right ? 'text-right' : 'text-left'
+                }`}
+              >
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, ri) => (
+            <tr key={ri} className={`border-b border-black/5 last:border-0 ${ri % 2 ? 'bg-black/[0.015]' : ''}`}>
+              {r.map((cell, ci) => (
+                <td
+                  key={ci}
+                  className={`px-4 py-2 ${
+                    head[ci]?.right ? 'text-right font-sans tabular-nums text-ink' : 'text-ink/85'
+                  }`}
+                >
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+        {total && (
+          <tfoot>
+            <tr className="border-t-2 border-black/15 bg-black/[0.03]">
+              {total.map((cell, ci) => (
+                <td
+                  key={ci}
+                  className={`px-4 py-2.5 font-bold ${
+                    head[ci]?.right ? 'text-right font-sans tabular-nums text-ink' : 'text-ink'
+                  }`}
+                >
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+  )
+}
+
+/** Net Sales Summary — Gross − discounts − refunds = Net. */
+function NetSalesCard({ n }: { n: Night }) {
+  const discounts =
+    n.salesDiscounts ??
+    (n.discountLines?.reduce((s, l) => s + l.amount, 0) ||
+      (n.rewards ?? 0) + (n.promos ?? 0) + (n.comps ?? 0) + (n.staffDisc ?? 0))
+  const refunds = n.refunds ?? 0
+  const gross = n.gross ?? n.netSales + discounts + refunds
+  return (
+    <ReportCard title="Net Sales Summary">
+      <div className="divide-y divide-black/5">
+        <LineRow label="Gross sales" value={money2(gross)} />
+        <LineRow label="Sales discounts" value={discounts > 0 ? `−${money2(discounts)}` : money2(0)} tone={discounts > 0 ? 'down' : 'muted'} />
+        <LineRow label="Sales refunds" value={refunds > 0 ? `−${money2(refunds)}` : money2(0)} tone={refunds > 0 ? 'down' : 'muted'} />
+      </div>
+      <div className="border-t-2 border-black/15 bg-black/[0.03]">
+        <LineRow label="Net sales" value={money2(n.netSales)} strong />
+      </div>
+    </ReportCard>
+  )
+}
+
+/** Sales Category Summary — per category: items, net, gross. */
+function CategoryCard({ n }: { n: Night }) {
+  const rows = useMemo(() => {
+    if (n.categoryRows?.length) return n.categoryRows.map((c) => ({ name: c.name, items: c.items, net: c.net, gross: c.gross }))
+    // Fall back to the per-night category split (net only — no gross per day).
+    const split: [string, number][] = [
+      ['Food', n.food ?? 0],
+      ['NA Beverage', n.na ?? 0],
+      ['Liquor', n.liquor ?? 0],
+      ['Beer', n.beer ?? 0],
+      ['Wine', n.wine ?? 0],
+    ]
+    return split.filter(([, v]) => v > 0).map(([name, net]) => ({ name, items: 0, net, gross: 0 }))
+  }, [n])
+  const hasGross = rows.some((r) => r.gross > 0)
+  const hasItems = rows.some((r) => r.items > 0)
+  const head: Col[] = [
+    { label: 'Sales category' },
+    ...(hasItems ? [{ label: 'Items', right: true }] : []),
+    { label: 'Net sales', right: true },
+    ...(hasGross ? [{ label: 'Gross sales', right: true }] : []),
+  ]
+  const body = rows.map((r) => [
+    r.name,
+    ...(hasItems ? [int(r.items)] : []),
+    money2(r.net),
+    ...(hasGross ? [money2(r.gross)] : []),
+  ])
+  const totNet = rows.reduce((s, r) => s + r.net, 0)
+  const totGross = rows.reduce((s, r) => s + r.gross, 0)
+  const totItems = rows.reduce((s, r) => s + r.items, 0)
+  const total = [
+    'Total',
+    ...(hasItems ? [int(totItems)] : []),
+    money2(totNet),
+    ...(hasGross ? [money2(totGross)] : []),
+  ]
+  return (
+    <ReportCard title="Sales Category Summary">
+      <ReportTable head={head} rows={body} total={rows.length ? total : undefined} empty="Drop the Toast Sales category summary on Imports to fill this." />
+    </ReportCard>
+  )
+}
+
+/** Dining Option Summary — per option: orders, net, gross. */
+function DiningCard({ n }: { n: Night }) {
+  const rows = n.diningRows ?? []
+  const head: Col[] = [{ label: 'Dining option' }, { label: 'Orders', right: true }, { label: 'Net sales', right: true }, { label: 'Gross sales', right: true }]
+  const body = rows.map((r) => [r.name, int(r.orders), money2(r.net), money2(r.gross)])
+  const total = ['Total', int(rows.reduce((s, r) => s + r.orders, 0)), money2(rows.reduce((s, r) => s + r.net, 0)), money2(rows.reduce((s, r) => s + r.gross, 0))]
+  return (
+    <ReportCard title="Dining Option Summary">
+      <ReportTable head={head} rows={body} total={rows.length ? total : undefined} empty="Drop the Toast Dining options summary on Imports to fill this." />
+    </ReportCard>
+  )
+}
+
+/** Discount Summary — every discount by name: count, amount. */
+function DiscountCard({ n }: { n: Night }) {
+  const lines = useMemo(() => {
+    if (n.discountLines?.length) return n.discountLines.map((l) => ({ name: l.name, count: l.count, amount: l.amount }))
+    const buckets: [string, number][] = [
+      ['Rewards', n.rewards ?? 0],
+      ['Promos', n.promos ?? 0],
+      ['Comps', n.comps ?? 0],
+      ['Staff meals', n.staffDisc ?? 0],
+    ]
+    return buckets.filter(([, v]) => v > 0).map(([name, amount]) => ({ name, count: undefined as number | undefined, amount }))
+  }, [n])
+  const hasCount = lines.some((l) => l.count != null)
+  const head: Col[] = [{ label: 'Discount' }, ...(hasCount ? [{ label: 'Count', right: true }] : []), { label: 'Amount', right: true }]
+  const body = lines.map((l) => [l.name, ...(hasCount ? [l.count != null ? int(l.count) : '—'] : []), money2(l.amount)])
+  const total = ['Total', ...(hasCount ? [int(lines.reduce((s, l) => s + (l.count ?? 0), 0))] : []), money2(lines.reduce((s, l) => s + l.amount, 0))]
+  return (
+    <ReportCard title="Discount Summary">
+      <ReportTable head={head} rows={body} total={lines.length ? total : undefined} empty="Drop the Toast Menu item / Check discounts on Imports to fill this." />
+    </ReportCard>
   )
 }
 
@@ -552,9 +608,9 @@ function NightlyLog({ log, targets, initialDate }: { log: Night[]; targets: Targ
     } else {
       lines.push('(No numbers saved for this date yet — see Nightly Numbers.)', '')
     }
-    for (const f of LOG_FIELDS) {
-      const v = entry[f.key].trim()
-      if (v) lines.push(`— ${f.label} —`, v, '')
+    for (const fld of LOG_FIELDS) {
+      const v = entry[fld.key].trim()
+      if (v) lines.push(`— ${fld.label} —`, v, '')
     }
     const body = lines.filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n')
     const subject = `${location} ${meal === 'lunch' ? 'lunch' : 'nightly'} recap — ${fmtDate(date)}`
@@ -655,17 +711,6 @@ function CatBar({ n }: { n: Night }) {
   )
 }
 
-function Pill({ label, value, tone, strong }: { label: string; value: string; tone?: 'up' | 'down'; strong?: boolean }) {
-  return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{label}</span>
-      <span className={`font-sans tabular-nums font-semibold ${strong ? 'text-lg text-ink' : 'text-sm'} ${tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : strong ? '' : 'text-ink'}`}>
-        {value}
-      </span>
-    </span>
-  )
-}
-
 function MoneyInput({
   value,
   onChange,
@@ -687,31 +732,14 @@ function MoneyInput({
         value={value}
         placeholder="0.00"
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full pl-6 pr-3 text-right font-mono tabular-nums placeholder:text-muted/40 ${cls(highlight)}`}
+        className={`w-full rounded-md py-1.5 pl-6 pr-3 text-right font-mono text-sm tabular-nums outline-none transition-colors placeholder:text-muted/40 ${
+          highlight ? 'border border-up/50 bg-up/5 focus:border-up' : 'border border-black/10 bg-white focus:border-brand'
+        }`}
       />
     </div>
   )
 }
 
-// Clean-sheet look: auto-filled values read as plain text with no "bubble" box.
-// A subtle tint appears only on hover/focus so they're still editable, and the
-// one field the manager actually types (Actual cash counted) keeps a real box.
-function cls(highlight?: boolean): string {
-  const base = 'rounded-md px-3 py-1.5 text-sm outline-none transition-colors'
-  return highlight
-    ? `${base} border border-up/50 bg-up/5 focus:border-up`
-    : `${base} border border-transparent bg-transparent hover:bg-black/[0.04] focus:bg-white focus:border-brand/30`
-}
-
-/** One line of the close-out sheet: label left, slim input right. */
-function SheetRow({ label, strong, highlight, children }: { label: string; strong?: boolean; highlight?: boolean; children: React.ReactNode }) {
-  return (
-    <label className="flex items-center justify-between gap-3 border-b border-black/5 py-1.5 last:border-0">
-      <span className={`text-sm ${strong ? 'font-bold text-ink' : highlight ? 'font-semibold text-ink' : 'text-ink/80'}`}>{label}</span>
-      <span className="w-36 shrink-0">{children}</span>
-    </label>
-  )
-}
 function fmtDate(iso: string): string {
   const [y, m, d] = (iso ?? '').split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })

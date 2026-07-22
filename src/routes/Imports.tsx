@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseTogo, applyTogo, latestNightDate } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, parseCategoryRows, applyCategoryRows, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseDiningRows, togoFromDining, applyDining, isNetSalesSummary, parseNetSummary, applyNetSummary, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -53,8 +53,11 @@ let seq = 0
 // Items — don't match this).
 // "Cash summary" (expected cash) and "Menu item discounts" (comps/staff/promos)
 // are NOT noise — they fill Nightly, so they're intentionally absent here.
+// "Net sales summary", "Menu item discounts", "Check discounts", "Cash summary"
+// and "Dining options summary" all fill the Nightly report cards, so they are
+// intentionally NOT skipped here.
 const NOISE_REPORT =
-  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|revenue|tip summary|payments summary|service (mode|charge|daypart)|tax summary|deferred|unpaid orders|void summary|cash activity|day of week|time of day|net sales summary|check discounts|labor cost by job/i
+  /all levels|percentage breakdown|modifiers|menu ?groups?|^menus|open items|special requests|comparison labels|total sales|^revenue|tip summary|payments summary|service (mode|charge|daypart)|tax summary|deferred|unpaid orders|void summary|cash activity|day of week|time of day|labor cost by job/i
 
 /** Contains a render crash in one import card so it can't white-screen the page. */
 class CardBoundary extends Component<{ name: string; children: ReactNode }, { failed: boolean }> {
@@ -430,7 +433,7 @@ export function Imports() {
               <CardBoundary name={job.fileName}>
             {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} />}
+            {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
 
             {job.text && isLaborReport(job.text) && <LaborImport text={job.text} fileName={job.fileName} />}
 
@@ -442,7 +445,9 @@ export function Imports() {
 
             {job.text && isDiningOptions(job.text) && <DiningImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
 
-            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isLaborSummary(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && (
+            {job.text && isNetSalesSummary(job.text) && <NetSummaryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+
+            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isLaborSummary(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && !isDiningOptions(job.text) && !isNetSalesSummary(job.text) && (
               <SalesImport text={job.text} fileName={job.fileName} />
             )}
 
@@ -467,7 +472,7 @@ export function Imports() {
               const t = job.text ?? ''
               if (!t || job.status !== 'done') return null
               const recognized =
-                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
+                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isNetSalesSummary(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
               if (recognized) return null
               const hasQtyLines = !!job.lineItems?.some((li) => li.qty)
               const scan = job.kind === 'image' || job.kind === 'pdf'
@@ -1145,8 +1150,9 @@ function SalesImport({ text, fileName }: { text: string; fileName: string }) {
 /** Import a Toast "Sales category summary" — stores the net-sales mix so the
  *  dashboard can split any window's sales by category (labelled as an estimate,
  *  since Toast only breaks categories out per period, not per day). */
-function CategoryImport({ text, fileName }: { text: string; fileName: string }) {
+function CategoryImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
   const mix = useMemo(() => parseCategorySummary(text), [text])
+  const catRows = useMemo(() => parseCategoryRows(text), [text])
   const ran = useRef(false)
   const [done, setDone] = useState(false)
   const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -1156,6 +1162,10 @@ function CategoryImport({ text, fileName }: { text: string; fileName: string }) 
     ran.current = true
     setCatMix({ ...mix, importedAt: new Date().toISOString() })
     const filled = applyCatMixToNights(mix)
+    // Store the exact category table on the night being closed so the Nightly
+    // "Sales Category Summary" card mirrors Toast row-for-row.
+    const d = hintDate ?? latestNightDate()
+    if (d && catRows.length) applyCategoryRows(catRows, d)
     setDone(true)
     logImport(fileName, `sales category mix → Dashboard + ${filled} night${filled === 1 ? '' : 's'} (${money(mix.net)} net split)`)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1468,25 +1478,60 @@ function DiscountImport({ text, fileName, hintDate }: { text: string; fileName: 
   )
 }
 
-/** Toast "Dining options summary" → ToGo (off-premise) net sales on Nightly. */
+/** Toast "Dining options summary" → the full dining table + ToGo net on Nightly. */
 function DiningImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
-  const togo = useMemo(() => parseTogo(text), [text])
+  const rows = useMemo(() => parseDiningRows(text), [text])
+  const togo = useMemo(() => (rows.length ? togoFromDining(rows) : 0), [rows])
   const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
   const [done, setDone] = useState<string | null>(null)
   const ran = useRef(false)
   useEffect(() => {
-    if (togo == null || ran.current) return
+    if (!rows.length || ran.current) return
     ran.current = true
-    const d = applyTogo(togo, date)
-    if (d) { setDone(d); logImport(fileName, `togo sales ${money2(togo)} → Nightly (${d})`) }
+    const d = applyDining(rows, date)
+    if (d) { setDone(d); logImport(fileName, `dining options · togo ${money2(togo)} → Nightly (${d})`) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [togo])
-  if (togo == null) return null
-  const retarget = (d: string) => { setDate(d); const r = applyTogo(togo, d); if (r) setDone(r) }
+  }, [rows])
+  if (!rows.length) return null
+  const retarget = (d: string) => { setDate(d); const r = applyDining(rows, d); if (r) setDone(r) }
   return (
     <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
       <div className="flex items-center gap-2 text-sm font-bold text-up">
-        <ReceiptText size={16} /> ToGo sales {money2(togo)} → Nightly
+        <ReceiptText size={16} /> ToGo sales {money2(togo)} → Nightly · {rows.length} dining options
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
+        Fills the night of
+        <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
+        {done && <span className="text-up">✓ set</span>}
+      </label>
+    </div>
+  )
+}
+
+/** Toast "Net sales summary" → Gross / discounts / refunds / Net on Nightly. */
+function NetSummaryImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+  const s = useMemo(() => parseNetSummary(text), [text])
+  const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
+  const [done, setDone] = useState<string | null>(null)
+  const ran = useRef(false)
+  useEffect(() => {
+    if (!s || ran.current) return
+    ran.current = true
+    const d = applyNetSummary(s, date)
+    if (d) { setDone(d); logImport(fileName, `net sales ${money2(s.net)} (gross ${money2(s.gross)}) → Nightly (${d})`) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s])
+  if (!s) return null
+  const retarget = (d: string) => { setDate(d); const r = applyNetSummary(s, d); if (r) setDone(r) }
+  return (
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="flex items-center gap-2 text-sm font-bold text-up">
+        <ReceiptText size={16} /> Net sales {money2(s.net)} → Nightly
+      </div>
+      <div className="mt-1 text-[11px] text-ink/70">
+        Gross {money2(s.gross)}
+        {s.discounts > 0 && <> · discounts −{money2(s.discounts)}</>}
+        {s.refunds > 0 && <> · refunds −{money2(s.refunds)}</>}
       </div>
       <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
         Fills the night of
