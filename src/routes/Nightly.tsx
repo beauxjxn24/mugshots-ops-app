@@ -681,11 +681,14 @@ function MoneyInput({
   )
 }
 
-// Manager-entered fields (the two on the sheet) get a green tint, like the
-// prototype — a cue that everything else is filled automatically.
+// Clean-sheet look: auto-filled values read as plain text with no "bubble" box.
+// A subtle tint appears only on hover/focus so they're still editable, and the
+// one field the manager actually types (Actual cash counted) keeps a real box.
 function cls(highlight?: boolean): string {
-  const base = 'rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand'
-  return highlight ? `${base} border-up/40 bg-up/5` : `${base} border-black/10 bg-white`
+  const base = 'rounded-md px-3 py-1.5 text-sm outline-none transition-colors'
+  return highlight
+    ? `${base} border border-up/50 bg-up/5 focus:border-up`
+    : `${base} border border-transparent bg-transparent hover:bg-black/[0.04] focus:bg-white focus:border-brand/30`
 }
 
 /** One line of the close-out sheet: label left, slim input right. */
