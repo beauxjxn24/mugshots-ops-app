@@ -1,5 +1,5 @@
 import * as pdfjs from 'pdfjs-dist'
-import { cleanItemLine } from './clean'
+import { cleanItemLine, tidyName } from './clean'
 
 // Self-hosted worker with polyfills (see public/pdfjs/worker-polyfilled.mjs) —
 // pdf.js's renderer needs JS APIs some browsers don't ship yet.
@@ -127,7 +127,15 @@ export function parseLineItems(text: string): LineItem[] {
   // Order qty sits next to a unit; product codes (120CT, 35LB) also match, so we
   // take the LAST unit-match on the line — the order qty comes after the name.
   const unit = /(\d{1,4})\s*(cs|ct|ea|lb|lbs|case|cases|each|pk|bg|dz|gal|#)\b/gi
-  const skip = /\b(sub-?total|total|tax|amount\s*due|balance|invoice|account|page|remit|terms)\b/i
+  const skip = /\b(sub-?total|total|tax|amount\s*due|balance|invoice|account|page|remit|terms|deliveryman|salesman)\b/i
+  // Beer/liquor distributor invoices (Capital City, RNDC, Southern Glazer…) come
+  // as a fixed grid: ITEM-ID · QTY · PRODUCT · PRICE · DISC · NET · TOTAL. The QTY
+  // is a bare number (no "cs"/"ea" unit) and the row carries several money columns,
+  // so the generic heuristic below misreads it — it can't find the qty and grabs
+  // the TOTAL as the price (e.g. 2 kegs @ $78 → reads $156). This branch reads the
+  // grid directly: leading id, optional qty (bare or "(3)"), name, then the FIRST
+  // money as the unit price.
+  const columnar = /^(\d{3,7})\s+(?:(\(?\d{1,3}\)?)\s+)?([A-Za-z][^$]*?)\s+(\$?\d[\d,]*\.\d{2})(?:\D|$)/
 
   // A row worth showing has a NAME plus some numeric signal — a price OR an order
   // qty. Scanned invoices (OCR) often lose the clean "$0.00" price, so a line
@@ -135,9 +143,24 @@ export function parseLineItems(text: string): LineItem[] {
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim()
     if (line.length < 4 || skip.test(line)) continue
-    const prices = line.match(money)
-    const price = prices ? prices[prices.length - 1] : undefined
+    const prices = line.match(money) ?? []
 
+    // Distributor grid: at least two money columns AND a leading item id.
+    const col = prices.length >= 2 ? columnar.exec(line) : null
+    if (col) {
+      const id = col[1]
+      const qtyCol = col[2] ? col[2].replace(/[()]/g, '') : undefined
+      const cleaned = cleanItemLine(col[3])
+      // A strong grid match: keep the row even if the cleaner would nix it as
+      // junk (the id + money columns already prove it's a real line).
+      const name = cleaned.junk ? tidyName(col[3].replace(/\s{2,}/g, ' ').trim()) : cleaned.name
+      if ((name.match(/[a-z]/gi) || []).length >= 3) {
+        items.push({ description: name, qty: qtyCol, price: col[4], code: cleaned.code ?? id, size: cleaned.size })
+        continue
+      }
+    }
+
+    const price = prices.length ? prices[prices.length - 1] : undefined
     let last: RegExpExecArray | null = null
     const re = new RegExp(unit)
     for (let m = re.exec(line); m; m = re.exec(line)) last = m
