@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Mail, Check, FileDown } from 'lucide-react'
 import { periodWeek } from '../lib/forecast'
@@ -32,6 +32,20 @@ export function Nightly() {
   const byDate = useMemo(() => new Map(log.map((n) => [n.date, n])), [log])
   // The night on screen: a deep-linked date, else the most recent logged night.
   const [date, setDate] = useState<string>(() => focusDate ?? sorted[0]?.date ?? today())
+  // Follow the newest night automatically — until the manager deliberately picks
+  // a date — so a fresh import shows on sight instead of leaving the page pinned
+  // to whatever was latest when it first loaded.
+  const picked = useRef(false)
+  const latestDate = sorted[0]?.date
+  useEffect(() => {
+    if (!picked.current && !focusDate && latestDate && latestDate !== date) setDate(latestDate)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestDate, focusDate])
+  const chooseDate = (d: string) => {
+    if (!d) return
+    picked.current = true
+    setDate(d)
+  }
   const vn = byDate.get(date) ?? null
 
   // The only manual entry left — the counted drawer + a note. Loaded from the
@@ -127,7 +141,7 @@ export function Nightly() {
           <div className="flex items-center gap-2">
             <select
               value={sorted.some((n) => n.date === date) ? date : ''}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
+              onChange={(e) => e.target.value && chooseDate(e.target.value)}
               className="rounded-lg border border-black/10 bg-white px-2.5 py-2 text-xs font-semibold text-ink outline-none focus:border-brand"
             >
               {!sorted.some((n) => n.date === date) && <option value="">{fmtDate(date)}</option>}
@@ -140,7 +154,7 @@ export function Nightly() {
             <input
               type="date"
               value={date}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
+              onChange={(e) => e.target.value && chooseDate(e.target.value)}
               className="rounded-lg border border-black/10 bg-white px-2.5 py-2 text-xs font-semibold outline-none focus:border-brand"
             />
           </div>
@@ -307,7 +321,7 @@ export function Nightly() {
                   key={n.id}
                   id={`night-${n.date}`}
                   onClick={() => {
-                    setDate(n.date)
+                    chooseDate(n.date)
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
                   title="Open this night's reports above"

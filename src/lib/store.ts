@@ -23,6 +23,17 @@ export function load<T>(key: string, fallback: T): T {
 export function save<T>(key: string, value: T): void {
   try {
     localStorage.setItem(NS + key, JSON.stringify(value))
+    // Same-tab live update: the browser's native `storage` event only fires in
+    // OTHER tabs, so a component that writes here (an importer) would never
+    // notify the Dashboard / Nightly pages mounted in the SAME tab — they'd sit
+    // on stale numbers until a manual reload ("dashboard didn't update"). This
+    // custom event closes that gap: every usePersistentState hook on this key
+    // refreshes the moment anything writes it.
+    try {
+      window.dispatchEvent(new CustomEvent('mugops:save', { detail: key }))
+    } catch {
+      /* no window (SSR / worker) — nothing to notify */
+    }
   } catch {
     /* quota exceeded / storage disabled — fail quietly */
   }
@@ -91,8 +102,22 @@ export function usePersistentState<T>(key: string, initial: T) {
         }
       }
     }
+    // Same-tab writes (an importer updating nightly:log while this page is open)
+    // — reload from storage so the screen reflects the new data immediately.
+    const onLocal = (e: Event) => {
+      if ((e as CustomEvent).detail !== fullKey) return
+      const fresh = load<T>(fullKey, initial)
+      // Only re-render when the value actually changed (also breaks the loop
+      // where this hook's own write echoes back its own event).
+      setState((prev) => (JSON.stringify(prev) === JSON.stringify(fresh) ? prev : fresh))
+    }
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('mugops:save', onLocal)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('mugops:save', onLocal)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullKey])
 
   const reset = useCallback(() => setState(initial), [initial])
