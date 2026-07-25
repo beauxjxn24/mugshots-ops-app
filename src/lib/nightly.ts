@@ -1,7 +1,5 @@
 import { load, save } from './store'
 import { useScope } from './scope'
-import seedHistory2025 from '../data/seed-history-2025.json'
-import seedSales2026 from '../data/seed-sales-2026.json'
 
 /**
  * A night's numbers — full prototype shape (see docs/handoff/README.md).
@@ -191,132 +189,35 @@ export function parseCategorySummary(text: string): CatMix | null {
 }
 
 /**
- * One-time data migrations for Mugshots → Flowood.
- * Owner's call (Jul 2026): NO sample data anywhere — the prototype's 2026
- * seed nights are removed from every device that loaded them. The only
- * baked-in history is what the owner supplied himself (June 2025 Toast export).
+ * NO SAMPLE DATA — only the owner's real, imported numbers (his standing rule).
+ *
+ * Earlier builds seeded demo nights (a June 2025 history + a Jun 15–Jul 14 2026
+ * period). Those fake nights ran through Tuesday July 14, so the Dashboard and
+ * Nightly pages — which always show the newest night on record — stayed pinned
+ * to that seeded Tuesday. Every real import dated on/before then looked like it
+ * "didn't update", when in truth it just wasn't the latest night.
+ *
+ * This purges every seeded night (any id starting with "seed") from EVERY store,
+ * once, and nothing is ever seeded again. Real imported nights (ids "n-…") are
+ * untouched, so a freshly-cleaned store shows exactly what you import — nothing
+ * more.
  */
 export function seedFlowoodHistory(): void {
-  const k = 'mugshots|flowood::nightly:log'
-
-  // Purge the prototype's sample nights (ids "seed-…") wherever they landed.
-  const PURGE = '__sampleNightsPurged'
-  if (!load<boolean>(PURGE, false)) {
-    const cur = load<Night[]>(k, [])
-    const clean = cur.filter((n) => !(typeof n?.id === 'string' && n.id.startsWith('seed-')))
-    if (clean.length !== cur.length) save(k, clean)
-    save(PURGE, true)
-  }
-
-  // Second seed (owner-supplied via chat, Jul 2026): real June 2025 sales from
-  // the Toast export — gives June 2026 true last-year comparisons. Merges into
-  // whatever is already logged; never overwrites an existing date.
-  const FLAG25 = '__flowoodLY2025Seeded'
-  if (!load<boolean>(FLAG25, false)) {
-    const cur = load<Night[]>(k, [])
-    const have = new Set(cur.map((n) => n.date))
-    const add: Night[] = (seedHistory2025 as Array<{ date: string; net: number; guests: number }>)
-      .filter((r) => !have.has(r.date))
-      .map((r) => ({
-        id: `seed25-${r.date}`,
-        date: r.date,
-        netSales: r.net,
-        deposit: 0,
-        covers: r.guests,
-        notes: '',
-      }))
-    if (add.length) save(k, [...cur, ...add].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
-    save(FLAG25, true)
-  }
-
-  // Third seed (owner-supplied via chat, Jul 2026): real daily numbers for the
-  // current period (Jun 15 – Jul 14, 2026) from the owner's Toast exports —
-  //  · Sales by day       → net + covers
-  //  · Labor cost by day  → real gross, real labor $, real labor % (per DAY)
-  //  · Sales category summary → the period category mix (categories aren't broken
-  //                             out per day, so each night is split by that mix)
-  // So every field on the Nightly sheet fills without a re-import: gross, net,
-  // discounts (gross − net, booked to comps), the category split, covers, and
-  // real per-day labor. Only the deposit is left for the manager.
-  //
-  // v5 is DATE-keyed / id-agnostic (works for seed OR hand-drop imports) and it
-  // UPGRADES the earlier flat-14.33% labor estimate to the real per-day figure
-  // (a flat night is recognised by laborPct ≈ 14.3). It never overwrites a night
-  // that already carries real detail — the owner-drop's 7/11 is restored by
-  // applyOwnerDrops right after this runs.
-  const FLAG26 = '__flowoodSales2026Real_v5'
-  if (!load<boolean>(FLAG26, false)) {
-    const cur = load<Night[]>(k, [])
-    const seedRows = seedSales2026 as Array<{
-      date: string; net: number; guests: number; gross: number; comps: number; labor: number; laborPct: number
-    }>
-    const seedByDate = new Map(seedRows.map((r) => [r.date, r]))
-    const isFlat = (pct?: number) => pct != null && Math.abs(pct - 14.3) < 0.05 // the old estimate
-    let changed = false
-
-    const next = cur.map((n) => {
-      const r = seedByDate.get(n.date)
-      if (!r) return n // outside the period
-      const net = n.netSales || r.net
-      if (net <= 0) return n
-      let m = n
-      // Categories: fill only when missing (preserve real per-category detail).
-      if (m.food == null) {
-        m = { ...m, ...splitByMix(net) }
-        changed = true
-      }
-      // Real per-day labor: fill when missing or replace the flat estimate.
-      if (m.labor == null || isFlat(m.laborPct)) {
-        m = { ...m, labor: r.labor, laborPct: r.laborPct }
-        changed = true
-      }
-      // Real gross + discount total: fill when missing or when a prior seed had
-      // set gross = net (no discount detail).
-      if (m.gross == null || m.gross === m.netSales) {
-        m = { ...m, gross: r.gross, comps: m.comps ?? r.comps }
-        changed = true
-      }
-      return m
-    })
-
-    // Add any period date not logged at all yet, fully populated.
-    const have = new Set(cur.map((n) => n.date))
-    for (const r of seedRows) {
-      if (have.has(r.date)) continue
-      next.push({
-        id: `seed26-${r.date}`,
-        date: r.date,
-        netSales: r.net,
-        gross: r.gross,
-        comps: r.comps,
-        deposit: 0,
-        covers: r.guests,
-        labor: r.labor,
-        laborPct: r.laborPct,
-        ...splitByMix(r.net),
-        notes: 'From Toast sales, labor & category reports',
-      })
-      changed = true
+  const PURGE = '__sampleNightsPurged_v2'
+  if (load<boolean>(PURGE, false)) return
+  try {
+    const NS = 'mugops:'
+    for (const fullKey of Object.keys(localStorage)) {
+      if (!fullKey.startsWith(NS) || !fullKey.endsWith('::nightly:log')) continue
+      const bareKey = fullKey.slice(NS.length)
+      const cur = load<Night[]>(bareKey, [])
+      const clean = cur.filter((n) => !(typeof n?.id === 'string' && /^seed/i.test(n.id)))
+      if (clean.length !== cur.length) save(bareKey, clean)
     }
-
-    if (changed) save(k, next.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
-    save(FLAG26, true)
+  } catch {
+    /* storage unavailable — nothing to purge */
   }
-}
-
-// Split a night's net across the five categories the nightly sheet shows, using
-// the period's real Toast category mix (NA 7.53% · Liquor 3.79% · Beer 3.50% ·
-// Wine 0.24%). Food takes the remainder — its own ~84.9% plus the negligible
-// "other" (retail / service charges, ~0.05%) — so the five parts sum to net
-// exactly and the sheet's Category total reconciles with no leftover.
-function splitByMix(net: number): Pick<Night, 'food' | 'na' | 'liquor' | 'beer' | 'wine' | 'nocat'> {
-  const r2 = (x: number) => Math.round(x * 100) / 100
-  const na = r2(net * 0.0752859)
-  const liquor = r2(net * 0.0378799)
-  const beer = r2(net * 0.0349824)
-  const wine = r2(net * 0.0023673)
-  const food = r2(net - (na + liquor + beer + wine))
-  return { food, na, liquor, beer, wine, nocat: 0 }
+  save(PURGE, true)
 }
 
 export interface SalesRow {
