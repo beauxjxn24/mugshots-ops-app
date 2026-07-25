@@ -148,8 +148,18 @@ export function Imports() {
       if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
         try {
           const { unzipSync } = await import('fflate')
-          const hintDate = zipSingleDate(file.name)
           const entries = unzipSync(new Uint8Array(await file.arrayBuffer()))
+          // The authoritative date for the whole export is the one carried by
+          // the "Sales by day" sheet inside it — the ONLY file with a real date.
+          // Every other Toast report (discounts, dining, categories, net summary,
+          // cash) is dateless, so without this they'd guess their day and could
+          // attach to the wrong night. The zip filename is only a last resort.
+          let hintDate = zipSingleDate(file.name)
+          const sbd = Object.entries(entries).find(([p]) => /sales by day/i.test(p.split('/').pop() ?? p))
+          if (sbd) {
+            const rows = parseSalesSummary(new TextDecoder().decode(sbd[1]))
+            if (rows.length === 1) hintDate = rows[0].date // single-day export → its real date
+          }
           for (const [path, bytes] of Object.entries(entries)) {
             const name = path.split('/').pop() ?? path
             if (!name || path.endsWith('/') || path.includes('__MACOSX') || name.startsWith('.')) continue
