@@ -31,6 +31,10 @@ interface Job extends Partial<ReadResult> {
   /** Date (YYYY-MM-DD) parsed from a single-day export's zip name — dateless
    *  summary files (labor / cash / discounts) fill this exact night. */
   hintDate?: string
+  /** True when this file came from a multi-day (date-range) export, so its
+   *  discount / dining / category / net-summary sheets are PERIOD totals and
+   *  must not be applied to a single night. */
+  periodLevel?: boolean
   /** When status is 'duplicate': the earlier import this file matches. */
   dupOf?: { name: string; at: string }
 }
@@ -87,11 +91,11 @@ export function Imports() {
   // Files parked behind a duplicate warning, kept so "Import anyway" works.
   const parked = useRef<Map<string, File>>(new Map())
 
-  const processOne = useCallback(async (file: File, id: string, fromZip = false, hintDate?: string) => {
+  const processOne = useCallback(async (file: File, id: string, fromZip = false, hintDate?: string, periodLevel?: boolean) => {
     const docId = `doc${Date.now().toString(36)}${seq}`
     void saveDoc(docId, file) // keep the original — invoices reopen it
     setJobs((j) => {
-      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId, fromZip, hintDate }
+      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId, fromZip, hintDate, periodLevel }
       return j.some((x) => x.id === id) ? j.map((x) => (x.id === id ? fresh : x)) : [fresh, ...j]
     })
     const res = await readFile(file, (p) =>
@@ -143,7 +147,7 @@ export function Imports() {
     // of a zip are re-importable bulk exports (sales summaries upsert by date),
     // so they skip the duplicate guard — re-dropping a Toast export must always
     // refresh the numbers, never get silently skipped as "already imported".
-    const list: { file: File; fromZip: boolean; hintDate?: string }[] = []
+    const list: { file: File; fromZip: boolean; hintDate?: string; periodLevel?: boolean }[] = []
     for (const file of fresh) {
       if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
         try {
@@ -155,10 +159,16 @@ export function Imports() {
           // cash) is dateless, so without this they'd guess their day and could
           // attach to the wrong night. The zip filename is only a last resort.
           let hintDate = zipSingleDate(file.name)
+          // A multi-day (catch-up) export: the per-day sheets (Sales by day,
+          // Labor cost by day) backfill every day, but the discount / dining /
+          // category / net-summary sheets are ONE period TOTAL for the whole
+          // range — they must not be stapled onto a single night. Flag those.
+          let periodLevel = false
           const sbd = Object.entries(entries).find(([p]) => /sales by day/i.test(p.split('/').pop() ?? p))
           if (sbd) {
             const rows = parseSalesSummary(new TextDecoder().decode(sbd[1]))
             if (rows.length === 1) hintDate = rows[0].date // single-day export → its real date
+            else if (rows.length > 1) periodLevel = true // date-range export → period totals
           }
           for (const [path, bytes] of Object.entries(entries)) {
             const name = path.split('/').pop() ?? path
@@ -169,7 +179,7 @@ export function Imports() {
             // breakdown, Modifiers…) — skip them so they don't clutter the
             // review list or choke a parser on 6,000 rows.
             if (NOISE_REPORT.test(name)) continue
-            list.push({ file: new File([bytes.slice().buffer as ArrayBuffer], name), fromZip: true, hintDate })
+            list.push({ file: new File([bytes.slice().buffer as ArrayBuffer], name), fromZip: true, hintDate, periodLevel })
           }
           continue
         } catch {
@@ -178,7 +188,7 @@ export function Imports() {
       }
       list.push({ file, fromZip: false })
     }
-    for (const { file, fromZip, hintDate } of list) {
+    for (const { file, fromZip, hintDate, periodLevel } of list) {
       const id = `j${++seq}`
       // Duplicate check: the exact same bytes seen before — invoice, spec
       // card, recipe, any PDF — gets flagged instead of importing twice.
@@ -198,7 +208,7 @@ export function Imports() {
         continue
       }
       recordSeenFile(h, file.name)
-      await processOne(file, id, fromZip, hintDate)
+      await processOne(file, id, fromZip, hintDate, periodLevel)
     }
   }, [processOne])
 
@@ -443,7 +453,7 @@ export function Imports() {
               <CardBoundary name={job.fileName}>
             {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+            {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
 
             {job.text && isLaborReport(job.text) && <LaborImport text={job.text} fileName={job.fileName} />}
 
@@ -451,11 +461,11 @@ export function Imports() {
 
             {job.text && isCashSummary(job.text) && <CashImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
 
-            {job.text && isDiscountReport(job.text) && <DiscountImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+            {job.text && isDiscountReport(job.text) && <DiscountImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
 
-            {job.text && isDiningOptions(job.text) && <DiningImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+            {job.text && isDiningOptions(job.text) && <DiningImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
 
-            {job.text && isNetSalesSummary(job.text) && <NetSummaryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+            {job.text && isNetSalesSummary(job.text) && <NetSummaryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
 
             {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isLaborSummary(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && !isDiningOptions(job.text) && !isNetSalesSummary(job.text) && (
               <SalesImport text={job.text} fileName={job.fileName} />
@@ -1160,7 +1170,7 @@ function SalesImport({ text, fileName }: { text: string; fileName: string }) {
 /** Import a Toast "Sales category summary" — stores the net-sales mix so the
  *  dashboard can split any window's sales by category (labelled as an estimate,
  *  since Toast only breaks categories out per period, not per day). */
-function CategoryImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+function CategoryImport({ text, fileName, hintDate, periodLevel }: { text: string; fileName: string; hintDate?: string; periodLevel?: boolean }) {
   const mix = useMemo(() => parseCategorySummary(text), [text])
   const catRows = useMemo(() => parseCategoryRows(text), [text])
   const ran = useRef(false)
@@ -1170,12 +1180,14 @@ function CategoryImport({ text, fileName, hintDate }: { text: string; fileName: 
   useEffect(() => {
     if (!mix || ran.current) return
     ran.current = true
+    // The period category MIX (%) is valid for a range and powers the Dashboard
+    // category split, so it's always saved. But the exact category TABLE is a
+    // per-night mirror — only attach it to a single night for a single-day drop,
+    // never staple a whole period's totals onto one day.
     setCatMix({ ...mix, importedAt: new Date().toISOString() })
     const filled = applyCatMixToNights(mix)
-    // Store the exact category table on the night being closed so the Nightly
-    // "Sales Category Summary" card mirrors Toast row-for-row.
     const d = hintDate ?? latestNightDate()
-    if (d && catRows.length) applyCategoryRows(catRows, d)
+    if (!periodLevel && d && catRows.length) applyCategoryRows(catRows, d)
     setDone(true)
     logImport(fileName, `sales category mix → Dashboard + ${filled} night${filled === 1 ? '' : 's'} (${money(mix.net)} net split)`)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1452,13 +1464,13 @@ function CashImport({ text, fileName, hintDate }: { text: string; fileName: stri
  * Toast "Menu Item Discounts" → the Rewards / Promos / Comps / Staff-meal lines
  * on Nightly, bucketed by discount name. Dated like the cash summary above.
  */
-function DiscountImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+function DiscountImport({ text, fileName, hintDate, periodLevel }: { text: string; fileName: string; hintDate?: string; periodLevel?: boolean }) {
   const buckets = useMemo(() => parseDiscounts(text), [text])
   const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
   const [done, setDone] = useState<string | null>(null)
   const ran = useRef(false)
   useEffect(() => {
-    if (!buckets || ran.current) return
+    if (!buckets || ran.current || periodLevel) return
     ran.current = true
     const d = applyDiscounts(buckets, date)
     if (d) { setDone(d); logImport(fileName, `discounts → Nightly deductions (${d})`) }
@@ -1466,6 +1478,7 @@ function DiscountImport({ text, fileName, hintDate }: { text: string; fileName: 
   }, [buckets])
   if (!buckets) return null
   const total = buckets.rewards + buckets.promos + buckets.comps + buckets.staffDisc
+  if (periodLevel) return <PeriodNote label={`Discounts ${money2(total)} (period total)`} />
   const retarget = (d: string) => { setDate(d); const r = applyDiscounts(buckets, d); if (r) setDone(r) }
   const parts = [
     buckets.comps > 0 && `Comps ${money2(buckets.comps)}`,
@@ -1489,20 +1502,21 @@ function DiscountImport({ text, fileName, hintDate }: { text: string; fileName: 
 }
 
 /** Toast "Dining options summary" → the full dining table + ToGo net on Nightly. */
-function DiningImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+function DiningImport({ text, fileName, hintDate, periodLevel }: { text: string; fileName: string; hintDate?: string; periodLevel?: boolean }) {
   const rows = useMemo(() => parseDiningRows(text), [text])
   const togo = useMemo(() => (rows.length ? togoFromDining(rows) : 0), [rows])
   const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
   const [done, setDone] = useState<string | null>(null)
   const ran = useRef(false)
   useEffect(() => {
-    if (!rows.length || ran.current) return
+    if (!rows.length || ran.current || periodLevel) return
     ran.current = true
     const d = applyDining(rows, date)
     if (d) { setDone(d); logImport(fileName, `dining options · togo ${money2(togo)} → Nightly (${d})`) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows])
   if (!rows.length) return null
+  if (periodLevel) return <PeriodNote label={`ToGo ${money2(togo)} · ${rows.length} dining options (period total)`} />
   const retarget = (d: string) => { setDate(d); const r = applyDining(rows, d); if (r) setDone(r) }
   return (
     <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
@@ -1518,20 +1532,36 @@ function DiningImport({ text, fileName, hintDate }: { text: string; fileName: st
   )
 }
 
+/** Shown for a range (catch-up) export's period-total sheets — noted, not
+ *  applied to a single night (that would staple a whole period onto one day). */
+function PeriodNote({ label }: { label: string }) {
+  return (
+    <div className="mt-3 flex items-start gap-2 rounded-xl border border-black/10 bg-black/[0.02] p-3 text-xs text-muted">
+      <ReceiptText size={14} className="mt-0.5 shrink-0" />
+      <span>
+        <b className="text-ink/80">{label}</b> — this is a whole-period total from a multi-day export, so it isn't
+        pinned to one night. Daily sales &amp; labor still backfilled every day. For a specific day's discount /
+        dining / category detail, drop that day's single-day export.
+      </span>
+    </div>
+  )
+}
+
 /** Toast "Net sales summary" → Gross / discounts / refunds / Net on Nightly. */
-function NetSummaryImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+function NetSummaryImport({ text, fileName, hintDate, periodLevel }: { text: string; fileName: string; hintDate?: string; periodLevel?: boolean }) {
   const s = useMemo(() => parseNetSummary(text), [text])
   const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
   const [done, setDone] = useState<string | null>(null)
   const ran = useRef(false)
   useEffect(() => {
-    if (!s || ran.current) return
+    if (!s || ran.current || periodLevel) return
     ran.current = true
     const d = applyNetSummary(s, date)
     if (d) { setDone(d); logImport(fileName, `net sales ${money2(s.net)} (gross ${money2(s.gross)}) → Nightly (${d})`) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s])
   if (!s) return null
+  if (periodLevel) return <PeriodNote label={`Net sales ${money2(s.net)} · gross ${money2(s.gross)}`} />
   const retarget = (d: string) => { setDate(d); const r = applyNetSummary(s, d); if (r) setDone(r) }
   return (
     <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
