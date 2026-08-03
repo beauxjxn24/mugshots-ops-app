@@ -89,11 +89,35 @@ export function Dashboard() {
   }, [sorted, latest, scope])
 
   const net = win.nights.reduce((s, n) => s + n.netSales, 0)
-  const displayNet = useCountUp(net)
-  const priorNet = win.prior.reduce((s, n) => s + n.netSales, 0)
-  const vsPrior = priorNet > 0 ? ((net - priorNet) / priorNet) * 100 : null
   const laborSum = win.nights.reduce((s, n) => s + (n.labor ?? 0), 0)
   const laborPct = laborSum > 0 && net > 0 ? (laborSum / net) * 100 : null
+
+  // Hero = FORECASTED sales for the scope, anchored to TODAY (what to expect),
+  // from the day-of-week averages. A day already logged uses its real net, so a
+  // week/period figure is "banked so far + forecast for the rest". The pill
+  // compares it to the same window last week.
+  const fc = useMemo(() => {
+    const avg = dowAverages(nights)
+    const byDate = new Map(nights.map((n) => [n.date, n]))
+    const val = (d: string) => byDate.get(d)?.netSales || projectDay(avg, d)
+    const range = (start: string, len: number) => Array.from({ length: len }, (_, i) => shiftDays(start, i))
+    let dates: string[], priorDates: string[], label: string
+    if (scope === 'day') {
+      dates = [t]; priorDates = [shiftDays(t, -7)]; label = fmtWhen(t)
+    } else if (scope === 'week') {
+      const s = mondayOf(t); dates = range(s, 7); priorDates = range(shiftDays(s, -7), 7)
+      label = `week of Mon ${fmtWhen(s).replace(/^\w+, /, '')}`
+    } else {
+      const s = periodStartOf(t); dates = range(s, 28); priorDates = range(shiftDays(s, -28), 28)
+      label = `Period ${periodWeek(t).period}`
+    }
+    const total = dates.reduce((a, d) => a + val(d), 0)
+    const prior = priorDates.reduce((a, d) => a + (byDate.get(d)?.netSales ?? 0), 0)
+    return { total, prior, label }
+  }, [nights, scope, t])
+  const displayFc = useCountUp(fc.total)
+  const vsPrior = fc.prior > 0 ? ((fc.total - fc.prior) / fc.prior) * 100 : null
+  const priorNet = fc.prior
 
   // ---- Sales by category across the scope ----
   // Real per-night categories win. When a night has none (e.g. days imported
@@ -126,13 +150,6 @@ export function Dashboard() {
     }
     return { parts, total, estimated: false }
   }, [win.nights, catMix, net])
-
-  // Week-to-date, anchored to the Monday of the latest night's week.
-  const wtd = useMemo(() => {
-    if (!latest) return 0
-    const start = mondayOf(latest.date)
-    return sorted.filter((n) => n.date >= start && n.date <= shiftDays(start, 6)).reduce((s, n) => s + n.netSales, 0)
-  }, [sorted, latest])
 
   const pw = periodWeek(t)
 
@@ -191,15 +208,15 @@ export function Dashboard() {
                     </div>
                     <div className="flex flex-1 flex-col justify-center">
                       <span className="self-start border-b-[3px] border-brand pb-1 font-display text-[clamp(2.1rem,3.2vw,2.7rem)] font-semibold leading-none text-ink">
-                        {money(displayNet)}
+                        {money(displayFc)}
                       </span>
-                      <div className="mt-2 text-sm text-muted">net · {win.label}</div>
+                      <div className="mt-2 text-sm text-muted">forecast · {fc.label}</div>
                     </div>
                     <div className="mt-4 flex flex-col items-start gap-1.5">
                       {vsPrior != null && (
                         <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${vsPrior >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
-                          {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({net - priorNet >= 0 ? '+' : '−'}
-                          {money(Math.abs(net - priorNet))}) vs prior · goal +{targets.growthPct}%
+                          {vsPrior >= 0 ? '▲ +' : '▼ −'}{Math.abs(vsPrior).toFixed(1)}% ({fc.total - priorNet >= 0 ? '+' : '−'}
+                          {money(Math.abs(fc.total - priorNet))}) vs last {scope === 'day' ? 'week' : scope === 'week' ? 'week' : 'period'} · goal +{targets.growthPct}%
                         </span>
                       )}
                       {laborPct != null && (
@@ -211,13 +228,8 @@ export function Dashboard() {
                   </div>
                   {/* The week's graph, right beside the number */}
                   <div className="min-w-0 flex-1 lg:border-l lg:border-black/5 lg:pl-6">
-                    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                      <div className="text-xs font-bold uppercase tracking-wide text-muted">
-                        Recent nights · net sales
-                      </div>
-                      <div className="text-xs text-muted">
-                        This week (Mon–Sun) <b className="font-mono text-ink">{money(wtd)}</b>
-                      </div>
+                    <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
+                      This week · last week vs forecast
                     </div>
                     <WeekBars nights={sorted} h={104} />
                   </div>
@@ -374,9 +386,6 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
   const cols: Col[] = currentWeekMode ? weekDates.map(mkCol) : nights.slice(-7).map((n) => mkCol(n.date))
 
   const max = Math.max(...cols.flatMap((c) => [c.actual ?? 0, c.forecast ?? 0, c.prior ?? 0]), 1)
-  const wtd = cols.reduce((s, c) => s + (c.actual ?? 0), 0)
-  const pacing = cols.reduce((s, c) => s + (c.actual ?? c.forecast ?? 0), 0)
-  const lwTotal = weekDates.reduce((s, d) => s + (byDate.get(shiftDays(d, -7))?.netSales ?? 0), 0)
   const hasLY = cols.some((c) => c.priorKind === 'ly')
   const hasLW = cols.some((c) => c.priorKind === 'lw')
   const hasPrior = hasLY || hasLW
@@ -385,32 +394,15 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
 
   return (
     <div>
-      {currentWeekMode && (
-        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[13px] text-muted">
-          <span>
-            WTD <b className="font-mono text-ink">{money(wtd)}</b>
+      {currentWeekMode && hasPrior && (
+        <div className="mb-2 flex flex-wrap items-center justify-end gap-2.5 text-[11px] text-muted">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2.5 w-3.5 rounded-sm border border-slate-400" style={{ background: STRIPE }} />
+            {priorWord}
           </span>
-          {pacing > wtd && (
-            <span>
-              pacing <b className="font-mono text-ink">${(pacing / 1000).toFixed(1)}k</b>
-            </span>
-          )}
-          {lwTotal > 0 && (
-            <span>
-              LW <b className="font-mono">${(lwTotal / 1000).toFixed(1)}k</b>
-            </span>
-          )}
-          {hasPrior && (
-            <span className="ml-auto flex items-center gap-2.5 text-[11px]">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2.5 w-3.5 rounded-sm bg-brand" /> This year
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2.5 w-3.5 rounded-sm border border-slate-400" style={{ background: STRIPE }} />
-                {priorWord}
-              </span>
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2.5 w-3.5 rounded-sm bg-brand" /> This year / forecast
+          </span>
         </div>
       )}
 
@@ -421,18 +413,27 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
           const pH = c.prior ? Math.max(6, (c.prior / max) * H) : 0
           return (
             <div key={c.date} className="flex min-w-0 flex-1 flex-col items-center justify-end">
-              {/* value labels above each pillar */}
+              {/* value labels above each pillar — last week (left), forecast (right) */}
               <div className="mb-1 flex items-end justify-center gap-1 font-mono text-[10px] font-semibold leading-none sm:text-[11px]">
+                {c.prior != null && <span className="text-slate-500">${(c.prior / 1000).toFixed(1)}k</span>}
                 {aVal != null && (
                   <span className={c.actual != null ? 'text-ink' : 'text-muted'}>
                     {c.actual == null ? '~' : ''}${(aVal / 1000).toFixed(1)}k
                   </span>
                 )}
-                {c.prior != null && <span className="text-slate-500">${(c.prior / 1000).toFixed(1)}k</span>}
               </div>
 
-              {/* the two pillars, side by side */}
+              {/* the two pillars — LAST WEEK on the left, THIS YEAR / FORECAST on the right */}
               <div className="flex items-end justify-center gap-1">
+                {c.prior != null ? (
+                  <div
+                    className="rise w-4 rounded-t-[3px] border border-slate-400 sm:w-5"
+                    style={{ height: pH, '--i': ci, background: STRIPE } as React.CSSProperties}
+                    title={`${c.date} · ${c.priorKind === 'ly' ? 'last year' : 'last week'} ${money(c.prior)}`}
+                  />
+                ) : (
+                  <div className="w-4 sm:w-5" />
+                )}
                 {aVal != null ? (
                   c.actual != null ? (
                     <Link
@@ -452,15 +453,6 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
                       title={`${c.date} · forecast ${money(aVal)}`}
                     />
                   )
-                ) : (
-                  <div className="w-4 sm:w-5" />
-                )}
-                {c.prior != null ? (
-                  <div
-                    className="rise w-4 rounded-t-[3px] border border-slate-400 sm:w-5"
-                    style={{ height: pH, '--i': ci, background: STRIPE } as React.CSSProperties}
-                    title={`${c.date} · ${c.priorKind === 'ly' ? 'last year' : 'last week'} ${money(c.prior)}`}
-                  />
                 ) : (
                   <div className="w-4 sm:w-5" />
                 )}
@@ -493,11 +485,11 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
 
       <p className="mt-2 text-center text-[11px] text-muted">
         {hasLY && !hasLW
-          ? 'Gold = this year · striped = the same day last year. ▲▼ compares them.'
+          ? 'Striped (left) = same day last year · gold (right) = this year / forecast. ▲▼ compares them.'
           : hasLW && !hasLY
-            ? 'Gold = this year · striped = the same day LAST WEEK (no last-year history yet — drop last year’s Toast sales summaries on Imports to compare year-over-year).'
+            ? 'Striped (left) = same day last week · gold (right) = this year / forecast (dashed = projected). ▲▼ compares them.'
             : hasPrior
-              ? 'Gold = this year · striped = last year where that history exists, otherwise last week.'
+              ? 'Striped (left) = last year where that history exists, otherwise last week · gold (right) = this year / forecast.'
               : 'Comparison pillars appear once there are matching prior days.'}
       </p>
     </div>
