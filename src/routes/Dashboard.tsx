@@ -89,8 +89,14 @@ export function Dashboard() {
   }, [sorted, latest, scope])
 
   const net = win.nights.reduce((s, n) => s + n.netSales, 0)
-  const laborSum = win.nights.reduce((s, n) => s + (n.labor ?? 0), 0)
-  const laborPct = laborSum > 0 && net > 0 ? (laborSum / net) * 100 : null
+  // Labor % is labor ÷ net, but ONLY over nights that have BOTH — otherwise a
+  // window with more labor-days than sales-days (e.g. a full period of labor
+  // imported but only a few days of sales) divides a big labor sum by a small
+  // net and reads absurdly high (the "labor 63%" bug).
+  const laborNights = win.nights.filter((n) => (n.labor ?? 0) > 0 && n.netSales > 0)
+  const laborSum = laborNights.reduce((s, n) => s + (n.labor ?? 0), 0)
+  const laborNet = laborNights.reduce((s, n) => s + n.netSales, 0)
+  const laborPct = laborSum > 0 && laborNet > 0 ? (laborSum / laborNet) * 100 : null
 
   // Hero = FORECASTED sales for the scope, anchored to TODAY (what to expect),
   // from the day-of-week averages. A day already logged uses its real net, so a

@@ -44,7 +44,20 @@ export function Catering() {
     () => [...bookings].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)),
     [bookings],
   )
-  const active = sorted.filter((b) => !b.completedAt && b.date >= today())
+  // Every booking that isn't marked complete stays visible — a past date that
+  // was never closed out must NOT silently vanish (it just gets a "past" flag so
+  // the manager can complete or delete it). Upcoming first, then past.
+  const active = useMemo(
+    () =>
+      sorted
+        .filter((b) => !b.completedAt)
+        .sort((a, b) => {
+          const ap = a.date < today(), bp = b.date < today()
+          if (ap !== bp) return ap ? 1 : -1 // upcoming before past
+          return (a.date + a.time).localeCompare(b.date + b.time)
+        }),
+    [sorted],
+  )
   const completed = useMemo(
     () => sorted.filter((b) => b.completedAt).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
     [sorted],
@@ -140,6 +153,11 @@ export function Catering() {
                     <div className="text-sm">
                       <div className="font-bold text-ink">{fmtDate(b.date)}</div>
                       <div className="text-[11px] text-muted">{b.time ? fmtTime(b.time) : '—'}</div>
+                      {b.date < today() && (
+                        <span className="mt-0.5 inline-block rounded bg-down/10 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-down">
+                          past · close it out
+                        </span>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <span className="mb-0.5 inline-block rounded bg-brand/15 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-brand-600">
