@@ -570,12 +570,19 @@ interface Row {
   size?: string // pack size split off the name (750ml, 4/5LB…)
   // '' = nothing picked, 'NEW' = add to the guide as a new item, otherwise "vendor||itemId"
   target: string
-  // Owner spec: every line gets an explicit decision — confirm the proposed
-  // guide match, add it to the guide, or skip it. Nothing applies silently.
-  resolved: '' | 'confirmed' | 'new' | 'skip'
+  // Owner spec: EVERY line gets an explicit decision before anything applies —
+  // confirm the proposed guide match, add it to the guide as a new item, or mark
+  // it a charge (a fee / keg deposit / credit that isn't inventory). There is no
+  // silent skip: an undecided line ('') blocks the apply button, so nothing ever
+  // slips through untied.
+  resolved: '' | 'confirmed' | 'new' | 'charge'
   /** Manual-override select open for this row. */
   picking?: boolean
 }
+
+/** A line that isn't stock — a fee, surcharge, keg/bottle deposit or credit.
+ *  These count toward the invoice total but never become an item or inventory. */
+const NON_INVENTORY = /service (fee|charge)|fuel|surcharge|freight|delivery fee|\bdeposit\b|empty keg|keg deposit|bottle deposit|\bpickup\b|\bcredit\b|\bcrv\b|environmental/i
 
 /**
  * Receiving — the invoice→order-guide mapping sheet (owner spec): every line
@@ -601,9 +608,14 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
       code: p.code,
       size: p.size,
       target: p.match ? `${p.match.vendor}||${p.match.item.id}` : '',
-      // A learned (alias/exact) match confirms itself — it came from a
-      // previous confirmation. Fuzzy proposals wait for the button.
-      resolved: p.match && (p.match as { exact?: boolean }).exact ? 'confirmed' : '',
+      // A learned (alias/exact) match confirms itself — it came from a previous
+      // confirmation. A fee / deposit / credit line is pre-marked a charge so the
+      // manager doesn't have to. Everything else waits for an explicit decision.
+      resolved: NON_INVENTORY.test(p.description)
+        ? 'charge'
+        : p.match && (p.match as { exact?: boolean }).exact
+          ? 'confirmed'
+          : '',
     })),
   )
   const isPhone = useIsPhone()
@@ -631,9 +643,13 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
 
   const confirmed = rows.filter((r) => r.resolved === 'confirmed' && r.target && r.target !== 'NEW')
   const adds = rows.filter((r) => r.resolved === 'new' && r.description.trim())
+  const charges = rows.filter((r) => r.resolved === 'charge' && r.description.trim())
   const unresolvedMatches = rows.filter((r) => r.resolved === '' && r.target && r.target !== 'NEW').length
-  // Blank rows (a just-added line the manager hasn't typed yet) don't block apply.
+  // Every typed line must be decided — tied to an item, added, or marked a
+  // charge. A blank just-added row doesn't count until it has a name. While any
+  // line is undecided the apply button stays locked (no silent skip).
   const unresolved = rows.filter((r) => r.resolved === '' && r.description.trim()).length
+  const decided = confirmed.length + adds.length + charges.length
 
   const apply = () => {
     const receipts: Receipt[] = confirmed
@@ -783,9 +799,9 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
               undo
             </button>
           </>
-        ) : r.resolved === 'skip' ? (
+        ) : r.resolved === 'charge' ? (
           <>
-            <span className={`rounded-full bg-black/5 font-bold text-muted ${chip}`}>skipped</span>
+            <span className={`rounded-full bg-navy/10 font-bold text-navy ${chip}`}>fee / deposit — not inventory</span>
             <button onClick={() => setRow(i, { resolved: '' })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
               undo
             </button>
@@ -811,8 +827,8 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
             <button onClick={() => setRow(i, { picking: true })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
               pick
             </button>
-            <button onClick={() => setRow(i, { resolved: 'skip' })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
-              skip
+            <button onClick={() => setRow(i, { resolved: 'charge' })} title="A fee, keg deposit or credit — not an inventory item" className={`shrink-0 text-muted hover:text-ink ${sm}`}>
+              not an item
             </button>
           </>
         )}
@@ -950,15 +966,17 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
 
       <button
         onClick={apply}
-        disabled={confirmed.length + adds.length === 0}
+        disabled={unresolved > 0 || decided === 0}
+        title={unresolved > 0 ? 'Decide every line first — tie it to an item, add it, or mark it a fee/deposit' : undefined}
         className="mt-3 w-full rounded-lg bg-brand px-4 py-3 text-sm font-bold text-white disabled:opacity-40"
       >
-        Log {confirmed.length + adds.length} line{confirmed.length + adds.length === 1 ? '' : 's'} + update prices
-        {total > 0 ? ` + file invoice ${money2(total)}` : ''} ✓
+        {unresolved > 0
+          ? `${unresolved} line${unresolved === 1 ? '' : 's'} still need a decision`
+          : <>Log {confirmed.length + adds.length} item{confirmed.length + adds.length === 1 ? '' : 's'}{charges.length ? ` · ${charges.length} fee/deposit` : ''} + update prices{total > 0 ? ` + file invoice ${money2(total)}` : ''} ✓</>}
       </button>
       {unresolved > 0 && (
         <p className="mt-1.5 text-center text-[11px] text-warn">
-          {unresolved} line{unresolved === 1 ? '' : 's'} not decided yet — confirm, add, or skip each one (undecided lines don't apply).
+          Every line has to be decided — <b>tie it to an item</b>, <b>add it to the guide</b>, or mark it a <b>fee / deposit</b>. Nothing slips through untied.
         </p>
       )}
     </div>
