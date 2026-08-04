@@ -8,7 +8,7 @@ import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type
 import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '../lib/catalog'
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
-import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, parseCategoryRows, applyCategoryRows, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashExpected, applyCashExpected, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseDiningRows, togoFromDining, applyDining, isNetSalesSummary, parseNetSummary, applyNetSummary, latestNightDate } from '../lib/nightly'
+import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, parseCategoryRows, applyCategoryRows, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashSummary, applyCashSummary, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseDiningRows, togoFromDining, applyDining, isNetSalesSummary, parseNetSummary, applyNetSummary, isSalesBreakdown, parseSalesBreakdown, applySalesBreakdown, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -491,7 +491,9 @@ export function Imports() {
 
             {job.text && isNetSalesSummary(job.text) && <NetSummaryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
 
-            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isLaborSummary(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && !isDiningOptions(job.text) && !isNetSalesSummary(job.text) && (
+            {job.text && isSalesBreakdown(job.text) && <BreakdownImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
+
+            {job.text && isSalesSummary(job.text) && !isCategorySummary(job.text) && !isLaborReport(job.text) && !isLaborSummary(job.text) && !isCashSummary(job.text) && !isDiscountReport(job.text) && !isDiningOptions(job.text) && !isNetSalesSummary(job.text) && !isSalesBreakdown(job.text) && (
               <SalesImport text={job.text} fileName={job.fileName} />
             )}
 
@@ -516,7 +518,7 @@ export function Imports() {
               const t = job.text ?? ''
               if (!t || job.status !== 'done') return null
               const recognized =
-                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isNetSalesSummary(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
+                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isNetSalesSummary(t) || isSalesBreakdown(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
               if (recognized) return null
               const hasQtyLines = !!job.lineItems?.some((li) => li.qty)
               const scan = job.kind === 'image' || job.kind === 'pdf'
@@ -1480,35 +1482,74 @@ function LaborSummaryImport({ text, fileName, hintDate }: { text: string; fileNa
 }
 
 /**
- * Toast "Cash summary" → the day's Expected cash (POS) on Nightly. The file has
- * no date, so it fills the night being closed (the latest logged night); the
- * manager can re-target the day if they're backfilling.
+ * Toast "Cash summary" → all six rows (expected/actual closeout, cash over/short,
+ * expected/actual deposit, deposit over/short) onto Nightly. Dateless, so it
+ * fills the night being closed; a date picker re-targets for backfill.
  */
 function CashImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
-  const expected = useMemo(() => parseCashExpected(text), [text])
+  const cash = useMemo(() => parseCashSummary(text), [text])
   const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
   const [done, setDone] = useState<string | null>(null)
   const ran = useRef(false)
   useEffect(() => {
-    if (expected == null || ran.current) return
+    if (!cash || ran.current) return
     ran.current = true
-    const d = applyCashExpected(expected, date)
-    if (d) { setDone(d); logImport(fileName, `expected cash ${money2(expected)} → Nightly (${d})`) }
+    const d = applyCashSummary(cash, date)
+    if (d) { setDone(d); logImport(fileName, `cash summary · deposit ${money2(cash.actDep)} (${cash.depOS >= 0 ? '+' : ''}${money2(cash.depOS)}) → Nightly (${d})`) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expected])
-  if (expected == null) return null
-  const retarget = (d: string) => { setDate(d); const r = applyCashExpected(expected, d); if (r) setDone(r) }
+  }, [cash])
+  if (!cash) return null
+  const retarget = (d: string) => { setDate(d); const r = applyCashSummary(cash, d); if (r) setDone(r) }
   return (
     <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
       <div className="flex items-center gap-2 text-sm font-bold text-up">
-        <ReceiptText size={16} /> Expected cash {money2(expected)} → Nightly
+        <ReceiptText size={16} /> Cash summary → Nightly
+      </div>
+      <div className="mt-1 text-[11px] text-ink/70">
+        Deposit {money2(cash.actDep)} · drawer {cash.depOS >= 0 ? '+' : '−'}{money2(Math.abs(cash.depOS))}
       </div>
       <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
         Fills the drawer for
         <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
         {done && <span className="text-up">✓ set</span>}
       </label>
-      <p className="mt-1 text-[11px] text-muted">Count the drawer and enter “Actual cash counted” on Nightly — the Over/Under fills itself.</p>
+    </div>
+  )
+}
+
+/**
+ * Toast "Sales breakdown" (Dining Option × Sales Category) → the Category and
+ * Dining cards on Nightly, with the expandable per-option / per-category rows.
+ */
+function BreakdownImport({ text, fileName, hintDate, periodLevel }: { text: string; fileName: string; hintDate?: string; periodLevel?: boolean }) {
+  const data = useMemo(() => parseSalesBreakdown(text), [text])
+  const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
+  const [done, setDone] = useState<string | null>(null)
+  const ran = useRef(false)
+  useEffect(() => {
+    if (!data || ran.current || periodLevel) return
+    ran.current = true
+    const d = applySalesBreakdown(data, date)
+    if (d) { setDone(d); logImport(fileName, `sales breakdown · ${data.categories.length} categories × ${data.dining.length} dining → Nightly (${d})`) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+  if (!data) return null
+  const net = data.categories.reduce((s, c) => s + c.net, 0)
+  if (periodLevel) return <PeriodNote label={`Sales breakdown · ${data.categories.length} categories · ${money2(net)} net (period total)`} />
+  const retarget = (d: string) => { setDate(d); const r = applySalesBreakdown(data, d); if (r) setDone(r) }
+  return (
+    <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
+      <div className="flex items-center gap-2 text-sm font-bold text-up">
+        <ReceiptText size={16} /> Sales breakdown {money2(net)} net → Nightly
+      </div>
+      <div className="mt-1 text-[11px] text-ink/70">
+        {data.categories.length} categories · {data.dining.length} dining options — fills the Category &amp; Dining cards
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted">
+        Fills the night of
+        <input type="date" value={date} onChange={(e) => retarget(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand" />
+        {done && <span className="text-up">✓ set</span>}
+      </label>
     </div>
   )
 }

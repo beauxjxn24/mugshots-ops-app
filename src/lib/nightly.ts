@@ -43,6 +43,33 @@ export interface Night {
   discountLines?: { name: string; count?: number; amount: number }[]
   categoryRows?: { name: string; items: number; net: number; gross: number }[]
   diningRows?: { name: string; orders: number; net: number; gross: number }[]
+  // Toast "Sales breakdown" (Dining Option × Sales Category cross-tab) — the
+  // richer source with qty / net / discount / gross / tax and an expandable
+  // child breakdown, mirrored on the Nightly Category + Dining cards.
+  catBreakdown?: BreakdownRow[] // by category, children = by dining option
+  dineBreakdown?: BreakdownRow[] // by dining option, children = by category
+  // Toast "Cash summary" — all six rows, mirrored on the Nightly Cash card.
+  cash?: CashSummary
+}
+
+/** One row of a Toast sales-breakdown table (a category or dining option),
+ *  with an optional child breakdown for the expandable `>` rows. */
+export interface BreakdownRow {
+  name: string
+  qty: number
+  net: number
+  disc: number
+  gross: number
+  tax: number
+  children?: BreakdownRow[]
+}
+export interface CashSummary {
+  expClose: number
+  actClose: number
+  cashOS: number
+  expDep: number
+  actDep: number
+  depOS: number
 }
 
 function key(): string {
@@ -614,6 +641,108 @@ export function applyNetSummary(s: NetSummary, date: string): string | null {
   }
   if (i >= 0) nights[i] = { ...ex, ...patch } as Night
   else nights.push({ id: `n-${date}`, date, deposit: 0, covers: 0, notes: '', ...patch } as Night)
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return date
+}
+
+// ---- Toast "Sales breakdown" — Dining Option × Sales Category cross-tab ----
+// Header: Dining Option, Sales Category, Item Qty, Net Sales, Discount Amount,
+// Gross Sales, Tax Amount. A row with a BLANK Sales Category is that dining
+// option's subtotal; the rows under it are its per-category breakdown. This one
+// file powers BOTH the Category card and the Dining card (with expandable rows).
+export function isSalesBreakdown(text: string): boolean {
+  const first = (text ?? '').split(/\r?\n/, 1)[0]?.toLowerCase() ?? ''
+  const cols = first.split(',').map((s) => s.trim())
+  return cols[0] === 'dining option' && cols[1] === 'sales category' && cols.some((c) => c.includes('net sales'))
+}
+export interface SalesBreakdown {
+  categories: BreakdownRow[] // by category, children = dining options
+  dining: BreakdownRow[] // by dining option, children = categories
+}
+export function parseSalesBreakdown(text: string): SalesBreakdown | null {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const iOpt = cols.indexOf('dining option')
+  const iCat = cols.indexOf('sales category')
+  const iQty = cols.findIndex((h) => h.includes('item qty') || h === 'items' || h === 'qty')
+  const iNet = cols.findIndex((h) => h.includes('net sales'))
+  const iDisc = cols.findIndex((h) => h.includes('discount'))
+  const iGross = cols.findIndex((h) => h.includes('gross'))
+  const iTax = cols.findIndex((h) => h.includes('tax'))
+  if (iOpt < 0 || iCat < 0 || iNet < 0) return null
+  const clean = (s: string) => (s ?? '').replace(/^\*+/, '').trim() // Toast prefixes some options with *
+  const cell = (c: string[], i: number) => (i >= 0 ? Math.round(num(c[i] ?? '') * 100) / 100 : 0)
+  const dining: BreakdownRow[] = []
+  const catMap = new Map<string, BreakdownRow>()
+  let cur: BreakdownRow | null = null
+  for (let r = 1; r < lines.length; r++) {
+    const c = splitCsv(lines[r])
+    const opt = clean(c[iOpt] ?? '')
+    const cat = clean(c[iCat] ?? '')
+    if (!opt && !cat) continue
+    const row: BreakdownRow = {
+      name: cat || opt,
+      qty: iQty >= 0 ? Math.round(num(c[iQty] ?? '')) : 0,
+      net: cell(c, iNet), disc: cell(c, iDisc), gross: cell(c, iGross), tax: cell(c, iTax),
+    }
+    if (opt && !cat) {
+      // Dining-option subtotal row — starts a new group.
+      cur = { ...row, name: opt, children: [] }
+      dining.push(cur)
+    } else if (cat) {
+      // Leaf: dining × category. Add to the current dining group's children…
+      if (cur) cur.children!.push({ ...row, name: cat })
+      // …and aggregate into the category totals (child = this dining option).
+      const agg = catMap.get(cat) ?? { name: cat, qty: 0, net: 0, disc: 0, gross: 0, tax: 0, children: [] }
+      agg.qty += row.qty; agg.net += row.net; agg.disc += row.disc; agg.gross += row.gross; agg.tax += row.tax
+      agg.children!.push({ ...row, name: opt || 'Other' })
+      catMap.set(cat, agg)
+    }
+  }
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const categories = [...catMap.values()].map((c) => ({ ...c, net: r2(c.net), disc: r2(c.disc), gross: r2(c.gross), tax: r2(c.tax) }))
+  if (!dining.length && !categories.length) return null
+  return { categories, dining }
+}
+/** Store the breakdown on the night being closed. */
+export function applySalesBreakdown(d: SalesBreakdown, date: string): string | null {
+  if (!date || (!d.categories.length && !d.dining.length)) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  const patch = { catBreakdown: d.categories, dineBreakdown: d.dining }
+  if (i >= 0) nights[i] = { ...nights[i], ...patch }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, deposit: 0, covers: 0, notes: '', ...patch })
+  setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+  return date
+}
+
+/** Full Toast "Cash summary" → all six rows (closeout + deposit + over/short). */
+export function parseCashSummary(text: string): CashSummary | null {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return null
+  const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
+  const v = splitCsv(lines[1])
+  const at = (name: string) => {
+    const i = cols.findIndex((h) => h === name)
+    return i >= 0 ? Math.round(num(v[i] ?? '') * 100) / 100 : 0
+  }
+  const iClose = cols.findIndex((h) => h.includes('closeout'))
+  const iDep = cols.findIndex((h) => h.includes('deposit'))
+  if (iClose < 0 && iDep < 0) return null
+  return {
+    expClose: at('expected closeout cash'), actClose: at('actual closeout cash'), cashOS: at('cash overage/shortage'),
+    expDep: at('expected deposit'), actDep: at('actual deposit'), depOS: at('deposit overage/shortage'),
+  }
+}
+export function applyCashSummary(c: CashSummary, date: string): string | null {
+  if (!date) return null
+  const nights = getNights()
+  const i = nights.findIndex((n) => n.date === date)
+  // Also fill the legacy expected/deposit/overUnder fields the rest of the app reads.
+  const patch = { cash: c, expected: c.expDep || c.expClose || undefined, deposit: c.actDep || 0, overUnder: c.depOS }
+  if (i >= 0) nights[i] = { ...nights[i], ...patch }
+  else nights.push({ id: `n-${date}`, date, netSales: 0, covers: 0, notes: '', ...patch })
   setNights(nights.sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
   return date
 }

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Mail, Check, FileDown } from 'lucide-react'
 import { periodWeek } from '../lib/forecast'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
-import { catMixSplit, type Night } from '../lib/nightly'
+import { catMixSplit, type Night, type BreakdownRow } from '../lib/nightly'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { DEFAULT_USERS, type User } from '../lib/users'
 
@@ -196,21 +196,14 @@ export function Nightly() {
               </div>
             )}
 
-            {/* The four Toast report cards */}
+            {/* Net Sales + Labor */}
             <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
               <NetSalesCard n={vn} />
-              <CategoryCard n={vn} />
-              <DiningCard n={vn} />
-              <DiscountCard n={vn} />
-            </div>
-
-            {/* Labor + Deposit — labor is imported, drawer is the one manual step */}
-            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
               <ReportCard title="Labor" subtitle={`target ≤ ${targets.laborPct}% of net`}>
-                <div className="divide-y divide-black/5">
-                  <LineRow label="Net sales" value={money2(net)} />
+                <div>
+                  <LineRow label="Net sales" value={money2(net)} zebra />
                   <LineRow label="Labor cost" value={vn.labor != null ? money2(vn.labor) : '—'} />
-                  <div className="flex items-baseline justify-between px-4 py-3">
+                  <div className="flex items-baseline justify-between border-t border-white/10 px-4 py-3">
                     <span className="font-sans text-base font-bold text-ink">Labor %</span>
                     <span
                       className={`font-sans text-2xl font-bold tabular-nums ${
@@ -222,55 +215,58 @@ export function Nightly() {
                   </div>
                 </div>
                 {vn.labor == null && (
-                  <p className="px-4 pb-3 text-[11px] text-muted">
-                    Drop the Toast <b>Labor</b> report on Imports to fill this.
-                  </p>
+                  <p className="px-4 pb-3 text-[11px] text-muted">Drop the Toast <b>Labor</b> report on Imports to fill this.</p>
                 )}
               </ReportCard>
-
-              <ReportCard title="Deposit" subtitle="count the drawer">
-                <div className="divide-y divide-black/5">
-                  <LineRow label="Expected cash (POS)" value={expected != null ? money2(expected) : '—'} />
-                  <label className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <span className="text-sm font-semibold text-ink">Actual cash counted</span>
-                    <span className="w-36 shrink-0">
-                      <MoneyInput value={cash} onChange={setCash} allowNegative highlight />
-                    </span>
-                  </label>
-                  {overUnder != null && (
-                    <div className="flex items-baseline justify-between px-4 py-3">
-                      <span className="font-sans text-base font-bold text-ink">Over / Under</span>
-                      <span
-                        className={`font-sans text-2xl font-bold tabular-nums ${
-                          Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'
-                        }`}
-                      >
-                        {overUnder >= 0 ? '+' : '−'}${Math.abs(overUnder).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="px-4 py-3">
-                  <input
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Notes — weather, events, callouts, 86'd items…"
-                    className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                  />
-                  <button
-                    onClick={saveDrawer}
-                    className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white"
-                  >
-                    Save drawer &amp; notes ✓
-                  </button>
-                  {expected == null && (
-                    <p className="mt-2 text-[11px] text-muted">
-                      Drop the Toast <b>Cash summary</b> on Imports for the expected figure — over/under fills itself.
-                    </p>
-                  )}
-                </div>
-              </ReportCard>
             </div>
+
+            {/* Wide expandable breakdowns */}
+            <CategoryCard n={vn} />
+            <DiningCard n={vn} />
+
+            {/* Discount + Cash */}
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+              <DiscountCard n={vn} />
+              {vn.cash ? (
+                <CashCard n={vn} />
+              ) : (
+                <ReportCard title="Cash Summary" subtitle="count the drawer">
+                  <div>
+                    <LineRow label="Expected cash (POS)" value={expected != null ? money2(expected) : '—'} zebra />
+                    <label className="flex items-center justify-between gap-3 px-4 py-2.5">
+                      <span className="text-sm font-semibold text-ink">Actual cash counted</span>
+                      <span className="w-36 shrink-0">
+                        <MoneyInput value={cash} onChange={setCash} allowNegative highlight />
+                      </span>
+                    </label>
+                    {overUnder != null && (
+                      <div className="flex items-baseline justify-between border-t border-white/10 px-4 py-3">
+                        <span className="font-sans text-base font-bold text-ink">Over / Under</span>
+                        <span className={`font-sans text-2xl font-bold tabular-nums ${Math.abs(overUnder) < 5 ? 'text-up' : 'text-down'}`}>
+                          {overUnder >= 0 ? '+' : '−'}${Math.abs(overUnder).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {expected == null && (
+                    <p className="px-4 pb-3 text-[11px] text-muted">Drop the Toast <b>Cash summary</b> on Imports and this whole card fills itself.</p>
+                  )}
+                </ReportCard>
+              )}
+            </div>
+
+            {/* Notes + save the night */}
+            <Card className="p-4">
+              <input
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Notes — weather, events, callouts, 86'd items…"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+              <button onClick={saveDrawer} className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
+                Save night ✓
+              </button>
+            </Card>
           </>
         )}
 
@@ -375,14 +371,17 @@ function ReportCard({ title, subtitle, children }: { title: string; subtitle?: s
   )
 }
 
-/** A single label→value line (used by the summary + labor/deposit cards). */
-function LineRow({ label, value, tone, strong }: { label: string; value: string; tone?: 'down' | 'muted'; strong?: boolean }) {
+/** A single label→value line (Net Sales + Cash cards), zebra-striped. */
+function LineRow({ label, value, tone, strong, zebra, info }: { label: string; value: string; tone?: 'blue' | 'muted' | 'up' | 'down'; strong?: boolean; zebra?: boolean; info?: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 px-4 py-2.5">
-      <span className={`text-sm ${strong ? 'font-bold text-ink' : 'text-ink/80'}`}>{label}</span>
+    <div className={`flex items-baseline justify-between gap-3 px-4 py-2.5 ${zebra ? 'bg-white/[0.02]' : ''}`}>
+      <span className={`flex items-center gap-1.5 text-sm ${strong ? 'font-bold text-ink' : 'text-ink/85'}`}>
+        {label}
+        {info && <span className="grid size-3.5 place-items-center rounded-full border border-white/25 text-[8px] text-muted">i</span>}
+      </span>
       <span
         className={`font-sans tabular-nums ${strong ? 'text-lg font-bold' : 'text-sm font-semibold'} ${
-          tone === 'down' ? 'text-down' : tone === 'muted' ? 'text-muted' : 'text-ink'
+          tone === 'blue' ? 'text-[#7aa2ff]' : tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : tone === 'muted' ? 'text-muted' : 'text-ink'
         }`}
       >
         {value}
@@ -391,173 +390,197 @@ function LineRow({ label, value, tone, strong }: { label: string; value: string;
   )
 }
 
-/** A generic zebra table for the multi-column reports. */
-type Col = { label: string; right?: boolean }
-function ReportTable({
-  head,
-  rows,
-  total,
-  empty,
-}: {
-  head: Col[]
-  rows: (string | number)[][]
-  total?: (string | number)[]
-  empty?: string
-}) {
-  if (rows.length === 0)
-    return <div className="px-4 py-6 text-center text-sm text-muted">{empty ?? 'Nothing to show.'}</div>
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-black/10">
-            {head.map((c, i) => (
-              <th
-                key={i}
-                className={`px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted ${
-                  c.right ? 'text-right' : 'text-left'
-                }`}
-              >
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, ri) => (
-            <tr key={ri} className={`border-b border-black/5 last:border-0 ${ri % 2 ? 'bg-black/[0.015]' : ''}`}>
-              {r.map((cell, ci) => (
-                <td
-                  key={ci}
-                  className={`px-4 py-2 ${
-                    head[ci]?.right ? 'text-right font-sans tabular-nums text-ink' : 'text-ink/85'
-                  }`}
-                >
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-        {total && (
-          <tfoot>
-            <tr className="border-t-2 border-black/15 bg-black/[0.03]">
-              {total.map((cell, ci) => (
-                <td
-                  key={ci}
-                  className={`px-4 py-2.5 font-bold ${
-                    head[ci]?.right ? 'text-right font-sans tabular-nums text-ink' : 'text-ink'
-                  }`}
-                >
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </div>
-  )
-}
+const dh = 'px-3 py-2 text-right text-[10px] font-extrabold uppercase tracking-wide text-muted'
+const dc = 'px-3 py-2 text-right font-sans tabular-nums'
 
-/** Net Sales Summary — Gross − discounts − refunds = Net. */
+/** Net Sales Summary — Gross − discounts − refunds = Net (blue negatives). */
 function NetSalesCard({ n }: { n: Night }) {
   const discounts =
     n.salesDiscounts ??
-    (n.discountLines?.reduce((s, l) => s + l.amount, 0) ||
-      (n.rewards ?? 0) + (n.promos ?? 0) + (n.comps ?? 0) + (n.staffDisc ?? 0))
+    ((n.dineBreakdown?.reduce((s, r) => s + r.disc, 0)) ||
+      (n.discountLines?.reduce((s, l) => s + l.amount, 0) ||
+        (n.rewards ?? 0) + (n.promos ?? 0) + (n.comps ?? 0) + (n.staffDisc ?? 0)))
   const refunds = n.refunds ?? 0
   const gross = n.gross ?? n.netSales + discounts + refunds
   return (
     <ReportCard title="Net Sales Summary">
-      <div className="divide-y divide-black/5">
-        <LineRow label="Gross sales" value={money2(gross)} />
-        <LineRow label="Sales discounts" value={discounts > 0 ? `−${money2(discounts)}` : money2(0)} tone={discounts > 0 ? 'down' : 'muted'} />
-        <LineRow label="Sales refunds" value={refunds > 0 ? `−${money2(refunds)}` : money2(0)} tone={refunds > 0 ? 'down' : 'muted'} />
+      <div>
+        <LineRow label="Gross sales" value={money2(gross)} info />
+        <LineRow label="Sales discounts" value={discounts > 0 ? `−${money2(discounts)}` : money2(0)} tone="blue" zebra />
+        <LineRow label="Sales refunds" value={refunds > 0 ? `−${money2(refunds)}` : money2(0)} tone="blue" />
       </div>
-      <div className="border-t-2 border-black/15 bg-black/[0.03]">
+      <div className="border-t border-white/10">
         <LineRow label="Net sales" value={money2(n.netSales)} strong />
       </div>
     </ReportCard>
   )
 }
 
-/** Sales Category Summary — per category: items, net, gross. */
+/** Expandable Toast breakdown table (Category or Dining), with the `>` rows. */
+function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstCol: string; rows: BreakdownRow[]; empty: string }) {
+  const [open, setOpen] = useState<Set<string>>(new Set())
+  const toggle = (name: string) =>
+    setOpen((p) => { const s = new Set(p); s.has(name) ? s.delete(name) : s.add(name); return s })
+  const tot = rows.reduce((a, r) => ({ qty: a.qty + r.qty, net: a.net + r.net, disc: a.disc + r.disc, gross: a.gross + r.gross, tax: a.tax + r.tax }), { qty: 0, net: 0, disc: 0, gross: 0, tax: 0 })
+  return (
+    <ReportCard title={title}>
+      {rows.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-muted">{empty}</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="px-4 py-2 text-left text-[10px] font-extrabold uppercase tracking-wide text-muted">{firstCol}</th>
+                <th className={dh}>Item Qty</th>
+                <th className={dh}>Net Sales</th>
+                <th className={dh}>Discount</th>
+                <th className={dh}>Gross Sales</th>
+                <th className={`${dh} pr-4`}>Tax</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, ri) => {
+                const kids = r.children ?? []
+                const isOpen = open.has(r.name)
+                return (
+                  <Fragment key={r.name}>
+                    <tr
+                      onClick={() => kids.length && toggle(r.name)}
+                      className={`border-b border-white/5 ${kids.length ? 'cursor-pointer hover:bg-white/[0.04]' : ''} ${ri % 2 ? 'bg-white/[0.02]' : ''}`}
+                    >
+                      <td className="px-4 py-2 text-ink/90">
+                        <span className="inline-flex items-center gap-1.5">
+                          {kids.length ? (
+                            <span className={`text-[9px] text-signal transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                          ) : (
+                            <span className="inline-block w-[9px]" />
+                          )}
+                          {r.name}
+                        </span>
+                      </td>
+                      <td className={`${dc} text-ink`}>{int(r.qty)}</td>
+                      <td className={`${dc} text-ink`}>{money2(r.net)}</td>
+                      <td className={`${dc} ${r.disc > 0 ? 'text-[#7aa2ff]' : 'text-muted'}`}>{money2(r.disc)}</td>
+                      <td className={`${dc} text-ink`}>{money2(r.gross)}</td>
+                      <td className={`${dc} pr-4 text-muted`}>{money2(r.tax)}</td>
+                    </tr>
+                    {isOpen &&
+                      kids.map((k) => (
+                        <tr key={r.name + k.name} className="border-b border-white/5 bg-black/25 text-[13px]">
+                          <td className="py-1.5 pl-9 pr-4 text-muted">{k.name}</td>
+                          <td className={`${dc} py-1.5 text-muted`}>{int(k.qty)}</td>
+                          <td className={`${dc} py-1.5 text-ink/70`}>{money2(k.net)}</td>
+                          <td className={`${dc} py-1.5 ${k.disc > 0 ? 'text-[#7aa2ff]' : 'text-muted'}`}>{k.disc > 0 ? money2(k.disc) : ''}</td>
+                          <td className={`${dc} py-1.5 text-ink/70`}>{money2(k.gross)}</td>
+                          <td className={`${dc} py-1.5 pr-4 text-muted`}>{money2(k.tax)}</td>
+                        </tr>
+                      ))}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-white/15 bg-white/[0.04] font-bold text-ink">
+                <td className="px-4 py-2.5">Total</td>
+                <td className={`${dc}`}>{int(tot.qty)}</td>
+                <td className={`${dc}`}>{money2(tot.net)}</td>
+                <td className={`${dc}`}>{money2(tot.disc)}</td>
+                <td className={`${dc}`}>{money2(tot.gross)}</td>
+                <td className={`${dc} pr-4`}>{money2(tot.tax)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </ReportCard>
+  )
+}
+
+/** Category rows for the card — prefer the rich breakdown, else legacy fields. */
+function categoryRowsFor(n: Night): BreakdownRow[] {
+  if (n.catBreakdown?.length) return n.catBreakdown
+  if (n.categoryRows?.length) return n.categoryRows.map((c) => ({ name: c.name, qty: c.items, net: c.net, disc: 0, gross: c.gross, tax: 0 }))
+  const split: [string, number][] = [['Food', n.food ?? 0], ['NA Beverage', n.na ?? 0], ['Liquor', n.liquor ?? 0], ['Beer', n.beer ?? 0], ['Wine', n.wine ?? 0]]
+  return split.filter(([, v]) => v > 0).map(([name, net]) => ({ name, qty: 0, net, disc: 0, gross: 0, tax: 0 }))
+}
+function diningRowsFor(n: Night): BreakdownRow[] {
+  if (n.dineBreakdown?.length) return n.dineBreakdown
+  if (n.diningRows?.length) return n.diningRows.map((d) => ({ name: d.name, qty: d.orders, net: d.net, disc: 0, gross: d.gross, tax: 0 }))
+  return []
+}
 function CategoryCard({ n }: { n: Night }) {
-  const rows = useMemo(() => {
-    if (n.categoryRows?.length) return n.categoryRows.map((c) => ({ name: c.name, items: c.items, net: c.net, gross: c.gross }))
-    // Fall back to the per-night category split (net only — no gross per day).
-    const split: [string, number][] = [
-      ['Food', n.food ?? 0],
-      ['NA Beverage', n.na ?? 0],
-      ['Liquor', n.liquor ?? 0],
-      ['Beer', n.beer ?? 0],
-      ['Wine', n.wine ?? 0],
-    ]
-    return split.filter(([, v]) => v > 0).map(([name, net]) => ({ name, items: 0, net, gross: 0 }))
-  }, [n])
-  const hasGross = rows.some((r) => r.gross > 0)
-  const hasItems = rows.some((r) => r.items > 0)
-  const head: Col[] = [
-    { label: 'Sales category' },
-    ...(hasItems ? [{ label: 'Items', right: true }] : []),
-    { label: 'Net sales', right: true },
-    ...(hasGross ? [{ label: 'Gross sales', right: true }] : []),
-  ]
-  const body = rows.map((r) => [
-    r.name,
-    ...(hasItems ? [int(r.items)] : []),
-    money2(r.net),
-    ...(hasGross ? [money2(r.gross)] : []),
-  ])
-  const totNet = rows.reduce((s, r) => s + r.net, 0)
-  const totGross = rows.reduce((s, r) => s + r.gross, 0)
-  const totItems = rows.reduce((s, r) => s + r.items, 0)
-  const total = [
-    'Total',
-    ...(hasItems ? [int(totItems)] : []),
-    money2(totNet),
-    ...(hasGross ? [money2(totGross)] : []),
-  ]
-  return (
-    <ReportCard title="Sales Category Summary">
-      <ReportTable head={head} rows={body} total={rows.length ? total : undefined} empty="Drop the Toast Sales category summary on Imports to fill this." />
-    </ReportCard>
-  )
+  return <BreakdownCard title="Sales by Sales Category" firstCol="Sales Category" rows={categoryRowsFor(n)} empty="Drop the Toast Sales breakdown (or Sales category summary) on Imports to fill this." />
 }
-
-/** Dining Option Summary — per option: orders, net, gross. */
 function DiningCard({ n }: { n: Night }) {
-  const rows = n.diningRows ?? []
-  const head: Col[] = [{ label: 'Dining option' }, { label: 'Orders', right: true }, { label: 'Net sales', right: true }, { label: 'Gross sales', right: true }]
-  const body = rows.map((r) => [r.name, int(r.orders), money2(r.net), money2(r.gross)])
-  const total = ['Total', int(rows.reduce((s, r) => s + r.orders, 0)), money2(rows.reduce((s, r) => s + r.net, 0)), money2(rows.reduce((s, r) => s + r.gross, 0))]
-  return (
-    <ReportCard title="Dining Option Summary">
-      <ReportTable head={head} rows={body} total={rows.length ? total : undefined} empty="Drop the Toast Dining options summary on Imports to fill this." />
-    </ReportCard>
-  )
+  return <BreakdownCard title="Sales by Dining Option" firstCol="Dining Option" rows={diningRowsFor(n)} empty="Drop the Toast Sales breakdown (or Dining options summary) on Imports to fill this." />
 }
 
-/** Discount Summary — every discount by name: count, amount. */
+/** Discount Summary — Discount Name · Count · Amount · % of net. */
 function DiscountCard({ n }: { n: Night }) {
   const lines = useMemo(() => {
     if (n.discountLines?.length) return n.discountLines.map((l) => ({ name: l.name, count: l.count, amount: l.amount }))
-    const buckets: [string, number][] = [
-      ['Rewards', n.rewards ?? 0],
-      ['Promos', n.promos ?? 0],
-      ['Comps', n.comps ?? 0],
-      ['Staff meals', n.staffDisc ?? 0],
-    ]
+    const buckets: [string, number][] = [['Rewards', n.rewards ?? 0], ['Promos', n.promos ?? 0], ['Comps', n.comps ?? 0], ['Staff meals', n.staffDisc ?? 0]]
     return buckets.filter(([, v]) => v > 0).map(([name, amount]) => ({ name, count: undefined as number | undefined, amount }))
   }, [n])
-  const hasCount = lines.some((l) => l.count != null)
-  const head: Col[] = [{ label: 'Discount' }, ...(hasCount ? [{ label: 'Count', right: true }] : []), { label: 'Amount', right: true }]
-  const body = lines.map((l) => [l.name, ...(hasCount ? [l.count != null ? int(l.count) : '—'] : []), money2(l.amount)])
-  const total = ['Total', ...(hasCount ? [int(lines.reduce((s, l) => s + (l.count ?? 0), 0))] : []), money2(lines.reduce((s, l) => s + l.amount, 0))]
+  const net = n.netSales || 1
+  const totAmt = lines.reduce((s, l) => s + l.amount, 0)
+  const totCount = lines.reduce((s, l) => s + (l.count ?? 0), 0)
   return (
     <ReportCard title="Discount Summary">
-      <ReportTable head={head} rows={body} total={lines.length ? total : undefined} empty="Drop the Toast Menu item / Check discounts on Imports to fill this." />
+      {lines.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-muted">Drop the Toast Menu item / Check discounts on Imports to fill this.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="px-4 py-2 text-left text-[10px] font-extrabold uppercase tracking-wide text-muted">Discount Name</th>
+                <th className={dh}>Count</th>
+                <th className={dh}>Discount Amount</th>
+                <th className={`${dh} pr-4`}>% of Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l, i) => (
+                <tr key={l.name + i} className={`border-b border-white/5 ${i % 2 ? 'bg-white/[0.02]' : ''}`}>
+                  <td className="px-4 py-2 text-ink/90">{l.name}</td>
+                  <td className={`${dc} text-ink`}>{l.count != null ? int(l.count) : '—'}</td>
+                  <td className={`${dc} text-ink`}>{money2(l.amount)}</td>
+                  <td className={`${dc} pr-4 text-muted`}>{((l.amount / net) * 100).toFixed(1)}%</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-white/15 bg-white/[0.04] font-bold text-ink">
+                <td className="px-4 py-2.5">Total</td>
+                <td className={dc}>{int(totCount)}</td>
+                <td className={dc}>{money2(totAmt)}</td>
+                <td className={`${dc} pr-4`}>{((totAmt / net) * 100).toFixed(1)}%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </ReportCard>
+  )
+}
+
+/** Cash Summary — Toast's six rows (closeout + deposit + over/short). */
+function CashCard({ n }: { n: Night }) {
+  const c = n.cash
+  if (!c) return null
+  const os = (v: number) => (v === 0 ? 'muted' : v > 0 ? 'up' : 'down') as 'muted' | 'up' | 'down'
+  return (
+    <ReportCard title="Cash Summary">
+      <div>
+        <LineRow label="Expected closeout cash" value={money2(c.expClose)} info zebra />
+        <LineRow label="Actual closeout cash" value={money2(c.actClose)} info />
+        <LineRow label="Cash overage / shortage" value={money2(c.cashOS)} tone={os(c.cashOS)} zebra />
+        <LineRow label="Expected deposit" value={money2(c.expDep)} info />
+        <LineRow label="Actual deposit" value={money2(c.actDep)} info zebra />
+        <LineRow label="Deposit overage / shortage" value={`${c.depOS >= 0 ? '+' : '−'}${money2(Math.abs(c.depOS))}`} tone={os(c.depOS)} strong />
+      </div>
     </ReportCard>
   )
 }
