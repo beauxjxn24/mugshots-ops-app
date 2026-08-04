@@ -25,17 +25,31 @@ export default defineConfig({
       injectRegister: false, // main.tsx registers explicitly (immediate + periodic checks)
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Mugshots Ops',
+        id: '/',
+        name: 'Mugshots Daily Ops',
         short_name: 'Mugshots',
-        description: 'Daily operations for Mugshots Grill & Bar',
-        theme_color: '#1C2740',
-        background_color: '#EBE3D6',
+        description: 'Daily operations for Mugshots Grill & Bar — sales, labor, ordering, prep and checklists.',
+        theme_color: '#070b13',
+        background_color: '#070b13',
         display: 'standalone',
         orientation: 'any',
+        scope: './',
+        start_url: './',
+        lang: 'en-US',
+        dir: 'ltr',
+        // App-store category hints (Play Store / PWABuilder read these).
+        categories: ['business', 'productivity', 'food'],
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+        // Store listings require at least one screenshot; a "wide" one lists the
+        // app under desktop/Chrome, a "narrow" one under phones.
+        screenshots: [
+          { src: 'screenshot-wide.png', sizes: '1280x800', type: 'image/png', form_factor: 'wide', label: 'Dashboard on desktop' },
+          { src: 'screenshot-phone.png', sizes: '780x1688', type: 'image/png', form_factor: 'narrow', label: 'Imports on a phone' },
         ],
       },
       workbox: {
