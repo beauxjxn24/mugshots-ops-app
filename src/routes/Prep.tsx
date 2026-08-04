@@ -91,6 +91,7 @@ export function Prep() {
   const [station, setStation] = useState('')
   const [newStation, setNewStation] = useState('')
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
+  const [addMsg, setAddMsg] = useState('')
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
 
   // One-time station migrations, per location:
@@ -245,12 +246,29 @@ export function Prep() {
   }
 
   const addItem = () => {
-    if (!adding.name.trim()) return
-    if (items.some((x) => x.name.toLowerCase() === adding.name.trim().toLowerCase())) return
+    const name = adding.name.trim()
+    if (!name) {
+      setAddMsg('Type an item name first.')
+      return
+    }
+    // A same-named item may already exist — and it can be PARKED (archived), so
+    // it's invisible on the list and the old code just silently did nothing,
+    // making the Add button feel dead. Handle both cases with real feedback.
+    const existing = items.find((x) => x.name.toLowerCase() === name.toLowerCase())
+    if (existing) {
+      if (existing.parked) {
+        setItems((is) => is.map((x) => (x.name === existing.name ? { ...x, parked: false } : x)))
+        setAdding((a) => ({ ...a, name: '', spec: '' }))
+        setAddMsg(`“${existing.name}” was archived — brought it back onto the list.`)
+      } else {
+        setAddMsg(`“${existing.name}” is already on the list.`)
+      }
+      return
+    }
     setItems((is) => [
       ...is,
       {
-        name: adding.name.trim(),
+        name,
         spec: adding.spec.trim(),
         unit: adding.unit || 'pans',
         pars: [1, 1, 1, 1, 1, 1, 1],
@@ -259,6 +277,7 @@ export function Prep() {
       },
     ])
     setAdding((a) => ({ ...a, name: '', spec: '' }))
+    setAddMsg(`Added “${name}”.`)
   }
 
   const actionButtons = (
@@ -673,7 +692,7 @@ export function Prep() {
         <Card className="flex flex-wrap gap-2 p-3">
           <input
             value={adding.name}
-            onChange={(e) => setAdding({ ...adding, name: e.target.value })}
+            onChange={(e) => { setAdding({ ...adding, name: e.target.value }); if (addMsg) setAddMsg('') }}
             onKeyDown={(e) => e.key === 'Enter' && addItem()}
             placeholder="Add prep item…"
             className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
@@ -716,6 +735,9 @@ export function Prep() {
           <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
             Add
           </button>
+          {addMsg && (
+            <p className={`basis-full text-xs font-semibold ${/already/i.test(addMsg) ? 'text-warn' : 'text-up'}`}>{addMsg}</p>
+          )}
         </Card>
 
         {/* Manage line stations — add / remove; renaming happens by removing and
