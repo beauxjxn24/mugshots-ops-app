@@ -5,6 +5,7 @@ import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
+import { Aurora } from './Aurora'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -67,6 +68,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_1fr]">
+      <Aurora />
       {/* ---- Desktop rail ---- */}
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />

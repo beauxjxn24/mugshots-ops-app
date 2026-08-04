@@ -825,7 +825,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
           </>
         ) : r.resolved === 'charge' ? (
           <>
-            <span className={`rounded-full bg-navy/10 font-bold text-navy ${chip}`}>fee / deposit — not inventory</span>
+            <span className={`rounded-full bg-navy/10 font-bold text-ink ${chip}`}>fee / deposit — not inventory</span>
             <button onClick={() => setRow(i, { resolved: '' })} className={`shrink-0 text-muted hover:text-ink ${sm}`}>
               undo
             </button>

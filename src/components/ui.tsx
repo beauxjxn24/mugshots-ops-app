@@ -10,7 +10,7 @@ export function PageHeader({
   right?: ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-black/5 bg-white/60 px-4 py-4 sm:px-6 lg:px-8">
+    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 bg-white/[0.03] px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight text-ink text-balance">
           {title}
@@ -40,7 +40,7 @@ export function Card({
       id={id}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`rounded-2xl border border-black/5 bg-white shadow-[0_10px_30px_-18px_rgba(23,32,55,0.18)] ${className}`}
+      className={`rounded-2xl border border-white/10 bg-white/[0.045] shadow-[0_24px_60px_-30px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl ${className}`}
     >
       {children}
     </div>

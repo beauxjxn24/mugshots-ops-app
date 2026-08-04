@@ -294,7 +294,7 @@ export function Tipshare() {
                   <Card key={s.id} className="p-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <span className="font-semibold text-ink">
-                        {s.date} {s.meal && <span className="ml-1 rounded bg-navy/10 px-1.5 py-0.5 text-[10px] font-bold text-navy">{s.meal}</span>}
+                        {s.date} {s.meal && <span className="ml-1 rounded bg-navy/10 px-1.5 py-0.5 text-[10px] font-bold text-ink">{s.meal}</span>}
                       </span>
                       <span className="font-display text-lg font-semibold text-brand">{money(s.pool)}</span>
                     </div>

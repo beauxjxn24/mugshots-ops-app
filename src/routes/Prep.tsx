@@ -744,7 +744,7 @@ export function Prep() {
             {stations.map((s) => {
               const count = active.filter((it) => (it.station ?? '') === s).length
               return (
-                <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-navy/20 bg-navy/5 py-1 pl-3 pr-1.5 text-xs font-bold text-navy">
+                <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-navy/20 bg-navy/5 py-1 pl-3 pr-1.5 text-xs font-bold text-ink">
                   {s} <span className="font-mono text-[10px] font-semibold text-muted">{count}</span>
                   <button
                     onClick={() => removeStation(s)}

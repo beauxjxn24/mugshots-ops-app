@@ -409,7 +409,7 @@ function Reservations({
       ) : (
         upcoming.map((r) => (
           <div key={r.id} className="flex items-center gap-3 border-b border-black/5 px-4 py-2.5 last:border-0">
-            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-navy/10 text-sm font-bold text-navy">
+            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-navy/10 text-sm font-bold text-ink">
               {r.party || '—'}
             </div>
             <div className="min-w-0 flex-1">

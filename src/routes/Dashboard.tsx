@@ -722,7 +722,7 @@ function KpiTile({
   // label + tiny sub beside it, warm outline.
   const card = compact ? (
     <Card
-      className={`flex h-full items-center gap-3 border-brand/40 !bg-[#fbf3df] px-3.5 py-2.5 ${
+      className={`flex h-full items-center gap-3 border-brand/25 !bg-brand/[0.06] px-3.5 py-2.5 ${
         to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/40' : ''
       } ${className}`}
     >

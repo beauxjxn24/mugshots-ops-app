@@ -368,7 +368,7 @@ export function Schedule() {
               {hasForecast && (
                 <>
                   {' · '}
-                  <span className="font-semibold text-navy/70">
+                  <span className="font-semibold text-ink/70">
                     {kfmt(Object.values(forecast).reduce((s, f) => s + (f as DayForecast).projected, 0))} projected
                   </span>
                 </>
@@ -377,7 +377,7 @@ export function Schedule() {
           </div>
           {hasForecast && (
             <p className="px-4 pb-1 text-[10px] text-muted">
-              Under each day: <b className="text-navy/70">projected net</b> from your same-weekday history (★ busiest),
+              Under each day: <b className="text-ink/70">projected net</b> from your same-weekday history (★ busiest),
               with ▲▼ vs last year (LY) or last week (LW). Tune it on the <Link to="/forecast" className="font-semibold text-brand">Forecast</Link> page.
             </p>
           )}
@@ -411,7 +411,7 @@ export function Schedule() {
                       <span
                         title={`Projected net ${kfmt(f.projected)}${f.base ? ` · ${f.base === 'ly' ? 'last year' : 'last week'} ${kfmt((f.base === 'ly' ? f.ly : f.lw) ?? 0)}` : ''}${isPeak ? ' · busiest day of the week' : ''}`}
                         className={`mt-0.5 inline-flex items-center gap-0.5 rounded px-1 py-px font-mono text-[9px] font-extrabold normal-case ${
-                          isPeak ? 'bg-brand/15 text-brand-600' : 'text-navy/70'
+                          isPeak ? 'bg-brand/15 text-brand-600' : 'text-ink/70'
                         }`}
                       >
                         {isPeak && <span className="text-[8px]">★</span>}
