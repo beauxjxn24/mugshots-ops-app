@@ -107,7 +107,7 @@ export function Mugsy() {
 
       {/* Slide-in panel */}
       <div
-        className={`fixed right-0 top-0 z-[101] flex h-dvh w-[min(440px,94vw)] flex-col bg-[#FBFAF7] text-ink shadow-[-24px_0_60px_-30px_rgba(23,32,55,0.5)] transition-transform duration-300 print:hidden ${
+        className={`fixed right-0 top-0 z-[101] flex h-dvh w-[min(440px,94vw)] flex-col bg-[#0f1826] text-ink shadow-[-24px_0_60px_-30px_rgba(23,32,55,0.5)] transition-transform duration-300 print:hidden ${
           open ? 'translate-x-0' : 'translate-x-[105%]'
         }`}
       >
@@ -169,7 +169,7 @@ export function Mugsy() {
               <button
                 key={s}
                 onClick={() => submit(s)}
-                className="rounded-full border border-[#E2DCCD] bg-[#F1ECE0] px-3 py-1.5 text-[11.5px] font-medium text-navy"
+                className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11.5px] font-medium text-ink"
               >
                 {s}
               </button>
@@ -177,8 +177,8 @@ export function Mugsy() {
           </div>
         )}
 
-        <div className="border-t border-[#ECE7DC] bg-[#FBFAF7] px-4 pb-4 pt-3">
-          <div className="flex items-end gap-2 rounded-2xl border-[1.5px] border-[#DED8CB] bg-white py-2 pl-3.5 pr-2">
+        <div className="border-t border-white/10 bg-[#0f1826] px-4 pb-4 pt-3">
+          <div className="flex items-end gap-2 rounded-2xl border-[1.5px] border-white/15 bg-white py-2 pl-3.5 pr-2">
             <textarea
               ref={inputRef}
               rows={1}
@@ -205,7 +205,7 @@ export function Mugsy() {
               <Send size={15} />
             </button>
           </div>
-          <div className="mt-2 text-center text-[10.5px] text-[#A8A090]">
+          <div className="mt-2 text-center text-[10.5px] text-muted">
             Claude can be wrong — double-check anything that matters.
           </div>
         </div>
@@ -222,7 +222,7 @@ function Bubble({ role, html }: { role: 'user' | 'assistant'; html: string }) {
         className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-normal ${
           mine
             ? 'rounded-br-md bg-navy text-[#F4F2EC]'
-            : 'rounded-bl-md border border-[#ECE7DC] bg-white text-[#26303F]'
+            : 'rounded-bl-md border border-white/10 bg-white text-ink'
         }`}
         dangerouslySetInnerHTML={{ __html: html }}
       />

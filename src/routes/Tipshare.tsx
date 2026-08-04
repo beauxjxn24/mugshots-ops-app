@@ -45,8 +45,8 @@ const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
 const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 let seq = 0
 
-// Prototype palette: steel-blue cards, role-colored dots + Add buttons.
-const SLATE = 'border-transparent !bg-[#4d608c] text-white'
+// Command Deck: dark glass cards (matches the app), role-colored dots + Add buttons.
+const SLATE = 'border border-white/10 !bg-white/[0.045] text-ink backdrop-blur-xl'
 const ROLE_CARDS: Array<{ role: Entry['role']; title: string; hint: string; dot: string; btn: string }> = [
   { role: 'Bar', title: 'Bartenders', hint: 'Add bartenders.', dot: 'bg-sky-300', btn: 'bg-navy' },
   { role: 'Expo', title: 'Expos', hint: 'Add expos.', dot: 'bg-orange-400', btn: 'bg-orange-600' },

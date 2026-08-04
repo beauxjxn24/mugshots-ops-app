@@ -140,7 +140,7 @@ export function AppShell() {
                 to={i.to}
                 className={({ isActive }) =>
                   `flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold ${
-                    isActive ? 'text-brand' : 'text-muted'
+                    isActive ? 'text-signal' : 'text-muted'
                   }`
                 }
               >
@@ -269,7 +269,7 @@ function Rail({
                 className={({ isActive }) =>
                   `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
                     isActive
-                      ? 'bg-brand text-white shadow-[0_6px_16px_-8px_rgba(184,134,11,0.9)]'
+                      ? 'bg-signal/15 text-signal font-semibold shadow-[0_0_22px_-6px_var(--color-signal)] ring-1 ring-inset ring-signal/35'
                       : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`
                 }
@@ -286,7 +286,7 @@ function Rail({
                         size={17}
                         strokeWidth={2.2}
                         className={`nav-ico shrink-0 ${idle}`}
-                        style={{ animationDelay: delay, color: isActive ? '#fff' : it.color }}
+                        style={{ animationDelay: delay, color: isActive ? '#4fe3c1' : it.color }}
                       />
                       {it.label}
                     </>
