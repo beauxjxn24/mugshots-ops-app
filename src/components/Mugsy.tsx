@@ -54,6 +54,45 @@ export function Mugsy() {
   const logRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Draggable launcher: the manager can pull the pill anywhere so it stops
+  // covering the phone's bottom nav. Position (viewport px, top-left of button)
+  // persists on-device; null means "use the default corner" (which already
+  // clears the bottom nav via CSS).
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
+    try { const r = localStorage.getItem('mugops:mugsyPos'); return r ? JSON.parse(r) : null } catch { return null }
+  })
+  const drag = useRef<{ dx: number; dy: number; sx: number; sy: number; moved: boolean } | null>(null)
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    drag.current = { dx: e.clientX - r.left, dy: e.clientY - r.top, sx: e.clientX, sy: e.clientY, moved: false }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current
+    if (!d) return
+    if (Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) > 6) d.moved = true
+    if (!d.moved) return
+    const w = e.currentTarget.offsetWidth, h = e.currentTarget.offsetHeight
+    const nx = Math.min(Math.max(6, e.clientX - d.dx), window.innerWidth - w - 6)
+    const ny = Math.min(Math.max(6, e.clientY - d.dy), window.innerHeight - h - 6)
+    setPos({ x: nx, y: ny })
+  }
+  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current
+    drag.current = null
+    if (!d) return
+    if (d.moved) {
+      // Snap horizontally to the nearest edge so it tucks out of the way.
+      const w = e.currentTarget.offsetWidth
+      const snapX = (pos?.x ?? 0) + w / 2 < window.innerWidth / 2 ? 6 : window.innerWidth - w - 6
+      const next = { x: snapX, y: pos?.y ?? 0 }
+      setPos(next)
+      try { localStorage.setItem('mugops:mugsyPos', JSON.stringify(next)) } catch { /* storage full */ }
+    } else {
+      setOpen(true) // it was a tap, not a drag
+    }
+  }
+
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [msgs, busy])
@@ -95,11 +134,18 @@ export function Mugsy() {
 
   return (
     <>
-      {/* Floating pill — prototype's red "✦ Ask Mugsy" */}
+      {/* Floating launcher — draggable; defaults to a corner that clears the
+          phone's bottom nav. Drag to move, tap to open. */}
       {!open && (
         <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 rounded-full border border-white/20 bg-[#B3202C] px-[18px] py-[13px] text-sm font-semibold text-white shadow-[0_14px_34px_-12px_rgba(179,32,44,0.55)] transition-colors hover:bg-[#9C1B26] print:hidden"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          aria-label="Ask Mugsy (drag to move)"
+          style={pos ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
+          className={`fixed z-[100] flex touch-none cursor-grab items-center gap-2 rounded-full border border-white/20 bg-[#B3202C] px-[18px] py-[13px] text-sm font-semibold text-white shadow-[0_14px_34px_-12px_rgba(179,32,44,0.55)] transition-colors hover:bg-[#9C1B26] active:cursor-grabbing print:hidden ${
+            pos ? '' : 'right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:right-6 lg:bottom-6'
+          }`}
         >
           <Sparkles size={15} /> Ask Mugsy
         </button>
