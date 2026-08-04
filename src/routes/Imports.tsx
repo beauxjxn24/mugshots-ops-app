@@ -16,6 +16,7 @@ import { logImport, useImportLog } from '../lib/importlog'
 import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
+import { toast } from '../lib/toast'
 import { useIsPhone } from '../lib/useIsPhone'
 import { CalendarPlus, PartyPopper, LineChart, Users, PieChart, Plus } from 'lucide-react'
 
@@ -111,7 +112,12 @@ export function Imports() {
     // Every read lands in the permanent import history.
     if (res.kind === 'unsupported') {
       logImport(file.name, `⚠ could not read${res.note ? ` — ${res.note}` : ''}`)
+      if (!fromZip) toast(`Couldn't read ${file.name}${res.note ? ` — ${res.note}` : ''}`, 'error')
     } else {
+      // Unmistakable "it landed" confirmation for a dropped file. Catering
+      // orders fire their own "Added to Catering" toast, so skip them here to
+      // avoid a double pop; zip siblings stay quiet (one drop = one toast).
+      if (!fromZip && !isCateringDoc(res.text)) toast(`✓ Imported ${file.name}`, 'success')
       const detected = isCountSheet(res.text)
         ? `inventory count sheet (${parseCountSheet(res.text).length} items) — review below`
         : isCategorySummary(res.text)
@@ -195,7 +201,10 @@ export function Imports() {
       // Data reports (CSV/TSV/TXT) and anything unzipped are ALWAYS re-imported:
       // their importers upsert by date, so re-dropping a sales summary / PMIX /
       // count sheet must refresh the numbers, never be skipped as "duplicate".
-      const reimportable = fromZip || /\.(csv|tsv|txt)$/i.test(file.name)
+      // ezCater / catering orders are re-importable too: the booking de-dupes by
+      // order # at the data layer, so re-dropping the SAME PDF safely re-adds a
+      // booking that was cleared — it must never be blocked as a "duplicate file".
+      const reimportable = fromZip || /\.(csv|tsv|txt)$/i.test(file.name) || /ezcater|catering/i.test(file.name)
       const h = await fileHash(file)
       const seen = reimportable ? null : findSeenFile(h)
       if (seen) {
@@ -205,6 +214,7 @@ export function Imports() {
           ...j,
         ])
         logImport(file.name, `⚠ duplicate of ${seen.name} (imported ${seen.at}) — skipped`)
+        toast(`Already imported ${seen.at} — skipped. Tap “Import anyway” to force it.`, 'error')
         continue
       }
       recordSeenFile(h, file.name)
@@ -1103,6 +1113,8 @@ function CateringImport({ text, fileName }: { text: string; fileName: string }) 
     recordCateringImport(fileName)
     setAdded(result)
     logImport(fileName, result === 'duplicate' ? `duplicate order #${form.orderNo ?? ''} — skipped` : `booking "${form.event.trim()}" → Catering`)
+    if (result === 'added') toast(`✓ Added to Catering — ${form.event.replace(/^ezCater\s*/i, '').trim()}`, 'success')
+    else toast(`Already on the Catering log — #${form.orderNo ?? ''}`, 'info')
   }
 
   // A dropped order IS the import — add it to Catering on sight (like every other
