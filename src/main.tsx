@@ -28,7 +28,7 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import { App } from './App'
 import { seedFlowoodHistory } from './lib/nightly'
-import { applyOwnerDrops } from './lib/ownerdata'
+import { applyOwnerDrops, purgeOwnerBookings } from './lib/ownerdata'
 import { cleanupCatalogNames } from './lib/catalog'
 import { seedCountSheet } from './lib/countsheet'
 
@@ -44,6 +44,7 @@ const safeBoot = (label: string, fn: () => void) => {
   }
 }
 safeBoot('seedFlowoodHistory', seedFlowoodHistory)
+safeBoot('purgeOwnerBookings', purgeOwnerBookings)
 safeBoot('applyOwnerDrops', applyOwnerDrops)
 safeBoot('cleanupCatalogNames', cleanupCatalogNames)
 safeBoot('seedCountSheet', seedCountSheet)

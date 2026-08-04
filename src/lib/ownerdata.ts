@@ -10,6 +10,33 @@ import type { Booking } from './catering'
 
 const STORE = 'mugshots|flowood'
 
+/**
+ * One-time: remove the catering bookings that earlier owner-drops injected
+ * (their ids start with `owner-`). The owner asked to clear them so real
+ * ezCater PDFs can be re-dropped fresh; the manager's own imports (id `c…`) and
+ * anything typed in are left untouched. Guarded so it runs once per device.
+ */
+export function purgeOwnerBookings(): void {
+  const FLAG = 'mugops:__ownerBookingsPurged'
+  try {
+    if (localStorage.getItem(FLAG)) return
+    for (const k of Object.keys(localStorage)) {
+      if (!/::catering:bookings$/.test(k)) continue
+      try {
+        const arr = JSON.parse(localStorage.getItem(k) || '[]')
+        if (!Array.isArray(arr)) continue
+        const kept = arr.filter((b) => !(typeof b?.id === 'string' && b.id.startsWith('owner-')))
+        if (kept.length !== arr.length) localStorage.setItem(k, JSON.stringify(kept))
+      } catch {
+        /* skip a corrupt key */
+      }
+    }
+    localStorage.setItem(FLAG, '1')
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function applyOwnerDrops(): void {
   const data = ownerDrops as unknown as {
     version: number
