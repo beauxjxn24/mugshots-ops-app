@@ -1,10 +1,14 @@
-import { useState } from 'react'
-import { Printer } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Printer, Paperclip, Link2, ExternalLink, FileText, X, Plus } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
 import { getCatalog, getFlags } from '../lib/catalog'
+import { saveDoc, openDoc } from '../lib/docs'
+
+interface DocLink { id: string; name: string; kind: 'link' | 'file'; url?: string; docId?: string }
+const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
 
 type Phase = 'Opening' | 'Closing' | 'Weekly'
 type SidworkData = Record<Role, Record<string, Section[]>>
@@ -43,6 +47,12 @@ export function Printables() {
         }
       />
       <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6 lg:p-8">
+        {/* Your real Mugshots documents — link or attach the actual files */}
+        <Documents />
+
+        <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted print:hidden">
+          Generate a sheet from live data
+        </div>
         <div className="flex flex-wrap gap-2 print:hidden">
           {SHEETS.map((s) => (
             <button
@@ -91,6 +101,92 @@ export function Printables() {
         </Card>
       </div>
     </>
+  )
+}
+
+/** Your actual documents — the real Mugshots sheets you print. Attach a PDF/
+ *  photo (kept on the device) or paste a link (Google Drive, etc.); tap to open
+ *  it in the native viewer, where you can print or save it. */
+function Documents() {
+  const [rawDocs, setDocs] = usePersistentState<DocLink[]>('printables:docs', [])
+  const docs = Array.isArray(rawDocs) ? rawDocs : []
+  const [name, setName] = useState('')
+  const [url, setUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const addLink = () => {
+    const n = name.trim(), u = url.trim()
+    if (!u) return
+    const href = /^https?:\/\//i.test(u) ? u : `https://${u}`
+    setDocs([...docs, { id: rid(), name: n || u.replace(/^https?:\/\//, '').slice(0, 40), kind: 'link', url: href }])
+    setName(''); setUrl('')
+  }
+  const onFiles = async (files?: FileList | null) => {
+    if (!files?.length) return
+    setBusy(true)
+    const next: DocLink[] = []
+    for (const f of Array.from(files)) {
+      const id = rid()
+      await saveDoc(id, f)
+      next.push({ id, name: name.trim() || f.name, kind: 'file', docId: id })
+    }
+    setDocs([...docs, ...next])
+    setName('')
+    setBusy(false)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+  const open = (d: DocLink) => {
+    if (d.kind === 'link' && d.url) window.open(d.url, '_blank', 'noopener')
+    else if (d.docId) void openDoc(d.docId)
+  }
+  const remove = (id: string) => setDocs(docs.filter((d) => d.id !== id))
+
+  return (
+    <div className="rounded-2xl border border-signal/20 bg-gradient-to-b from-signal/[0.06] to-transparent p-4 print:hidden">
+      <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-signal">
+        <FileText size={13} /> Your documents
+      </div>
+      <p className="mb-3 text-xs text-muted">Attach the real sheets you print, or paste a link to them. Tap one to open it and print or save.</p>
+
+      {docs.length > 0 && (
+        <div className="mb-3 space-y-1.5">
+          {docs.map((d) => (
+            <div key={d.id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+              {d.kind === 'file' ? <Paperclip size={14} className="shrink-0 text-muted" /> : <Link2 size={14} className="shrink-0 text-muted" />}
+              <button onClick={() => open(d)} className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-ink hover:text-signal">
+                {d.name}
+              </button>
+              <button onClick={() => open(d)} aria-label="Open" className="shrink-0 text-muted hover:text-signal"><ExternalLink size={15} /></button>
+              <button onClick={() => remove(d.id)} aria-label="Remove" className="shrink-0 text-muted/60 hover:text-down"><X size={15} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name (optional)"
+          className="w-40 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal"
+        />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addLink()}
+          placeholder="Paste a link (Google Drive…)"
+          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal"
+        />
+        <button onClick={addLink} disabled={!url.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-2 text-xs font-bold text-white disabled:opacity-40">
+          <Plus size={14} /> Link
+        </button>
+        <button onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white disabled:opacity-40">
+          <Paperclip size={14} /> {busy ? 'Saving…' : 'Attach file'}
+        </button>
+        <input ref={fileRef} type="file" accept="application/pdf,image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
+      </div>
+    </div>
   )
 }
 

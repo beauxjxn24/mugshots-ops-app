@@ -91,6 +91,7 @@ export const NAV: NavSection[] = [
       { to: '/invoices', label: 'Invoices', icon: ReceiptText, color: '#A78BFA', anim: ReceiptIcon },
       { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },
       { to: '/petty', label: 'Petty Cash', icon: Wallet, color: '#4ADE80', anim: WalletIcon },
+      { to: '/maintenance', label: 'Maintenance', icon: Wrench, color: '#94A3B8', anim: BoltIcon },
       { to: '/printables', label: 'Printables', icon: ReceiptText, color: '#94A3B8', anim: ScanDocIcon },
     ],
   },
@@ -106,9 +107,10 @@ export const NAV: NavSection[] = [
     ],
   },
   {
+    // Inventory is snoozed from the nav (still reachable at /inventory and via
+    // the catalog's Count toggle) to keep the menu streamlined.
     title: 'Supply',
     items: [
-      { to: '/inventory', label: 'Inventory', icon: Boxes, color: '#2DD4BF', anim: StackIcon },
       { to: '/catalog', label: 'Item Catalog', icon: Boxes, color: '#2DD4BF', anim: StackIcon },
     ],
   },
@@ -116,7 +118,6 @@ export const NAV: NavSection[] = [
     title: 'Management',
     items: [
       { to: '/costs', label: 'Costs', icon: DollarSign, color: '#4ADE80', anim: CoinIcon },
-      { to: '/maintenance', label: 'Maintenance', icon: Wrench, color: '#94A3B8', anim: BoltIcon },
       { to: '/period', label: 'Period Review', icon: BarChart3, color: '#A78BFA', anim: BarsIcon },
       { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays, color: '#60A5FA', anim: ClockIcon },
       { to: '/posted', label: 'Posted schedule', icon: CalendarCheck, color: '#34D399', anim: ClockIcon, staff: true },
@@ -167,7 +168,7 @@ export const bottomItems = (role: 'admin' | 'manager' | 'staff'): NavItem[] =>
     : [
         NAV_FLAT[0],
         NAV_FLAT.find((i) => i.to === '/imports')!,
-        NAV_FLAT.find((i) => i.to === '/inventory')!,
+        NAV_FLAT.find((i) => i.to === '/nightly')!,
         NAV_FLAT.find((i) => i.to === '/ordering')!,
         NAV_FLAT.find((i) => i.to === '/invoices')!,
       ]
