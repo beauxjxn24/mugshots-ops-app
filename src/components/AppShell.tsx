@@ -197,9 +197,13 @@ function BuildStamp() {
 function Brand() {
   return (
     <div className="mb-4 flex items-center gap-2.5 px-2">
-      <div className="grid size-9 place-items-center rounded-lg bg-brand text-white" aria-hidden>
-        <ConciergeBell size={19} />
-      </div>
+      {/* Free-floating bell — no box; a cyan glow keeps it feeling digital. */}
+      <ConciergeBell
+        size={26}
+        aria-hidden
+        className="shrink-0 text-signal drop-shadow-[0_0_10px_rgba(79,227,193,0.65)]"
+        strokeWidth={2}
+      />
       <div className="leading-tight">
         <div className="font-display text-[15px] font-bold tracking-wide text-white">THE PASS</div>
         <div className="text-[9.5px] uppercase tracking-wider text-white/45">Daily Ops</div>
