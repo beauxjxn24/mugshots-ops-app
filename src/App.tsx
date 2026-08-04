@@ -12,6 +12,7 @@ import { Imports } from './routes/Imports'
 import { Connections } from './routes/Connections'
 import { Tipshare } from './routes/Tipshare'
 import { Prep } from './routes/Prep'
+import { PrepToday } from './routes/PrepToday'
 import { Ordering } from './routes/Ordering'
 import { Inventory } from './routes/Inventory'
 import { Sidework } from './routes/Sidework'
@@ -53,6 +54,7 @@ const router = createHashRouter([
       // Sections still being rebuilt render a consistent placeholder.
       { path: 'tipshare', element: <Tipshare /> },
       { path: 'prep', element: <Prep /> },
+      { path: 'prep-today', element: <PrepToday /> },
       { path: 'ordering', element: <Ordering /> },
       { path: 'inventory', element: <Inventory /> },
       { path: 'catalog', element: <Catalog /> },
