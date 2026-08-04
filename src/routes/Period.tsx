@@ -67,8 +67,12 @@ export function Period() {
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
 
   const netToDate = inPeriod.reduce((s, n) => s + n.netSales, 0)
-  const laborSum = inPeriod.reduce((s, n) => s + (n.labor ?? 0), 0)
-  const laborPct = netToDate > 0 && laborSum > 0 ? (laborSum / netToDate) * 100 : null
+  // Labor % over nights that have BOTH labor and net (never total labor ÷ a
+  // smaller net from days that only imported sales — that inflates the rate).
+  const laborNights = inPeriod.filter((n) => (n.labor ?? 0) > 0 && n.netSales > 0)
+  const laborSum = laborNights.reduce((s, n) => s + (n.labor ?? 0), 0)
+  const laborNet = laborNights.reduce((s, n) => s + n.netSales, 0)
+  const laborPct = laborNet > 0 && laborSum > 0 ? (laborSum / laborNet) * 100 : null
   const cashOU = inPeriod.reduce((s, n) => s + (n.overUnder ?? 0), 0)
   const hasOU = inPeriod.some((n) => n.overUnder != null)
 
@@ -91,7 +95,9 @@ export function Period() {
     const we = shiftDays(ws, 6)
     const wn = inPeriod.filter((n) => n.date >= ws && n.date <= we)
     const net = wn.reduce((s, n) => s + n.netSales, 0)
-    const lab = wn.reduce((s, n) => s + (n.labor ?? 0), 0)
+    const labWn = wn.filter((n) => (n.labor ?? 0) > 0 && n.netSales > 0)
+    const lab = labWn.reduce((s, n) => s + (n.labor ?? 0), 0)
+    const labNet = labWn.reduce((s, n) => s + n.netSales, 0)
     const ou = wn.reduce((s, n) => s + (n.overUnder ?? 0), 0)
     const pairs = wn
       .map((n) => ({ cur: n.netSales, ly: byDate.get(shiftDays(n.date, -364))?.netSales }))
@@ -105,7 +111,7 @@ export function Period() {
       ws,
       we,
       net,
-      laborPct: net > 0 && lab > 0 ? (lab / net) * 100 : null,
+      laborPct: labNet > 0 && lab > 0 ? (lab / labNet) * 100 : null,
       ou,
       hasOU: wn.some((n) => n.overUnder != null),
       vsLy: wVsLy,

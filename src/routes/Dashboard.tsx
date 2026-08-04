@@ -396,49 +396,59 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
   const hasLW = cols.some((c) => c.priorKind === 'lw')
   const hasPrior = hasLY || hasLW
   const priorWord = hasLY && hasLW ? 'Last yr / wk' : hasLY ? 'Last year' : 'Last week'
-  const STRIPE = 'repeating-linear-gradient(45deg, #cbd5e1 0 5px, #94a3b8 5px 10px)'
+  const hasForecast = cols.some((c) => c.actual == null && c.forecast != null)
 
   return (
     <div>
       {currentWeekMode && hasPrior && (
-        <div className="mb-2 flex flex-wrap items-center justify-end gap-2.5 text-[11px] text-muted">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-3.5 rounded-sm border border-slate-400" style={{ background: STRIPE }} />
-            {priorWord}
+        <div className="mb-3 flex flex-wrap items-center justify-end gap-3 text-[11px] font-medium text-muted">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-slate-300" /> {priorWord}
           </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-3.5 rounded-sm bg-brand" /> This year / forecast
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-brand" /> This year
           </span>
+          {hasForecast && (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-[3px] border border-dashed border-brand/60 bg-brand/15" /> Forecast
+            </span>
+          )}
         </div>
       )}
 
-      <div className="flex items-end justify-around gap-1.5" style={{ height: H + 34 }}>
+      <div className="relative flex items-end justify-around gap-2 sm:gap-3" style={{ height: H + 22 }}>
+        {/* recessive gridlines — a quiet magnitude reference behind the marks */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{ height: H }}>
+          {[0.5, 1].map((fr) => (
+            <div key={fr} className="absolute inset-x-0 border-t border-black/[0.055]" style={{ bottom: `${fr * 100}%` }} />
+          ))}
+        </div>
         {cols.map((c, ci) => {
           const aVal = c.actual ?? c.forecast
-          const aH = aVal ? Math.max(6, (aVal / max) * H) : 0
-          const pH = c.prior ? Math.max(6, (c.prior / max) * H) : 0
+          const aH = aVal ? Math.max(5, (aVal / max) * H) : 0
+          const pH = c.prior ? Math.max(5, (c.prior / max) * H) : 0
           return (
-            <div key={c.date} className="flex min-w-0 flex-1 flex-col items-center justify-end">
-              {/* value labels above each pillar — last week (left), forecast (right) */}
-              <div className="mb-1 flex items-end justify-center gap-1 font-mono text-[10px] font-semibold leading-none sm:text-[11px]">
-                {c.prior != null && <span className="text-slate-500">${(c.prior / 1000).toFixed(1)}k</span>}
+            <div key={c.date} className="relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end">
+              {/* value labels — last week (left), this year / forecast (right) */}
+              <div className="mb-1.5 flex items-end justify-center gap-1.5 text-[10px] font-semibold leading-none tabular-nums sm:text-[11px]">
+                {c.prior != null && <span className="text-slate-400">${(c.prior / 1000).toFixed(1)}k</span>}
                 {aVal != null && (
-                  <span className={c.actual != null ? 'text-ink' : 'text-muted'}>
+                  <span className={c.actual != null ? 'text-ink' : 'text-brand-600/70'}>
                     {c.actual == null ? '~' : ''}${(aVal / 1000).toFixed(1)}k
                   </span>
                 )}
               </div>
 
-              {/* the two pillars — LAST WEEK on the left, THIS YEAR / FORECAST on the right */}
-              <div className="flex items-end justify-center gap-1">
+              {/* the pair — LAST WEEK on the left, THIS YEAR / FORECAST on the right */}
+              <div className="flex items-end justify-center gap-[3px]">
                 {c.prior != null ? (
                   <div
-                    className="rise w-4 rounded-t-[3px] border border-slate-400 sm:w-5"
-                    style={{ height: pH, '--i': ci, background: STRIPE } as React.CSSProperties}
+                    className="rise w-3.5 rounded-t-md bg-slate-300 sm:w-4"
+                    style={{ height: pH, '--i': ci } as React.CSSProperties}
                     title={`${c.date} · ${c.priorKind === 'ly' ? 'last year' : 'last week'} ${money(c.prior)}`}
                   />
                 ) : (
-                  <div className="w-4 sm:w-5" />
+                  <div className="w-3.5 sm:w-4" />
                 )}
                 {aVal != null ? (
                   c.actual != null ? (
@@ -448,19 +458,19 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
                       aria-label={`${c.date} this year ${money(c.actual)}`}
                     >
                       <div
-                        className="rise w-4 rounded-t-[3px] bg-brand transition-all hover:bg-brand-600 hover:ring-2 hover:ring-brand/30 sm:w-5"
+                        className="rise w-3.5 rounded-t-md bg-gradient-to-t from-brand to-brand-600 shadow-[0_1px_3px_-1px_rgba(184,134,11,0.5)] transition-all hover:brightness-110 hover:ring-2 hover:ring-brand/25 sm:w-4"
                         style={{ height: aH, '--i': ci } as React.CSSProperties}
                       />
                     </Link>
                   ) : (
                     <div
-                      className="rise w-4 rounded-t-[3px] border-2 border-dashed border-brand/50 bg-brand/10 sm:w-5"
+                      className="rise w-3.5 rounded-t-md border border-dashed border-brand/50 bg-brand/15 sm:w-4"
                       style={{ height: aH, '--i': ci } as React.CSSProperties}
                       title={`${c.date} · forecast ${money(aVal)}`}
                     />
                   )
                 ) : (
-                  <div className="w-4 sm:w-5" />
+                  <div className="w-3.5 sm:w-4" />
                 )}
               </div>
             </div>
@@ -468,34 +478,33 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
         })}
       </div>
 
-      <div className="mt-1.5 flex justify-around gap-1.5 border-t border-black/5 pt-1.5">
+      <div className="mt-2 flex justify-around gap-2 border-t border-black/10 pt-2">
         {cols.map((c) => (
-          <div key={c.date} className="flex-1 text-center">
-            <div className="text-[12px] font-bold text-ink/80">{weekday(c.date)}</div>
-            <div className="text-[11px] text-muted">{c.date.slice(5).replace('-', '/')}</div>
+          <div key={c.date} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-ink/70">{weekday(c.date)}</div>
+            <div className="text-[10px] text-muted">{c.date.slice(5).replace('-', '/')}</div>
             {c.delta != null ? (
-              <div className={`text-[12px] font-bold ${c.delta >= 0 ? 'text-up' : 'text-down'}`}>
-                {c.delta >= 0 ? '▲+' : '▼−'}
-                {Math.abs(c.delta).toFixed(0)}%
-              </div>
+              <span className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-bold tabular-nums ${c.delta >= 0 ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
+                {c.delta >= 0 ? '▲' : '▼'}{Math.abs(c.delta).toFixed(0)}%
+              </span>
             ) : c.forecast != null ? (
-              <div className="text-[11px] font-semibold text-muted">forecast</div>
+              <span className="text-[10px] font-semibold text-brand-600/70">forecast</span>
             ) : c.prior != null && c.actual == null ? (
-              <div className="text-[11px] font-semibold text-muted">{c.priorKind === 'ly' ? 'last yr' : 'last wk'}</div>
+              <span className="text-[10px] font-semibold text-muted">{c.priorKind === 'ly' ? 'last yr' : 'last wk'}</span>
             ) : (
-              <div className="text-[12px] text-muted">—</div>
+              <span className="text-[11px] text-muted">—</span>
             )}
           </div>
         ))}
       </div>
 
-      <p className="mt-2 text-center text-[11px] text-muted">
+      <p className="mt-2.5 text-center text-[11px] text-muted">
         {hasLY && !hasLW
-          ? 'Striped (left) = same day last year · gold (right) = this year / forecast. ▲▼ compares them.'
+          ? 'Slate (left) = same day last year · gold (right) = this year / forecast. ▲▼ compares them.'
           : hasLW && !hasLY
-            ? 'Striped (left) = same day last week · gold (right) = this year / forecast (dashed = projected). ▲▼ compares them.'
+            ? 'Slate (left) = same day last week · gold (right) = this year / forecast (dashed = projected). ▲▼ compares them.'
             : hasPrior
-              ? 'Striped (left) = last year where that history exists, otherwise last week · gold (right) = this year / forecast.'
+              ? 'Slate (left) = last year where that history exists, otherwise last week · gold (right) = this year / forecast.'
               : 'Comparison pillars appear once there are matching prior days.'}
       </p>
     </div>

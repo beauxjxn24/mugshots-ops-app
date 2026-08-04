@@ -227,19 +227,29 @@ export function Imports() {
   // the page, including on the box. (A second onDrop on the box itself made
   // every drop process twice — two tiles per file.)
   useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout>
     const onWinDrop = (e: DragEvent) => {
+      clearTimeout(hideTimer)
+      setDrag(false)
       if (e.dataTransfer?.files?.length) {
         e.preventDefault()
         handleFiles(e.dataTransfer.files)
-        setDrag(false)
       }
     }
+    // dragover fires continuously while a file hovers the window; keep the
+    // highlight on and refresh a short timer. When the drag leaves (events
+    // stop), the timer fires and clears it — no flicker, no stuck overlay.
     const onWinDragOver = (e: DragEvent) => {
-      if (e.dataTransfer?.types?.includes('Files')) setDrag(true)
+      if (!e.dataTransfer?.types?.includes('Files')) return
+      e.preventDefault()
+      setDrag(true)
+      clearTimeout(hideTimer)
+      hideTimer = setTimeout(() => setDrag(false), 130)
     }
     window.addEventListener('drop', onWinDrop)
     window.addEventListener('dragover', onWinDragOver)
     return () => {
+      clearTimeout(hideTimer)
       window.removeEventListener('drop', onWinDrop)
       window.removeEventListener('dragover', onWinDragOver)
     }
@@ -247,6 +257,20 @@ export function Imports() {
 
   return (
     <>
+      {/* Whole-window drop highlight — unmistakable feedback that a dragged file
+          is being caught, wherever on the page you let go. */}
+      {drag && (
+        <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-navy/45 p-6 backdrop-blur-[2px] animate-[fadein_.12s_ease]">
+          <div className="flex flex-col items-center gap-3 rounded-3xl border-4 border-dashed border-white/85 bg-white/10 px-10 py-9 text-center shadow-2xl">
+            <CloudUpload size={52} className="animate-bounce text-white" />
+            <div className="font-display text-2xl font-semibold text-white">Drop to import</div>
+            <div className="max-w-xs text-sm font-medium text-white/85">
+              Sales, PMIX, labor, invoices, catering — release anywhere and we'll sort it out
+            </div>
+          </div>
+          <style>{`@keyframes fadein{from{opacity:0}to{opacity:1}}`}</style>
+        </div>
+      )}
       <PageHeader
         title="Imports"
         subtitle="Drop an invoice, order guide, price sheet, or ezCater order — PDF or a photo"
@@ -1078,6 +1102,17 @@ function CateringImport({ text, fileName }: { text: string; fileName: string }) 
     setAdded(result)
     logImport(fileName, result === 'duplicate' ? `duplicate order #${form.orderNo ?? ''} — skipped` : `booking "${form.event.trim()}" → Catering`)
   }
+
+  // A dropped order IS the import — add it to Catering on sight (like every other
+  // report), as long as it read a date. Only a ticket missing its date waits for
+  // the manager to fill it in below. De-dupe by order # still applies.
+  const ran = useRef(false)
+  useEffect(() => {
+    if (ran.current || !form.event.trim() || !form.date) return
+    ran.current = true
+    save()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (added) {
     return (
