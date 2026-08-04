@@ -142,9 +142,19 @@ export function parseCatering(text: string, fileName = ''): Omit<Booking, 'id'> 
   const orderNo =
     text.match(/order\s*(?:#|no\.?|number)?\s*:?\s*([A-Z0-9][A-Z0-9-]{2,}\d[A-Z0-9-]*|[A-Z0-9-]*\d[A-Z0-9-]{2,})/i) ||
     text.match(/#\s*((?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{3,})/)
+  // ezCater tickets put the CUSTOMER name on the line right after "Order #…"
+  // (e.g. "Baptist Madison Rheumatology") — grab it directly, since many real
+  // customer names don't contain the keywords the fallback scan looks for.
+  const ordIdx = lines.findIndex((l) => /order\s*#/i.test(l))
+  const afterOrder = ordIdx >= 0 ? (lines[ordIdx + 1] ?? '').trim() : ''
+  const ezCompany =
+    afterOrder && /[A-Za-z]{3,}/.test(afterOrder) && !/deliver|ezcater|support|^\(|^\d|^(mon|tue|wed|thu|fri|sat|sun)/i.test(afterOrder)
+      ? afterOrder.slice(0, 50)
+      : ''
   let company =
     labeled?.[1]?.trim() ||
-    lines.find((l) => /\b(llc|inc|school|church|corp|group|team|office|catering|center|centre|clinic|care|medical|dental|hospital|bank|university|academy)\b/i.test(l))?.slice(0, 50) ||
+    ezCompany ||
+    lines.find((l) => /\b(llc|inc|school|church|corp|group|team|office|catering|center|centre|clinic|care|medical|dental|hospital|bank|university|academy|rheumatology|endocrine|orthopedic|pediatric|associates|partners|realty|insurance|law|firm)\b/i.test(l))?.slice(0, 50) ||
     ''
   // OCR merges the ticket's columns, so junk can trail the name ("… of
   // Mississippi as sate ap"). Names capitalize their words — cut at the
