@@ -1,5 +1,6 @@
 import * as pdfjs from 'pdfjs-dist'
 import { cleanItemLine, tidyName } from './clean'
+import { isCateringDoc, parseCatering } from './catering'
 
 // Self-hosted worker with polyfills (see public/pdfjs/worker-polyfilled.mjs) —
 // pdf.js's renderer needs JS APIs some browsers don't ship yet.
@@ -194,6 +195,15 @@ export async function readFile(
   try {
     if (type === 'application/pdf' || ext === 'pdf') {
       let text = await readPdf(file)
+      // ezCater / catering tickets carry the WHOLE booking — order #, customer,
+      // and date — as plain words in the text layer (only the dollar DIGITS are
+      // blanked). The booking needs none of those digits, so return on sight
+      // instead of gating it behind ~30s of OCR that can crawl or fail on a
+      // phone. That 30s wait is why a dropped order "never showed up." OCR still
+      // runs for other PDFs below; here the order lands in about a second.
+      if (isCateringDoc(text) && parseCatering(text, name).date) {
+        return { fileName: name, kind: 'pdf', text, lineItems: parseLineItems(text) }
+      }
       let note: string | undefined
       // Hidden-digit detection (prototype spec): a PDF whose text layer has
       // labels but almost no digits (ezCater), or no text at all (a scan),
