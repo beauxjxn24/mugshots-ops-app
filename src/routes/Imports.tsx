@@ -1683,13 +1683,14 @@ interface DailyReport {
   match: string[]
 }
 const DEFAULT_DAILY_REPORTS: DailyReport[] = [
-  { id: 'sales', label: 'Daily sales summary', hint: 'Toast → Sales Summary (single day)', match: ['sales summary', 'sales by day', 'category mix', 'nights →'] },
+  { id: 'sales', label: 'Sales Summary', hint: 'Toast → Sales Summary (one zip — fills net, category, discounts & cash)', match: ['sales summary', 'sales by day', 'category mix', 'nights →', 'net sales', 'cash summary', 'discount'] },
+  { id: 'labor', label: 'Labor cost breakdown', hint: 'Toast → Labor cost by day', match: ['labor'] },
   { id: 'pmix', label: 'Product mix (PMIX)', hint: 'Toast → Product Mix', match: ['pmix', 'product mix', 'productmix'] },
-  { id: 'labor', label: 'Labor report', hint: 'Toast → Labor cost by day', match: ['labor'] },
-  { id: 'cash', label: 'Cash summary', hint: 'Toast → Cash summary (expected cash)', match: ['expected cash', 'cash summary'] },
-  { id: 'discounts', label: 'Discounts', hint: 'Toast → Menu Item Discounts (comps/promos)', match: ['discount'] },
   { id: 'invoices', label: 'Invoices received', hint: 'Snap or drop each delivery', match: ['invoice', 'received', 'receiving'] },
 ]
+// Boxes retired when the Sales Summary zip took over cash + discounts as its own
+// files — prune them from managers who saw the older, longer list.
+const RETIRED_REPORT_IDS = ['cash', 'discounts']
 
 /** Daily-reports tracker: one box per report, ticked when it's been dropped
  *  today (matched against the import log). Editable so the list is a record of
@@ -1701,12 +1702,14 @@ function DailyReports() {
   const [adding, setAdding] = useState('')
   const stored = Array.isArray(reports) ? reports : DEFAULT_DAILY_REPORTS
   // Surface any new default box (e.g. Labor) for installs made before it existed,
+  // and drop retired ones (cash/discounts now ride inside the Sales Summary zip),
   // without disturbing the manager's own edits/order.
   const list = useMemo(() => {
-    const missing = DEFAULT_DAILY_REPORTS.filter((d) => !stored.some((s) => s.id === d.id))
-    if (missing.length === 0) return stored
-    const salesIdx = stored.findIndex((s) => s.id === 'sales')
-    const out = [...stored]
+    const pruned = stored.filter((s) => !RETIRED_REPORT_IDS.includes(s.id))
+    const missing = DEFAULT_DAILY_REPORTS.filter((d) => !pruned.some((s) => s.id === d.id))
+    if (missing.length === 0) return pruned
+    const salesIdx = pruned.findIndex((s) => s.id === 'sales')
+    const out = [...pruned]
     out.splice(salesIdx >= 0 ? salesIdx + missing.length : out.length, 0, ...missing)
     return out
   }, [stored])

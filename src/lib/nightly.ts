@@ -41,7 +41,7 @@ export interface Night {
   // Raw Toast report tables, stored so the Nightly page can mirror each report
   // card exactly (imported, read-only).
   discountLines?: { name: string; count?: number; amount: number }[]
-  categoryRows?: { name: string; items: number; net: number; gross: number }[]
+  categoryRows?: CategoryRow[]
   diningRows?: { name: string; orders: number; net: number; gross: number }[]
   // Toast "Sales breakdown" (Dining Option × Sales Category cross-tab) — the
   // richer source with qty / net / discount / gross / tax and an expandable
@@ -62,6 +62,17 @@ export interface BreakdownRow {
   gross: number
   tax: number
   children?: BreakdownRow[]
+}
+
+/** One row of a Toast "Sales category summary" (the standard, non-cross-tab
+ *  report inside every Sales Summary export). */
+export interface CategoryRow {
+  name: string
+  items: number
+  net: number
+  gross: number
+  disc?: number
+  tax?: number
 }
 export interface CashSummary {
   expClose: number
@@ -149,7 +160,7 @@ export function applyCatMixToNights(mix: CatMix): number {
  * Full category table (per category: items, net, gross) — mirrors the Toast
  * "Sales category summary" report row-for-row for the Nightly card.
  */
-export function parseCategoryRows(text: string): { name: string; items: number; net: number; gross: number }[] {
+export function parseCategoryRows(text: string): CategoryRow[] {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
   if (lines.length < 2) return []
   const cols = splitCsv(lines[0]).map((h) => h.toLowerCase().trim())
@@ -157,8 +168,10 @@ export function parseCategoryRows(text: string): { name: string; items: number; 
   const iItems = cols.findIndex((h) => h === 'items' || h.includes('item'))
   const iNet = cols.findIndex((h) => h.includes('net sales')) >= 0 ? cols.findIndex((h) => h.includes('net sales')) : cols.findIndex((h) => h === 'net')
   const iGross = cols.findIndex((h) => h.includes('gross sales')) >= 0 ? cols.findIndex((h) => h.includes('gross sales')) : cols.findIndex((h) => h === 'gross')
+  const iDisc = cols.findIndex((h) => h.includes('discount'))
+  const iTax = cols.findIndex((h) => h.includes('tax'))
   if (iCat < 0 || iNet < 0) return []
-  const out: { name: string; items: number; net: number; gross: number }[] = []
+  const out: CategoryRow[] = []
   for (let r = 1; r < lines.length; r++) {
     const c = splitCsv(lines[r])
     const name = (c[iCat] ?? '').trim()
@@ -166,13 +179,15 @@ export function parseCategoryRows(text: string): { name: string; items: number; 
     const net = Math.round(num(c[iNet] ?? '') * 100) / 100
     const gross = iGross >= 0 ? Math.round(num(c[iGross] ?? '') * 100) / 100 : 0
     const items = iItems >= 0 ? Math.round(num(c[iItems] ?? '')) : 0
+    const disc = iDisc >= 0 ? Math.round(num(c[iDisc] ?? '') * 100) / 100 : 0
+    const tax = iTax >= 0 ? Math.round(num(c[iTax] ?? '') * 100) / 100 : 0
     if (net === 0 && gross === 0 && items === 0) continue
-    out.push({ name, items, net, gross })
+    out.push({ name, items, net, gross, disc, tax })
   }
   return out
 }
 /** Store the full category table on a night (read-only mirror of the report). */
-export function applyCategoryRows(rows: { name: string; items: number; net: number; gross: number }[], date: string): string | null {
+export function applyCategoryRows(rows: CategoryRow[], date: string): string | null {
   if (!date || !rows.length) return null
   const nights = getNights()
   const i = nights.findIndex((n) => n.date === date)

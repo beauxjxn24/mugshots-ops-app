@@ -220,9 +220,8 @@ export function Nightly() {
               </ReportCard>
             </div>
 
-            {/* Wide expandable breakdowns */}
+            {/* Wide expandable breakdown */}
             <CategoryCard n={vn} />
-            <DiningCard n={vn} />
 
             {/* Discount + Cash */}
             <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
@@ -500,20 +499,13 @@ function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstC
 /** Category rows for the card — prefer the rich breakdown, else legacy fields. */
 function categoryRowsFor(n: Night): BreakdownRow[] {
   if (n.catBreakdown?.length) return n.catBreakdown
-  if (n.categoryRows?.length) return n.categoryRows.map((c) => ({ name: c.name, qty: c.items, net: c.net, disc: 0, gross: c.gross, tax: 0 }))
+  if (n.categoryRows?.length)
+    return n.categoryRows.map((c) => ({ name: c.name, qty: c.items, net: c.net, disc: c.disc ?? 0, gross: c.gross, tax: c.tax ?? 0 }))
   const split: [string, number][] = [['Food', n.food ?? 0], ['NA Beverage', n.na ?? 0], ['Liquor', n.liquor ?? 0], ['Beer', n.beer ?? 0], ['Wine', n.wine ?? 0]]
   return split.filter(([, v]) => v > 0).map(([name, net]) => ({ name, qty: 0, net, disc: 0, gross: 0, tax: 0 }))
 }
-function diningRowsFor(n: Night): BreakdownRow[] {
-  if (n.dineBreakdown?.length) return n.dineBreakdown
-  if (n.diningRows?.length) return n.diningRows.map((d) => ({ name: d.name, qty: d.orders, net: d.net, disc: 0, gross: d.gross, tax: 0 }))
-  return []
-}
 function CategoryCard({ n }: { n: Night }) {
-  return <BreakdownCard title="Sales by Sales Category" firstCol="Sales Category" rows={categoryRowsFor(n)} empty="Drop the Toast Sales breakdown (or Sales category summary) on Imports to fill this." />
-}
-function DiningCard({ n }: { n: Night }) {
-  return <BreakdownCard title="Sales by Dining Option" firstCol="Dining Option" rows={diningRowsFor(n)} empty="Drop the Toast Sales breakdown (or Dining options summary) on Imports to fill this." />
+  return <BreakdownCard title="Sales by Sales Category" firstCol="Sales Category" rows={categoryRowsFor(n)} empty="Drop the Toast Sales Summary on Imports to fill this." />
 }
 
 /** Discount Summary — Discount Name · Count · Amount · % of net. */
