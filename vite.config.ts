@@ -26,9 +26,9 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
       manifest: {
         id: '/',
-        name: 'Mugshots Daily Ops',
-        short_name: 'Mugshots',
-        description: 'Daily operations for Mugshots Grill & Bar — sales, labor, ordering, prep and checklists.',
+        name: 'The Pass',
+        short_name: 'The Pass',
+        description: 'Restaurant daily ops — sales, labor, ordering, prep and checklists, all in one place.',
         theme_color: '#070b13',
         background_color: '#070b13',
         display: 'standalone',

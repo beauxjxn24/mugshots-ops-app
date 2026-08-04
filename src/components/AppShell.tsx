@@ -97,7 +97,7 @@ export function AppShell() {
         >
           ☰
         </button>
-        <span className="font-display font-semibold">Mugshots Ops</span>
+        <span className="font-display font-semibold">The Pass</span>
         <span className="ml-auto text-xs text-white/50">{current?.label}</span>
       </header>
 
@@ -192,17 +192,16 @@ function BuildStamp() {
   )
 }
 
+/** Product brand — the store itself shows in the switcher right below. */
 function Brand() {
   return (
     <div className="mb-4 flex items-center gap-2.5 px-2">
-      <div className="grid size-9 place-items-center rounded-lg bg-brand font-display text-lg font-semibold text-white">
-        M
+      <div className="grid size-9 place-items-center rounded-lg bg-brand font-display text-lg font-semibold text-white" aria-hidden>
+        ⤳
       </div>
       <div className="leading-tight">
-        <div className="font-display text-[13px] font-semibold tracking-wide text-white">
-          MUGSHOTS GRILL &amp; BAR
-        </div>
-        <div className="text-[9.5px] uppercase tracking-wider text-white/45">Flowood, MS</div>
+        <div className="font-display text-[15px] font-bold tracking-wide text-white">THE PASS</div>
+        <div className="text-[9.5px] uppercase tracking-wider text-white/45">Restaurant ops · daily</div>
       </div>
     </div>
   )

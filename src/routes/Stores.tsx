@@ -252,7 +252,7 @@ export function Stores() {
       const data: Record<string, string> = parsed.data ?? parsed
       const keys = Object.keys(data).filter((k) => k.startsWith('mugops:'))
       if (keys.length === 0) {
-        alert('That backup has no Mugshots Ops data in it.')
+        alert('That backup has no data from The Pass in it.')
         return false
       }
       if (
