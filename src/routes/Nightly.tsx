@@ -129,11 +129,11 @@ export function Nightly() {
         }
       />
 
-      <div className="mx-auto max-w-6xl space-y-3.5 p-4 sm:p-5 lg:p-6">
+      <div className="mx-auto max-w-6xl space-y-2.5 p-3 sm:p-4 lg:p-5">
         {/* Date selector — which night's reports are on screen */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="font-sans text-2xl font-bold tracking-tight text-ink">{fmtDate(date)}</div>
+            <div className="font-sans text-xl font-bold tracking-tight text-ink">{fmtDate(date)}</div>
             <div className="text-xs font-medium text-muted">
               {vn ? 'Imported from Toast — read-only' : 'No reports imported for this day yet'}
             </div>
@@ -197,7 +197,7 @@ export function Nightly() {
             )}
 
             {/* Net Sales + Labor */}
-            <div className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-2.5 lg:grid-cols-2">
               <NetSalesCard n={vn} />
               <ReportCard title="Labor" subtitle={`target ≤ ${targets.laborPct}% of net`}>
                 <div>
@@ -224,7 +224,7 @@ export function Nightly() {
             <CategoryCard n={vn} />
 
             {/* Discount + Cash */}
-            <div className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-2.5 lg:grid-cols-2">
               <DiscountCard n={vn} />
               {vn.cash ? (
                 <CashCard n={vn} />
@@ -361,7 +361,7 @@ export function Nightly() {
 function ReportCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <Card className="overflow-hidden p-0">
-      <div className="flex items-baseline justify-between gap-2 bg-navy px-4 py-2">
+      <div className="flex items-baseline justify-between gap-2 bg-navy px-4 py-1.5">
         <h3 className="font-sans text-sm font-bold tracking-wide text-white">{title}</h3>
         {subtitle && <span className="text-[11px] font-medium text-white/55">{subtitle}</span>}
       </div>
@@ -373,7 +373,7 @@ function ReportCard({ title, subtitle, children }: { title: string; subtitle?: s
 /** A single label→value line (Net Sales + Cash cards), zebra-striped. */
 function LineRow({ label, value, tone, strong, zebra, info }: { label: string; value: string; tone?: 'blue' | 'muted' | 'up' | 'down'; strong?: boolean; zebra?: boolean; info?: boolean }) {
   return (
-    <div className={`flex items-baseline justify-between gap-3 px-4 py-2 ${zebra ? 'bg-white/[0.02]' : ''}`}>
+    <div className={`flex items-baseline justify-between gap-3 px-4 py-1.5 ${zebra ? 'bg-white/[0.02]' : ''}`}>
       <span className={`flex items-center gap-1.5 text-sm ${strong ? 'font-bold text-ink' : 'text-ink/85'}`}>
         {label}
         {info && <span className="grid size-3.5 place-items-center rounded-full border border-white/25 text-[8px] text-muted">i</span>}
@@ -389,8 +389,8 @@ function LineRow({ label, value, tone, strong, zebra, info }: { label: string; v
   )
 }
 
-const dh = 'px-3 py-1.5 text-right text-[10px] font-extrabold uppercase tracking-wide text-muted'
-const dc = 'px-3 py-1.5 text-right font-sans tabular-nums'
+const dh = 'px-3 py-1 text-right text-[10px] font-extrabold uppercase tracking-wide text-muted'
+const dc = 'px-3 py-1 text-right font-sans tabular-nums'
 
 /** Net Sales Summary — Gross − discounts − refunds = Net (blue negatives). */
 function NetSalesCard({ n }: { n: Night }) {
@@ -438,7 +438,7 @@ function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstC
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="px-4 py-1.5 text-left text-[10px] font-extrabold uppercase tracking-wide text-muted">{firstCol}</th>
+                <th className="px-4 py-1 text-left text-[10px] font-extrabold uppercase tracking-wide text-muted">{firstCol}</th>
                 <th className={dh}>Item Qty</th>
                 <th className={dh}>Net Sales</th>
                 <th className={dh}>Discount</th>
@@ -456,7 +456,7 @@ function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstC
                       onClick={() => kids.length && toggle(r.name)}
                       className={`border-b border-white/5 ${kids.length ? 'cursor-pointer hover:bg-white/[0.04]' : ''} ${ri % 2 ? 'bg-white/[0.02]' : ''}`}
                     >
-                      <td className="px-4 py-1.5 text-ink/90">
+                      <td className="px-4 py-1 text-ink/90">
                         <span className="inline-flex items-center gap-1.5">
                           {kids.length ? (
                             <span className={`text-[9px] text-signal transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
@@ -489,7 +489,7 @@ function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstC
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-white/15 bg-white/[0.04] font-bold text-ink">
-                <td className="px-4 py-2">Total</td>
+                <td className="px-4 py-1.5">Total</td>
                 <td className={`${dc}`}>{int(tot.qty)}</td>
                 <td className={`${dc}`}>{money2(tot.net)}</td>
                 <td className={`${dc}`}>{money2(tot.disc)}</td>
