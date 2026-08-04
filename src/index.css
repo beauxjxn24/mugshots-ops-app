@@ -1,12 +1,32 @@
 @import 'tailwindcss';
 
 /* ============================================================
+   Geist — Vercel's typeface (self-hosted, variable, offline-safe).
+   Sans for everything, Mono for the numbers → the modern "command
+   deck" tech look. One variable file per family covers all weights.
+   ============================================================ */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/GeistVariable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/GeistMonoVariable.woff2') format('woff2');
+}
+
+/* ============================================================
    Mugshots Ops — design system (Tailwind v4, CSS-first theme)
    ============================================================ */
 @theme {
-  --font-display: 'Spectral', Georgia, serif;
-  --font-sans: 'Hanken Grotesque', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'Geist', system-ui, sans-serif;
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
 
   /* ---- COMMAND DECK — dark, cyan+gold, terminal-luxury ---- */
   --color-brand: #e4b84c;      /* gold — primary accent / key numbers */
