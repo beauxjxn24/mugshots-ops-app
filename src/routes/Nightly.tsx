@@ -400,7 +400,15 @@ function NetSalesCard({ n }: { n: Night }) {
       (n.discountLines?.reduce((s, l) => s + l.amount, 0) ||
         (n.rewards ?? 0) + (n.promos ?? 0) + (n.comps ?? 0) + (n.staffDisc ?? 0)))
   const refunds = n.refunds ?? 0
-  const gross = n.gross ?? n.netSales + discounts + refunds
+  // Toast's own identity is exact: Gross = Net + discounts + refunds. Trust a
+  // stored gross only when it agrees; a stored value that's wildly larger is a
+  // whole-period total that leaked onto this one night — show the day's real
+  // gross instead so the card can never read $260k on a $10k night.
+  const identityGross = n.netSales + discounts + refunds
+  const gross =
+    n.gross != null && Math.abs(n.gross - identityGross) <= Math.max(50, identityGross * 0.03)
+      ? n.gross
+      : identityGross
   return (
     <ReportCard title="Net Sales Summary">
       <div>

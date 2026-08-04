@@ -648,9 +648,15 @@ export function applyNetSummary(s: NetSummary, date: string): string | null {
   const nights = getNights()
   const i = nights.findIndex((n) => n.date === date)
   const ex = i >= 0 ? nights[i] : undefined
+  // Guard against a whole-period net summary landing on a single night: if the
+  // day already has a real (smaller) net from the daily sheet and this summary's
+  // net dwarfs it, it's a date-range total — applying its gross/discounts would
+  // poison the day (net $10k, gross $260k). Leave the day's own numbers alone.
+  const dayNet = ex?.netSales && ex.netSales > 0 ? ex.netSales : 0
+  if (dayNet > 0 && s.net > dayNet * 1.5) return date
   const patch = {
     gross: s.gross || ex?.gross,
-    netSales: ex?.netSales && ex.netSales > 0 ? ex.netSales : s.net || ex?.netSales || 0,
+    netSales: dayNet > 0 ? dayNet : s.net || ex?.netSales || 0,
     salesDiscounts: s.discounts,
     refunds: s.refunds,
   }
