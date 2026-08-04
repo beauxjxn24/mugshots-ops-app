@@ -1,30 +1,35 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="34%" r="80%">
-      <stop offset="0%" stop-color="#16233c"/>
-      <stop offset="60%" stop-color="#0b1220"/>
-      <stop offset="100%" stop-color="#070b13"/>
-    </radialGradient>
-    <linearGradient id="bunTop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#F2C265"/><stop offset="100%" stop-color="#E0A445"/>
-    </linearGradient>
-    <linearGradient id="bunBot" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#E7AE4E"/><stop offset="100%" stop-color="#C98A34"/>
-    </linearGradient>
-    <linearGradient id="patty" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#6E4327"/><stop offset="100%" stop-color="#4E2E19"/>
-    </linearGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0"/>
+      <feComposite operator="over" in2="SourceGraphic"/></filter>
+    <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="7"/></filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <path d="M128 214 C128 138 190 96 256 96 C322 96 384 138 384 214 Z" fill="url(#bunTop)"/>
-  <g fill="#FBE8C6">
-    <ellipse cx="214" cy="150" rx="10" ry="6" transform="rotate(-24 214 150)"/>
-    <ellipse cx="270" cy="132" rx="10" ry="6" transform="rotate(8 270 132)"/>
-    <ellipse cx="316" cy="162" rx="10" ry="6" transform="rotate(28 316 162)"/>
-    <ellipse cx="256" cy="176" rx="9" ry="5.5"/>
+
+  <!-- warm kraft paper -->
+  <rect width="512" height="512" rx="104" fill="#EFE0C0"/>
+  <rect width="512" height="512" rx="104" fill="#C6702B" opacity="0.05"/>
+
+  <!-- hand-drawn stamp ring -->
+  <rect x="30" y="30" width="452" height="452" rx="80" fill="none" stroke="#3A2A1B" stroke-width="7" stroke-opacity="0.85" filter="url(#rough)"/>
+
+  <!-- burger, ink-outline diner illustration -->
+  <g filter="url(#rough)" stroke="#3A2A1B" stroke-width="11" stroke-linejoin="round" stroke-linecap="round">
+    <!-- top bun -->
+    <path d="M126 210 C126 132 190 100 256 100 C322 100 386 132 386 210 Z" fill="#E6A24A"/>
+    <!-- sesame (hand ticks) -->
+    <g stroke="#3A2A1B" stroke-width="7" fill="none">
+      <path d="M206 156 l14 -12"/><path d="M256 140 l2 -18"/><path d="M304 158 l16 -10"/><path d="M182 182 l12 -8"/><path d="M330 184 l14 -6"/>
+    </g>
+    <!-- lettuce -->
+    <path d="M116 210 q20 -26 40 0 q20 26 40 0 q20 -26 40 0 q20 26 40 0 q20 -26 40 0 q20 26 40 0 l0 22 q0 8 -10 8 l-280 0 q-10 0 -10 -8 Z" fill="#7FA84B"/>
+    <!-- cheese -->
+    <path d="M138 252 l236 0 l0 16 l-26 0 l-12 26 l-14 -26 l-44 0 l-12 26 l-14 -26 l-44 0 l-12 26 l-14 -26 l-24 0 Z" fill="#EBB23C"/>
+    <!-- patty -->
+    <path d="M132 292 l248 0 q16 0 16 20 q0 20 -16 20 l-248 0 q-16 0 -16 -20 q0 -20 16 -20 Z" fill="#7B4A2C"/>
+    <!-- bottom bun -->
+    <path d="M138 336 l236 0 q26 0 26 26 q0 30 -54 30 l-180 0 q-54 0 -54 -30 q0 -26 26 -26 Z" fill="#D98F3C"/>
   </g>
-  <path d="M120 214 q16 -22 34 0 q18 22 34 0 q18 -22 34 0 q18 22 34 0 q18 -22 34 0 q18 22 34 0 q18 -22 34 0 l0 20 q0 12 -12 12 l-268 0 q-12 0 -12 -12 Z" fill="#66C05A"/>
-  <path d="M132 250 l248 0 l0 20 l-24 0 l-10 22 l-12 -22 l-40 0 l-10 22 l-12 -22 l-40 0 l-10 22 l-12 -22 l-56 0 Z" fill="#F6C24B"/>
-  <rect x="126" y="284" width="260" height="42" rx="21" fill="url(#patty)"/>
-  <path d="M132 330 l248 0 q22 0 22 24 q0 34 -60 34 l-172 0 q-60 0 -60 -34 q0 -24 22 -24 Z" fill="url(#bunBot)"/>
+  <rect width="512" height="512" rx="104" filter="url(#grain)" opacity="0.6" fill="none"/>
 </svg>
