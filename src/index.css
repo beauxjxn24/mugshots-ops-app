@@ -87,6 +87,11 @@ body {
 [class*="bg-black/"] { background-color: rgba(255, 255, 255, 0.045) !important; }
 /* hardcoded warm creams used on a few chips/tiles → dark surface */
 .\!bg-\[\#fbf3df\], .bg-\[\#fbf3df\] { background-color: var(--surface-2) !important; }
+/* Modern browsers no longer default <button> to a pointer cursor — restore it
+   app-wide so anything clickable clearly reads as clickable (and disabled
+   controls read as not). */
+button:not(:disabled), summary, [role="button"], label[for], select:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
 input, select, textarea { color: var(--color-ink); }
 input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--color-muted) 80%, transparent); }
 ::-webkit-scrollbar { width: 11px; height: 11px; }
