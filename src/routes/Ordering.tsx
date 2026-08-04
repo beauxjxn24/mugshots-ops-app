@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { Printer, Check, GripVertical, Plus } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
-import { suggested, setParEntry, getReceiptLog } from '../lib/ordering'
-import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setCatalog } from '../lib/catalog'
+import { suggested, setParEntry, getReceiptLog, vendors } from '../lib/ordering'
+import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog } from '../lib/catalog'
 import {
   GUIDE_SHELVES,
   type GuideShelf,
@@ -83,14 +83,14 @@ export function Ordering() {
 
   // ── click-to-edit ──
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [edit, setEdit] = useState({ name: '', unit: '', cost: '' })
+  const [edit, setEdit] = useState({ name: '', unit: '', cost: '', vendor: '' })
   // Which field to land the cursor on when the editor opens — click the name to
   // edit the name, click the price to edit the price.
   const [editFocus, setEditFocus] = useState<'name' | 'cost'>('name')
   const openEdit = (r: Row, focus: 'name' | 'cost' = 'name') => {
     setEditingId(r.id)
     setEditFocus(focus)
-    setEdit({ name: r.name, unit: r.unit, cost: r.cost != null ? String(r.cost) : '' })
+    setEdit({ name: r.name, unit: r.unit, cost: r.cost != null ? String(r.cost) : '', vendor: r.vendor ?? '' })
   }
   const commitEdit = () => {
     if (!editingId) return
@@ -103,6 +103,7 @@ export function Ordering() {
     }
     const c = parseFloat(edit.cost)
     if (Number.isFinite(c) && c > 0) setItemCost(editingId, c, 'manual edit') // ties into pricing everywhere
+    setItemVendor(editingId, edit.vendor)
     setEditingId(null)
     refresh()
   }
@@ -118,20 +119,65 @@ export function Ordering() {
     }
   }
 
-  const copyOrder = async () => {
-    const lines = needed.map((r) => `${suggested(r)} ${r.unit} — ${r.name}`)
-    const text = `${shelf} order — ${today()}\n${lines.join('\n')}`
+  // A shelf's items can come from more than one distributor (e.g. beer split
+  // between Capital City and Southern Beverage). Group the order by vendor so
+  // each distributor gets its own list to copy + send.
+  const orderVendors = useMemo(() => {
+    const groups = new Map<string, Row[]>()
+    for (const r of needed) {
+      const v = (r.vendor || '').trim() || 'Unassigned'
+      ;(groups.get(v) ?? groups.set(v, []).get(v)!).push(r)
+    }
+    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [needed])
+  const [copiedVendor, setCopiedVendor] = useState<string | null>(null)
+
+  const copyOrder = async (vendor?: string) => {
+    const rows = vendor ? needed.filter((r) => ((r.vendor || '').trim() || 'Unassigned') === vendor) : needed
+    const lines = rows.map((r) => `${suggested(r)} ${r.unit} — ${r.name}`)
+    const head = vendor && vendor !== 'Unassigned' ? `${shelf} order · ${vendor}` : `${shelf} order`
+    const text = `${head} — ${today()}\n${lines.join('\n')}`
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
+      setCopiedVendor(vendor ?? '__all__')
+      setTimeout(() => { setCopied(false); setCopiedVendor(null) }, 2500)
     } catch {
       alert(text)
     }
   }
 
+  // One "Copy order" when the shelf ships from a single distributor; one button
+  // per vendor when it's split (beer → Capital City + Southern Beverage).
+  const CopyButtons = ({ size = 'lg' }: { size?: 'lg' | 'sm' }) => {
+    const base =
+      size === 'lg'
+        ? 'inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40 print:hidden'
+        : 'rounded-lg px-3 py-2 text-xs font-bold disabled:opacity-40'
+    if (orderVendors.length <= 1)
+      return (
+        <button onClick={() => copyOrder()} disabled={needed.length === 0} className={`${base} bg-brand text-white`}>
+          {copied ? '✓ Copied' : `Copy order (${needed.length})`}
+        </button>
+      )
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 print:hidden">
+        {orderVendors.map(([v, rows]) => (
+          <button key={v} onClick={() => copyOrder(v)} className={`${base} bg-brand text-white`}>
+            {copiedVendor === v ? '✓ Copied' : `Copy ${v} (${rows.length})`}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <>
+      <datalist id="vendor-options">
+        {vendors().map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
       <PageHeader
         title="Orders"
         subtitle={
@@ -224,13 +270,7 @@ export function Ordering() {
               <span className="font-display text-base font-semibold text-ink">
                 {shelf} order <span className="text-sm font-normal text-muted">{allRows.length}</span>
               </span>
-              <button
-                onClick={copyOrder}
-                disabled={needed.length === 0}
-                className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white disabled:opacity-40"
-              >
-                {copied ? '✓ Copied' : `Copy order (${needed.length})`}
-              </button>
+              <CopyButtons size="sm" />
             </div>
             {allRows.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-muted">Nothing on this guide yet — drop an invoice on Imports, or add items on a computer.</p>
@@ -283,19 +323,7 @@ export function Ordering() {
               <span className="font-display text-lg font-semibold text-ink">
                 {shelf} order guide <span className="ml-1 text-sm font-normal text-muted">{allRows.length} items</span>
               </span>
-              <button
-                onClick={copyOrder}
-                disabled={needed.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-40 print:hidden"
-              >
-                {copied ? (
-                  <>
-                    <Check size={14} /> Copied
-                  </>
-                ) : (
-                  `Copy order (${needed.length})`
-                )}
-              </button>
+              <CopyButtons size="lg" />
             </div>
 
             <div className="grid grid-cols-[20px_minmax(0,1fr)_76px_56px_64px_72px] items-center gap-2 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
@@ -462,6 +490,17 @@ export function Ordering() {
                               className={`mt-0.5 w-full rounded-lg border bg-white px-2.5 py-1.5 text-right font-mono text-sm text-ink outline-none focus:border-brand ${
                                 editFocus === 'cost' ? 'border-brand ring-2 ring-brand/30' : 'border-black/10'
                               }`}
+                            />
+                          </label>
+                          <label className="w-40 text-[10px] font-bold uppercase text-muted">
+                            Order from
+                            <input
+                              list="vendor-options"
+                              value={edit.vendor}
+                              placeholder="e.g. Capital City"
+                              onChange={(e) => setEdit({ ...edit, vendor: e.target.value })}
+                              onKeyDown={(e) => e.key === 'Enter' && commitEdit()}
+                              className="mt-0.5 w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm font-medium normal-case text-ink outline-none focus:border-brand"
                             />
                           </label>
                           <button onClick={commitEdit} className="rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white">

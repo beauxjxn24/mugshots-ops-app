@@ -187,6 +187,18 @@ export function renameItem(id: string, newName: string): void {
   setCatalog(items)
 }
 
+/** Assign an item's vendor (who it's ordered from) — drives per-vendor order
+ *  lists on the guide, e.g. beer split between Capital City and Southern. */
+export function setItemVendor(id: string, vendor: string): void {
+  const items = getCatalog()
+  const it = items.find((x) => x.id === id)
+  if (!it) return
+  const v = vendor.trim()
+  if (it.vendor === v) return
+  it.vendor = v
+  setCatalog(items)
+}
+
 export function addAlias(id: string, alias: string): void {
   const items = getCatalog()
   const it = items.find((x) => x.id === id)

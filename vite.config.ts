@@ -42,6 +42,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // The OCR engine (~9MB) loads on demand — don't precache it.
         globIgnores: ['tesseract/**'],
+        // Take control of already-open tabs the moment a new version activates
+        // (skipWaiting alone activates it but leaves open pages on the old one).
+        // Paired with the controllerchange reload in main.tsx, an open app now
+        // refreshes itself on deploy instead of getting stuck on a stale build.
+        clientsClaim: true,
+        skipWaiting: true,
       },
     }),
   ],
