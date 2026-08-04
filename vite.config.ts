@@ -26,7 +26,7 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
       manifest: {
         id: '/',
-        name: 'The Pass',
+        name: 'The Pass — Daily Ops',
         short_name: 'The Pass',
         description: 'Restaurant daily ops — sales, labor, ordering, prep and checklists, all in one place.',
         theme_color: '#070b13',

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { UtensilsCrossed } from 'lucide-react'
 import { useScope, useCurrentNames, ALL } from '../lib/scope'
 
 /** Concept + location switcher. Lives in the nav so it's available everywhere.
@@ -29,8 +30,8 @@ export function StoreSwitcher({ dark = true }: { dark?: boolean }) {
           dark ? 'bg-white/10 text-white hover:bg-white/15' : 'border border-black/10 bg-white text-ink'
         }`}
       >
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
-          {concept.slice(0, 1) || 'M'}
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white">
+          <UtensilsCrossed size={16} />
         </span>
         <span className="min-w-0 flex-1 leading-tight">
           <span className="block truncate text-[13px] font-semibold">{location || 'Pick a store'}</span>

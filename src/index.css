@@ -560,6 +560,29 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   0%, 100% { border-color: rgba(184, 134, 11, 0.45); }
   40%, 60% { border-color: var(--tile-flash, #b8860b); }
 }
+/* Local-events ticker — seamless marquee (row is duplicated in the DOM) */
+@keyframes tickerscroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+/* The Next-booking pill gets a periodic JUMP so it can't be missed — a quick
+   hop + scale pop with the glow/border flash built in (standalone class; don't
+   stack with .tile-alert — both own the animation property). */
+.tile-pop {
+  border-width: 2px;
+  animation:
+    tilePop 3.4s ease-in-out infinite,
+    caterGlow 3.4s ease-in-out infinite,
+    tileBorder 3.4s ease-in-out infinite;
+}
+@keyframes tilePop {
+  0%, 78%, 100% { transform: translateY(0) scale(1); }
+  82% { transform: translateY(-5px) scale(1.045); }
+  87% { transform: translateY(0) scale(0.99); }
+  91% { transform: translateY(-2px) scale(1.02); }
+  95% { transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .tile-pop { animation: none; } }
 @keyframes tileShake {
   0%, 64%, 100% { transform: translateX(0) rotate(0); }
   66% { transform: translateX(-2px) rotate(-0.6deg); }

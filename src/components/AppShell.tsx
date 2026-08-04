@@ -5,6 +5,7 @@ import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
+import { ConciergeBell, UtensilsCrossed } from 'lucide-react'
 import { Aurora } from './Aurora'
 import { Toaster } from './Toaster'
 
@@ -170,8 +171,8 @@ function StoreLabel() {
   const { concept, location } = useCurrentNames()
   return (
     <div className="flex w-full items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left">
-      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
-        {concept.slice(0, 1) || 'M'}
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white">
+        <UtensilsCrossed size={16} />
       </span>
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-[13px] font-semibold text-white">{location || 'Your store'}</span>
@@ -196,12 +197,12 @@ function BuildStamp() {
 function Brand() {
   return (
     <div className="mb-4 flex items-center gap-2.5 px-2">
-      <div className="grid size-9 place-items-center rounded-lg bg-brand font-display text-lg font-semibold text-white" aria-hidden>
-        ⤳
+      <div className="grid size-9 place-items-center rounded-lg bg-brand text-white" aria-hidden>
+        <ConciergeBell size={19} />
       </div>
       <div className="leading-tight">
         <div className="font-display text-[15px] font-bold tracking-wide text-white">THE PASS</div>
-        <div className="text-[9.5px] uppercase tracking-wider text-white/45">Restaurant ops · daily</div>
+        <div className="text-[9.5px] uppercase tracking-wider text-white/45">Daily Ops</div>
       </div>
     </div>
   )

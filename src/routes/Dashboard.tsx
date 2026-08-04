@@ -8,10 +8,11 @@ import type { Booking } from '../lib/catering'
 import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
+import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
@@ -184,7 +185,7 @@ export function Dashboard() {
                 />
                 <KpiTile
                   compact
-                  className={next && todays.length === 0 && daysUntil(next.date) <= 7 ? 'tile-alert' : ''}
+                  className={next ? 'tile-pop' : ''}
                   to={next ? `/catering?booking=${next.id}` : '/catering'}
                   icon={<CalendarClock size={15} />}
                   value={next ? String(next.guests || '—') : '—'}
@@ -245,6 +246,9 @@ export function Dashboard() {
 
             {/* Gold rule — the prototype's section divider */}
             <div className="h-[3px] rounded-full bg-gradient-to-r from-brand via-brand/40 to-transparent" />
+
+            {/* Local events — what's happening around town this week */}
+            <EventsTicker />
 
             {/* Row 2 — tracked items from PMIX */}
             <TrackedBand scope={scope} anchor={latest?.date ?? t} />
@@ -313,6 +317,7 @@ export function Dashboard() {
 
         {!hasReal && (
           <>
+            <EventsTicker />
             <TrackedBand scope={scope} anchor={t} />
             <LtoFocus />
           </>
@@ -797,4 +802,95 @@ function fmtWhen(iso: string): string {
 function fmtTime(tm: string): string {
   const [h, m] = tm.split(':').map(Number)
   return `${h % 12 || 12}:${String(m).padStart(2, '0')}${h >= 12 ? 'p' : 'a'}`
+}
+
+/** Local-events banner — a scrolling ticker of what's happening around town.
+ *  Managers add events inline today; the email-watcher automation (backend
+ *  upgrade) will feed this same list on its own. */
+function EventsTicker() {
+  const [tick, setTick] = useState(0)
+  const t = today()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const events = useMemo(() => upcomingEvents(t), [tick, t])
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [date, setDate] = useState(t)
+
+  const fmtEv = (d: string) => {
+    const [y, m, dd] = d.split('-').map(Number)
+    return new Date(y, m - 1, dd).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  }
+  const submit = () => {
+    if (!name.trim() || !date) return
+    addEvent(name, date)
+    setName('')
+    setAdding(false)
+    setTick((x) => x + 1)
+  }
+
+  // Duplicate the row so the marquee loops seamlessly when it overflows.
+  const row = (keyPrefix: string) => (
+    <div className="flex shrink-0 items-center gap-2 pr-2">
+      {events.map((e: LocalEvent) => (
+        <span
+          key={keyPrefix + e.id}
+          className="group inline-flex shrink-0 items-center gap-1.5 rounded-full border border-signal/25 bg-signal/[0.07] py-1 pl-3 pr-1.5 text-xs font-semibold text-ink"
+        >
+          <span className="text-signal">{fmtEv(e.date)}</span> {e.name}
+          <button
+            onClick={() => { removeEvent(e.id); setTick((x) => x + 1) }}
+            aria-label={`Remove ${e.name}`}
+            className="rounded-full p-0.5 text-muted/50 hover:text-down"
+          >
+            <X size={12} />
+          </button>
+        </span>
+      ))}
+    </div>
+  )
+
+  return (
+    <div className="drift flex items-center gap-3 overflow-hidden rounded-2xl border border-signal/20 bg-gradient-to-r from-signal/[0.08] to-transparent px-4 py-2.5">
+      <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-signal">
+        <Megaphone size={14} className="idle-sway" /> Local events
+      </span>
+      <div className="min-w-0 flex-1 overflow-hidden">
+        {events.length === 0 ? (
+          <span className="text-xs text-muted">Nothing tracked — add games, concerts, festivals that could swing business.</span>
+        ) : (
+          <div className={`flex ${events.length > 3 ? 'animate-[tickerscroll_28s_linear_infinite] hover:[animation-play-state:paused]' : ''}`}>
+            {row('a')}
+            {events.length > 3 && row('b')}
+          </div>
+        )}
+      </div>
+      {adding ? (
+        <span className="flex shrink-0 items-center gap-1.5">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            placeholder="Event name"
+            className="w-36 rounded-lg border border-white/10 bg-white px-2 py-1.5 text-xs text-ink outline-none focus:border-signal"
+          />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded-lg border border-white/10 bg-white px-2 py-1.5 text-xs text-ink outline-none focus:border-signal"
+          />
+          <button onClick={submit} className="rounded-lg bg-signal/20 px-2.5 py-1.5 text-xs font-bold text-signal">Add</button>
+          <button onClick={() => setAdding(false)} aria-label="Cancel" className="text-muted hover:text-ink"><X size={14} /></button>
+        </span>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="shrink-0 rounded-full border border-white/15 px-2.5 py-1 text-[11px] font-bold text-muted hover:border-signal hover:text-signal"
+        >
+          + Add
+        </button>
+      )}
+    </div>
+  )
 }
