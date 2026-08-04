@@ -5,6 +5,7 @@
 import { load, save } from './store'
 import { useScope } from './scope'
 import { cleanItemLine, tidyName } from './clean'
+import { getCountSheet, setCountSheet, newCountId } from './countsheet'
 
 export interface CatalogItem {
   id: string
@@ -346,4 +347,83 @@ function norm(s: string): Set<string> {
 function isoToday(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// ============================================================
+// Destinations — the catalog is the hub. Order-guide membership is the existing
+// per-store flag (getFlags / setOnGuide). These push an item into (or pull it
+// out of) the other systems that keep their own lists: the Prep sheet and the
+// Inventory count sheet. All keyed by normalized name so they stay in step with
+// the catalog even after a spelling fix.
+// ============================================================
+interface PrepItemLite {
+  name: string
+  spec: string
+  unit: string
+  pars: number[]
+  section?: string
+  station?: string
+  parked?: boolean
+}
+function prepKey(): string {
+  const s = useScope.getState()
+  return `${s.currentConcept}|${s.currentLocation}::prep:items`
+}
+const getPrep = (): PrepItemLite[] => {
+  const r = load<PrepItemLite[]>(prepKey(), [])
+  return Array.isArray(r) ? r : []
+}
+const setPrep = (v: PrepItemLite[]): void => save(prepKey(), v)
+
+export function isInPrep(name: string): boolean {
+  const k = normKey(name)
+  return getPrep().some((p) => normKey(p.name) === k)
+}
+/** Put an item on the Prep sheet (pars start at 0 so it doesn't clutter Today's
+ *  Prep until a manager sets them). Reviving a parked one instead of dup-ing. */
+export function addToPrep(item: { name: string; unit?: string }): void {
+  const k = normKey(item.name)
+  const list = getPrep()
+  const ex = list.find((p) => normKey(p.name) === k)
+  if (ex) {
+    if (ex.parked) setPrep(list.map((p) => (p === ex ? { ...p, parked: false } : p)))
+    return
+  }
+  setPrep([...list, { name: item.name, spec: '', unit: item.unit || 'pans', pars: [0, 0, 0, 0, 0, 0, 0], section: 'Recipes' }])
+}
+export function removeFromPrep(name: string): void {
+  const k = normKey(name)
+  setPrep(getPrep().filter((p) => normKey(p.name) !== k))
+}
+
+export function isInInventory(name: string): boolean {
+  const k = normKey(name)
+  return getCountSheet().some((c) => normKey(c.name) === k)
+}
+export function addToInventory(item: { name: string; unit?: string; category?: string }): void {
+  const k = normKey(item.name)
+  if (getCountSheet().some((c) => normKey(c.name) === k)) return
+  setCountSheet([
+    ...getCountSheet(),
+    { id: newCountId(), location: item.category || 'General', name: item.name, units: [{ uom: item.unit || 'ea', qty: 0 }] },
+  ])
+}
+export function removeFromInventory(name: string): void {
+  const k = normKey(name)
+  setCountSheet(getCountSheet().filter((c) => normKey(c.name) !== k))
+}
+
+/** Existing catalog items whose name collides or nearly collides with a
+ *  candidate — same normalized key, or one name contains the other. Surfaced
+ *  while adding so duplicate / "like" names never get created by accident. */
+export function findSimilar(name: string, excludeId?: string): CatalogItem[] {
+  const k = normKey(name)
+  if (!k || k.length < 3) return []
+  return getCatalog()
+    .filter((it) => {
+      if (it.id === excludeId) return false
+      const ik = normKey(it.name)
+      return ik === k || (k.length >= 4 && (ik.includes(k) || k.includes(ik)))
+    })
+    .slice(0, 4)
 }
