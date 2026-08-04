@@ -518,11 +518,24 @@ function CategoryCard({ n }: { n: Night }) {
 
 /** Discount Summary — Discount Name · Count · Amount · % of net. */
 function DiscountCard({ n }: { n: Night }) {
+  // Itemized discounts if we have them; else the bucketed totals; else — when a
+  // night only carries a discount TOTAL (from the Net-sales sheet) — a single
+  // "All discounts" line so the card is never blank while discounts clearly
+  // exist. The itemized breakdown needs that day's Menu-item / Check discount
+  // sheets (they ride inside a single-day Sales Summary export).
+  const onlyTotal = useMemo(() => {
+    const catDisc = (n.catBreakdown ?? n.categoryRows)?.reduce((s, r) => s + ((r as { disc?: number }).disc ?? 0), 0) ?? 0
+    return Math.round((n.salesDiscounts ?? catDisc) * 100) / 100
+  }, [n])
   const lines = useMemo(() => {
     if (n.discountLines?.length) return n.discountLines.map((l) => ({ name: l.name, count: l.count, amount: l.amount }))
     const buckets: [string, number][] = [['Rewards', n.rewards ?? 0], ['Promos', n.promos ?? 0], ['Comps', n.comps ?? 0], ['Staff meals', n.staffDisc ?? 0]]
-    return buckets.filter(([, v]) => v > 0).map(([name, amount]) => ({ name, count: undefined as number | undefined, amount }))
-  }, [n])
+    const b = buckets.filter(([, v]) => v > 0).map(([name, amount]) => ({ name, count: undefined as number | undefined, amount }))
+    if (b.length) return b
+    if (onlyTotal > 0) return [{ name: 'All discounts', count: undefined as number | undefined, amount: onlyTotal }]
+    return b
+  }, [n, onlyTotal])
+  const itemized = !!n.discountLines?.length
   const net = n.netSales || 1
   const totAmt = lines.reduce((s, l) => s + l.amount, 0)
   const totCount = lines.reduce((s, l) => s + (l.count ?? 0), 0)
@@ -560,6 +573,12 @@ function DiscountCard({ n }: { n: Night }) {
               </tr>
             </tfoot>
           </table>
+          {!itemized && (
+            <p className="px-4 py-2.5 text-[11px] text-muted">
+              This is the discount total. For the itemized list by name, export that day's <b>Sales Summary</b> as a single day
+              (a date-range export only carries one lumped total).
+            </p>
+          )}
         </div>
       )}
     </ReportCard>
