@@ -375,6 +375,10 @@ const getPrep = (): PrepItemLite[] => {
 }
 const setPrep = (v: PrepItemLite[]): void => save(prepKey(), v)
 
+/** Every prep item on this store's sheet — used to resolve line-build
+ *  components against what the kitchen actually preps. */
+export const prepItemNames = (): string[] => getPrep().filter((p) => !p.parked).map((p) => p.name)
+
 export function isInPrep(name: string): boolean {
   const k = normKey(name)
   return getPrep().some((p) => normKey(p.name) === k)
