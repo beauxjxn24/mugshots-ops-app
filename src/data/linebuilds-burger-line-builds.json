@@ -1,0 +1,791 @@
+{
+ "sheet": "Burger Line Builds",
+ "source": "4e9bbc21-Menu_Study_Guide_Burgers.pdf",
+ "dishes": [
+  {
+   "sheetName": "Dill Pickles",
+   "photo": "dill-pickles.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "8 oz. of Pickles Battered and Fried. 4 oz on a Mombo or Happy Hour"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Comeback Sauce"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Shrooms",
+   "photo": "shrooms.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "8 oz. of Mushrooms",
+      "Battered and Fried. 4 oz on a Mombo or Happy",
+      "Hour"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Ranch"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Mombo Combo",
+   "photo": "mombo-combo.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Choose Any Three.",
+      "Excludes Pow Pow Shrimp and Wangs"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "Match sauce to app - 2 oz ea"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Chicken Basket",
+   "photo": "chicken-basket.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "6 Tenders Knuckled, Double Battered and Fried or Grilled. (3 to a Mombo)",
+      "6oz Fries"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Dipping Sauce"
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
+      "Garlic Parmesean"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Pow Pow Shrimp",
+   "photo": "pow-pow-shrimp.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Black plate"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "8 oz fried shrimp tossed in Pow Pow Sauce.",
+      "Sriracha on plate with bed of Salad Mix."
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "Dusting of Parsley"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Chili",
+   "photo": "chili.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Mugs Squat Cup on Red Saucer or Blue Bowl on Red Plate Both with Bev Nap"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Cup = 6 oz",
+      "Bowl = 8 oz"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "Cup = 1 Pack of Crackers Bowl = 2 Packs of Crackers"
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "Cup = 1 tbsp Shredded",
+      "Cheese and Red Onions. _______________",
+      "Bowl = 2 tbsp Shredded Cheese and Red Onion"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Middle",
+   "photo": "middle.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo and Mustard (bottom bun)",
+      "1 Tbsp of Red Onion",
+      "3 Pickles",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Pato",
+   "photo": "pato.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo and Mustard (bottom bun)",
+      "1 Tbsp of Red Onion",
+      "3 Pickles",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Stu",
+   "photo": "stu.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1 Tbsp of Red Onion",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 oz Mushrooms",
+      "Slice of Swiss"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Gamble",
+   "photo": "gamble.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "Layer of Sour Cream (bottom bun)",
+      "6 Jalapenos",
+      "1/3 Cup of Lettuce"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 oz of Chili",
+      "2 oz of Rotel"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "McDowell",
+   "photo": "mcdowell.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Ranch (on bottom bun)",
+      "1 Tbsp of Red Onion",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "1 tbsp BBQ Sauce",
+      "2 slices of Bacon",
+      "Slice of Cheddar"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Savell",
+   "photo": "savell.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1 Tbsp of Red Onion",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 Slices of Bacon",
+      "Slice of Cheddar"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Anthony's Peanut Butter Burger",
+   "photo": "anthony-s-peanut-butter-burger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Peanut Butter (bottom bun)"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 Slices of Bacon",
+      "1 Tbsp Peanut Butter (bottom bun)"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Comeback",
+   "photo": "comeback.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Comeback Sauce (bottom bun)",
+      "1/3 Cup of Red Onion",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 slices of Bacon, Slice of Pepperjack",
+      "Cheese, Onion",
+      "Ring"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Garlic Parm",
+   "photo": "garlic-parm.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 oz Garlic Parm Sauce",
+      "2 Slices of Bacon",
+      "2oz Sauteed Mushrooms",
+      "1/3 Cup Fried O- Strings"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Mac & Cheese",
+   "photo": "mac-cheese.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "2 GRILLED CHEESE"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 Slices of Bacon, Mac & Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Mugshot",
+   "photo": "mugshot.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1 Tbsp Mustard (bottom bun)",
+      "1 Tbsp of Red Onion",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 Beef Patties"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 Slices - Bacon (each patty), Cheddar - (2 patties)",
+      "Swiss - (1 patty), Onion Ring and Fried",
+      "Pickles on Skewer"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Steak Burger",
+   "photo": "steak-burger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty with Philly"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "1 oz Sauteed Onions",
+      "1 oz Sauteed Bell Pepper Slice of Swiss"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Patty Melt",
+   "photo": "patty-melt.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted Sourdough"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Comeback Sauce (bottom bun)"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 oz Sauteed Onions",
+      "Slice of American Cheese Slice of Pepperjack"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "A1 Sauce Burger",
+   "photo": "a1-sauce-burger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Bun"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Comeback (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "1 oz of A1 Sauce",
+      "2 Slices of Bacon",
+      "Slice of Cheddar"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,154 @@
+{
+ "sheet": "Dessert Line Builds",
+ "source": "7a594a7a-Menu_Study_Guide_Desserts.pdf",
+ "dishes": [
+  {
+   "sheetName": "Dessert Nachos",
+   "photo": "dessert-nachos.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Blue Bowl"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "1 Portion Sweet Fries - Fry for 2 Minutes, Drain in Sav a Day.",
+      "Toss in Cinnamon Sugar.",
+      "Place in Blue Bowl"
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "1 - #8 Scoop Vanilla Ice Cream",
+      "1 tsp Caramel & Chocolate Drizzles"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Bread Puddin' Bites",
+   "photo": "bread-puddin-bites.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Fry 1 Portion of Bread Puddin' Bites (15 pcs) for 2 Minutes. Toss in Cinnamon Sugar"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "10 oz Milkshake",
+   "photo": "10-oz-milkshake.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Frosted 10 oz Mug (Dine-In)"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Add 6 oz Half & Half and 3 oz flavorings (if flavored) to mixing tin.",
+      "Add 2 - #8 scoops vanilla ice cream to mixing tin. Using shake mixer, blend until no lumps are present. Pour into frosted 10 oz mug."
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "If Doing Chocolate, Drizzle",
+      "Chocolate Syrup Inside Mug"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "22 oz Milkshake",
+   "photo": "22-oz-milkshake.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Frosted 22 oz Mug (Dine-In)"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Add 14 oz Half & Half and 6 oz flavorings (if flavored) to mixing tin.",
+      "Add 4 - #8 scoops vanilla ice cream to mixing tin. Using shake mixer, blend until no lumps are present. Pour into frosted 10 oz mug."
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "If Doing Chocolate, Drizzle",
+      "Chocolate Syrup Inside Mug"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "10 Root Beer Float",
+   "photo": "10-root-beer-float.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Frosted 10 oz Mug (Dine-In)"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Add 6 oz Barq’s root beer to mug. Top with 1 - #8 scoops vanilla ice cream."
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "22 oz Root Beer Float",
+   "photo": "22-oz-root-beer-float.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Frosted 22 oz Mug (Dine-In)"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Add 14 oz Barq’s root beer to mug. Top with 2 - #8 scoops vanilla ice cream."
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,505 @@
+{
+ "sheet": "Sandwich Line Builds",
+ "source": "fe096e63-Menu_Study_Guide_Sandwiches.pdf",
+ "dishes": [
+  {
+   "sheetName": "Inferno Wrap",
+   "photo": "inferno-wrap.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Tortilla"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "Mic Tortilla 15 sec",
+      "1.5 oz Ranch",
+      "2 oz Salad Mix",
+      "1 oz Diced Tomatoes",
+      "2 oz Shredded Cheese"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 ea Chopped Fried Tenders (or Grilled)",
+      "Tossed in Mild Buff Sauce."
+     ]
+    },
+    {
+     "key": "prep",
+     "label": "Prep",
+     "lines": [
+      "Place cheese side down on flat top and grill for 30 seconds. Flip and repeat"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Cut Diagonally and Shingle"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Philly Wrap",
+   "photo": "philly-wrap.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Tortilla"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "Mic Tortilla 15 sec",
+      "1 oz Mayo",
+      "2 oz Salad Mx",
+      "1 oz Diced Tomatoes"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Grilled & Chopped Philly Set topped with Swiss Cheese"
+     ]
+    },
+    {
+     "key": "prep",
+     "label": "Prep",
+     "lines": [
+      "Place cheese side down on flat top and grill for 30 seconds. Flip and repeat"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Cut Diagonally and Shingle"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Teriyaki Wrap",
+   "photo": "teriyaki-wrap.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Tortilla"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "Mic tortilla for 15 sec",
+      "Top with 2 oz Salad Mix",
+      "2 oz Prepped Asian Slaw"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 Chopped Fried Tenders (or Grilled)",
+      "Tossed in 2 oz Teriyaki"
+     ]
+    },
+    {
+     "key": "prep",
+     "label": "Prep",
+     "lines": [
+      "Place cheese side down on flat top and grill for 30 seconds. Flip and repeat"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Cut Diagonally and Shingle"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Caitlin's Cajun",
+   "photo": "caitlin-s-cajun.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Blackened Chicken Breast"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2 Slices of Bacon, Pepperjack Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Briscoe",
+   "photo": "briscoe.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Ranch (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 Chicken Strips",
+      "Tossed in Wing Sauce"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Swiss Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Turkey Club",
+   "photo": "turkey-club.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "SLICED SOURDOUGH"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo",
+      "1/3 Cup of Lettuce",
+      "2 Slices of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Sliced Turkey"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "4 slices of Bacon",
+      "Pepperjack Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Hicks",
+   "photo": "hicks.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Chicken Philly Meat",
+      "Chopped and Grilled with 1 oz Red Onions"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Swiss Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Philly",
+   "photo": "philly.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Mayo (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Steak Philly Meat Chopped and Grilled with 1 oz Red",
+      "Onions and 1 oz Bell",
+      "Peppers"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Swiss Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Southwest Philly",
+   "photo": "southwest-philly.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Comeback Sauce (bottom bun)",
+      "1/3 Cup of Lettuce"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Steak Philly Meat Chopped and Grilled with 1 oz Red",
+      "Onions and 1 oz Bell",
+      "Peppers"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "2oz Rotel",
+      "2 Tbsp Pico"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Callie's Mahi",
+   "photo": "callie-s-mahi.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp Comeback Sauce (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Blackened Mahi"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Turkey Burger",
+   "photo": "turkey-burger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bun",
+     "label": "Bun",
+     "lines": [
+      "1 Tbsp of Mayo (bottom bun)",
+      "1/3 Cup of Lettuce",
+      "1 Slice of Tomato"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Turkey Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "American Cheese"
+     ]
+    }
+   ]
+  }
+ ]
+}

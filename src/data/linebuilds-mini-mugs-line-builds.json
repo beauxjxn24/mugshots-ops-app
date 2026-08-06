@@ -1,0 +1,241 @@
+{
+ "sheet": "Mini Mugs Line Builds",
+ "source": "a280e434-Menu_Study_Guide_Mini_Mugs.pdf",
+ "dishes": [
+  {
+   "sheetName": "Bishop Burger",
+   "photo": "bishop-burger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket w/Liner"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "Kid Bun"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Kid Burger Patty"
+     ]
+    },
+    {
+     "key": "on-top-tossed-build",
+     "label": "On Top / Tossed / Build",
+     "lines": [
+      "Standard Build is",
+      "Middleberger but Can be Built to Any Burger",
+      "Except Mac-N-Cheese or Steak Burger"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Kayla's Mini Chicken Basket",
+   "photo": "kayla-s-mini-chicken-basket.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket w/Liner"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 Tenders Knuckled, Double Battered and Fried or Grilled. 6oz Fries"
+     ]
+    },
+    {
+     "key": "on-top-tossed-build",
+     "label": "On Top / Tossed / Build",
+     "lines": [
+      "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero, Garlic Parmesean"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Emma's Grilled Cheese",
+   "photo": "emma-s-grilled-cheese.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket w/Liner"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "Sliced Sourdough"
+     ]
+    },
+    {
+     "key": "on-top-tossed-build",
+     "label": "On Top / Tossed / Build",
+     "lines": [
+      "Pickle Slice on Each Half"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Hailey's Egg Sandwich",
+   "photo": "hailey-s-egg-sandwich.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket w/Liner"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "Kid Bun"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Fried Egg"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Meg's Mac-N- Cheese",
+   "photo": "meg-s-mac-n-cheese.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Mugs Squat Cup on Burger Basket w/Liner"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "Mac-N-Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Peanut Butter-N- Jelly",
+   "photo": "peanut-butter-n-jelly.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket w/Liner"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "Sliced Sourdough"
+     ]
+    },
+    {
+     "key": "on-top-tossed-build",
+     "label": "On Top / Tossed / Build",
+     "lines": [
+      "Creamy Peanut Butter on One Piece of Bread, Grape Jelly on the Other Piece of Bread"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Taylor's Mini Pasta",
+   "photo": "taylor-s-mini-pasta.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Small Bowl"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "7 oz Penne Pasta"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Optional Chicken Tender, Grilled or Fried, Chopped"
+     ]
+    },
+    {
+     "key": "on-top-tossed-build",
+     "label": "On Top / Tossed / Build",
+     "lines": [
+      "Tossed in Choice of Alfredo or Marinara.",
+      "Option to Add Grilled or Fried Chicken Tender on Top"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Duncan's Quesadilla",
+   "photo": "duncan-s-quesadilla.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "bun-pasta",
+     "label": "Bun / Pasta",
+     "lines": [
+      "1/2 - 12\" Tortilla"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "1/3 cup Shredded Cheese"
+     ]
+    },
+    {
+     "key": "on-top-tossed-build",
+     "label": "On Top / Tossed / Build",
+     "lines": [
+      "Cut tortilla in half and place on flattop.Sprinkle 1/3 cup shredded mixed cheese on tortilla. Heat for approximately 1 1/2 minutes and fold in half.",
+      "Heat for an additional 30 seconds. Flip and heat for an additional 30 seconds. Remove from the flat top.",
+      "Cut in equal halves. Place quesadilla halves on lined basket, making sure to shingle at the point"
+     ]
+    }
+   ]
+  }
+ ]
+}

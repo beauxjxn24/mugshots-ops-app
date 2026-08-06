@@ -1,0 +1,242 @@
+{
+ "sheet": "Plate Pasta & Wrap Line Builds",
+ "source": "e53c11ae-Menu_Study_Guide_Plates_Pastas_and_Wraps.pdf",
+ "dishes": [
+  {
+   "sheetName": "Cajun Pasta",
+   "photo": "cajun-pasta.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lasrge Bowl"
+     ]
+    },
+    {
+     "key": "base",
+     "label": "Base",
+     "lines": [
+      "7 OZ PENNE"
+     ]
+    },
+    {
+     "key": "sauce-veggies",
+     "label": "Sauce & Veggies",
+     "lines": [
+      "4 oz Alfredo Sauce (tossed)",
+      "1/4 Cup Diced Tomatoes"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Blackened Chicken Breast"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Blackened Chicken Breast w/ Blackening Seasoning, Garnish with Tony's and Parsley, Toasted Sliced Sourdough on Edge of Bowl"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Parm Pasta",
+   "photo": "parm-pasta.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lasrge Bowl"
+     ]
+    },
+    {
+     "key": "base",
+     "label": "Base",
+     "lines": [
+      "7 OZ PENNE"
+     ]
+    },
+    {
+     "key": "sauce-veggies",
+     "label": "Sauce & Veggies",
+     "lines": [
+      "4 oz Alfredo Sauce (tossed)",
+      "2 oz Marinara"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 Fried Chicken",
+      "Strips"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Cut Fried Chicken Strips, (1/2 inch)",
+      "1 oz Parmesan Cheese, Garnish with Parsley, Toasted Sliced Sourdough on Edge of Bowl"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Blackened Shrimp Pasta",
+   "photo": "blackened-shrimp-pasta.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lasrge Bowl"
+     ]
+    },
+    {
+     "key": "base",
+     "label": "Base",
+     "lines": [
+      "7 OZ PENNE"
+     ]
+    },
+    {
+     "key": "sauce-veggies",
+     "label": "Sauce & Veggies",
+     "lines": [
+      "4 oz Alfredo Sauce (tossed)",
+      "1/4 Cup Diced Tomatoes"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "8 Grilled Shrimp"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "8 Blackened Shrimp",
+      "1 oz Parmesan Cheese, Garnish with Parsley, Toasted Sliced Sourdough"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Philly Pasta",
+   "photo": "philly-pasta.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lasrge Bowl"
+     ]
+    },
+    {
+     "key": "base",
+     "label": "Base",
+     "lines": [
+      "7 OZ PENNE"
+     ]
+    },
+    {
+     "key": "sauce-veggies",
+     "label": "Sauce & Veggies",
+     "lines": [
+      "4 oz Cheese Sauce (tossed)"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Philly with 1 oz Bell Peppers and 1 oz Onions",
+      "Cooked on Flat Top",
+      "Toss with Pasta & Cheese Sauce before Plating"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Garnish with Pasley",
+      "1 Piece Toast, cut corner to corner"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Hamburger Steak Plate",
+   "photo": "hamburger-steak-plate.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Large Red Plate"
+     ]
+    },
+    {
+     "key": "sauce-veggies",
+     "label": "Sauce & Veggies",
+     "lines": [
+      "Mashed Potatoes (gravy on top)",
+      "Grilled Veggies"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Beef Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Sauteed Mushrooms (on top of patty)",
+      "Toasted Sliced Sourdough"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Blackened Mahi Plate",
+   "photo": "blackened-mahi-plate.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Large Red Plate"
+     ]
+    },
+    {
+     "key": "sauce-veggies",
+     "label": "Sauce & Veggies",
+     "lines": [
+      "Grilled Veggies"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Mahi"
+     ]
+    }
+   ]
+  }
+ ]
+}
