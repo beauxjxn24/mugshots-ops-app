@@ -6,6 +6,8 @@ import { useScope, useCurrentNames } from '../lib/scope'
 import { usePersistentState } from '../lib/store'
 import { requirePin } from '../lib/pin'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
+import { getOrderSchedules, setOrderSchedules, DOW, type OrderSchedule } from '../lib/orderDays'
+import { vendors } from '../lib/ordering'
 import { getPmixDays } from '../lib/pmix'
 import { clearImportedNumbers, fullResetStore } from '../lib/reset'
 
@@ -59,6 +61,95 @@ function WeeklyTargets() {
           These feed the goal pills — nightly labor flag, period review, forecast labor budget.
           Saved per store.
         </p>
+      </div>
+    </Card>
+  )
+}
+
+
+/**
+ * Order days — which weekdays each vendor's order has to be PLACED. Delivery
+ * calendars differ per store and reps change them, so this is editable here;
+ * the Dashboard's "Orders due today" tile reads it.
+ */
+function OrderDays() {
+  const { location } = useCurrentNames()
+  const [tick, setTick] = useState(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => getOrderSchedules(), [tick])
+  const [name, setName] = useState('')
+  const known = useMemo(() => vendors(), [tick])
+  const save = (next: OrderSchedule[]) => { setOrderSchedules(next); setTick((x) => x + 1) }
+
+  const add = () => {
+    const v = name.trim()
+    if (!v || rows.some((r) => r.vendor.toLowerCase() === v.toLowerCase())) return
+    save([...rows, { vendor: v, days: [] }])
+    setName('')
+  }
+  const toggleDay = (vendor: string, d: number) =>
+    save(rows.map((r) => (r.vendor === vendor ? { ...r, days: r.days.includes(d) ? r.days.filter((x) => x !== d) : [...r.days, d].sort() } : r)))
+  const setCutoff = (vendor: string, cutoff: string) =>
+    save(rows.map((r) => (r.vendor === vendor ? { ...r, cutoff } : r)))
+  const remove = async (vendor: string) => {
+    if (await confirmDelete(`Remove the order schedule for ${vendor}?`)) save(rows.filter((r) => r.vendor !== vendor))
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">Order days · {location}</div>
+      <p className="mb-3 text-xs text-muted">
+        Pick the days each order has to be <b>placed</b>. The Dashboard reminds you what&rsquo;s due today.
+      </p>
+
+      {rows.length === 0 && <p className="mb-3 text-sm text-muted">No order schedule yet — add a vendor below.</p>}
+
+      <div className="space-y-2">
+        {rows.map((r) => (
+          <div key={r.vendor} className="rounded-xl border border-black/10 bg-white/[0.02] p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="font-semibold text-ink">{r.vendor}</span>
+              <input
+                value={r.cutoff ?? ''}
+                onChange={(e) => setCutoff(r.vendor, e.target.value)}
+                placeholder="cutoff (10:00 AM)"
+                className="ml-auto w-36 rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand"
+              />
+              <button onClick={() => remove(r.vendor)} aria-label={`Remove ${r.vendor}`} className="text-muted hover:text-down">✕</button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {DOW.map((d, i) => {
+                const on = r.days.includes(i)
+                return (
+                  <button
+                    key={d}
+                    onClick={() => toggleDay(r.vendor, i)}
+                    className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                      on ? 'bg-brand text-white' : 'border border-black/10 bg-white text-muted hover:text-ink'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <input
+          list="orderday-vendors"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="Vendor (Capital City, US Foods…)"
+          className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand"
+        />
+        <datalist id="orderday-vendors">{known.map((v) => <option key={v} value={v} />)}</datalist>
+        <button onClick={add} disabled={!name.trim()} className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-40">
+          Add vendor
+        </button>
       </div>
     </Card>
   )
@@ -354,6 +445,7 @@ export function Stores() {
         </Card>
 
         <WeeklyTargets />
+        <OrderDays />
 
         <TrackedItems />
 

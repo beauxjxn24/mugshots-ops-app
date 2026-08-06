@@ -8,11 +8,12 @@ import type { Booking } from '../lib/catering'
 import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, CalendarClock, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
+import { PartyPopper, PackageOpen, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
 import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
+import { ordersDueOn } from '../lib/orderDays'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
@@ -54,6 +55,8 @@ export function Dashboard() {
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
   const todays = upcoming.filter((b) => b.date === t)
   const next = upcoming[0]
+  // Orders that have to be PLACED today, from this store's own schedule.
+  const dueToday = useMemo(() => ordersDueOn(t), [t])
 
   const sorted = useMemo(() => [...nights].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')), [nights])
   const latest = sorted[sorted.length - 1]
@@ -181,6 +184,8 @@ export function Dashboard() {
                 left, the week's graph beside it */}
             <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,4.4fr)]">
               <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
+                {/* Catering — only this tile reacts to catering, and only when
+                    there IS one today (an empty "0" must never shake). */}
                 <KpiTile
                   compact
                   className={todays.length > 0 ? 'tile-alert urgent' : ''}
@@ -190,14 +195,20 @@ export function Dashboard() {
                   label="Caterings today"
                   sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
                 />
+                {/* Orders to place today, from the store's own order-day
+                    schedule (Stores & Concepts → Order days). */}
                 <KpiTile
                   compact
-                  className={next ? 'tile-pop' : ''}
-                  to={next ? `/catering?booking=${next.id}` : '/catering'}
-                  icon={<CalendarClock size={15} />}
-                  value={next ? String(next.guests || '—') : '—'}
-                  label="Next booking"
-                  sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
+                  className={dueToday.length > 0 ? 'tile-pop' : ''}
+                  to="/ordering"
+                  icon={<PackageOpen size={15} />}
+                  value={String(dueToday.length)}
+                  label={dueToday.length === 1 ? 'Order due today' : 'Orders due today'}
+                  sub={
+                    dueToday.length
+                      ? dueToday.map((o) => o.vendor).join(', ').slice(0, 28)
+                      : 'nothing scheduled'
+                  }
                 />
               </div>
               <Card className="drift [--i:1] relative overflow-hidden p-5">
@@ -353,11 +364,11 @@ export function Dashboard() {
               sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
             />
             <KpiTile
-              to={next ? `/catering?booking=${next.id}` : '/catering'}
-              icon={<CalendarClock size={18} />}
-              value={next ? String(next.guests || '—') : '—'}
-              label="Next booking"
-              sub={next ? `${fmtWhen(next.date)}${next.time ? ` · ${fmtTime(next.time)}` : ''}` : 'none scheduled'}
+              to="/ordering"
+              icon={<PackageOpen size={18} />}
+              value={String(dueToday.length)}
+              label={dueToday.length === 1 ? 'Order due today' : 'Orders due today'}
+              sub={dueToday.length ? dueToday.map((o) => o.vendor).join(', ').slice(0, 28) : 'nothing scheduled'}
             />
           </div>
         )}
