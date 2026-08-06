@@ -188,7 +188,8 @@ export function Dashboard() {
                     there IS one today (an empty "0" must never shake). */}
                 <KpiTile
                   compact
-                  className={todays.length > 0 ? 'tile-alert urgent' : ''}
+                  dot={todays.length > 0 ? 'live' : next && daysUntil(next.date) <= 2 ? 'soon' : undefined}
+                  className={todays.length > 0 ? 'tile-nudge' : ''}
                   to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
                   icon={<PartyPopper size={15} />}
                   value={String(todays.length)}
@@ -744,6 +745,7 @@ function KpiTile({
   compact,
   className = '',
   to,
+  dot,
 }: {
   icon: React.ReactNode
   value: string
@@ -752,6 +754,8 @@ function KpiTile({
   compact?: boolean
   className?: string
   to?: string
+  /** Status dot colour — a live pulsing indicator (e.g. a catering today). */
+  dot?: 'live' | 'soon'
 }) {
   // Compact = the prototype's cream catering chip: gold number left, bold
   // label + tiny sub beside it, warm outline.
@@ -761,6 +765,7 @@ function KpiTile({
         to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/40' : ''
       } ${className}`}
     >
+      {dot && <span className={`status-dot ${dot === 'live' ? 'is-live' : 'is-soon'}`} aria-hidden />}
       <span className="font-display text-2xl font-semibold leading-none text-brand">{value}</span>
       <span className="min-w-0">
         <span className="block text-[13px] font-bold leading-tight text-ink">{label}</span>

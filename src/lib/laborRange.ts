@@ -59,3 +59,51 @@ export function rangeFromName(name: string): { start: string; end: string } | nu
   const end = iso(m[2])
   return start <= end ? { start, end } : { start: end, end: start }
 }
+
+/**
+ * One-time repair for devices that imported a date-range labor export BEFORE
+ * range handling existed: that whole-span total was applied to a single night,
+ * leaving e.g. $40,794 of labor against one $5,700 night (the "-717%" / "717%"
+ * labor on the dashboard). Any night whose labor exceeds 60% of its own net —
+ * or that carries labor with no sales at all — cannot be a real night's labor,
+ * so the bogus figure is cleared. Real nights are untouched, and re-dropping a
+ * per-day labor report refills them properly.
+ */
+export function repairStapledLabor(): number {
+  const FLAG = 'mugops:__laborStapleRepaired_v1'
+  try {
+    if (localStorage.getItem(FLAG)) return 0
+    let fixed = 0
+    for (const k of Object.keys(localStorage)) {
+      if (!/::nightly:log$/.test(k)) continue
+      try {
+        const arr = JSON.parse(localStorage.getItem(k) || '[]')
+        if (!Array.isArray(arr)) continue
+        let changed = false
+        for (const n of arr) {
+          const labor = Number(n?.labor) || 0
+          if (labor <= 0) continue
+          const net = Number(n?.netSales) || 0
+          const absurd = net <= 0 || labor / net > 0.6
+          if (absurd) {
+            delete n.labor
+            delete n.laborPct
+            changed = true
+            fixed++
+          } else if (n.laborPct != null && (n.laborPct < 0 || n.laborPct > 100)) {
+            delete n.laborPct // keep the labor $, drop only the bad percentage
+            changed = true
+            fixed++
+          }
+        }
+        if (changed) localStorage.setItem(k, JSON.stringify(arr))
+      } catch {
+        /* skip a corrupt key */
+      }
+    }
+    localStorage.setItem(FLAG, '1')
+    return fixed
+  } catch {
+    return 0
+  }
+}

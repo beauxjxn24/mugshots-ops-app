@@ -560,6 +560,46 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   0%, 100% { border-color: rgba(184, 134, 11, 0.45); }
   40%, 60% { border-color: var(--tile-flash, #b8860b); }
 }
+/* Live status dot — a small pulsing indicator on a KPI tile. `is-live` = it's
+   happening today (red, faster); `is-soon` = coming up (gold, slower). The dot
+   carries the urgency so the tile itself only has to nudge. */
+.status-dot {
+  position: relative;
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.status-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: dotPing 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.status-dot.is-live { background: #ff5a72; }
+.status-dot.is-live::after { background: #ff5a72; }
+.status-dot.is-soon { background: var(--color-brand); animation: none; }
+.status-dot.is-soon::after { background: var(--color-brand); animation-duration: 3.2s; }
+@keyframes dotPing {
+  0% { transform: scale(1); opacity: 0.65; }
+  70%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* A gentle nudge — far softer than .tile-alert's full shake. Just enough
+   movement to catch the eye without jittering the whole dashboard. */
+.tile-nudge { animation: tileNudge 4s ease-in-out infinite; }
+@keyframes tileNudge {
+  0%, 88%, 100% { transform: translateX(0); }
+  90% { transform: translateX(-2px); }
+  93% { transform: translateX(2px); }
+  96% { transform: translateX(-1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-nudge { animation: none; }
+  .status-dot::after { animation: none; }
+}
+
 /* Local-events ticker — seamless marquee (row is duplicated in the DOM) */
 @keyframes tickerscroll {
   from { transform: translateX(0); }

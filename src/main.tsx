@@ -29,6 +29,7 @@ import './index.css'
 import { App } from './App'
 import { seedFlowoodHistory } from './lib/nightly'
 import { applyOwnerDrops, purgeOwnerBookings } from './lib/ownerdata'
+import { repairStapledLabor } from './lib/laborRange'
 import { cleanupCatalogNames } from './lib/catalog'
 import { seedCountSheet } from './lib/countsheet'
 
@@ -45,6 +46,7 @@ const safeBoot = (label: string, fn: () => void) => {
 }
 safeBoot('seedFlowoodHistory', seedFlowoodHistory)
 safeBoot('purgeOwnerBookings', purgeOwnerBookings)
+safeBoot('repairStapledLabor', repairStapledLabor)
 safeBoot('applyOwnerDrops', applyOwnerDrops)
 safeBoot('cleanupCatalogNames', cleanupCatalogNames)
 safeBoot('seedCountSheet', seedCountSheet)
