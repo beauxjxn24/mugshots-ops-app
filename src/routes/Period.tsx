@@ -34,16 +34,10 @@ function fmtDow(isoDate: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })
 }
 
-interface Decision {
-  id: string
-  text: string
-  done: boolean
-}
-
 /**
  * Period review — the owner one-pager (prototype): builds ITSELF from the
  * nightly closes. Navy summary, four week cards, WORKING / WATCH bullets,
- * decisions checklist for next period. Print or send.
+ * Print or send.
  */
 export function Period() {
   const [nights] = usePersistentState<Night[]>('nightly:log', [])
@@ -58,8 +52,6 @@ export function Period() {
   const year = Number(t.slice(0, 4))
   const pStart = periodStart(t)
   const pEnd = shiftDays(pStart, 27)
-  const [decisions, setDecisions] = usePersistentState<Decision[]>(`period:decisions:${year}-P${pw.period + 1}`, [])
-  const [newDecision, setNewDecision] = useState('')
 
   const byDate = useMemo(() => new Map(nights.map((n) => [n.date, n])), [nights])
   const inPeriod = nights
@@ -192,12 +184,6 @@ export function Period() {
     window.location.href = `mailto:?subject=${encodeURIComponent(`${location} Period ${pw.period} review`)}&body=${encodeURIComponent(body)}`
   }
 
-  const addDecision = () => {
-    if (!newDecision.trim()) return
-    setDecisions((ds) => [...ds, { id: `d${Date.now()}`, text: newDecision.trim(), done: false }])
-    setNewDecision('')
-  }
-
   return (
     <>
       <PageHeader
@@ -296,6 +282,26 @@ export function Period() {
                   ) : (
                     <>
                       <div className="mt-1 font-display text-2xl font-semibold text-ink">{money(w.net)}</div>
+                      {/* Up or down vs last year — the headline for the week, always
+                          shown so a blank never reads as "flat". */}
+                      <div
+                        className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${
+                          w.vsLy == null
+                            ? 'bg-white/[0.06] text-muted'
+                            : w.vsLy >= 0
+                              ? 'bg-up/15 text-up'
+                              : 'bg-down/15 text-down'
+                        }`}
+                      >
+                        {w.vsLy == null ? (
+                          'vs LY — no data'
+                        ) : (
+                          <>
+                            {w.vsLy >= 0 ? '▲' : '▼'} {w.vsLy >= 0 ? '+' : '−'}
+                            {Math.abs(w.vsLy).toFixed(1)}% vs LY
+                          </>
+                        )}
+                      </div>
                       <div className="mt-1 space-y-0.5 text-xs text-muted">
                         {w.laborPct != null && (
                           <div>
@@ -308,12 +314,6 @@ export function Period() {
                           </div>
                         )}
                         {w.hasOU && <div>O/U {w.ou >= 0 ? '+' : '−'}${Math.abs(w.ou).toFixed(2)}</div>}
-                        {w.vsLy != null && (
-                          <div className={w.vsLy >= 0 ? 'font-bold text-up' : 'font-bold text-down'}>
-                            vs LY {w.vsLy >= 0 ? '▲ +' : '▼ −'}
-                            {Math.abs(w.vsLy).toFixed(1)}%
-                          </div>
-                        )}
                       </div>
                     </>
                   )}
@@ -355,54 +355,6 @@ export function Period() {
               </div>
             )}
 
-            {/* Decisions for next period */}
-            <Card className="p-4">
-              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-display text-lg font-semibold text-ink">
-                  Decisions for P{pw.period + 1}
-                  <span className="ml-2 text-xs font-normal text-muted">check off as you commit — your action plan</span>
-                </span>
-                <span className="text-[10px] text-muted">auto-updates nightly</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {decisions.map((d) => (
-                  <label
-                    key={d.id}
-                    className={`group inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${
-                      d.done ? 'border-up/40 bg-up/5 text-ink' : 'border-black/10 bg-white text-ink'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={d.done}
-                      onChange={() => setDecisions((ds) => ds.map((x) => (x.id === d.id ? { ...x, done: !x.done } : x)))}
-                    />
-                    {d.text}
-                    <button
-                      onClick={async (e) => {
-                        e.preventDefault()
-                        if (await confirmDelete(`Remove "${d.text}"?`)) setDecisions((ds) => ds.filter((x) => x.id !== d.id))
-                      }}
-                      className="text-muted opacity-0 transition-opacity hover:text-down group-hover:opacity-100 print:hidden"
-                    >
-                      ✕
-                    </button>
-                  </label>
-                ))}
-                <span className="inline-flex items-center gap-1 print:hidden">
-                  <input
-                    value={newDecision}
-                    onChange={(e) => setNewDecision(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addDecision()}
-                    placeholder="Add a decision…"
-                    className="w-52 rounded-lg border border-dashed border-black/20 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                  />
-                  <button onClick={addDecision} className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white">
-                    +
-                  </button>
-                </span>
-              </div>
-            </Card>
           </>
         )}
       </div>

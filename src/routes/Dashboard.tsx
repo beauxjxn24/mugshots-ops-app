@@ -98,6 +98,13 @@ export function Dashboard() {
   const laborSum = laborNights.reduce((s, n) => s + (n.labor ?? 0), 0)
   const laborNet = laborNights.reduce((s, n) => s + n.netSales, 0)
   const laborPct = laborSum > 0 && laborNet > 0 ? (laborSum / laborNet) * 100 : null
+  // Coverage: how many of the window's sales-nights actually have labor too. A
+  // rate computed over 3 of 7 nights is REAL for those 3 but is not the week's
+  // labor — so the number always says what it covers instead of implying it's
+  // the whole window. (Honest > tidy.)
+  const salesNights = win.nights.filter((n) => n.netSales > 0).length
+  const laborCoverage = laborNights.length
+  const laborPartial = laborPct != null && salesNights > 0 && laborCoverage < salesNights
 
   // Hero = FORECASTED sales for the scope, anchored to TODAY (what to expect),
   // from the day-of-week averages. A day already logged uses its real net, so a
@@ -227,8 +234,20 @@ export function Dashboard() {
                         </span>
                       )}
                       {laborPct != null && (
-                        <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${laborPct <= targets.laborPct ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}>
+                        <span
+                          title={
+                            laborPartial
+                              ? `Covers the ${laborCoverage} night${laborCoverage === 1 ? '' : 's'} that have BOTH labor and sales — ${salesNights - laborCoverage} more night(s) still need a labor report.`
+                              : undefined
+                          }
+                          className={`rounded-full px-3 py-1 text-[13px] font-bold ${laborPct <= targets.laborPct ? 'bg-up/10 text-up' : 'bg-down/10 text-down'}`}
+                        >
                           labor {laborPct.toFixed(1)}% · goal ≤ {targets.laborPct}%
+                          {laborPartial && (
+                            <span className="ml-1 font-semibold opacity-80">
+                              ({laborCoverage} of {salesNights} nights)
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
