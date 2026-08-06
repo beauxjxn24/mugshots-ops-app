@@ -8,12 +8,12 @@ import type { Booking } from '../lib/catering'
 import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, PackageOpen, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
+import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
 import { SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
 import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
-import { ordersDueOn } from '../lib/orderDays'
+import { ordersDueOn, deliveriesOn } from '../lib/orderDays'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 type Scope = 'day' | 'week' | 'period'
@@ -55,8 +55,11 @@ export function Dashboard() {
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
   const todays = upcoming.filter((b) => b.date === t)
   const next = upcoming[0]
-  // Orders that have to be PLACED today, from this store's own schedule.
+  // The two halves of today's order day, from this store's own delivery
+  // calendar: what has to go out, and what's landing on the dock.
   const dueToday = useMemo(() => ordersDueOn(t), [t])
+  const arrivingToday = useMemo(() => deliveriesOn(t), [t])
+  const vendorList = (rows: { vendor: string }[]) => rows.map((o) => o.vendor).join(', ').slice(0, 28)
 
   const sorted = useMemo(() => [...nights].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')), [nights])
   const latest = sorted[sorted.length - 1]
@@ -183,7 +186,7 @@ export function Dashboard() {
                 catering is coming up) + ONE sales card: hero number on the
                 left, the week's graph beside it */}
             <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[minmax(160px,1fr)_minmax(0,4.4fr)]">
-              <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-2">
+              <div className="drift [--i:0] grid grid-cols-2 gap-4 lg:grid-cols-1 lg:grid-rows-3">
                 {/* Catering — only this tile reacts to catering, and only when
                     there IS one today (an empty "0" must never shake). */}
                 <KpiTile
@@ -196,20 +199,24 @@ export function Dashboard() {
                   label="Caterings today"
                   sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
                 />
-                {/* Orders to place today, from the store's own order-day
-                    schedule (Stores & Concepts → Order days). */}
+                {/* The order day, split in two — placing and receiving are
+                    different jobs, often different people. Both read the
+                    store's delivery calendar (Stores & Concepts). */}
                 <KpiTile
                   compact
-                  className={dueToday.length > 0 ? 'tile-pop' : ''}
                   to="/ordering"
                   icon={<PackageOpen size={15} />}
                   value={String(dueToday.length)}
-                  label={dueToday.length === 1 ? 'Order due today' : 'Orders due today'}
-                  sub={
-                    dueToday.length
-                      ? dueToday.map((o) => o.vendor).join(', ').slice(0, 28)
-                      : 'nothing scheduled'
-                  }
+                  label={dueToday.length === 1 ? 'Order to place' : 'Orders to place'}
+                  sub={dueToday.length ? vendorList(dueToday) : 'nothing to place'}
+                />
+                <KpiTile
+                  compact
+                  to="/invoices"
+                  icon={<Truck size={15} />}
+                  value={String(arrivingToday.length)}
+                  label={arrivingToday.length === 1 ? 'Order to receive' : 'Orders to receive'}
+                  sub={arrivingToday.length ? vendorList(arrivingToday) : 'no deliveries'}
                 />
               </div>
               <Card className="drift [--i:1] relative overflow-hidden p-5">
@@ -356,7 +363,7 @@ export function Dashboard() {
 
         {/* Catering tiles live beside the hero once sales exist — until then, here. */}
         {!hasReal && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             <KpiTile
               to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
               icon={<PartyPopper size={18} />}
@@ -368,8 +375,15 @@ export function Dashboard() {
               to="/ordering"
               icon={<PackageOpen size={18} />}
               value={String(dueToday.length)}
-              label={dueToday.length === 1 ? 'Order due today' : 'Orders due today'}
-              sub={dueToday.length ? dueToday.map((o) => o.vendor).join(', ').slice(0, 28) : 'nothing scheduled'}
+              label={dueToday.length === 1 ? 'Order to place' : 'Orders to place'}
+              sub={dueToday.length ? vendorList(dueToday) : 'nothing to place'}
+            />
+            <KpiTile
+              to="/invoices"
+              icon={<Truck size={18} />}
+              value={String(arrivingToday.length)}
+              label={arrivingToday.length === 1 ? 'Order to receive' : 'Orders to receive'}
+              sub={arrivingToday.length ? vendorList(arrivingToday) : 'no deliveries'}
             />
           </div>
         )}

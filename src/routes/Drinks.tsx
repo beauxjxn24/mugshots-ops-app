@@ -41,8 +41,11 @@ export function Drinks() {
     ].filter((g) => g.items.length > 0)
   }, [drinks])
 
-  // Signature drinks sold this week — PMIX items whose name matches a build.
-  const soldChip = useMemo(() => {
+  // Signature drinks sold over the last 7 days of product mix on file — PMIX
+  // items whose name matches a build. A count with no dates behind it is just a
+  // number, so this carries the exact window AND how many of those days were
+  // actually imported: 383 over 6 days reads very differently from 383 over 2.
+  const sold = useMemo(() => {
     const keys = Object.keys(days).sort()
     const latest = keys[keys.length - 1]
     if (!latest) return null
@@ -52,9 +55,10 @@ export function Drinks() {
       return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`
     })()
     const names = drinks.map((s) => s.name.toLowerCase())
+    const window = keys.filter((k2) => k2 >= from && k2 <= latest)
     let qty = 0
     let sales = 0
-    for (const k of keys.filter((k2) => k2 >= from && k2 <= latest))
+    for (const k of window)
       for (const it of days[k]?.items ?? []) {
         if (it.sales <= 0) continue
         const n = it.name.toLowerCase()
@@ -63,7 +67,18 @@ export function Drinks() {
           sales += it.sales
         }
       }
-    return qty > 0 ? `${qty} signature drinks sold · ${money(sales)}` : null
+    if (qty <= 0) return null
+    const md = (d: string) => {
+      const [y, mo, da] = d.split('-').map(Number)
+      return new Date(y, mo - 1, da).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+    return {
+      qty,
+      sales,
+      from: md(window[0] ?? from),
+      to: md(latest),
+      days: window.length,
+    }
   }, [days, drinks])
 
   const openBuild = (name: string) => {
@@ -76,7 +91,20 @@ export function Drinks() {
       <PageHeader
         title="Signature drinks"
         subtitle="Every frozen drink, shake, float & pairing build — tap any drink for the full card"
-        right={soldChip && <span className="text-sm font-semibold text-ink">{soldChip}</span>}
+        right={
+          sold && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-right backdrop-blur">
+              <div className="flex items-baseline justify-end gap-2">
+                <span className="font-display text-xl font-semibold text-ink tabular-nums">{sold.qty}</span>
+                <span className="text-xs font-bold uppercase tracking-wide text-muted">drinks</span>
+                <span className="font-display text-xl font-semibold text-brand tabular-nums">{money(sold.sales)}</span>
+              </div>
+              <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-signal/80">
+                {sold.from} – {sold.to} · {sold.days} day{sold.days === 1 ? '' : 's'} on file
+              </div>
+            </div>
+          )
+        }
       />
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
         {/* Three build lists */}

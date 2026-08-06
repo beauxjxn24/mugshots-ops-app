@@ -6,6 +6,7 @@ import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { confirmDelete } from '../lib/confirm'
 import { laborRangeFor } from '../lib/laborRange'
+import { coverageFor, categoryTotals, type Coverage, type Grain } from '../lib/coverage'
 import { dowAverages, projectDay, periodWeek, periodStart } from '../lib/forecast'
 import { getPriceLog } from '../lib/catalog'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
@@ -69,6 +70,10 @@ export function Period() {
   // A range labor export covering this period is the REAL period rate (Toast's
   // own total for the span). Prefer it over a rate stitched from partial nights.
   const rangeLabor = useMemo(() => laborRangeFor(pStart, pEnd < t ? pEnd : t), [pStart, pEnd, t])
+  // What the app actually has for this period, and at what grain — drives the
+  // category card and the "What's on file" panel below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cov = useMemo(() => coverageFor(pStart, pEnd), [pStart, pEnd, nights.length])
   const periodLaborPct = rangeLabor?.pct ?? laborPct
   const laborFromRange = rangeLabor?.pct != null
   const cashOU = inPeriod.reduce((s, n) => s + (n.overUnder ?? 0), 0)
@@ -331,6 +336,9 @@ export function Period() {
               ))}
             </div>
 
+            <SalesCategory cov={cov} start={pStart} end={pEnd} />
+            <WhatsOnFile cov={cov} />
+
             {/* Working / Watch */}
             {(working.length > 0 || watch.length > 0) && (
               <div className="grid items-start gap-5 lg:grid-cols-2">
@@ -369,5 +377,165 @@ export function Period() {
         )}
       </div>
     </>
+  )
+}
+
+/**
+ * Sales by category for the period — the REAL totals from Toast's category
+ * summary, shown against the span they were imported for. A date-range export
+ * only carries a period-wide category total, so that's exactly how it's
+ * presented: no per-night split, no invented detail.
+ */
+function SalesCategory({ cov, start, end }: { cov: Coverage; start: string; end: string }) {
+  const mix = cov.catMix
+  const rows = useMemo(() => (mix && mix.net > 0 ? categoryTotals(mix) : []), [mix])
+  if (!mix || rows.length === 0) {
+    return (
+      <Card className="p-5">
+        <div className="text-[11px] font-extrabold uppercase tracking-wider text-muted">Sales by category</div>
+        <p className="mt-2 text-sm text-muted text-pretty">
+          Not imported yet. Drop a Toast <b>Sales Summary</b> on Imports — its “Sales category summary” fills this in.
+        </p>
+      </Card>
+    )
+  }
+
+  const total = rows.reduce((s, r) => s + r.net, 0)
+  const max = Math.max(...rows.map((r) => r.net))
+  // Say plainly when the imported span isn't this period — the number is still
+  // real, it just belongs to different dates.
+  const spanNote =
+    mix.from && mix.to
+      ? cov.catMixCovers
+        ? `${fmtMD(mix.from)} – ${fmtMD(mix.to)}`
+        : `imported for ${fmtMD(mix.from)} – ${fmtMD(mix.to)} — not this period (${fmtMD(start)} – ${fmtMD(end)})`
+      : 'span not stated in the export'
+
+  return (
+    <Card className="p-5">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted">Sales by category</span>
+        <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted">
+          period total
+        </span>
+        <span className="text-[11px] text-muted">{spanNote}</span>
+        {/* When the mix belongs to other dates, its total is NOT this period's
+            number — keep it visibly secondary so it can't be misread. */}
+        <span
+          className={`ml-auto font-display text-lg font-semibold tabular-nums ${
+            cov.catMixCovers ? 'text-ink' : 'text-muted'
+          }`}
+        >
+          {money(total)}
+          {!cov.catMixCovers && <span className="ml-1 text-[11px] font-normal">for that span</span>}
+        </span>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        {rows.map((r) => (
+          <div key={r.name} className="grid grid-cols-[7rem_1fr_auto] items-center gap-3">
+            <span className="truncate text-sm font-semibold text-ink">{r.name}</span>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full bg-brand"
+                style={{ width: `${Math.max(2, (r.net / max) * 100)}%` }}
+              />
+            </div>
+            <span className="whitespace-nowrap text-sm text-muted tabular-nums">
+              {money(r.net)} <span className="text-ink/70">· {r.pct.toFixed(1)}%</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-3 text-[11px] text-muted text-pretty">
+        Toast reports categories for the whole span, not per night — so this is the period figure, not a nightly one.
+        Drop a single-day Sales Summary to get a category breakdown for that night.
+      </p>
+    </Card>
+  )
+}
+
+/**
+ * What's on file — the honest inventory of this period's data and its grain.
+ *
+ * Written for the first week at a NEW store: a backlog import is mostly
+ * date-range exports, so some things land per-night and some only as period
+ * totals. Saying which is which up front is the difference between "the app
+ * knows what it has" and "these numbers look wrong."
+ */
+function WhatsOnFile({ cov }: { cov: Coverage }) {
+  const chip = (grain: Grain, text: string) => {
+    const tone =
+      grain === 'nightly'
+        ? 'bg-up/15 text-up'
+        : grain === 'period'
+          ? 'bg-brand/15 text-brand-600'
+          : grain === 'partial'
+            ? 'bg-warn/15 text-warn'
+            : 'bg-white/[0.06] text-muted'
+    return <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${tone}`}>{text}</span>
+  }
+
+  const rows: { label: string; grain: Grain; chip: string; note: string }[] = [
+    {
+      label: 'Sales',
+      grain: cov.salesGrain,
+      chip:
+        cov.salesGrain === 'none' ? 'none yet' : `${cov.salesDays} of ${cov.days} night${cov.days === 1 ? '' : 's'}`,
+      note: cov.salesGrain === 'nightly' ? 'every night, per night' : 'per night — drop the missing days to complete it',
+    },
+    {
+      label: 'Labor',
+      grain: cov.laborGrain,
+      chip:
+        cov.laborGrain === 'period'
+          ? 'period total'
+          : cov.laborGrain === 'none'
+            ? 'none yet'
+            : `${cov.laborDays} of ${cov.days} nights`,
+      note:
+        cov.laborGrain === 'period'
+          ? `Toast's own total for ${cov.laborRange ? `${fmtMD(cov.laborRange.start)} – ${fmtMD(cov.laborRange.end)}` : 'the imported span'} — real, but not split by night`
+          : cov.laborGrain === 'none'
+            ? 'drop a Labor cost breakdown export'
+            : 'per night, from single-day exports',
+    },
+    {
+      label: 'Sales category',
+      grain: cov.categoryGrain,
+      chip: cov.categoryGrain === 'period' ? 'period total' : 'none yet',
+      note:
+        cov.categoryGrain === 'period'
+          ? cov.catMixCovers
+            ? 'covers this period'
+            : 'imported for a different span'
+          : 'comes with the Sales Summary',
+    },
+    {
+      label: 'Product mix',
+      grain: cov.pmixGrain,
+      chip: cov.pmixGrain === 'none' ? 'none yet' : `${cov.pmixDays} of ${cov.days} days`,
+      note: cov.pmixGrain === 'none' ? 'drop a PMIX export' : 'per day, per item',
+    },
+  ]
+
+  return (
+    <Card className="p-5">
+      <div className="text-[11px] font-extrabold uppercase tracking-wider text-muted">What&rsquo;s on file · this period</div>
+      <p className="mt-1 text-xs text-muted text-pretty">
+        Toast sends some reports per night and some as one total for a whole span. Nothing here is estimated — each line
+        says what was imported and at what level.
+      </p>
+      <div className="mt-3 divide-y divide-white/[0.06]">
+        {rows.map((r) => (
+          <div key={r.label} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+            <span className="w-32 shrink-0 text-sm font-semibold text-ink">{r.label}</span>
+            {chip(r.grain, r.chip)}
+            <span className="min-w-0 flex-1 text-xs text-muted">{r.note}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   )
 }
