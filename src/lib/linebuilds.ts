@@ -76,18 +76,31 @@ export interface ReadLine {
   /** What the line refers to, once the quantity is stripped. */
   body: string
   /** A prep recipe or catalog item this line uses, if one is on file. */
-  link?: { name: string; kind: 'prep' | 'build' }
+  link?: { name: string; kind: LinkKind }
 }
 
-/** Everything the app already knows by name, longest first so "Diced Tomatoes"
- *  wins over "Tomatoes". */
-function knownItems(extra: string[] = []): { name: string; kind: 'prep' | 'build'; key: string }[] {
+export type LinkKind = 'prep' | 'stock' | 'build'
+
+/**
+ * Everything the app already knows by name, longest first so "Diced Tomatoes"
+ * wins over "Tomatoes".
+ *
+ * Three kinds, in the order they should win: a prep recipe (the kitchen makes
+ * it), a stocked catalog item (it arrives on a truck), then another build (a
+ * component that is itself a menu item, like the Philly inside a Philly Pasta).
+ */
+function knownItems(prep: string[] = [], stock: string[] = []) {
   const out = [
-    ...SPECS.filter((s) => s.g === 'Prep').map((s) => ({ name: s.name, kind: 'prep' as const })),
-    ...extra.map((n) => ({ name: n, kind: 'prep' as const })),
-    ...SPECS.filter((s) => s.g !== 'Prep').map((s) => ({ name: s.name, kind: 'build' as const })),
+    ...SPECS.filter((s) => s.g === 'Prep').map((s) => ({ name: s.name, kind: 'prep' as LinkKind })),
+    ...prep.map((n) => ({ name: n, kind: 'prep' as LinkKind })),
+    ...stock.map((n) => ({ name: n, kind: 'stock' as LinkKind })),
+    ...SPECS.filter((s) => s.g !== 'Prep').map((s) => ({ name: s.name, kind: 'build' as LinkKind })),
   ].map((x) => ({ ...x, key: componentKey(x.name) }))
-  return out.filter((x) => x.key.length >= 3).sort((a, b) => b.key.length - a.key.length)
+  // First name wins per key, so a prep recipe beats a same-named stock item.
+  const seen = new Set<string>()
+  return out
+    .filter((x) => x.key.length >= 3 && !seen.has(x.key) && seen.add(x.key))
+    .sort((a, b) => b.key.length - a.key.length)
 }
 
 /**
@@ -96,15 +109,42 @@ function knownItems(extra: string[] = []): { name: string; kind: 'prep' | 'build
  * quantity, so an instruction still links — "Toss with 1 oz Comeback Sauce"
  * points at Comeback Sauce the same as a plain "1 oz Comeback Sauce" would.
  */
-export function readLine(raw: string, prepNames: string[] = []): ReadLine {
+export function readLine(raw: string, prepNames: string[] = [], stockNames: string[] = []): ReadLine {
   const m = raw.match(QTY)
   const qty = m && m[0].trim() ? m[0].trim().replace(/\s+of$/i, '') : undefined
   const body = (m ? raw.slice(m[0].length) : raw).trim() || raw
   const hay = componentKey(raw)
-  const hit = knownItems(prepNames).find(
+  const hit = knownItems(prepNames, stockNames).find(
     (k) => hay === k.key || hay.includes(` ${k.key} `) || hay.startsWith(`${k.key} `) || hay.endsWith(` ${k.key}`),
   )
   return { raw, qty, body, link: hit ? { name: hit.name, kind: hit.kind } : undefined }
+}
+
+/** Is this line a thing the kitchen stocks or preps, rather than a method? */
+export function isComponent(body: string, qty?: string): boolean {
+  if (!qty) return false
+  if (body.split(/\s+/).length > 5 || body.includes('.')) return false
+  return !/^(toss|drizzle|garnish|cut|combine|heat|place|mic|fry|serve|use|top|choose|portion)\b/i.test(body)
+}
+
+/**
+ * Every portioned component across every build that has nothing behind it yet.
+ * The owner wants each ingredient prepped or stocked in some form, so this is
+ * the worklist for getting there — reviewed and added deliberately, never
+ * created behind your back.
+ */
+export function missingComponents(prepNames: string[] = [], stockNames: string[] = []): string[] {
+  const out = new Map<string, string>()
+  for (const b of LINE_BUILDS)
+    for (const s of b.sections)
+      for (const raw of s.lines) {
+        const r = readLine(raw, prepNames, stockNames)
+        if (!r.link && isComponent(r.body, r.qty)) {
+          const k = componentKey(r.body)
+          if (k && !out.has(k)) out.set(k, r.body.replace(/,\s*$/, ''))
+        }
+      }
+  return [...out.values()].sort((a, b) => a.localeCompare(b))
 }
 
 /** The build for a menu item, matched on name. */
@@ -117,13 +157,32 @@ export function buildFor(name: string): LineBuild | undefined {
   )
 }
 
-/** Which builds use a given prep item — the reverse trail, for the prep card. */
-export function usedIn(prepName: string, prepNames: string[] = []): string[] {
-  const key = componentKey(prepName)
-  if (key.length < 3) return []
-  return LINE_BUILDS.filter((b) =>
-    b.sections.some((s) => s.lines.some((l) => readLine(l, prepNames).link?.name === prepName)),
-  ).map((b) => b.sheetName)
+/**
+ * The reverse trail: for every prep recipe and stocked item, which dishes it
+ * goes into. Diced Tomatoes lands on half the menu, so a cook changing that
+ * prep — or a manager setting its par — can see what it feeds.
+ *
+ * Built once over every build rather than re-scanned per item, so a prep sheet
+ * of a hundred rows costs one pass instead of a hundred.
+ */
+export function usageIndex(prepNames: string[] = [], stockNames: string[] = []): Map<string, string[]> {
+  const idx = new Map<string, string[]>()
+  for (const b of LINE_BUILDS)
+    for (const s of b.sections)
+      for (const raw of s.lines) {
+        const link = readLine(raw, prepNames, stockNames).link
+        if (!link) continue
+        const list = idx.get(link.name) ?? []
+        if (!list.includes(b.sheetName)) list.push(b.sheetName)
+        idx.set(link.name, list)
+      }
+  for (const list of idx.values()) list.sort((a, b) => a.localeCompare(b))
+  return idx
+}
+
+/** Which builds use a given item — the single-item form of usageIndex. */
+export function usedIn(name: string, prepNames: string[] = [], stockNames: string[] = []): string[] {
+  return usageIndex(prepNames, stockNames).get(name) ?? []
 }
 
 export const buildPhoto = (b: LineBuild): string | undefined =>

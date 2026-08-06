@@ -3,6 +3,10 @@ import { Archive, ArchiveRestore } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { SPECS } from '../lib/specs'
+import { buildFor } from '../lib/linebuilds'
+import { LineBuildCard } from '../components/LineBuildCard'
+import { UsedIn } from '../components/UsedIn'
+import { dishPhoto } from '../lib/photos'
 import { isFood } from '../lib/categories'
 import { usePersistentState } from '../lib/store'
 import type { Spec } from '../lib/types'
@@ -31,7 +35,12 @@ export function Specs() {
     return base.filter((s) => {
       if (!viewingOldies && group !== 'All' && s.g !== group) return false
       if (!query) return true
-      return s.name.toLowerCase().includes(query) || s.ing.some(([n]) => n.toLowerCase().includes(query))
+      if (s.name.toLowerCase().includes(query)) return true
+      if (s.ing.some(([n]) => n.toLowerCase().includes(query))) return true
+      // A build's own lines are searchable too — "comeback" should find every
+      // dish it goes on, not just the prep card.
+      const b = buildFor(s.name)
+      return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
   }, [q, group, viewingOldies, archivedSet])
 
@@ -126,15 +135,26 @@ function SpecCard({
   onArchive: () => void
   onRestore: () => void
 }) {
+  const build = buildFor(spec.name)
+  const thumb = dishPhoto(spec.name)
   return (
     <Card className={`overflow-hidden ${archived ? 'opacity-75' : ''}`}>
       <button onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left">
+        {thumb && (
+          <img
+            src={thumb}
+            alt=""
+            loading="lazy"
+            className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
+          />
+        )}
         <div className="min-w-0 flex-1">
           <div className="font-display text-base font-semibold text-ink">{spec.name}</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
             {spec.storage && <Chip>{spec.storage}</Chip>}
             {spec.shelf && <Chip>{spec.shelf}</Chip>}
             {spec.yields && <Chip>{spec.yields}</Chip>}
+            {build && <Chip>line build</Chip>}
           </div>
         </div>
         <span className={`mt-1 text-muted transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
@@ -142,7 +162,14 @@ function SpecCard({
 
       {open && (
         <div className="border-t border-black/5 p-4 pt-3">
-          {spec.ing.length > 0 && (
+          {/* Where the kitchen's line-build sheet covers this dish, IT is the
+              ingredient list — showing both would put two portion lists on one
+              card and invite a cook to follow the wrong one. */}
+          {build ? (
+            <div className="-mx-4 -mt-3 mb-3">
+              <LineBuildCard build={build} compact />
+            </div>
+          ) : spec.ing.length > 0 ? (
             <>
               <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
                 Ingredients
@@ -156,7 +183,7 @@ function SpecCard({
                 ))}
               </ul>
             </>
-          )}
+          ) : null}
           {spec.steps.length > 0 && (
             <>
               <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
@@ -169,6 +196,9 @@ function SpecCard({
               </ol>
             </>
           )}
+          {/* A prep card's other half: not what goes in it, but what it goes
+              into. Read straight off the line builds, so it can never drift. */}
+          <UsedIn name={spec.name} className="mt-3 border-t border-black/5 pt-3" />
           <div className="mt-3 border-t border-black/5 pt-3">
             {archived ? (
               <button

@@ -6,6 +6,8 @@ import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { BarPrep } from '../components/BarPrep'
 import PREP_SEED from '../data/prep-items.json'
+import { usageIndex } from '../lib/linebuilds'
+import { prepItemNames, getCatalog } from '../lib/catalog'
 
 interface PrepItem {
   name: string
@@ -343,6 +345,9 @@ export function Prep() {
           <div className="truncate text-sm font-bold text-ink">{it.name}</div>
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="truncate">{it.spec || it.unit}</span>
+            {/* What this prep feeds. Diced Tomatoes goes on half the menu, and
+                that count is the honest reason its par is what it is. */}
+            <DishCount name={it.name} />
             {stations.length > 0 &&
               (() => {
                 const hex = it.station ? stationHex(it.station) : undefined
@@ -834,5 +839,26 @@ export function Prep() {
         <div className="flex flex-wrap items-center justify-end gap-2">{actionButtons}</div>
       </div>
     </>
+  )
+}
+
+/**
+ * How many dishes this prep item goes into, read straight off the line builds.
+ * Hovering names them; tapping opens the full list on Specs & Recipes.
+ */
+function DishCount({ name }: { name: string }) {
+  const dishes = useMemo(
+    () => usageIndex(prepItemNames(), getCatalog().map((i) => i.name)).get(name) ?? [],
+    [name],
+  )
+  if (dishes.length === 0) return null
+  return (
+    <Link
+      to={`/specs?open=${encodeURIComponent(dishes[0])}`}
+      title={`Used in: ${dishes.join(', ')}`}
+      className="shrink-0 rounded-full bg-signal/10 px-1.5 py-0.5 text-[10px] font-bold text-signal hover:bg-signal/20"
+    >
+      {dishes.length} dish{dishes.length === 1 ? '' : 'es'}
+    </Link>
   )
 }
