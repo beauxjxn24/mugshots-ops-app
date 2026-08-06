@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Cajun Pasta",
-   "photo": "cajun-pasta.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -46,7 +46,7 @@
   },
   {
    "sheetName": "Parm Pasta",
-   "photo": "parm-pasta.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -90,7 +90,7 @@
   },
   {
    "sheetName": "Blackened Shrimp Pasta",
-   "photo": "blackened-shrimp-pasta.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -133,7 +133,7 @@
   },
   {
    "sheetName": "Philly Pasta",
-   "photo": "philly-pasta.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -177,7 +177,7 @@
   },
   {
    "sheetName": "Hamburger Steak Plate",
-   "photo": "hamburger-steak-plate.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -213,7 +213,7 @@
   },
   {
    "sheetName": "Blackened Mahi Plate",
-   "photo": "blackened-mahi-plate.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",

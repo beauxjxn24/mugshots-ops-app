@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Quesadilla",
-   "photo": "quesadilla.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -46,7 +46,7 @@
   },
   {
    "sheetName": "Rajun Cajun Salad",
-   "photo": "rajun-cajun-salad.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -89,7 +89,7 @@
   },
   {
    "sheetName": "Buffalo Bleu",
-   "photo": "buffalo-bleu.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -133,7 +133,7 @@
   },
   {
    "sheetName": "Cheeseburger Bowl",
-   "photo": "cheeseburger-bowl.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -174,7 +174,7 @@
   },
   {
    "sheetName": "Teriyaki Bowl",
-   "photo": "teriyaki-bowl.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -213,7 +213,7 @@
   },
   {
    "sheetName": "Side House",
-   "photo": "side-house.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",

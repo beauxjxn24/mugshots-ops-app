@@ -55,6 +55,10 @@ export function Dashboard() {
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
   const todays = upcoming.filter((b) => b.date === t)
   const next = upcoming[0]
+  // The catering tile reads whatever is actually next. A day with nothing on
+  // it is not a blank tile — it points at the next booking, because "nothing
+  // today" and "nothing coming" are very different things to a manager.
+  const cater = cateringTile(todays, next)
   // The two halves of today's order day, from this store's own delivery
   // calendar: what has to go out, and what's landing on the dock.
   const dueToday = useMemo(() => ordersDueOn(t), [t])
@@ -191,13 +195,13 @@ export function Dashboard() {
                     there IS one today (an empty "0" must never shake). */}
                 <KpiTile
                   compact
-                  dot={todays.length > 0 ? 'live' : next && daysUntil(next.date) <= 2 ? 'soon' : undefined}
-                  className={todays.length > 0 ? 'tile-nudge' : ''}
-                  to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
+                  dot={cater.dot}
+                  className={cater.urgent ? 'tile-nudge' : ''}
+                  to={cater.to}
                   icon={<PartyPopper size={15} />}
-                  value={String(todays.length)}
-                  label="Caterings today"
-                  sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
+                  value={cater.value}
+                  label={cater.label}
+                  sub={cater.sub}
                 />
                 {/* The order day, split in two — placing and receiving are
                     different jobs, often different people. Both read the
@@ -365,11 +369,13 @@ export function Dashboard() {
         {!hasReal && (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             <KpiTile
-              to={todays.length ? `/catering?booking=${todays[0].id}` : '/catering'}
+              dot={cater.dot}
+              className={cater.urgent ? 'tile-nudge' : ''}
+              to={cater.to}
               icon={<PartyPopper size={18} />}
-              value={String(todays.length)}
-              label="Caterings today"
-              sub={todays.length ? todays[0].event.slice(0, 20) : 'none today'}
+              value={cater.value}
+              label={cater.label}
+              sub={cater.sub}
             />
             <KpiTile
               to="/ordering"
@@ -942,4 +948,46 @@ function EventsTicker() {
       )}
     </div>
   )
+}
+
+/**
+ * What the catering tile should say right now.
+ *
+ * Three states, because "one today", "none today but one Friday" and "nothing
+ * booked" all mean different things on a Tuesday morning. Only a catering that
+ * is actually TODAY earns the shake and the red dot; a booking coming up gets
+ * its date in the number slot and a gold dot once it is within two days.
+ */
+function cateringTile(
+  todays: Booking[],
+  next?: Booking,
+): { value: string; label: string; sub: string; to: string; dot?: 'live' | 'soon'; urgent: boolean } {
+  if (todays.length > 0) {
+    return {
+      value: String(todays.length),
+      label: todays.length === 1 ? 'Catering today' : 'Caterings today',
+      sub: `${todays[0].time ? `${fmtTime(todays[0].time)} · ` : ''}${todays[0].event}`.slice(0, 28),
+      to: `/catering?booking=${todays[0].id}`,
+      dot: 'live',
+      urgent: true,
+    }
+  }
+  if (next) {
+    const days = daysUntil(next.date)
+    return {
+      value: fmtMD(next.date),
+      label: days === 1 ? 'Catering tomorrow' : 'Next catering',
+      sub: `${days === 1 ? 'tomorrow' : `in ${days} days`} · ${next.event}`.slice(0, 28),
+      to: `/catering?booking=${next.id}`,
+      dot: days <= 2 ? 'soon' : undefined,
+      urgent: false,
+    }
+  }
+  return { value: '—', label: 'Catering', sub: 'nothing booked', to: '/catering', urgent: false }
+}
+
+/** "8/9" — short enough to sit in the tile's number slot. */
+function fmtMD(iso: string): string {
+  const [, m, d] = iso.split('-').map(Number)
+  return `${m}/${d}`
 }

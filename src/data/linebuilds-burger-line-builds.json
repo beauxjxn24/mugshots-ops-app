@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Dill Pickles",
-   "photo": "dill-pickles.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -31,7 +31,7 @@
   },
   {
    "sheetName": "Shrooms",
-   "photo": "shrooms.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -60,7 +60,7 @@
   },
   {
    "sheetName": "Mombo Combo",
-   "photo": "mombo-combo.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -88,7 +88,7 @@
   },
   {
    "sheetName": "Chicken Basket",
-   "photo": "chicken-basket.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -124,7 +124,7 @@
   },
   {
    "sheetName": "Pow Pow Shrimp",
-   "photo": "pow-pow-shrimp.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -152,7 +152,7 @@
   },
   {
    "sheetName": "Chili",
-   "photo": "chili.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -180,8 +180,8 @@
      "key": "on-top-tossed",
      "label": "On Top / Tossed",
      "lines": [
-      "Cup = 1 tbsp Shredded",
-      "Cheese and Red Onions. _______________",
+      "Cup = 1 tbsp Shredded Cheese and Red Onions.",
+      "_______________",
       "Bowl = 2 tbsp Shredded Cheese and Red Onion"
      ]
     }
@@ -189,7 +189,7 @@
   },
   {
    "sheetName": "Middle",
-   "photo": "middle.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -227,7 +227,7 @@
   },
   {
    "sheetName": "Pato",
-   "photo": "pato.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -265,7 +265,7 @@
   },
   {
    "sheetName": "Stu",
-   "photo": "stu.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -310,7 +310,7 @@
   },
   {
    "sheetName": "Gamble",
-   "photo": "gamble.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -354,7 +354,7 @@
   },
   {
    "sheetName": "McDowell",
-   "photo": "mcdowell.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -400,7 +400,7 @@
   },
   {
    "sheetName": "Savell",
-   "photo": "savell.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -445,7 +445,7 @@
   },
   {
    "sheetName": "Anthony's Peanut Butter Burger",
-   "photo": "anthony-s-peanut-butter-burger.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -487,7 +487,7 @@
   },
   {
    "sheetName": "Comeback",
-   "photo": "comeback.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -533,7 +533,7 @@
   },
   {
    "sheetName": "Garlic Parm",
-   "photo": "garlic-parm.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -577,7 +577,7 @@
   },
   {
    "sheetName": "Mac & Cheese",
-   "photo": "mac-cheese.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -611,7 +611,7 @@
   },
   {
    "sheetName": "Mugshot",
-   "photo": "mugshot.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -650,15 +650,14 @@
      "label": "On Top",
      "lines": [
       "2 Slices - Bacon (each patty), Cheddar - (2 patties)",
-      "Swiss - (1 patty), Onion Ring and Fried",
-      "Pickles on Skewer"
+      "Swiss - (1 patty), Onion Ring and Fried Pickles on Skewer"
      ]
     }
    ]
   },
   {
    "sheetName": "Steak Burger",
-   "photo": "steak-burger.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -702,7 +701,7 @@
   },
   {
    "sheetName": "Patty Melt",
-   "photo": "patty-melt.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -744,7 +743,7 @@
   },
   {
    "sheetName": "A1 Sauce Burger",
-   "photo": "a1-sauce-burger.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",

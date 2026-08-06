@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Chips 'n",
-   "photo": "chips-n.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -31,7 +31,7 @@
   },
   {
    "sheetName": "Cheese Wedges",
-   "photo": "cheese-wedges.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -60,7 +60,7 @@
   },
   {
    "sheetName": "Eggrolls",
-   "photo": "eggrolls.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -95,7 +95,7 @@
   },
   {
    "sheetName": "Wangs",
-   "photo": "wangs.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -131,7 +131,7 @@
   },
   {
    "sheetName": "Seans Nachos",
-   "photo": "seans-nachos.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -167,7 +167,7 @@
   },
   {
    "sheetName": "Dill Pickles",
-   "photo": "dill-pickles.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -194,7 +194,7 @@
   },
   {
    "sheetName": "Shrooms",
-   "photo": "shrooms.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -223,7 +223,7 @@
   },
   {
    "sheetName": "Mombo Combo",
-   "photo": "mombo-combo.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -251,7 +251,7 @@
   },
   {
    "sheetName": "Chicken Basket",
-   "photo": "chicken-basket.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -287,7 +287,7 @@
   },
   {
    "sheetName": "Pow Pow Shrimp",
-   "photo": "pow-pow-shrimp.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -315,7 +315,7 @@
   },
   {
    "sheetName": "Chili",
-   "photo": "chili.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -343,8 +343,8 @@
      "key": "on-top-tossed",
      "label": "On Top / Tossed",
      "lines": [
-      "Cup = 1 tbsp Shredded",
-      "Cheese and Red Onions. _______________",
+      "Cup = 1 tbsp Shredded Cheese and Red Onions.",
+      "_______________",
       "Bowl = 2 tbsp Shredded Cheese and Red Onion"
      ]
     }

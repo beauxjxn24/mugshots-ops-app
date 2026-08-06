@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Bishop Burger",
-   "photo": "bishop-burger.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -40,7 +40,7 @@
   },
   {
    "sheetName": "Kayla's Mini Chicken Basket",
-   "photo": "kayla-s-mini-chicken-basket.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -67,7 +67,7 @@
   },
   {
    "sheetName": "Emma's Grilled Cheese",
-   "photo": "emma-s-grilled-cheese.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -94,7 +94,7 @@
   },
   {
    "sheetName": "Hailey's Egg Sandwich",
-   "photo": "hailey-s-egg-sandwich.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -121,7 +121,7 @@
   },
   {
    "sheetName": "Meg's Mac-N- Cheese",
-   "photo": "meg-s-mac-n-cheese.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -141,7 +141,7 @@
   },
   {
    "sheetName": "Peanut Butter-N- Jelly",
-   "photo": "peanut-butter-n-jelly.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -168,7 +168,7 @@
   },
   {
    "sheetName": "Taylor's Mini Pasta",
-   "photo": "taylor-s-mini-pasta.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -203,7 +203,7 @@
   },
   {
    "sheetName": "Duncan's Quesadilla",
-   "photo": "duncan-s-quesadilla.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -231,7 +231,8 @@
      "label": "On Top / Tossed / Build",
      "lines": [
       "Cut tortilla in half and place on flattop.Sprinkle 1/3 cup shredded mixed cheese on tortilla. Heat for approximately 1 1/2 minutes and fold in half.",
-      "Heat for an additional 30 seconds. Flip and heat for an additional 30 seconds. Remove from the flat top.",
+      "Heat for an additional 30 seconds. Flip and heat for an additional 30 seconds.",
+      "Remove from the flat top.",
       "Cut in equal halves. Place quesadilla halves on lined basket, making sure to shingle at the point"
      ]
     }

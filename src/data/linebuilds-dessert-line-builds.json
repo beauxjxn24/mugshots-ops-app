@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Dessert Nachos",
-   "photo": "dessert-nachos.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -34,7 +34,7 @@
   },
   {
    "sheetName": "Bread Puddin' Bites",
-   "photo": "bread-puddin-bites.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -54,7 +54,7 @@
   },
   {
    "sheetName": "10 oz Milkshake",
-   "photo": "10-oz-milkshake.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -68,7 +68,8 @@
      "label": "Portion Size / Prep",
      "lines": [
       "Add 6 oz Half & Half and 3 oz flavorings (if flavored) to mixing tin.",
-      "Add 2 - #8 scoops vanilla ice cream to mixing tin. Using shake mixer, blend until no lumps are present. Pour into frosted 10 oz mug."
+      "Add 2 - #8 scoops vanilla ice cream to mixing tin. Using shake mixer, blend until no lumps are present.",
+      "Pour into frosted 10 oz mug."
      ]
     },
     {
@@ -83,7 +84,7 @@
   },
   {
    "sheetName": "22 oz Milkshake",
-   "photo": "22-oz-milkshake.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -97,7 +98,8 @@
      "label": "Portion Size / Prep",
      "lines": [
       "Add 14 oz Half & Half and 6 oz flavorings (if flavored) to mixing tin.",
-      "Add 4 - #8 scoops vanilla ice cream to mixing tin. Using shake mixer, blend until no lumps are present. Pour into frosted 10 oz mug."
+      "Add 4 - #8 scoops vanilla ice cream to mixing tin. Using shake mixer, blend until no lumps are present.",
+      "Pour into frosted 10 oz mug."
      ]
     },
     {
@@ -112,7 +114,7 @@
   },
   {
    "sheetName": "10 Root Beer Float",
-   "photo": "10-root-beer-float.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
@@ -132,7 +134,7 @@
   },
   {
    "sheetName": "22 oz Root Beer Float",
-   "photo": "22-oz-root-beer-float.jpg",
+   "photo": null,
    "sections": [
     {
      "key": "plateware",
