@@ -10,6 +10,38 @@ import { sanitizePmix, type PmixDays } from '../lib/pmix'
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
 /**
+ * Lowercase, punctuation stripped, single-spaced, and with pour-size and
+ * packaging words dropped — so the menu's "Frozen Margarita Bulk" and the
+ * PMIX's "Frozen Margarita 32oz" both reduce to "frozen margarita".
+ */
+const SIZE_WORDS = /\b(\d+\s*oz|oz|bulk|pitcher|glass|single|double|each|ea|lg|large|sm|small|reg|regular)\b/g
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(SIZE_WORDS, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+/**
+ * Is this PMIX item one of the signature drinks?
+ *
+ * Matching is whole-name, not substring. The old test asked whether either
+ * name contained the other's first ten characters, which let a PMIX item
+ * called "Rita" or "Smash" match three drinks at once and inflated the count
+ * into the hundreds. Now an item counts only when it IS the drink, or extends
+ * it on a word boundary ("Frozen Margarita 32oz"). The reverse — a shorter
+ * PMIX name that the drink extends — is allowed too, but only from eight
+ * characters up, which is long enough that it can't be a stray word.
+ */
+function matchesDrink(item: string, drinkNames: string[]): boolean {
+  if (!item) return false
+  return drinkNames.some(
+    (dn) => item === dn || item.startsWith(`${dn} `) || (item.length >= 8 && dn.startsWith(`${item} `)),
+  )
+}
+
+/**
  * Signature drinks — prototype layout: three build lists (frozen / shakes &
  * floats / pairings, tap any drink for the full card). Sales chip fills from
  * your PMIX. Bar prep lives under Prep now.
@@ -42,6 +74,7 @@ export function Drinks() {
   }, [drinks])
 
   // Signature drinks sold over the last 7 days of product mix on file — PMIX
+  // items matched to a build by name.
   // items whose name matches a build. A count with no dates behind it is just a
   // number, so this carries the exact window AND how many of those days were
   // actually imported: 383 over 6 days reads very differently from 383 over 2.
@@ -54,15 +87,14 @@ export function Drinks() {
       const f = new Date(y, m - 1, d - 6)
       return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`
     })()
-    const names = drinks.map((s) => s.name.toLowerCase())
+    const names = drinks.map((s) => norm(s.name)).filter((n) => n.length >= 5)
     const window = keys.filter((k2) => k2 >= from && k2 <= latest)
     let qty = 0
     let sales = 0
     for (const k of window)
       for (const it of days[k]?.items ?? []) {
         if (it.sales <= 0) continue
-        const n = it.name.toLowerCase()
-        if (names.some((dn) => n.includes(dn.slice(0, 10)) || dn.includes(n.slice(0, 10)))) {
+        if (matchesDrink(norm(it.name), names)) {
           qty += it.qty
           sales += it.sales
         }

@@ -465,7 +465,10 @@ export function Imports() {
 
             {job.note && <p className="mt-2 text-xs text-warn">{job.note}</p>}
 
-            {job.lineItems && job.lineItems.length > 0 && (
+            {/* A roster is a list of PEOPLE, not an invoice — every generic
+                reader (line items, catering) finds nonsense in it and buries
+                the one panel that matters. When it's a roster, show only that. */}
+            {job.lineItems && job.lineItems.length > 0 && !(job.text && isRosterDoc(job.text)) && (
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -512,7 +515,7 @@ export function Imports() {
               <SalesImport text={job.text} fileName={job.fileName} />
             )}
 
-            {job.text && isCateringDoc(job.text) && (
+            {job.text && isCateringDoc(job.text) && !isRosterDoc(job.text) && (
               <CateringImport text={job.text} fileName={job.fileName} />
             )}
 

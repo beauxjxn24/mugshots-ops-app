@@ -78,18 +78,47 @@ export function importPeople(text: string): Omit<Person, 'id'>[] {
   )
   const iPhone = find(['phone', 'mobile'])
 
+  const iEmail = find(['email'])
+
   const out: Omit<Person, 'id'>[] = []
+  const seen = new Set<string>()
   for (let r = 1; r < lines.length; r++) {
     const c = splitCsv(lines[r])
     let name = ''
     if (iFirst >= 0) name = [c[iFirst], iLast >= 0 ? c[iLast] : ''].filter(Boolean).join(' ').trim()
     if (!name && iFull >= 0) name = c[iFull] ?? ''
     if (!name) name = c[0] ?? ''
-    name = name.trim()
+    // Toast pads the CSV with empty-ish cells (''), which must not become names.
+    name = name.trim().replace(/^'+|'+$/g, '').trim()
     if (!name) continue
-    out.push({ name, role: primaryRole(iRole >= 0 ? c[iRole] : ''), phone: (iPhone >= 0 ? c[iPhone] : '') || '' })
+    const job = iRole >= 0 ? c[iRole] ?? '' : ''
+    if (isSystemAccount(name, job, iEmail >= 0 ? c[iEmail] : '')) continue
+    // A roster export lists a person once, but re-drops and multi-location
+    // files repeat them — one row per person.
+    const dedupe = name.toLowerCase()
+    if (seen.has(dedupe)) continue
+    seen.add(dedupe)
+    out.push({ name, role: primaryRole(job), phone: (iPhone >= 0 ? c[iPhone] : '') || '' })
   }
   return out
+}
+
+/**
+ * Toast rosters carry service accounts alongside real people — the default
+ * till login, the online-ordering pseudo-user, delivery-service and reporting
+ * integrations, generic station logins ("Expo Expo", "Party Party"). They're
+ * not employees, and importing them makes the roster look broken on day one.
+ */
+function isSystemAccount(name: string, job: string, email?: string): boolean {
+  const n = name.toLowerCase()
+  const j = (job || '').toLowerCase()
+  if (/do not delete|toast default|online ordering|test user/.test(n)) return true
+  if (/delivery service driver|integrations?|reporting/.test(j)) return true
+  if (/@toasttab\.com$/.test((email || '').trim().toLowerCase())) return true
+  // "Expo Expo" / "Party Party" — a station login, not a person.
+  const parts = n.split(/\s+/)
+  if (parts.length === 2 && parts[0] === parts[1]) return true
+  return false
 }
 
 /**

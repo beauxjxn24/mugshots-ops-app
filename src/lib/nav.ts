@@ -114,9 +114,10 @@ export const NAV: NavSection[] = [
     ],
   },
   {
+    // Costs is snoozed from the nav (still reachable at /costs) — same as
+    // Inventory, to keep the menu to what gets used daily.
     title: 'Management',
     items: [
-      { to: '/costs', label: 'Costs', icon: DollarSign, color: '#4ADE80', anim: CoinIcon },
       { to: '/period', label: 'Period Review', icon: BarChart3, color: '#A78BFA', anim: BarsIcon },
       { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays, color: '#60A5FA', anim: ClockIcon },
       { to: '/posted', label: 'Posted schedule', icon: CalendarCheck, color: '#34D399', anim: ClockIcon, staff: true },
