@@ -45,8 +45,10 @@ const SHEETS = Object.values(
 export const LINE_BUILDS: LineBuild[] = SHEETS.flatMap((s) =>
   s.dishes.map((d) => ({ ...d, sheet: s.sheet })),
 ).filter(
-  // The owner's Burgers export repeats a page of the Appetizers sheet; one card
-  // per item, first sheet wins.
+  // One card per item, first sheet wins. The sheets themselves no longer
+  // overlap — a Burgers export that repeated a page of the Appetizers sheet is
+  // extracted without it — but a future export could, and a dish appearing
+  // twice on Specs would be worse than picking one.
   (d, i, all) => all.findIndex((x) => norm(x.sheetName) === norm(d.sheetName)) === i,
 )
 
