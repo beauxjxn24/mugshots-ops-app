@@ -43,7 +43,7 @@ export interface DayForecast {
   /** % projected vs the comparison base (LY if we have it, else LW). */
   vs: number | null
   base: 'ly' | 'lw' | null
-  parties: number // open caterings booked that day
+  caterings: number // open caterings booked that day
 }
 
 /**
@@ -74,7 +74,7 @@ export function forecastDates(
       lw,
       vs: cmp && cmp > 0 ? ((projected - cmp) / cmp) * 100 : null,
       base: ly != null ? 'ly' : lw != null ? 'lw' : null,
-      parties: (Array.isArray(bookings) ? bookings : []).filter((b) => !b.completedAt && b.date === date).length,
+      caterings: (Array.isArray(bookings) ? bookings : []).filter((b) => !b.completedAt && b.date === date).length,
     }
   }
   return out

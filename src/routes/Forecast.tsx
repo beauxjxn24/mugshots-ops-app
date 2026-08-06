@@ -36,7 +36,7 @@ interface DayCol {
   ly: number | null
   lw: number | null
   vsBase: number | null
-  parties: Booking[]
+  caterings: Booking[]
 }
 
 /**
@@ -89,7 +89,7 @@ export function Forecast() {
         ly,
         lw,
         vsBase: cmp && cmp > 0 ? ((value - cmp) / cmp) * 100 : null,
-        parties: bookings.filter((b) => !b.completedAt && b.date === date),
+        caterings: bookings.filter((b) => !b.completedAt && b.date === date),
       }
     })
   }, [dowAvg, adj, overrides, byDate, bookings])
@@ -102,14 +102,14 @@ export function Forecast() {
   const peak = days.reduce((a, b) => (b.value > a.value ? b : a), days[0])
   const t = today()
 
-  // "This week's calls" — generated, never editorial: parties + trend flags.
+  // "This week's calls" — generated, never editorial: caterings + trend flags.
   const calls = useMemo(() => {
     const out: Array<{ day: string; text: string; to?: string; link?: string }> = []
     for (const d of days)
-      for (const b of d.parties)
+      for (const b of d.caterings)
         out.push({
           day: DOW[d.dow].slice(0, 3).toUpperCase(),
-          text: `${b.event}${b.guests ? ` — party of ${b.guests}` : ''}${b.time ? ` @ ${fmtTime(b.time)}` : ''} — prep the day before`,
+          text: `${b.event}${b.guests ? ` — catering for ${b.guests}` : ''}${b.time ? ` @ ${fmtTime(b.time)}` : ''} — prep the day before`,
           to: `/catering?booking=${b.id}`,
           link: 'Catering',
         })
@@ -190,9 +190,9 @@ export function Forecast() {
                     <div className="font-display text-2xl font-semibold">
                       {fmtShort(peak.date)} · {kfmt(peak.value)}
                     </div>
-                    {peak.parties.length > 0 && (
+                    {peak.caterings.length > 0 && (
                       <div className="text-[11px] font-bold text-[#eec263]">
-                        ★ {peak.parties[0].event.slice(0, 40)} — plan for volume
+                        ★ {peak.caterings[0].event.slice(0, 40)} — plan for volume
                       </div>
                     )}
                   </div>
@@ -246,13 +246,13 @@ export function Forecast() {
                       {d.ly != null && d.lw != null && ' · '}
                       {d.lw != null && `LW ${kfmt(d.lw)}`}
                     </div>
-                    {d.parties.map((b) => (
+                    {d.caterings.map((b) => (
                       <Link
                         key={b.id}
                         to={`/catering?booking=${b.id}`}
                         className="mt-1.5 block truncate rounded-md bg-down/10 px-1.5 py-1 text-[10px] font-bold text-down"
                       >
-                        ★ {b.guests ? `Party of ${b.guests}` : b.event.slice(0, 18)}
+                        ★ {b.guests ? `Catering · ${b.guests}` : b.event.slice(0, 18)}
                         {b.time ? ` · ${fmtTime(b.time)}` : ''} →
                       </Link>
                     ))}
@@ -272,7 +272,7 @@ export function Forecast() {
                 </div>
                 {calls.length === 0 ? (
                   <p className="text-sm text-muted">
-                    Nothing flags this week — no parties in the window and no weekday trending
+                    Nothing flags this week — no caterings in the window and no weekday trending
                     sharply either way. Calls appear here on their own.
                   </p>
                 ) : (
@@ -324,7 +324,7 @@ export function Forecast() {
                   <p className="text-xs leading-relaxed text-ink/80">
                     Each day starts from <b>your last 4 of that same weekday</b>, scaled by the
                     outlook slider. Once a year of history is in, the ▲▼ compares to <b>last
-                    year's same day</b> (until then, last week). Tagged parties sit on top —
+                    year's same day</b> (until then, last week). Booked caterings sit on top —
                     never inside the comp. Type on any day card to override it (shown in gold);
                     clear it to go back to the projection. Labor budget comes from Admin:{' '}
                     {targets.laborPct}% of projected net.

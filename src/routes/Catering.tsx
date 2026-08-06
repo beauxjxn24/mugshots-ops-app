@@ -231,7 +231,7 @@ export function Catering() {
                 Auto
               </span>
               <p className="text-xs leading-relaxed text-ink/75">
-                Day before each party, plan the prep bump on the prep list. ezCater orders dropped on
+                Day before each catering, plan the prep bump on the prep list. ezCater orders dropped on
                 Imports land here auto-tagged and de-duped by order #.
               </p>
             </Card>
