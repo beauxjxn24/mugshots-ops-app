@@ -196,7 +196,7 @@ export function Dashboard() {
                 <KpiTile
                   compact
                   dot={cater.dot}
-                  className={cater.urgent ? 'tile-nudge' : ''}
+                  className={cater.urgent ? 'tile-nudge' : cater.soon ? 'tile-ring' : ''}
                   to={cater.to}
                   icon={<PartyPopper size={15} />}
                   value={cater.value}
@@ -370,7 +370,7 @@ export function Dashboard() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             <KpiTile
               dot={cater.dot}
-              className={cater.urgent ? 'tile-nudge' : ''}
+              className={cater.urgent ? 'tile-nudge' : cater.soon ? 'tile-ring' : ''}
               to={cater.to}
               icon={<PartyPopper size={18} />}
               value={cater.value}
@@ -568,17 +568,40 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
 }
 
 
-/** FOOD FOCUS — LTO carousel card (prototype spec): cycle the live LTOs. */
+/**
+ * FOOD FOCUS — the carousel of what the shift should be pushing: the live LTOs
+ * first, then the burgers actually selling best from your product mix. Each
+ * card says which it is, so "Top seller" is never mistaken for a promo.
+ */
 function LtoFocus() {
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
   const allLtos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
+  // The LTOs lead — they're what the shift is being pushed on — followed by the
+  // burgers actually selling best, so the tile rotates through what's new AND
+  // what's carrying the menu instead of only the promo.
+  const topBurgers = useMemo(() => {
+    const sold = new Map<string, number>()
+    for (const d of Object.values(days))
+      for (const it of d.items) {
+        if (it.sales <= 0) continue
+        sold.set(it.name.toLowerCase(), (sold.get(it.name.toLowerCase()) ?? 0) + it.qty)
+      }
+    return SPECS.filter((x) => /Burger Builds/i.test(x.g))
+      .map((x) => ({ spec: x, qty: sold.get(x.name.toLowerCase()) ?? 0 }))
+      .filter((x) => x.qty > 0)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5)
+      .map((x) => x.spec)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(days).length])
+  const focus = [...allLtos, ...topBurgers.filter((b) => !allLtos.some((l) => l.name === b.name))]
   // Rotate through items that actually HAVE a photo, so the tile always shows a
-  // real dish pic (falling back to all LTOs only if no photos exist yet).
-  const withPhoto = allLtos.filter((s) => dishPhoto(s.name))
-  const ltos = withPhoto.length ? withPhoto : allLtos
+  // real dish pic (falling back to everything only if no photos exist yet).
+  const withPhoto = focus.filter((s) => dishPhoto(s.name))
+  const ltos = withPhoto.length ? withPhoto : focus
 
   // Auto-scroll the food photos every few seconds (pause on hover/tap).
   useEffect(() => {
@@ -612,7 +635,8 @@ function LtoFocus() {
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-[#e0b23c]">
-          <Flame size={14} /> Food focus · LTO
+          <Flame size={14} /> Food focus ·{' '}
+          {allLtos.some((l) => l.name === s.name) ? 'LTO' : 'Top seller'}
         </div>
         <div className="flex items-center gap-1 text-xs text-white/60">
           <button onClick={() => setIdx((i) => i - 1)} aria-label="Previous" className="grid size-6 place-items-center rounded-md border border-white/15 bg-white/10 text-white">
@@ -961,7 +985,7 @@ function EventsTicker() {
 function cateringTile(
   todays: Booking[],
   next?: Booking,
-): { value: string; label: string; sub: string; to: string; dot?: 'live' | 'soon'; urgent: boolean } {
+): { value: string; label: string; sub: string; to: string; dot?: 'live' | 'soon'; urgent: boolean; soon?: boolean } {
   if (todays.length > 0) {
     return {
       value: String(todays.length),
@@ -980,7 +1004,10 @@ function cateringTile(
       sub: `${days === 1 ? 'tomorrow' : `in ${days} days`} · ${next.event}`.slice(0, 28),
       to: `/catering?booking=${next.id}`,
       dot: days <= 2 ? 'soon' : undefined,
+      // Inside two days the tile still breathes, it just doesn't shake — the
+      // shake is reserved for a catering going out TODAY.
       urgent: false,
+      soon: days <= 2,
     }
   }
   return { value: '—', label: 'Catering', sub: 'nothing booked', to: '/catering', urgent: false }
