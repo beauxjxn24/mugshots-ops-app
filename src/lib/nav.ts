@@ -86,7 +86,6 @@ export const NAV: NavSection[] = [
       { to: '/sidework', label: 'Sidework', icon: Sparkles, color: '#2DD4BF', anim: SparkleIcon, staff: true },
       { to: '/tipshare', label: 'Tipshare', icon: Banknote, color: '#4ADE80', anim: CoinIcon },
       { to: '/prep', label: 'Prep', icon: ChefHat, color: '#FB7185', anim: ChefIcon },
-      { to: '/prep-today', label: "Today's Prep", icon: ChefHat, color: '#FB7185', anim: ChefIcon, staff: true },
       { to: '/ordering', label: 'Ordering', icon: PackageOpen, color: '#F0A94C', anim: BoxIcon },
       { to: '/invoices', label: 'Invoices', icon: ReceiptText, color: '#A78BFA', anim: ReceiptIcon },
       { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },

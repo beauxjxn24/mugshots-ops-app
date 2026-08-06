@@ -69,7 +69,21 @@ export function Nightly() {
 
   const net = vn?.netSales ?? 0
   const gross = vn?.gross ?? 0
-  const laborPct = vn?.laborPct ?? (vn?.labor && net > 0 ? (vn.labor / net) * 100 : 0)
+  // Labor % — never trust a stored value blindly. A labor report imported for a
+  // range (or against a day whose sales never landed) can carry a nonsense
+  // percentage; showing "-717.5%" is worse than showing nothing. Recompute from
+  // this night's own labor ÷ net whenever we can, and only fall back to the
+  // stored figure when it's actually plausible (0–100%).
+  const computedPct = vn?.labor && net > 0 ? (vn.labor / net) * 100 : 0
+  const storedPct = vn?.laborPct
+  const laborPct =
+    computedPct > 0
+      ? computedPct
+      : storedPct != null && storedPct > 0 && storedPct <= 100
+        ? storedPct
+        : 0
+  // Labor landed but this night has no sales yet — say so instead of a wild %.
+  const laborNoSales = (vn?.labor ?? 0) > 0 && net <= 0
   const expected = vn?.expected
   const overUnder = cash !== '' && expected != null ? Math.round((f(cash) - expected) * 100) / 100 : null
 
@@ -214,9 +228,14 @@ export function Nightly() {
                     </span>
                   </div>
                 </div>
-                {vn.labor == null && (
+                {vn.labor == null ? (
                   <p className="px-4 pb-3 text-[11px] text-muted">Drop the Toast <b>Labor</b> report on Imports to fill this.</p>
-                )}
+                ) : laborNoSales ? (
+                  <p className="px-4 pb-3 text-[11px] text-warn">
+                    Labor imported but this night has no sales yet — drop the <b>Sales Summary</b> for this day and the
+                    percentage fills in.
+                  </p>
+                ) : null}
               </ReportCard>
             </div>
 
