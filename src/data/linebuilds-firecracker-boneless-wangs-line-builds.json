@@ -1,0 +1,48 @@
+{
+ "sheet": "Firecracker Boneless Wangs Line Builds",
+ "source": "Firecracker Boneless Wangs.pdf",
+ "dishes": [
+  {
+   "sheetName": "Firecracker Boneless Wangs",
+   "photo": "firecracker-boneless-wangs.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Small Bowl w/Liner"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion size / Prep",
+     "lines": [
+      "3 oz Boneless Wangs"
+     ]
+    },
+    {
+     "key": "process",
+     "label": "Process",
+     "lines": [
+      "Bread chicken chunks - breader/buttermilk/breader. Fry for 3 minutes. Pull from fryer and allow grease to drain in Sav a Day."
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Ranch",
+      "2 pieces Celery"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Naked or Toss in 2 oz Mild or Hot - other sauce also available"
+     ]
+    }
+   ]
+  }
+ ]
+}

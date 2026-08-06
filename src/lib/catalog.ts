@@ -379,6 +379,13 @@ const setPrep = (v: PrepItemLite[]): void => save(prepKey(), v)
  *  components against what the kitchen actually preps. */
 export const prepItemNames = (): string[] => getPrep().filter((p) => !p.parked).map((p) => p.name)
 
+/** The bar's own prep sheet, so drink builds resolve against what the bar preps. */
+export const barPrepNames = (): string[] => {
+  const s = useScope.getState()
+  const r = load<{ name?: string }[]>(`${s.currentConcept}|${s.currentLocation}::barprep:items`, [])
+  return Array.isArray(r) ? r.map((x) => (typeof x?.name === 'string' ? x.name : '')).filter(Boolean) : []
+}
+
 export function isInPrep(name: string): boolean {
   const k = normKey(name)
   return getPrep().some((p) => normKey(p.name) === k)

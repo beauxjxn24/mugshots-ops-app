@@ -1,0 +1,57 @@
+{
+ "sheet": "Single Classic Smash Line Builds",
+ "source": "Single Classic Smash.pdf",
+ "dishes": [
+  {
+   "sheetName": "Single Classic Smash",
+   "photo": "single-classic-smash.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "BUN"
+     ]
+    },
+    {
+     "key": "bottom-bun",
+     "label": "Bottom Bun",
+     "lines": [
+      "1/2 Tbsp Signature Sauce (bottom bun)",
+      "1 oz Sauteed Onions",
+      "2 Pickles"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Single Smash Patty"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "American Cheese",
+      "1/2 tbsp Signature Sauce - Top Bun"
+     ]
+    },
+    {
+     "key": "side",
+     "label": "Side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  }
+ ]
+}

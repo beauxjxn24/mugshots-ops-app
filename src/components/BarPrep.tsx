@@ -5,6 +5,9 @@ import { Card } from './ui'
 import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
 import { usePersistentState, today } from '../lib/store'
+import { Link } from 'react-router-dom'
+import { usageIndex } from '../lib/linebuilds'
+import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface BarPrepItem {
   name: string
@@ -147,6 +150,9 @@ export function BarPrep() {
               ) : (
                 <span className="truncate text-sm font-bold text-ink">{it.name}</span>
               )}
+              {/* What this bar prep feeds — the same trail the kitchen's prep
+                  sheet carries, read off the drink recipe cards. */}
+              <BarUsedIn name={it.name} />
               <span className="truncate text-xs text-muted">
                 {it.storage} · {it.shelf}
               </span>
@@ -204,5 +210,24 @@ export function BarPrep() {
         })}
       </div>
     </Card>
+  )
+}
+
+
+/** How many drinks this bar prep goes into, read off the recipe cards. */
+function BarUsedIn({ name }: { name: string }) {
+  const drinks = useMemo(
+    () => usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? [],
+    [name],
+  )
+  if (drinks.length === 0) return null
+  return (
+    <Link
+      to={`/drinks?spec=${encodeURIComponent(drinks[0])}`}
+      title={`Used in: ${drinks.join(', ')}`}
+      className="shrink-0 rounded-full bg-signal/10 px-1.5 py-0.5 text-[10px] font-bold text-signal hover:bg-signal/20"
+    >
+      {drinks.length} drink{drinks.length === 1 ? '' : 's'}
+    </Link>
   )
 }

@@ -1,0 +1,207 @@
+{
+ "sheet": "Hot Dog Line Builds",
+ "source": "Hot Dog Builds.pdf",
+ "dishes": [
+  {
+   "sheetName": "Firecracker Popper Dog 250",
+   "photo": "firecracker-popper-dog-250.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted Hot Dog Bun"
+     ]
+    },
+    {
+     "key": "bottom",
+     "label": "Bottom",
+     "lines": [
+      "1 tbsp Jalapeno Popper Mixture, spread evenly on Right Inside half"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Grilled Hot Dog"
+     ]
+    },
+    {
+     "key": "build-on-top",
+     "label": "Build / . On Top",
+     "lines": [
+      "Place 6 fried fresh jalapeno slices on top of the cream cheese. _ Evenly sprinkle 2 slices bacon - chopped on top of the hot dog"
+     ]
+    },
+    {
+     "key": "side",
+     "label": "Side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Classic Dog",
+   "photo": "classic-dog.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted Hot Dog Bun"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Grilled Hot Dog"
+     ]
+    },
+    {
+     "key": "build-on-top",
+     "label": "Build / . On Top",
+     "lines": [
+      "Drizzle Ketchup",
+      "Drizzle Mustard 1 tbsp Red Onion"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "1 oz Pickle Relish - on side"
+     ]
+    },
+    {
+     "key": "side",
+     "label": "Side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Chicago-ish Freedom Dog",
+   "photo": "chicago-ish-freedom-dog.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted Hot Dog Bun"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Grilled Hot Dog"
+     ]
+    },
+    {
+     "key": "build-left",
+     "label": "Build Left",
+     "lines": [
+      "Layer in Order: Squeeze of yellow mustard length of the bun",
+      "2 tbsp diced dill pickles 2 tbsp diced white onion 2 tbsp diced tomatoes"
+     ]
+    },
+    {
+     "key": "build-right",
+     "label": "Build Right",
+     "lines": [
+      "Dill pickle spear tucked along the hot dog"
+     ]
+    },
+    {
+     "key": "on-top-garnish",
+     "label": "On Top / Garnish",
+     "lines": [
+      "Sport peppers on top (2 large or 3 small) Sprinkle of celery salt"
+     ]
+    },
+    {
+     "key": "side",
+     "label": "Side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Southern Dog",
+   "photo": "southern-dog.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted Hot Dog Bun"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "Grilled Hot Dog"
+     ]
+    },
+    {
+     "key": "build-left",
+     "label": "Build Left",
+     "lines": [
+      "Portion Pimento Cheese, heated for 20-30 seconds"
+     ]
+    },
+    {
+     "key": "on-top-garnish",
+     "label": "On Top / Garnish",
+     "lines": [
+      "Place 4 fried pickles on top of hot dog Evenly sprinkle 1 slice bacon - chopped on top of pickles"
+     ]
+    },
+    {
+     "key": "side",
+     "label": "Side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  }
+ ]
+}

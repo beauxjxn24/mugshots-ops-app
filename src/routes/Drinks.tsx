@@ -6,6 +6,8 @@ import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
 import { usePersistentState } from '../lib/store'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
+import { LINE_BUILDS, buildFor } from '../lib/linebuilds'
+import { LineBuildCard } from '../components/LineBuildCard'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
@@ -48,6 +50,15 @@ function matchesDrink(item: string, drinkNames: string[]): boolean {
  */
 export function Drinks() {
   const drinks = useMemo(() => SPECS.filter(isDrink), [])
+  // A sheet is a drink's build when it came off a drink sheet, or when it
+  // matches a drink already on the menu.
+  const drinkBuilds = useMemo(
+    () =>
+      LINE_BUILDS.filter(
+        (b) => /drink|rita|shake|cocktail/i.test(b.sheet) || drinks.some((d) => buildFor(d.name) === b),
+      ),
+    [drinks],
+  )
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
   const [params] = useSearchParams()
@@ -139,6 +150,21 @@ export function Drinks() {
         }
       />
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Bar recipe cards, read straight off the sheets — same treatment the
+            kitchen's line builds get, with each ingredient linked to the bar
+            prep that makes it. */}
+        {drinkBuilds.length > 0 && (
+          <div>
+            <div className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-muted">
+              Bar recipe cards · {drinkBuilds.length}
+            </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              {drinkBuilds.map((b) => (
+                <LineBuildCard key={b.sheetName} build={b} />
+              ))}
+            </div>
+          </div>
+        )}
         {/* Three build lists */}
         <div className="grid items-start gap-5 lg:grid-cols-3">
           {groups.map((g) => (

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plus, ChefHat, Package } from 'lucide-react'
 import { Card } from './ui'
 import { buildPhoto, readLine, isComponent, type LineBuild } from '../lib/linebuilds'
-import { prepItemNames, addToPrep, getCatalog, registerItem } from '../lib/catalog'
+import { prepItemNames, barPrepNames, addToPrep, getCatalog, registerItem } from '../lib/catalog'
 import { toast } from '../lib/toast'
 
 /**
@@ -17,7 +17,7 @@ import { toast } from '../lib/toast'
 export function LineBuildCard({ build, compact = false }: { build: LineBuild; compact?: boolean }) {
   const [tick, setTick] = useState(0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const prep = useMemo(() => prepItemNames(), [tick])
+  const prep = useMemo(() => [...prepItemNames(), ...barPrepNames()], [tick])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stock = useMemo(() => getCatalog().map((i) => i.name), [tick])
   const photo = buildPhoto(build)

@@ -1,0 +1,34 @@
+{
+ "sheet": "Firecracker Wedges Line Builds",
+ "source": "Firecracker Wedges.pdf",
+ "dishes": [
+  {
+   "sheetName": "Firecracker Wedges",
+   "photo": "firecracker-wedges.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Small Bowl w/Liner"
+     ]
+    },
+    {
+     "key": "porion-size-prep",
+     "label": "Porion size / Prep",
+     "lines": [
+      "3 Mozzarella or Pepperjack",
+      "2 & 1 of Each Mixed"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Marinara"
+     ]
+    }
+   ]
+  }
+ ]
+}

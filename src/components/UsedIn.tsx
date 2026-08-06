@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { UtensilsCrossed } from 'lucide-react'
 import { usageIndex } from '../lib/linebuilds'
-import { prepItemNames, getCatalog } from '../lib/catalog'
+import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 /**
  * "Used in" — every dish a prep item or stocked component goes into.
@@ -13,7 +13,7 @@ import { prepItemNames, getCatalog } from '../lib/catalog'
  * without opening sixty build cards.
  */
 export function UsedIn({ name, className = '' }: { name: string; className?: string }) {
-  const dishes = useMemo(() => usageIndex(prepItemNames(), getCatalog().map((i) => i.name)).get(name) ?? [], [name])
+  const dishes = useMemo(() => usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? [], [name])
   if (dishes.length === 0) return null
   return (
     <div className={className}>

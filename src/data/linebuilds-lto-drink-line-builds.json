@@ -1,0 +1,125 @@
+{
+ "sheet": "LTO Drink Line Builds",
+ "source": "LTO Drinks.pdf",
+ "dishes": [
+  {
+   "sheetName": "Rocket Pop Shake",
+   "photo": "rocket-pop-shake.jpg",
+   "sections": [
+    {
+     "key": "ingredients",
+     "label": "Ingredients",
+     "lines": [
+      "6 oz Soft Serve Shake",
+      "1 oz Strawberry Puree",
+      "2 oz Finest Call Blue Curacao"
+     ]
+    },
+    {
+     "key": "glassware",
+     "label": "Glassware",
+     "lines": [
+      "1O oz Mug rimmed with Red, White, Blue Sugar"
+     ]
+    },
+    {
+     "key": "garnish",
+     "label": "Garnish",
+     "lines": [
+      "1 oz Strawberry Puree",
+      "Red, White, & Sugars",
+      "Whipped Cream",
+      "Cherry"
+     ]
+    },
+    {
+     "key": "recipe",
+     "label": "Recipe",
+     "lines": [
+      "Combine soft serve shake and Finest Call blue curacao in mixing tin. Mix for 5 seconds using the spindle mixer. Pour into 10 oz mug rimmed with red, white, and blue sugars. Top with strawberry puree and whipped cream. Sprinkle 1 tsp red, white, and blue sugars. Garnish with cherry."
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Key Lime Pie Southern ‘Rita",
+   "photo": "key-lime-pie-southern-rita.jpg",
+   "sections": [
+    {
+     "key": "ingredients",
+     "label": "Ingredients",
+     "lines": [
+      "6 oz Frozen Rita",
+      "1 oz Lunazul Blanco Tequila",
+      "6 oz Soft Serve Shake"
+     ]
+    },
+    {
+     "key": "glassware",
+     "label": "Glassware",
+     "lines": [
+      "16 oz Pint Glass rimmed with Graham Cracker Crumbs"
+     ]
+    },
+    {
+     "key": "garnish",
+     "label": "Garnish",
+     "lines": [
+      "Lime Wedge",
+      "Cherry",
+      "Whipped Cream",
+      "Graham Cracker Crumbs"
+     ]
+    },
+    {
+     "key": "recipe",
+     "label": "Recipe",
+     "lines": [
+      "Combine frozen rita, soft serve shake, and tequila in mixing tin. Mix for 5 seconds using the spindle mixer. Pour into pint glass rimmed with graham cracker crumbs. Top with whipped cream and sprinkle 1 tbsp graham cracker crumbs. Garnish with lime wedge and cherry."
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Rocket Pop ‘Rita",
+   "photo": "rocket-pop-rita.jpg",
+   "sections": [
+    {
+     "key": "ingredients",
+     "label": "Ingredients",
+     "lines": [
+      "6 oz Frozen Rita",
+      "2 oz Blue Curacao",
+      "6 oz Soft Serve Shake",
+      "1 oz Strawberry Puree",
+      "1 oz Lunazul Tequila"
+     ]
+    },
+    {
+     "key": "glassware",
+     "label": "Glassware",
+     "lines": [
+      "16 oz Pint Glass rimmed with Red, White, Blue Sugar"
+     ]
+    },
+    {
+     "key": "garnish",
+     "label": "Garnish",
+     "lines": [
+      "2 oz Strawberry Puree",
+      "Red, White, & Sugars",
+      "Whipped Cream",
+      "Cherry"
+     ]
+    },
+    {
+     "key": "recipe",
+     "label": "Recipe",
+     "lines": [
+      "Combine frozen rita, soft serve shake, and blue curacao in mixing tin. Mix for 5 seconds using the spindle mixer. Pour into pint glass rimmed with sugars. Top with strawberry puree, whipped cream and sprinkle 1 tsp red, white, and blue sugars. Garnish with a cherry."
+     ]
+    }
+   ]
+  }
+ ]
+}

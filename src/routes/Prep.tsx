@@ -7,7 +7,7 @@ import { confirmDelete } from '../lib/confirm'
 import { BarPrep } from '../components/BarPrep'
 import PREP_SEED from '../data/prep-items.json'
 import { usageIndex } from '../lib/linebuilds'
-import { prepItemNames, getCatalog } from '../lib/catalog'
+import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface PrepItem {
   name: string
@@ -848,7 +848,7 @@ export function Prep() {
  */
 function DishCount({ name }: { name: string }) {
   const dishes = useMemo(
-    () => usageIndex(prepItemNames(), getCatalog().map((i) => i.name)).get(name) ?? [],
+    () => usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? [],
     [name],
   )
   if (dishes.length === 0) return null

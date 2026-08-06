@@ -1,0 +1,40 @@
+{
+ "sheet": "Colony Wangs Line Builds",
+ "source": "Colony Wangs.pdf",
+ "dishes": [
+  {
+   "sheetName": "Colony Wangs",
+   "photo": "colony-wangs.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Basket w/liner"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion size / Prep",
+     "lines": [
+      "5 Wangs"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "Naked or Toss in 2 oz Mild or Hot - other sauces also available"
+     ]
+    },
+    {
+     "key": "side",
+     "label": "Side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  }
+ ]
+}

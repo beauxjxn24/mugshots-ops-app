@@ -1,0 +1,56 @@
+{
+ "sheet": "Lunch Salad Line Builds",
+ "source": "Lunch Salad.pdf",
+ "dishes": [
+  {
+   "sheetName": "New Cajun Salad",
+   "photo": "new-cajun-salad.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Small Salad Bowl"
+     ]
+    },
+    {
+     "key": "base",
+     "label": "Base",
+     "lines": [
+      "3 oz Salad Mix"
+     ]
+    },
+    {
+     "key": "veggies-build",
+     "label": "Veggies / Build",
+     "lines": [
+      "1/4 Cup Diced Onions",
+      "1/4 Cup Diced Tomatoes",
+      "1/3 Cup Shredded Cheese"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "3 oz Boneless Wangs, Fried If Grilled or Blackened, use 3 tenders"
+     ]
+    },
+    {
+     "key": "on-top",
+     "label": "On Top",
+     "lines": [
+      "1/3 cup croutons"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "(1) 2 oz Ranch Dressing"
+     ]
+    }
+   ]
+  }
+ ]
+}
