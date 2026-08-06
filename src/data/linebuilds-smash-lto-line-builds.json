@@ -1,0 +1,285 @@
+{
+ "sheet": "Smash LTO Line Builds",
+ "source": "b1cb818b-Smash_LTO_Builds_Feb_26_1.pdf",
+ "dishes": [
+  {
+   "sheetName": "Savell SmashBurger",
+   "photo": "savell-smashburger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted 3\" Bun"
+     ]
+    },
+    {
+     "key": "bottom",
+     "label": "Bottom",
+     "lines": [
+      "1 tbsp Mayo",
+      "1 tbsp Sauteed Onions"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "2 SmashBurger Patties"
+     ]
+    },
+    {
+     "key": "build",
+     "label": "Build",
+     "lines": [
+      "Place 1 slice cheddar on one patty.",
+      "Place 2 slices bacon and 1 slice cheddar on the other patty.",
+      "Place patty with bacon on top of the other patty.",
+      "Squirt a little water NEXT TO the patties and cover both patties with dome for approximately 10-15 seconds.",
+      "Remove from flat top and place on dressed bottom bun."
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "McDowell SmashBurger",
+   "photo": "mcdowell-smashburger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted 3\" Bun"
+     ]
+    },
+    {
+     "key": "bottom",
+     "label": "Bottom",
+     "lines": [
+      "1 tbsp Ranch Dressing",
+      "1 tbsp Sauteed Onions"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "2 SmashBurger Patties"
+     ]
+    },
+    {
+     "key": "build",
+     "label": "Build",
+     "lines": [
+      "Place 1 slice cheddar on one patty.",
+      "Place 1 tbsp BBQ, 2 slices bacon, & 1 slice cheddar on the other patty.",
+      "Place patty with bacon on top of the other patty.",
+      "Squirt a little water NEXT TO the patties and cover both patties with dome for approximately 10-15 seconds.",
+      "Remove from flat top and place on dressed bottom bun."
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Texan SmashBurger",
+   "photo": "texan-smashburger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted 3\" Bun"
+     ]
+    },
+    {
+     "key": "bottom",
+     "label": "Bottom",
+     "lines": [
+      "1 tbsp Mayo"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "2 SmashBurger Patties"
+     ]
+    },
+    {
+     "key": "build",
+     "label": "Build",
+     "lines": [
+      "Place 1 slice pepperjack cheese on one patty.",
+      "Place 1 slice pepperjack cheese on the other patty.",
+      "Place one patty on top of the other patty.",
+      "Squirt a little water NEXT TO the patties and cover both patties with dome for approximately 10-15 seconds.",
+      "Remove from flat top and place on dressed bottom bun."
+     ]
+    },
+    {
+     "key": "on-top-garnish",
+     "label": "On Top / Garnish",
+     "lines": [
+      "1/3 cup Fried Onion Strings",
+      "1/4 cup Fried Jalapenos"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Southern SmashBurger",
+   "photo": "southern-smashburger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted 3\" Bun"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "2 SmashBurger Patties"
+     ]
+    },
+    {
+     "key": "build",
+     "label": "Build",
+     "lines": [
+      "Place 1/2 Pimento Cheese portion on one patty.",
+      "Place 2 slices bacon & 1/2 Pimento Cheese portion on the other patty.",
+      "Place patty with bacon on top of the other patty.",
+      "Squirt a little water NEXT TO the patties and cover both patties with dome for approximately 10-15 seconds.",
+      "Remove from flat top and place on dressed bottom bun."
+     ]
+    },
+    {
+     "key": "on-top-garnish",
+     "label": "On Top / Garnish",
+     "lines": [
+      "1/3 cup Fried Pickles"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Signature SmashBurger",
+   "photo": "signature-smashburger.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Burger Basket with Liner"
+     ]
+    },
+    {
+     "key": "bread",
+     "label": "Bread",
+     "lines": [
+      "Toasted 3\" Bun"
+     ]
+    },
+    {
+     "key": "bottom",
+     "label": "Bottom",
+     "lines": [
+      "1/2 tbsp Mugs Signature Sauce",
+      "1 tbsp Sauteed Onions",
+      "3 slices dill pickles"
+     ]
+    },
+    {
+     "key": "meat",
+     "label": "Meat",
+     "lines": [
+      "2 SmashBurger Patties"
+     ]
+    },
+    {
+     "key": "build",
+     "label": "Build",
+     "lines": [
+      "Place 2 slices of bacon and 1 slice American cheese on one patty.",
+      "Place 1 slice American cheese on the other patty.",
+      "Place patty with bacon on top of the other patty.",
+      "Squirt a little water NEXT TO the patties and cover both patties with dome for approximately 8 - 10 seconds.",
+      "Remove from flat top and place on dressed bottom bun."
+     ]
+    },
+    {
+     "key": "on-top-garnish",
+     "label": "On Top / Garnish",
+     "lines": [
+      "1/2 tbsp Mugs Signature Sauce"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "6 oz Fries"
+     ]
+    }
+   ]
+  }
+ ]
+}

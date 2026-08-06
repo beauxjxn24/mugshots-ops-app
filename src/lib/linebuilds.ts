@@ -154,7 +154,7 @@ export function missingComponents(prepNames: string[] = [], stockNames: string[]
  * menu items, and showing one's build on the other puts the wrong ticket in a
  * cook's hands.
  */
-const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo)$/
+const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo|build)$/
 
 /** The build for a menu item, matched on name. */
 export function buildFor(name: string): LineBuild | undefined {
