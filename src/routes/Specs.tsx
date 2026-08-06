@@ -3,7 +3,7 @@ import { Archive, ArchiveRestore } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { SPECS } from '../lib/specs'
-import { buildFor } from '../lib/linebuilds'
+import { buildFor, buildPhoto } from '../lib/linebuilds'
 import { LineBuildCard } from '../components/LineBuildCard'
 import { UsedIn } from '../components/UsedIn'
 import { dishPhoto } from '../lib/photos'
@@ -136,7 +136,9 @@ function SpecCard({
   onRestore: () => void
 }) {
   const build = buildFor(spec.name)
-  const thumb = dishPhoto(spec.name)
+  // A sheet may name a dish "Texan" where the app calls it "Texan Burger",
+  // so the photo can be filed under the sheet's name rather than the spec's.
+  const thumb = dishPhoto(spec.name) ?? (build ? buildPhoto(build) : undefined)
   return (
     <Card className={`overflow-hidden ${archived ? 'opacity-75' : ''}`}>
       <button onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left">

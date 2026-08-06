@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Dill Pickles",
-   "photo": null,
+   "photo": "dill-pickles.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -31,7 +31,7 @@
   },
   {
    "sheetName": "Shrooms",
-   "photo": null,
+   "photo": "shrooms.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -60,7 +60,7 @@
   },
   {
    "sheetName": "Mombo Combo",
-   "photo": null,
+   "photo": "mombo-combo.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -88,7 +88,7 @@
   },
   {
    "sheetName": "Chicken Basket",
-   "photo": null,
+   "photo": "chicken-basket.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -124,7 +124,7 @@
   },
   {
    "sheetName": "Pow Pow Shrimp",
-   "photo": null,
+   "photo": "pow-pow-shrimp.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -152,7 +152,7 @@
   },
   {
    "sheetName": "Chili",
-   "photo": null,
+   "photo": "chili.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -189,7 +189,7 @@
   },
   {
    "sheetName": "Middle",
-   "photo": null,
+   "photo": "middle.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -227,7 +227,7 @@
   },
   {
    "sheetName": "Pato",
-   "photo": null,
+   "photo": "pato.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -265,7 +265,7 @@
   },
   {
    "sheetName": "Stu",
-   "photo": null,
+   "photo": "stu.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -310,7 +310,7 @@
   },
   {
    "sheetName": "Gamble",
-   "photo": null,
+   "photo": "gamble.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -354,7 +354,7 @@
   },
   {
    "sheetName": "McDowell",
-   "photo": null,
+   "photo": "mcdowell.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -400,7 +400,7 @@
   },
   {
    "sheetName": "Savell",
-   "photo": null,
+   "photo": "savell.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -445,7 +445,7 @@
   },
   {
    "sheetName": "Anthony's Peanut Butter Burger",
-   "photo": null,
+   "photo": "anthony-s-peanut-butter-burger.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -487,7 +487,7 @@
   },
   {
    "sheetName": "Comeback",
-   "photo": null,
+   "photo": "comeback.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -533,7 +533,7 @@
   },
   {
    "sheetName": "Garlic Parm",
-   "photo": null,
+   "photo": "garlic-parm.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -577,7 +577,7 @@
   },
   {
    "sheetName": "Mac & Cheese",
-   "photo": null,
+   "photo": "mac-cheese.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -611,7 +611,7 @@
   },
   {
    "sheetName": "Mugshot",
-   "photo": null,
+   "photo": "mugshot.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -657,7 +657,7 @@
   },
   {
    "sheetName": "Steak Burger",
-   "photo": null,
+   "photo": "steak-burger.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -701,7 +701,7 @@
   },
   {
    "sheetName": "Patty Melt",
-   "photo": null,
+   "photo": "patty-melt.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -743,7 +743,7 @@
   },
   {
    "sheetName": "A1 Sauce Burger",
-   "photo": null,
+   "photo": "a1-sauce-burger.jpg",
    "sections": [
     {
      "key": "plateware",

@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Inferno Wrap",
-   "photo": null,
+   "photo": "inferno-wrap.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -58,7 +58,7 @@
   },
   {
    "sheetName": "Philly Wrap",
-   "photo": null,
+   "photo": "philly-wrap.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -110,7 +110,7 @@
   },
   {
    "sheetName": "Teriyaki Wrap",
-   "photo": null,
+   "photo": "teriyaki-wrap.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -162,7 +162,7 @@
   },
   {
    "sheetName": "Caitlin's Cajun",
-   "photo": null,
+   "photo": "caitlin-s-cajun.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -205,7 +205,7 @@
   },
   {
    "sheetName": "Briscoe",
-   "photo": null,
+   "photo": "briscoe.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -249,7 +249,7 @@
   },
   {
    "sheetName": "Turkey Club",
-   "photo": null,
+   "photo": "turkey-club.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -293,7 +293,7 @@
   },
   {
    "sheetName": "Hicks",
-   "photo": null,
+   "photo": "hicks.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -337,7 +337,7 @@
   },
   {
    "sheetName": "Philly",
-   "photo": null,
+   "photo": "philly.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -382,7 +382,7 @@
   },
   {
    "sheetName": "Southwest Philly",
-   "photo": null,
+   "photo": "southwest-philly.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -427,7 +427,7 @@
   },
   {
    "sheetName": "Callie's Mahi",
-   "photo": null,
+   "photo": "callie-s-mahi.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -463,7 +463,7 @@
   },
   {
    "sheetName": "Turkey Burger",
-   "photo": null,
+   "photo": "turkey-burger.jpg",
    "sections": [
     {
      "key": "plateware",

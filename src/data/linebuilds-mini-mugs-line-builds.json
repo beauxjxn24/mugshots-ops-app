@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Bishop Burger",
-   "photo": null,
+   "photo": "bishop-burger.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -40,7 +40,7 @@
   },
   {
    "sheetName": "Kayla's Mini Chicken Basket",
-   "photo": null,
+   "photo": "kayla-s-mini-chicken-basket.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -67,7 +67,7 @@
   },
   {
    "sheetName": "Emma's Grilled Cheese",
-   "photo": null,
+   "photo": "emma-s-grilled-cheese.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -94,7 +94,7 @@
   },
   {
    "sheetName": "Hailey's Egg Sandwich",
-   "photo": null,
+   "photo": "hailey-s-egg-sandwich.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -121,7 +121,7 @@
   },
   {
    "sheetName": "Meg's Mac-N- Cheese",
-   "photo": null,
+   "photo": "meg-s-mac-n-cheese.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -141,7 +141,7 @@
   },
   {
    "sheetName": "Peanut Butter-N- Jelly",
-   "photo": null,
+   "photo": "peanut-butter-n-jelly.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -168,7 +168,7 @@
   },
   {
    "sheetName": "Taylor's Mini Pasta",
-   "photo": null,
+   "photo": "taylor-s-mini-pasta.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -203,7 +203,7 @@
   },
   {
    "sheetName": "Duncan's Quesadilla",
-   "photo": null,
+   "photo": "duncan-s-quesadilla.jpg",
    "sections": [
     {
      "key": "plateware",

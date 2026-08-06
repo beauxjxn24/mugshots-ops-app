@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Dessert Nachos",
-   "photo": null,
+   "photo": "dessert-nachos.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -34,7 +34,7 @@
   },
   {
    "sheetName": "Bread Puddin' Bites",
-   "photo": null,
+   "photo": "bread-puddin-bites.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -54,7 +54,7 @@
   },
   {
    "sheetName": "10 oz Milkshake",
-   "photo": null,
+   "photo": "10-oz-milkshake.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -84,7 +84,7 @@
   },
   {
    "sheetName": "22 oz Milkshake",
-   "photo": null,
+   "photo": "22-oz-milkshake.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -114,7 +114,7 @@
   },
   {
    "sheetName": "10 Root Beer Float",
-   "photo": null,
+   "photo": "10-root-beer-float.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -134,7 +134,7 @@
   },
   {
    "sheetName": "22 oz Root Beer Float",
-   "photo": null,
+   "photo": "22-oz-root-beer-float.jpg",
    "sections": [
     {
      "key": "plateware",

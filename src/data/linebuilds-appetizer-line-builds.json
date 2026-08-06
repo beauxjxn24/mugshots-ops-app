@@ -4,7 +4,7 @@
  "dishes": [
   {
    "sheetName": "Chips 'n",
-   "photo": null,
+   "photo": "chips-n.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -31,7 +31,7 @@
   },
   {
    "sheetName": "Cheese Wedges",
-   "photo": null,
+   "photo": "cheese-wedges.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -60,7 +60,7 @@
   },
   {
    "sheetName": "Eggrolls",
-   "photo": null,
+   "photo": "eggrolls.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -95,7 +95,7 @@
   },
   {
    "sheetName": "Wangs",
-   "photo": null,
+   "photo": "wangs.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -131,7 +131,7 @@
   },
   {
    "sheetName": "Seans Nachos",
-   "photo": null,
+   "photo": "seans-nachos.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -167,7 +167,7 @@
   },
   {
    "sheetName": "Dill Pickles",
-   "photo": null,
+   "photo": "dill-pickles.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -194,7 +194,7 @@
   },
   {
    "sheetName": "Shrooms",
-   "photo": null,
+   "photo": "shrooms.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -223,7 +223,7 @@
   },
   {
    "sheetName": "Mombo Combo",
-   "photo": null,
+   "photo": "mombo-combo.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -251,7 +251,7 @@
   },
   {
    "sheetName": "Chicken Basket",
-   "photo": null,
+   "photo": "chicken-basket.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -287,7 +287,7 @@
   },
   {
    "sheetName": "Pow Pow Shrimp",
-   "photo": null,
+   "photo": "pow-pow-shrimp.jpg",
    "sections": [
     {
      "key": "plateware",
@@ -315,7 +315,7 @@
   },
   {
    "sheetName": "Chili",
-   "photo": null,
+   "photo": "chili.jpg",
    "sections": [
     {
      "key": "plateware",
