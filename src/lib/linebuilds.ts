@@ -147,14 +147,29 @@ export function missingComponents(prepNames: string[] = [], stockNames: string[]
   return [...out.values()].sort((a, b) => a.localeCompare(b))
 }
 
+/**
+ * Words a sheet drops from a dish's full name — "Buffalo Bleu" on the sheet is
+ * "Buffalo Bleu Salad" in the app. Only these may differ, because any OTHER
+ * extra word marks a different product: "Texan" and "Texan SmashBurger" are two
+ * menu items, and showing one's build on the other puts the wrong ticket in a
+ * cook's hands.
+ */
+const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo)$/
+
 /** The build for a menu item, matched on name. */
 export function buildFor(name: string): LineBuild | undefined {
   const n = norm(name)
-  return (
-    LINE_BUILDS.find((b) => norm(b.sheetName) === n) ??
-    // "Buffalo Bleu" on the sheet is "Buffalo Bleu Salad" in the app.
-    LINE_BUILDS.find((b) => n.startsWith(`${norm(b.sheetName)} `) || norm(b.sheetName).startsWith(`${n} `))
-  )
+  const exact = LINE_BUILDS.find((b) => norm(b.sheetName) === n)
+  if (exact) return exact
+  return LINE_BUILDS.find((b) => {
+    const s = norm(b.sheetName)
+    const [long, short] = n.length > s.length ? [n, s] : [s, n]
+    if (!long.startsWith(`${short} `)) return false
+    return long
+      .slice(short.length + 1)
+      .split(' ')
+      .every((w) => GENERIC_TAIL.test(w))
+  })
 }
 
 /**
