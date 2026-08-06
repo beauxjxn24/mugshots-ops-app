@@ -711,3 +711,10 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }
   @page { margin: 11mm; }
 }
+
+/* The Mugsy launcher sits above every overlay so it stays draggable anywhere.
+   The one place that's wrong is the phone nav drawer, where it would glow
+   through the scrim over a menu it has nothing to do with. */
+body[data-nav-open='1'] .mugsy-fab {
+  display: none;
+}

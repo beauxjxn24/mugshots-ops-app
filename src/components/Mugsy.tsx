@@ -143,7 +143,7 @@ export function Mugsy() {
           onPointerUp={onPointerUp}
           aria-label="Ask Mugsy (drag to move)"
           style={pos ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' } : undefined}
-          className={`fixed z-[100] flex touch-none cursor-grab items-center gap-2 rounded-full border border-white/20 bg-[#B3202C] px-[18px] py-[13px] text-sm font-semibold text-white shadow-[0_14px_34px_-12px_rgba(179,32,44,0.55)] transition-colors hover:bg-[#9C1B26] active:cursor-grabbing print:hidden ${
+          className={`mugsy-fab fixed z-[100] flex touch-none cursor-grab items-center gap-2 rounded-full border border-white/20 bg-[#B3202C] px-[18px] py-[13px] text-sm font-semibold text-white shadow-[0_14px_34px_-12px_rgba(179,32,44,0.55)] transition-colors hover:bg-[#9C1B26] active:cursor-grabbing print:hidden ${
             pos ? '' : 'right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:right-6 lg:bottom-6'
           }`}
         >

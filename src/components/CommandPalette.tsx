@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, CornerDownLeft } from 'lucide-react'
-import { NAV, NAV_FLAT, SHIFT_ITEM, type NavItem } from '../lib/nav'
+import { NAV, NAV_FLAT, SHIFT_ITEM, STAFF_SECTIONS, ROLLUP_SECTIONS, type NavItem } from '../lib/nav'
+import { useRole } from '../lib/role'
+import { useRollupLevel } from '../lib/scope'
 
 /**
  * Jump-to — ⌘K (Ctrl+K) opens a search over every screen in the app.
@@ -22,6 +24,18 @@ export function CommandPalette() {
   const [sel, setSel] = useState(0)
   const nav = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const role = useRole((s) => s.role)
+  const level = useRollupLevel()
+
+  // Search only what the menu would show you. A shortcut that jumps a server to
+  // Period Review isn't a shortcut, it's a hole in the same wall the rail puts
+  // up — and the fastest way to find one is to type three letters into it.
+  const reachable = useMemo<NavItem[]>(() => {
+    if (role === 'staff') return [SHIFT_ITEM, ...STAFF_SECTIONS.flatMap((s) => s.items)]
+    if (role === 'admin' && level !== 'single') return ROLLUP_SECTIONS.flatMap((s) => s.items)
+    if (role === 'admin') return NAV_FLAT
+    return NAV_FLAT.filter((i) => i.to !== '/stores')
+  }, [role, level])
 
   // Which area each screen lives in, so a result says where it's taking you.
   const areaOf = useMemo(() => {
@@ -56,7 +70,8 @@ export function CommandPalette() {
   }, [open])
 
   const hits = useMemo(() => {
-    const all: NavItem[] = [...NAV_FLAT, SHIFT_ITEM]
+    // First name wins — My Shift appears in both lists for a staff account.
+    const all = reachable.filter((i, n) => reachable.findIndex((x) => x.to === i.to) === n)
     const s = q.trim().toLowerCase()
     if (!s) return all.slice(0, 8)
     // Anything starting with what you typed comes first — "pre" should offer
@@ -64,7 +79,7 @@ export function CommandPalette() {
     const starts = all.filter((i) => i.label.toLowerCase().startsWith(s))
     const rest = all.filter((i) => !i.label.toLowerCase().startsWith(s) && i.label.toLowerCase().includes(s))
     return [...starts, ...rest].slice(0, 8)
-  }, [q])
+  }, [q, reachable])
 
   if (!open) return null
   const go = (to: string) => {

@@ -45,6 +45,14 @@ export function AppShell() {
     }
   }, [isAdmin, level, concepts, setCurrent])
 
+  // The Mugsy launcher floats above everything so it can be dragged anywhere,
+  // which means it also floats above the drawer's scrim. Tell it to stand down
+  // while the menu is open rather than glowing through the blur.
+  useEffect(() => {
+    if (open) document.body.dataset.navOpen = '1'
+    else delete document.body.dataset.navOpen
+  }, [open])
+
   // Prevent the browser from navigating away to open a file when one is dropped
   // outside a drop zone (that "print preview" behavior). The Imports screen adds
   // its own handler to actually read files dropped anywhere on that page.
@@ -112,7 +120,7 @@ export function AppShell() {
                 <StoreLabel />
               </div>
             ) : null}
-            <Rail sections={sections} onNavigate={() => setOpen(false)} />
+            <DrawerNav sections={sections} onNavigate={() => setOpen(false)} />
             <BuildStamp />
           </div>
           <style>{`@keyframes slidein{from{transform:translateX(-105%)}to{transform:translateX(0)}}`}</style>
@@ -199,6 +207,61 @@ function Brand() {
         <div className="font-display text-[15px] font-bold tracking-wide text-white">THE PASS</div>
         <div className="text-[9.5px] uppercase tracking-wider text-white/45">Daily Ops</div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Phone drawer — every screen, labelled, in one scroll.
+ *
+ * The desktop rail collapses to one area at a time because a sidebar is always
+ * on screen and space is the scarce thing. A drawer is the opposite: it is
+ * summoned, used once and dismissed, and it scrolls. Showing one area there
+ * costs a tap to reach an unlabelled glyph and hides the other four behind it —
+ * which is exactly why the app read as "limited" on a phone when it isn't.
+ *
+ * So: no icon column, no collapsing. Areas as headings, screens as rows, the
+ * whole menu under your thumb.
+ */
+function DrawerNav({ sections, onNavigate }: { sections: NavSection[]; onNavigate: () => void }) {
+  const row = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-colors ${
+      isActive
+        ? 'bg-signal/12 font-semibold text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
+        : 'font-medium text-white/70 active:bg-white/10'
+    }`
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* No ⌘K on a phone — there is no keyboard to press it on. */}
+      <button
+        onClick={() => {
+          onNavigate()
+          openCommandPalette()
+        }}
+        className="mb-3 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/45"
+      >
+        <Search size={14} className="shrink-0" />
+        Search screens
+      </button>
+
+      {sections.map((sec, i) => (
+        <div key={sec.title || `solo-${i}`} className="mb-2">
+          {sec.title && (
+            <div className="px-3 pb-1 pt-2 text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/35">
+              {sec.title}
+            </div>
+          )}
+          <div className="flex flex-col gap-0.5">
+            {sec.items.map((it) => (
+              <NavLink key={it.to} to={it.to} onClick={onNavigate} className={row}>
+                <it.icon size={16} strokeWidth={2} className="shrink-0 opacity-70" />
+                {it.label}
+              </NavLink>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

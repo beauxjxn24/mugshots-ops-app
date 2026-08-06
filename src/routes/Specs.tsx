@@ -3,7 +3,9 @@ import { Archive, ArchiveRestore } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { SPECS } from '../lib/specs'
-import { buildFor, buildPhoto } from '../lib/linebuilds'
+import { buildPhoto } from '../lib/linebuilds'
+import { buildForSpec } from '../lib/buildmatch'
+import { BuildReconcile } from '../components/BuildReconcile'
 import { LineBuildCard } from '../components/LineBuildCard'
 import { UsedIn } from '../components/UsedIn'
 import { dishPhoto } from '../lib/photos'
@@ -39,7 +41,7 @@ export function Specs() {
       if (s.ing.some(([n]) => n.toLowerCase().includes(query))) return true
       // A build's own lines are searchable too — "comeback" should find every
       // dish it goes on, not just the prep card.
-      const b = buildFor(s.name)
+      const b = buildForSpec(s.name)
       return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
   }, [q, group, viewingOldies, archivedSet])
@@ -67,6 +69,11 @@ export function Specs() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
+        {/* A new sheet whose dish name is close to one already on the menu asks
+            before it lands, rather than guessing which card it belongs to. */}
+        <div className="mb-5">
+          <BuildReconcile />
+        </div>
         {/* Category chips */}
         <div className="mb-5 flex flex-wrap gap-2">
           {gs.map((g) => (
@@ -135,7 +142,7 @@ function SpecCard({
   onArchive: () => void
   onRestore: () => void
 }) {
-  const build = buildFor(spec.name)
+  const build = buildForSpec(spec.name)
   // A sheet may name a dish "Texan" where the app calls it "Texan Burger",
   // so the photo can be filed under the sheet's name rather than the spec's.
   const thumb = dishPhoto(spec.name) ?? (build ? buildPhoto(build) : undefined)
