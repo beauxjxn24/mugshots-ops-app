@@ -1,6 +1,6 @@
 {
  "sheet": "Hot Dog Line Builds",
- "source": "Hot Dog Builds.pdf",
+ "source": "e63fed82-Hot_Dog_Builds_1.pdf",
  "dishes": [
   {
    "sheetName": "Firecracker Popper Dog 250",
@@ -80,7 +80,8 @@
      "label": "Build / . On Top",
      "lines": [
       "Drizzle Ketchup",
-      "Drizzle Mustard 1 tbsp Red Onion"
+      "Drizzle Mustard",
+      "1 tbsp Red Onion"
      ]
     },
     {
@@ -129,7 +130,9 @@
      "label": "Build Left",
      "lines": [
       "Layer in Order: Squeeze of yellow mustard length of the bun",
-      "2 tbsp diced dill pickles 2 tbsp diced white onion 2 tbsp diced tomatoes"
+      "2 tbsp diced dill pickles",
+      "2 tbsp diced white onion",
+      "2 tbsp diced tomatoes"
      ]
     },
     {

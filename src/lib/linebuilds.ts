@@ -151,12 +151,15 @@ export function missingComponents(prepNames: string[] = [], stockNames: string[]
 
 /**
  * Words a sheet drops from a dish's full name — "Buffalo Bleu" on the sheet is
- * "Buffalo Bleu Salad" in the app. Only these may differ, because any OTHER
- * extra word marks a different product: "Texan" and "Texan SmashBurger" are two
- * menu items, and showing one's build on the other puts the wrong ticket in a
- * cook's hands.
+ * "Buffalo Bleu Salad" in the app. A bare number counts too: the hot-dog sheet
+ * titles one build "Firecracker Popper Dog 250", which is a menu code rather
+ * than part of the dish's name.
+ *
+ * Only these may differ, because any OTHER extra word marks a different
+ * product: "Texan" and "Texan SmashBurger" are two menu items, and showing
+ * one's build on the other puts the wrong ticket in a cook's hands.
  */
-const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo|build)$/
+const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo|build|\d+)$/
 
 /** The build for a menu item, matched on name. */
 export function buildFor(name: string): LineBuild | undefined {
