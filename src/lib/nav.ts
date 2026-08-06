@@ -70,6 +70,8 @@ export interface NavItem {
 export interface NavSection {
   title: string
   items: NavItem[]
+  /** Rail icon for the whole area (command-rail nav). */
+  areaIcon?: LucideIcon
 }
 
 export const NAV: NavSection[] = [
@@ -79,6 +81,7 @@ export const NAV: NavSection[] = [
   },
   {
     title: 'Daily Ops',
+    areaIcon: ChefHat,
     items: [
       { to: '/catering', label: 'Catering', icon: PartyPopper, color: '#E0559B', anim: PopperIcon },
       { to: '/nightly', label: 'Nightly Numbers', icon: Moon, color: '#818CF8', anim: MoonZIcon },
@@ -96,6 +99,7 @@ export const NAV: NavSection[] = [
   },
   {
     title: 'Menu & Sales',
+    areaIcon: BookOpen,
     items: [
       { to: '/forecast', label: 'Forecast', icon: TrendingUp, color: '#4ADE80', anim: GraphIcon },
       { to: '/mix', label: 'Product Mix', icon: PieChart, color: '#FB923C', anim: PieSpinIcon },
@@ -109,6 +113,7 @@ export const NAV: NavSection[] = [
     // Inventory is snoozed from the nav (still reachable at /inventory and via
     // the catalog's Count toggle) to keep the menu streamlined.
     title: 'Supply',
+    areaIcon: Boxes,
     items: [
       { to: '/catalog', label: 'Item Catalog', icon: Boxes, color: '#2DD4BF', anim: StackIcon },
     ],
@@ -117,6 +122,7 @@ export const NAV: NavSection[] = [
     // Costs is snoozed from the nav (still reachable at /costs) — same as
     // Inventory, to keep the menu to what gets used daily.
     title: 'Management',
+    areaIcon: BarChart3,
     items: [
       { to: '/period', label: 'Period Review', icon: BarChart3, color: '#A78BFA', anim: BarsIcon },
       { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays, color: '#60A5FA', anim: ClockIcon },
@@ -141,6 +147,7 @@ export const ROLLUP_SECTIONS: NavSection[] = [
   },
   {
     title: 'Company',
+    areaIcon: Store,
     items: [
       { to: '/stores', label: 'Stores & Concepts', icon: Store, color: '#E4B84C', anim: StorefrontIcon },
       { to: '/connections', label: 'Connections', icon: Cable, color: '#38BDF8', anim: PlugIcon },
@@ -158,7 +165,7 @@ export const SHIFT_ITEM: NavItem = {
 const STAFF_ITEMS = NAV_FLAT.filter((i) => i.staff)
 export const STAFF_SECTIONS: NavSection[] = [
   { title: '', items: [SHIFT_ITEM] },
-  { title: 'My Tasks', items: STAFF_ITEMS },
+  { title: 'My Tasks', items: STAFF_ITEMS, areaIcon: ListChecks },
 ]
 /** Bottom-bar items per experience. Managers/admins on a phone live in the
  *  invoice → inventory → ordering flow; hourly staff get My Shift + tasks. */

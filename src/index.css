@@ -157,7 +157,9 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
     transform: rotate(4deg) scale(1.04);
   }
 }
-/* Every nav icon gets a gentle, always-on motion (varied per icon). */
+/* Nav icons hold still. Motion that never stops stops meaning anything, and a
+   rail of permanently bobbing icons was the loudest dated signal in the app.
+   The idle-* classes remain for the few places that mark a live state. */
 .nav-ico {
   transform-origin: center;
 }

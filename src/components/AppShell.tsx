@@ -5,9 +5,10 @@ import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
-import { ConciergeBell, UtensilsCrossed } from 'lucide-react'
+import { ConciergeBell, UtensilsCrossed, Search } from 'lucide-react'
 import { Aurora } from './Aurora'
 import { Toaster } from './Toaster'
+import { CommandPalette, openCommandPalette } from './CommandPalette'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -32,17 +33,6 @@ export function AppShell() {
   const sections = role === 'staff' ? STAFF_SECTIONS : rollup ? ROLLUP_SECTIONS : isAdmin ? NAV : managerSections
   const current = [...NAV_FLAT, SHIFT_ITEM].find((i) => i.to === loc.pathname)
   const bottom = rollup ? ROLLUP_SECTIONS.flatMap((s) => s.items) : bottomItems(role)
-
-  // Collapsible nav groups — remembered across navigation (device-wide, not
-  // store-scoped) so a manager can fold the sections they don't use.
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(loadNavCollapsed()))
-  const toggleSection = (title: string) =>
-    setCollapsed((prev) => {
-      const next = new Set(prev)
-      next.has(title) ? next.delete(title) : next.add(title)
-      saveNavCollapsed([...next])
-      return next
-    })
 
   // A non-admin must never sit on a roll-up scope (e.g. left over from an admin
   // session). Snap them back to a concrete store so their data stays real.
@@ -72,6 +62,7 @@ export function AppShell() {
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_1fr]">
       <Aurora />
       <Toaster />
+      <CommandPalette />
       {/* ---- Desktop rail ---- */}
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />
@@ -85,7 +76,7 @@ export function AppShell() {
             <StoreLabel />
           </div>
         ) : null}
-        <Rail sections={sections} collapsed={collapsed} onToggle={toggleSection} onNavigate={() => setOpen(false)} />
+        <Rail sections={sections} onNavigate={() => setOpen(false)} />
         <BuildStamp />
       </aside>
 
@@ -121,7 +112,7 @@ export function AppShell() {
                 <StoreLabel />
               </div>
             ) : null}
-            <Rail sections={sections} collapsed={collapsed} onToggle={toggleSection} onNavigate={() => setOpen(false)} />
+            <Rail sections={sections} onNavigate={() => setOpen(false)} />
             <BuildStamp />
           </div>
           <style>{`@keyframes slidein{from{transform:translateX(-105%)}to{transform:translateX(0)}}`}</style>
@@ -212,98 +203,109 @@ function Brand() {
   )
 }
 
-const NAV_COLLAPSE_KEY = 'mugops:navCollapsed'
-function loadNavCollapsed(): string[] {
-  try {
-    const raw = localStorage.getItem(NAV_COLLAPSE_KEY)
-    const arr = raw ? JSON.parse(raw) : []
-    return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : []
-  } catch {
-    return []
-  }
-}
-function saveNavCollapsed(titles: string[]): void {
-  try {
-    localStorage.setItem(NAV_COLLAPSE_KEY, JSON.stringify(titles))
-  } catch {
-    /* storage unavailable — collapse state just won't persist */
-  }
-}
+/**
+ * Command rail — the areas down the left, that area's screens beside them.
+ *
+ * The menu carries 27 destinations, which no icon set can make short. So the
+ * rail shows the five AREAS and the panel shows only the screens inside the one
+ * you are in: never more than a dozen items on screen, however far the app
+ * grows. The cost is a second click to cross areas, which is what the Cmd-K
+ * jump-to is for.
+ *
+ * The area follows the route, so arriving from a link or a deep link opens that
+ * screen's area instead of leaving the rail pointing somewhere else.
+ */
+function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: () => void }) {
+  const loc = useLocation()
+  // A section with no title holds a single destination (Dashboard, My Shift) —
+  // it IS its own rail button and has no panel.
+  const areas = useMemo(() => sections.filter((s) => s.title), [sections])
+  const solo = useMemo(() => sections.filter((s) => !s.title).flatMap((s) => s.items), [sections])
 
-function Rail({
-  sections,
-  onNavigate,
-  collapsed,
-  onToggle,
-}: {
-  sections: NavSection[]
-  onNavigate: () => void
-  collapsed: Set<string>
-  onToggle: (title: string) => void
-}) {
-  let n = 0
+  const [picked, setPicked] = useState(0)
+  useEffect(() => {
+    const i = areas.findIndex((a) => a.items.some((x) => x.to === loc.pathname))
+    if (i >= 0) setPicked(i)
+  }, [loc.pathname, areas])
+
+  const onSolo = solo.some((i) => i.to === loc.pathname)
+  const area = areas[Math.min(picked, Math.max(0, areas.length - 1))]
+  const btn = (active: boolean) =>
+    `grid size-10 place-items-center rounded-xl transition-colors ${
+      active
+        ? 'bg-signal/15 text-signal ring-1 ring-inset ring-signal/35'
+        : 'text-white/55 hover:bg-white/5 hover:text-white'
+    }`
+
   return (
-    <div className="flex flex-col gap-0.5">
-      {sections.map((sec, i) => {
-        const isCollapsed = !!sec.title && collapsed.has(sec.title)
-        return (
-        <div key={i}>
-          {sec.title && (
+    <div className="flex min-h-0 flex-1 gap-1.5">
+      <div className="flex shrink-0 flex-col gap-1.5 border-r border-white/10 pr-1.5">
+        {solo.map((it) => (
+          <NavLink
+            key={it.to}
+            to={it.to}
+            onClick={onNavigate}
+            title={it.label}
+            aria-label={it.label}
+            className={btn(onSolo && loc.pathname === it.to)}
+          >
+            <it.icon size={18} strokeWidth={2} />
+          </NavLink>
+        ))}
+        {areas.map((sec, i) => {
+          const Icon = sec.areaIcon
+          return (
             <button
-              onClick={() => onToggle(sec.title)}
-              className="flex w-full items-center gap-1.5 px-3 pb-1 pt-4 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-white/35 hover:text-white/60"
+              key={sec.title}
+              onClick={() => setPicked(i)}
+              title={sec.title}
+              aria-label={sec.title}
+              aria-current={!onSolo && i === picked ? 'true' : undefined}
+              className={btn(!onSolo && i === picked)}
             >
-              <span
-                className={`inline-block text-[8px] transition-transform ${isCollapsed ? '-rotate-90' : ''}`}
-                aria-hidden
-              >
-                ▾
-              </span>
-              {sec.title}
+              {Icon ? <Icon size={18} strokeWidth={2} /> : <span className="text-xs font-bold">{sec.title[0]}</span>}
             </button>
-          )}
-          {!isCollapsed &&
-          sec.items.map((it) => {
-            const idle = it.idle ?? 'idle-pulse'
-            const delay = `${(n * 0.13).toFixed(2)}s`
-            n++
-            return (
-              <NavLink
-                key={it.to}
-                to={it.to}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
-                    isActive
-                      ? 'bg-signal/15 text-signal font-semibold shadow-[0_0_22px_-6px_var(--color-signal)] ring-1 ring-inset ring-signal/35'
-                      : 'text-white/70 hover:bg-white/5 hover:text-white'
-                  }`
-                }
-              >
-                {({ isActive }) =>
-                  it.anim ? (
-                    <>
-                      <it.anim size={18} className="shrink-0" />
-                      {it.label}
-                    </>
-                  ) : (
-                    <>
-                      <it.icon
-                        size={17}
-                        strokeWidth={2.2}
-                        className={`nav-ico shrink-0 ${idle}`}
-                        style={{ animationDelay: delay, color: isActive ? '#4fe3c1' : it.color }}
-                      />
-                      {it.label}
-                    </>
-                  )
-                }
-              </NavLink>
-            )
-          })}
-        </div>
-        )
-      })}
+          )
+        })}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        {/* The shortcut has to be visible to be discovered — a rail that hides
+            its escape hatch just costs you the extra click. */}
+        <button
+          onClick={openCommandPalette}
+          className="mb-2 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2 text-[12px] text-white/45 hover:border-signal/40 hover:text-white/70"
+        >
+          <Search size={13} className="shrink-0" />
+          Jump to…
+          <kbd className="ml-auto rounded border border-white/15 px-1 py-px font-mono text-[9px]">⌘K</kbd>
+        </button>
+        {area && (
+          <>
+            <div className="px-3 pb-1.5 pt-1 text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/35">
+              {area.title}
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {area.items.map((it) => (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    `flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                      isActive
+                        ? 'bg-signal/12 font-semibold text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
+                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    }`
+                  }
+                >
+                  {it.label}
+                </NavLink>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
