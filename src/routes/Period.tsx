@@ -5,6 +5,7 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { confirmDelete } from '../lib/confirm'
+import { laborRangeFor } from '../lib/laborRange'
 import { dowAverages, projectDay, periodWeek, periodStart } from '../lib/forecast'
 import { getPriceLog } from '../lib/catalog'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
@@ -65,6 +66,11 @@ export function Period() {
   const laborSum = laborNights.reduce((s, n) => s + (n.labor ?? 0), 0)
   const laborNet = laborNights.reduce((s, n) => s + n.netSales, 0)
   const laborPct = laborNet > 0 && laborSum > 0 ? (laborSum / laborNet) * 100 : null
+  // A range labor export covering this period is the REAL period rate (Toast's
+  // own total for the span). Prefer it over a rate stitched from partial nights.
+  const rangeLabor = useMemo(() => laborRangeFor(pStart, pEnd < t ? pEnd : t), [pStart, pEnd, t])
+  const periodLaborPct = rangeLabor?.pct ?? laborPct
+  const laborFromRange = rangeLabor?.pct != null
   const cashOU = inPeriod.reduce((s, n) => s + (n.overUnder ?? 0), 0)
   const hasOU = inPeriod.some((n) => n.overUnder != null)
 
@@ -232,9 +238,13 @@ export function Period() {
                         {Math.abs(vsLy).toFixed(1)}% ({vsLy >= 0 ? '+' : '−'}{kfmt(Math.abs(lyCur - lyPrev))}) vs LY
                       </span>
                     )}
-                    {laborPct != null && (
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${laborPct <= targets.laborPct ? 'bg-emerald-400/15 text-emerald-300' : 'bg-red-400/15 text-red-300'}`}>
-                        Labor {laborPct.toFixed(1)}% · goal {targets.laborPct}% {laborPct <= targets.laborPct ? '✓' : '▲'}
+                    {periodLaborPct != null && (
+                      <span
+                        title={laborFromRange ? `Toast's own labor total for ${rangeLabor?.start} → ${rangeLabor?.end}` : undefined}
+                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${periodLaborPct <= targets.laborPct ? 'bg-emerald-400/15 text-emerald-300' : 'bg-red-400/15 text-red-300'}`}
+                      >
+                        Labor {periodLaborPct.toFixed(1)}% · goal {targets.laborPct}% {periodLaborPct <= targets.laborPct ? '✓' : '▲'}
+                        {laborFromRange && <span className="ml-1 opacity-75">· period total</span>}
                       </span>
                     )}
                     {hasOU && (

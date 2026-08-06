@@ -17,6 +17,7 @@ import { saveDoc, fileHash, findSeenFile, recordSeenFile } from '../lib/docs'
 import { placeItemInGuide, GUIDE_SHELVES, type GuideShelf } from '../lib/guide'
 import { confirmDelete } from '../lib/confirm'
 import { toast } from '../lib/toast'
+import { saveLaborRange, rangeFromName } from '../lib/laborRange'
 import { useIsPhone } from '../lib/useIsPhone'
 import { CalendarPlus, PartyPopper, LineChart, Users, PieChart, Plus } from 'lucide-react'
 
@@ -36,6 +37,9 @@ interface Job extends Partial<ReadResult> {
    *  discount / dining / category / net-summary sheets are PERIOD totals and
    *  must not be applied to a single night. */
   periodLevel?: boolean
+  /** Date span of a multi-day export (from its zip name) — period-level totals
+   *  such as range labor are stored against this span, never one night. */
+  hintRange?: { start: string; end: string }
   /** When status is 'duplicate': the earlier import this file matches. */
   dupOf?: { name: string; at: string }
 }
@@ -92,11 +96,11 @@ export function Imports() {
   // Files parked behind a duplicate warning, kept so "Import anyway" works.
   const parked = useRef<Map<string, File>>(new Map())
 
-  const processOne = useCallback(async (file: File, id: string, fromZip = false, hintDate?: string, periodLevel?: boolean) => {
+  const processOne = useCallback(async (file: File, id: string, fromZip = false, hintDate?: string, periodLevel?: boolean, hintRange?: { start: string; end: string }) => {
     const docId = `doc${Date.now().toString(36)}${seq}`
     void saveDoc(docId, file) // keep the original — invoices reopen it
     setJobs((j) => {
-      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId, fromZip, hintDate, periodLevel }
+      const fresh: Job = { id, fileName: file.name, status: 'reading', progress: 0, docId, fromZip, hintDate, periodLevel, hintRange }
       return j.some((x) => x.id === id) ? j.map((x) => (x.id === id ? fresh : x)) : [fresh, ...j]
     })
     const res = await readFile(file, (p) =>
@@ -153,7 +157,7 @@ export function Imports() {
     // of a zip are re-importable bulk exports (sales summaries upsert by date),
     // so they skip the duplicate guard — re-dropping a Toast export must always
     // refresh the numbers, never get silently skipped as "already imported".
-    const list: { file: File; fromZip: boolean; hintDate?: string; periodLevel?: boolean }[] = []
+    const list: { file: File; fromZip: boolean; hintDate?: string; periodLevel?: boolean; hintRange?: { start: string; end: string } }[] = []
     for (const file of fresh) {
       if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
         try {
@@ -165,6 +169,7 @@ export function Imports() {
           // cash) is dateless, so without this they'd guess their day and could
           // attach to the wrong night. The zip filename is only a last resort.
           let hintDate = zipSingleDate(file.name)
+          const hintRange = rangeFromName(file.name) ?? undefined
           // A multi-day (catch-up) export: the per-day sheets (Sales by day,
           // Labor cost by day) backfill every day, but the discount / dining /
           // category / net-summary sheets are ONE period TOTAL for the whole
@@ -185,7 +190,7 @@ export function Imports() {
             // breakdown, Modifiers…) — skip them so they don't clutter the
             // review list or choke a parser on 6,000 rows.
             if (NOISE_REPORT.test(name)) continue
-            list.push({ file: new File([bytes.slice().buffer as ArrayBuffer], name), fromZip: true, hintDate, periodLevel })
+            list.push({ file: new File([bytes.slice().buffer as ArrayBuffer], name), fromZip: true, hintDate, periodLevel, hintRange })
           }
           continue
         } catch {
@@ -194,7 +199,7 @@ export function Imports() {
       }
       list.push({ file, fromZip: false })
     }
-    for (const { file, fromZip, hintDate, periodLevel } of list) {
+    for (const { file, fromZip, hintDate, periodLevel, hintRange } of list) {
       const id = `j${++seq}`
       // Duplicate check: the exact same bytes seen before — invoice, spec
       // card, recipe, any PDF — gets flagged instead of importing twice.
@@ -218,7 +223,7 @@ export function Imports() {
         continue
       }
       recordSeenFile(h, file.name)
-      await processOne(file, id, fromZip, hintDate, periodLevel)
+      await processOne(file, id, fromZip, hintDate, periodLevel, hintRange)
     }
   }, [processOne])
 
@@ -491,7 +496,7 @@ export function Imports() {
 
             {job.text && isLaborReport(job.text) && <LaborImport text={job.text} fileName={job.fileName} />}
 
-            {job.text && isLaborSummary(job.text) && <LaborSummaryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
+            {job.text && isLaborSummary(job.text) && <LaborSummaryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} hintRange={job.hintRange} />}
 
             {job.text && isCashSummary(job.text) && <CashImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} />}
 
@@ -1461,19 +1466,45 @@ function LaborImport({ text, fileName }: { text: string; fileName: string }) {
  * Like the cash file it has no date, so it fills the night being closed (latest
  * logged night) with a date picker to re-target for backfill.
  */
-function LaborSummaryImport({ text, fileName, hintDate }: { text: string; fileName: string; hintDate?: string }) {
+function LaborSummaryImport({ text, fileName, hintDate, periodLevel, hintRange }: { text: string; fileName: string; hintDate?: string; periodLevel?: boolean; hintRange?: { start: string; end: string } }) {
   const s = useMemo(() => parseLaborSummary(text), [text])
   const [date, setDate] = useState(() => hintDate ?? latestNightDate() ?? today())
   const [done, setDone] = useState<string | null>(null)
   const ran = useRef(false)
+  // A range export's "Labor cost summary" is ONE row for the whole span (e.g.
+  // $40,794 over 37 days). Applying that to a single night is what produced the
+  // nonsense −717% labor. Store it against its date range instead — real period
+  // labor — and leave every night's labor to a per-day report.
+  const isRange = !!periodLevel || (!!hintRange && hintRange.start !== hintRange.end)
   useEffect(() => {
     if (!s || ran.current) return
     ran.current = true
+    if (isRange) {
+      if (hintRange) {
+        saveLaborRange({ start: hintRange.start, end: hintRange.end, labor: s.labor, net: s.net, gross: s.gross, pct: s.laborPct })
+        logImport(fileName, `labor ${money2(s.labor)} · ${(s.laborPct ?? 0).toFixed(1)}% → period ${hintRange.start} → ${hintRange.end}`)
+        toast(`✓ Period labor saved — ${(s.laborPct ?? 0).toFixed(1)}% for ${hintRange.start} → ${hintRange.end}`, 'success')
+      }
+      return
+    }
     const d = applyLaborSummary(s, date)
     if (d) { setDone(d); logImport(fileName, `labor ${money2(s.labor)} · ${(s.laborPct ?? 0).toFixed(1)}% → Nightly (${d})`) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s])
   if (!s) return null
+  if (isRange)
+    return (
+      <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+        <div className="flex items-center gap-2 text-sm font-bold text-brand-600">
+          <ReceiptText size={16} /> Period labor {money2(s.labor)} · {(s.laborPct ?? 0).toFixed(1)}% of net
+        </div>
+        <p className="mt-1 text-[11px] text-ink/70">
+          {hintRange ? <>Saved for <b>{hintRange.start} → {hintRange.end}</b>. </> : null}
+          This export covers a date range, so it carries one labor total for the whole span — not per night. It shows as
+          the period labor rate; for a single night's labor %, drop that day's labor export.
+        </p>
+      </div>
+    )
   const retarget = (d: string) => { setDate(d); const r = applyLaborSummary(s, d); if (r) setDone(r) }
   return (
     <div className="mt-3 rounded-xl border border-up/30 bg-up/5 p-3">
