@@ -56,6 +56,12 @@ export const LINE_BUILDS: LineBuild[] = SHEETS.flatMap((s) =>
 export function norm(s: string): string {
   return s
     .toLowerCase()
+    // Accents come off before punctuation does. The sheets write both
+    // "Jalapeños" and "Jalapenos" for the one prep, and the strip below reads
+    // ñ as punctuation — turning the name into "jalape os", two words that
+    // match nothing.
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
     .replace(/\bbleu\b/g, 'blue') // the sheets spell it both ways
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()

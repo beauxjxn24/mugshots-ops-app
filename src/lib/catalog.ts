@@ -236,9 +236,19 @@ export function setItemCost(id: string, price: number, vendor: string): void {
   }
 }
 
-/** Normalized identity key: lowercase, punctuation-free, spacing collapsed. */
+/** Normalized identity key: lowercase, accent- and punctuation-free, spacing collapsed. */
 export function normKey(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()
+  // Accents come off first, or the punctuation strip splits "Jalapeños" into
+  // "jalape os" and a vendor line spelling it "Jalapenos" imports as a second
+  // item. Only ever computed for comparison, never stored, so widening it
+  // cannot orphan anything already saved.
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /**
