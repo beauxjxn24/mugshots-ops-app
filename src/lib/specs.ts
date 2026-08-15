@@ -42,3 +42,55 @@ export function search(query: string): Spec[] {
       s.ing.some(([n]) => n.toLowerCase().includes(q)),
   )
 }
+
+/**
+ * The prep sheet writes in kitchen shorthand — "Diced Toms", "PJ Wedges",
+ * "Sliced Jals" — while the spec cards carry full names. Only 12 of the 49 prep
+ * items matched by name, so tapping an item mostly went nowhere.
+ *
+ * Hand-checked rather than fuzzy-matched: loose matching paired "Boneless
+ * Wangs" with "Blanched Wings", which are different products, and a cook
+ * following the wrong card is worse than a name that doesn't link.
+ */
+const PREP_SHORTHAND: Record<string, string> = {
+  'Diced Toms': 'Diced Tomatoes',
+  'Sliced Toms': 'Sliced Tomatoes',
+  'Dice Yellow Onions': 'Diced Onions',
+  'Pico De Gallo': 'Pico de Gallo',
+  'Garlic Parm Chz': 'Garlic Parmesan Sauce',
+  'Pimento Chz': 'Pimento Cheese',
+  Romaine: 'Romaine Lettuce (chopped)',
+  'Shredded Lettuce': 'Iceberg Lettuce (chopped)',
+  'Alfredo Sauce': 'Alfredo',
+  Eggroll: 'Egg Rolls',
+  'Pow Pow Sauce': 'Pow Pow Shrimp Sauce',
+  Ranch: 'Ranch Dressing',
+  'Mugs Sig Sauce': 'Mugs Signature Sauce',
+  'Mozz Wedges': 'Mozzarella Wedges',
+  'PJ Wedges': 'Pepperjack Cheese Wedges',
+  Pasta: 'New Pasta',
+  Wings: 'Blanched Wings',
+  'Sliced Jals': 'Sliced Jalapeños',
+  'Brined Tenders': 'Brined Chicken Tenders',
+  'Brined Breast': 'Brined Chicken Breast',
+  'Blackened Ckn Tenders': 'Blackened Chicken Tenders',
+  'Caitlyn Ckn Breasts': 'Blackened Chicken Breast',
+  'Queso Meat': 'Mugshots Queso Dip',
+  'Mac & Chz': 'Kid Mac',
+  Mash: 'Mashed Potatoes',
+  Veggies: 'Veggie Mix',
+  Rotel: 'Rotel Cheese Sauce',
+}
+
+/**
+ * The spec card for a prep-sheet item, or undefined when there isn't one.
+ *
+ * Undefined is a real answer — onion strings, tots and bacon have no prep card,
+ * and those items should read as plain text rather than as a link into nothing.
+ */
+export function prepSpecName(prepItem: string): string | undefined {
+  const direct = SPECS.find((s) => s.name === prepItem)
+  if (direct) return direct.name
+  const mapped = PREP_SHORTHAND[prepItem]
+  return mapped && SPECS.some((s) => s.name === mapped) ? mapped : undefined
+}

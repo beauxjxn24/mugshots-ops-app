@@ -8,6 +8,7 @@ import { confirmDelete } from '../lib/confirm'
 import { BarPrep } from '../components/BarPrep'
 import PREP_SEED from '../data/prep-items.json'
 import { usageIndex } from '../lib/linebuilds'
+import { prepSpecName } from '../lib/specs'
 import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface PrepItem {
@@ -355,14 +356,23 @@ export function Prep() {
         </span>
         <div className="min-w-0">
           {/* Straight to the card -- someone prepping it should be able to read
-              the spec without hunting for it on another screen. */}
-          <Link
-            to={`/specs?open=${encodeURIComponent(it.name)}`}
-            title={`Open the spec for ${it.name}`}
-            className="block truncate text-sm font-bold text-ink underline-offset-2 hover:text-brand-600 hover:underline"
-          >
-            {it.name}
-          </Link>
+              the spec without hunting for it on another screen. Items with no
+              card (tots, bacon, onion strings) stay plain text rather than
+              becoming a link into nothing. */}
+          {(() => {
+            const card = prepSpecName(it.name)
+            return card ? (
+              <Link
+                to={`/specs?open=${encodeURIComponent(card)}`}
+                title={`Open the spec for ${card}`}
+                className="block truncate text-sm font-bold text-ink underline-offset-2 hover:text-brand-600 hover:underline"
+              >
+                {it.name}
+              </Link>
+            ) : (
+              <div className="truncate text-sm font-bold text-ink">{it.name}</div>
+            )
+          })()}
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="truncate">{it.spec || it.unit}</span>
             {/* What this prep feeds. Diced Tomatoes goes on half the menu, and

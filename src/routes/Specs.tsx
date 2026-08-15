@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Archive, ArchiveRestore } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
+import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '../components/SearchInput'
-import { SPECS } from '../lib/specs'
+import { SPECS, slug } from '../lib/specs'
 import { buildPhoto } from '../lib/linebuilds'
 import { buildForSpec } from '../lib/buildmatch'
 import { BuildReconcile } from '../components/BuildReconcile'
@@ -48,6 +49,27 @@ export function Specs() {
 
   const archive = (name: string) => setArchived((a) => [...new Set([...a, name])])
   const restore = (name: string) => setArchived((a) => a.filter((n) => n !== name))
+
+  // Arriving from a ?open= link — the prep sheet, or a "used in" chip. These
+  // links have been generated for a while and did nothing on landing: the page
+  // opened with every card closed and no hint which one you had asked for.
+  // Clear the group filter too, or a card outside the current tab stays hidden.
+  const [params, setParams] = useSearchParams()
+  const wanted = params.get('open')
+  useEffect(() => {
+    if (!wanted) return
+    const hit = FOOD_SPECS.find((s) => s.name.toLowerCase() === wanted.toLowerCase())
+    if (!hit) return
+    setGroup('All')
+    setQ('')
+    setOpenName(hit.name)
+    // Drop the param so a refresh doesn't re-open it after you close it.
+    setParams({}, { replace: true })
+    // Let the list render before scrolling to the card.
+    requestAnimationFrame(() =>
+      document.getElementById(`spec-${slug(hit.name)}`)?.scrollIntoView({ block: 'center' }),
+    )
+  }, [wanted, setParams])
 
   return (
     <>
@@ -113,6 +135,7 @@ export function Specs() {
           {filtered.map((s) => (
             <SpecCard
               key={s.name}
+              anchor={`spec-${slug(s.name)}`}
               spec={s}
               archived={viewingOldies}
               open={openName === s.name}
@@ -129,6 +152,7 @@ export function Specs() {
 
 function SpecCard({
   spec,
+  anchor,
   archived,
   open,
   onToggle,
@@ -136,6 +160,7 @@ function SpecCard({
   onRestore,
 }: {
   spec: Spec
+  anchor: string
   archived: boolean
   open: boolean
   onToggle: () => void
@@ -147,7 +172,7 @@ function SpecCard({
   // so the photo can be filed under the sheet's name rather than the spec's.
   const thumb = dishPhoto(spec.name) ?? (build ? buildPhoto(build) : undefined)
   return (
-    <Card className={`overflow-hidden ${archived ? 'opacity-75' : ''}`}>
+    <Card id={anchor} className={`overflow-hidden ${archived ? 'opacity-75' : ''}`}>
       <button onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left">
         {thumb && (
           <img
