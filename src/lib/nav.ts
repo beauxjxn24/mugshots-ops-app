@@ -112,7 +112,9 @@ export const NAV: NavSection[] = [
   {
     // Inventory is snoozed from the nav (still reachable at /inventory and via
     // the catalog's Count toggle) to keep the menu streamlined.
-    title: 'Supply',
+    // Named for the one screen it holds. "Supply" was a wrapper you had to open
+    // before you could see it meant the item catalog.
+    title: 'Item Catalog',
     areaIcon: Boxes,
     items: [
       { to: '/catalog', label: 'Item Catalog', icon: Boxes, color: '#2DD4BF', anim: StackIcon },

@@ -5,7 +5,7 @@ import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
-import { ConciergeBell, UtensilsCrossed, Search } from 'lucide-react'
+import { ConciergeBell, UtensilsCrossed, Search, ChevronDown } from 'lucide-react'
 import { Aurora } from './Aurora'
 import { Toaster } from './Toaster'
 import { CommandPalette, openCommandPalette } from './CommandPalette'
@@ -267,107 +267,138 @@ function DrawerNav({ sections, onNavigate }: { sections: NavSection[]; onNavigat
 }
 
 /**
- * Command rail — the areas down the left, that area's screens beside them.
+ * Command rail — the areas listed by name, each opening to its own screens.
  *
- * The menu carries 27 destinations, which no icon set can make short. So the
- * rail shows the five AREAS and the panel shows only the screens inside the one
- * you are in: never more than a dozen items on screen, however far the app
- * grows. The cost is a second click to cross areas, which is what the Cmd-K
- * jump-to is for.
+ * The menu carries 27 destinations, which no icon set can make short, and an
+ * icon strip made you read a picture to guess the area. So the rail names the
+ * areas outright and only ever opens one: hovering an area shows what is inside
+ * it, and moving away falls back to the area you are actually in. Never more
+ * than a dozen items on screen, however far the app grows.
  *
- * The area follows the route, so arriving from a link or a deep link opens that
- * screen's area instead of leaving the rail pointing somewhere else.
+ * The open area follows the route, so arriving from a link or a deep link shows
+ * that screen's area instead of leaving the rail pointing somewhere else.
  */
 function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: () => void }) {
   const loc = useLocation()
   // A section with no title holds a single destination (Dashboard, My Shift) —
-  // it IS its own rail button and has no panel.
+  // it IS its own rail row and never expands.
   const areas = useMemo(() => sections.filter((s) => s.title), [sections])
   const solo = useMemo(() => sections.filter((s) => !s.title).flatMap((s) => s.items), [sections])
 
-  const [picked, setPicked] = useState(0)
-  useEffect(() => {
-    const i = areas.findIndex((a) => a.items.some((x) => x.to === loc.pathname))
-    if (i >= 0) setPicked(i)
-  }, [loc.pathname, areas])
-
-  const onSolo = solo.some((i) => i.to === loc.pathname)
-  const area = areas[Math.min(picked, Math.max(0, areas.length - 1))]
-  const btn = (active: boolean) =>
-    `grid size-10 place-items-center rounded-xl transition-colors ${
-      active
-        ? 'bg-signal/15 text-signal ring-1 ring-inset ring-signal/35'
-        : 'text-white/55 hover:bg-white/5 hover:text-white'
-    }`
+  // The area holding the current route — the resting state the rail returns to.
+  const routeArea = useMemo(
+    () => areas.findIndex((a) => a.items.some((x) => x.to === loc.pathname)),
+    [areas, loc.pathname],
+  )
+  // Hover peeks into another area; clicking pins it so a touch device (and the
+  // keyboard) can get there without a pointer. Null means "follow the route".
+  const [peek, setPeek] = useState<number | null>(null)
+  const [pinned, setPinned] = useState<number | null>(null)
+  useEffect(() => setPinned(null), [loc.pathname])
+  const open = peek ?? pinned ?? routeArea
 
   return (
-    <div className="flex min-h-0 flex-1 gap-1.5">
-      <div className="flex shrink-0 flex-col gap-1.5 border-r border-white/10 pr-1.5">
+    <div className="flex min-h-0 flex-1 flex-col" onMouseLeave={() => setPeek(null)}>
+      {/* The shortcut has to be visible to be discovered — a rail that hides
+          its escape hatch just costs you the extra click. */}
+      <button
+        onClick={openCommandPalette}
+        className="mb-2 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2 text-[12px] text-white/45 hover:border-signal/40 hover:text-white/70"
+      >
+        <Search size={13} className="shrink-0" />
+        Jump to…
+        <kbd className="ml-auto rounded border border-white/15 px-1 py-px font-mono text-[9px]">⌘K</kbd>
+      </button>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
         {solo.map((it) => (
           <NavLink
             key={it.to}
             to={it.to}
             onClick={onNavigate}
-            title={it.label}
-            aria-label={it.label}
-            className={btn(onSolo && loc.pathname === it.to)}
+            onMouseEnter={() => setPeek(null)}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
+                isActive
+                  ? 'bg-signal/12 text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`
+            }
           >
-            <it.icon size={18} strokeWidth={2} />
+            <it.icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />
+            {it.label}
           </NavLink>
         ))}
+
         {areas.map((sec, i) => {
           const Icon = sec.areaIcon
+          const isOpen = i === open
+          // An area wrapping a single screen is that screen — expanding to one
+          // row would just be a second click to reach it.
+          const only = sec.items.length === 1 ? sec.items[0] : null
+          const here = sec.items.some((x) => x.to === loc.pathname)
+
+          if (only) {
+            return (
+              <NavLink
+                key={sec.title}
+                to={only.to}
+                onClick={onNavigate}
+                onMouseEnter={() => setPeek(null)}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
+                    isActive
+                      ? 'bg-signal/12 text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
+                      : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  }`
+                }
+              >
+                {Icon && <Icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />}
+                {sec.title}
+              </NavLink>
+            )
+          }
+
           return (
-            <button
-              key={sec.title}
-              onClick={() => setPicked(i)}
-              title={sec.title}
-              aria-label={sec.title}
-              aria-current={!onSolo && i === picked ? 'true' : undefined}
-              className={btn(!onSolo && i === picked)}
-            >
-              {Icon ? <Icon size={18} strokeWidth={2} /> : <span className="text-xs font-bold">{sec.title[0]}</span>}
-            </button>
+            <div key={sec.title} onMouseEnter={() => setPeek(i)}>
+              <button
+                onClick={() => setPinned(i)}
+                aria-expanded={isOpen}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
+                  isOpen || here ? 'text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                {Icon && <Icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />}
+                <span className="truncate">{sec.title}</span>
+                <ChevronDown
+                  size={13}
+                  className={`ml-auto shrink-0 opacity-45 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {isOpen && (
+                <div className="mb-1 ml-[7px] flex flex-col gap-0.5 border-l border-white/10 pl-2">
+                  {sec.items.map((it) => (
+                    <NavLink
+                      key={it.to}
+                      to={it.to}
+                      onClick={onNavigate}
+                      className={({ isActive }) =>
+                        `flex items-center rounded-lg px-2.5 py-1.5 text-[12.5px] transition-colors ${
+                          isActive
+                            ? 'bg-signal/12 font-semibold text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
+                            : 'text-white/60 hover:bg-white/5 hover:text-white'
+                        }`
+                      }
+                    >
+                      {it.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           )
         })}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        {/* The shortcut has to be visible to be discovered — a rail that hides
-            its escape hatch just costs you the extra click. */}
-        <button
-          onClick={openCommandPalette}
-          className="mb-2 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2 text-[12px] text-white/45 hover:border-signal/40 hover:text-white/70"
-        >
-          <Search size={13} className="shrink-0" />
-          Jump to…
-          <kbd className="ml-auto rounded border border-white/15 px-1 py-px font-mono text-[9px]">⌘K</kbd>
-        </button>
-        {area && (
-          <>
-            <div className="px-3 pb-1.5 pt-1 text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/35">
-              {area.title}
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {area.items.map((it) => (
-                <NavLink
-                  key={it.to}
-                  to={it.to}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    `flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
-                      isActive
-                        ? 'bg-signal/12 font-semibold text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
-                        : 'text-white/70 hover:bg-white/5 hover:text-white'
-                    }`
-                  }
-                >
-                  {it.label}
-                </NavLink>
-              ))}
-            </div>
-          </>
-        )}
       </div>
     </div>
   )
