@@ -330,13 +330,11 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
               }`
             }
           >
-            <it.icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />
             {it.label}
           </NavLink>
         ))}
 
         {areas.map((sec, i) => {
-          const Icon = sec.areaIcon
           const isOpen = i === open
           // An area wrapping a single screen is that screen — expanding to one
           // row would just be a second click to reach it.
@@ -358,7 +356,6 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
                   }`
                 }
               >
-                {Icon && <Icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />}
                 {sec.title}
               </NavLink>
             )
@@ -376,7 +373,6 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
                   isOpen || here ? 'text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                {Icon && <Icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />}
                 <span className="truncate">{sec.title}</span>
                 <ChevronDown
                   size={13}
