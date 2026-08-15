@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
-import { Upload, Users } from 'lucide-react'
+import { Upload, Users, ChevronDown } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
 import { type Person, ROLES, newId, importPeople, addPeople, rolesOf } from '../lib/staff'
@@ -59,6 +59,9 @@ export function Staff() {
   const [form, setForm] = useState({ name: '', role: 'Server', phone: '' })
   const [showImport, setShowImport] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+  // One role open at a time. Every group expanded at once ran 118 listings down
+  // the page — you scrolled past three roles to reach the one you wanted.
+  const [openRole, setOpenRole] = useState<string>('Server')
 
   const add = () => {
     if (!form.name.trim()) return
@@ -199,12 +202,22 @@ export function Staff() {
 
             {byRole.map((g) => (
               <div key={g.role}>
-                <div className="flex items-center gap-1.5 px-4 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                <button
+                  onClick={() => setOpenRole((r) => (r === g.role ? '' : g.role))}
+                  aria-expanded={openRole === g.role}
+                  className={`flex w-full items-center gap-1.5 border-t border-black/5 px-4 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+                    openRole === g.role ? 'bg-black/[0.03] text-ink' : 'text-muted hover:bg-black/[0.02]'
+                  }`}
+                >
                   <span className={`size-2 rounded-full ${DOT[g.role] ?? 'bg-black/20'}`} />
                   {GROUP_LABEL[g.role] ?? `${g.role}s`}
                   <span className="font-bold text-muted/60">{g.people.length}</span>
-                </div>
-                {g.people.map((p) => {
+                  <ChevronDown
+                    size={13}
+                    className={`ml-auto opacity-50 transition-transform ${openRole === g.role ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openRole === g.role && g.people.map((p) => {
                   const tt = tipTotals.get(p.name.toLowerCase())
                   const isServer = rolesOf(p).includes('Server')
                   const amt = isServer ? (tt?.tippedOut ?? 0) : (tt?.received ?? 0)
