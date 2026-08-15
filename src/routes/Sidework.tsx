@@ -14,7 +14,10 @@ export function Sidework() {
   const phases = phasesFor(role)
   const [phase, setPhase] = useState<string>(phases[0])
   // Per-tile editing (owner request): the pencil lives on each section card.
-  const [editingSec, setEditingSec] = useState<string | null>(null)
+  // Tracked by position, not by name: keying off the title meant renaming a tile
+  // changed the very value being compared, so a tile stopped being "the one
+  // being edited" halfway through typing its new name.
+  const [editingSec, setEditingSec] = useState<number | null>(null)
   const [done, setDone] = usePersistentState<Record<string, boolean>>(`sidework:done:${today()}`, {})
   const [adding, setAdding] = useState<Record<number, string>>({})
 
@@ -48,13 +51,19 @@ export function Sidework() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Section titles are editable (owner spec: some stores use names, not
-  // section numbers).
-  const renameSection = (si: number, title: string) => {
-    const name = title.trim()
-    if (!name) return
+  // Section titles are editable (owner spec: some stores use names, not section
+  // numbers — "Cut 1" rather than "Section 1").
+  //
+  // Takes the field exactly as typed. Trimming on every keystroke ate the space
+  // the moment you typed it, so a two-word name could not be entered at all, and
+  // rejecting an empty value meant you could not clear the field to start over.
+  const renameSection = (si: number, title: string) =>
+    setSections((secs) => secs.map((s, i) => (i === si ? { ...s, section: title } : s)))
+
+  // Tidy up once, on the way out, rather than mid-word.
+  const commitRename = (si: number, title: string) => {
+    const name = title.trim() || `Section ${si + 1}`
     setSections((secs) => secs.map((s, i) => (i === si ? { ...s, section: name } : s)))
-    setEditingSec(name)
   }
 
   const key = (s: string, t: string) => `${role}|${activePhase}|${s}|${t}`
@@ -166,14 +175,19 @@ export function Sidework() {
         {sections.map((sec, si) => {
           const secKeys = sec.tasks.map((t) => key(sec.section, t))
           const secDone = secKeys.filter((k) => done[k]).length
-          const editing = editingSec === sec.section
+          const editing = editingSec === si
           return (
-            <Card key={sec.section} className={`overflow-hidden ${editing ? 'ring-2 ring-brand' : ''}`}>
+            // Keyed by position. Keyed by title, every keystroke of a rename
+            // looked like a different card to React, which tore the input down
+            // and rebuilt it — so focus was lost after a single character.
+            <Card key={si} className={`overflow-hidden ${editing ? 'ring-2 ring-brand' : ''}`}>
               <div className={`flex items-center justify-between gap-2 border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'}`}>
                 {editing ? (
                   <input
                     value={sec.section}
                     onChange={(e) => renameSection(si, e.target.value)}
+                    onBlur={(e) => commitRename(si, e.target.value)}
+                    autoFocus
                     title="Rename this tile — use a name instead of a section number if that's how your store works"
                     className="min-w-0 flex-1 rounded-lg border border-brand/40 bg-white px-2 py-1 font-display text-sm font-semibold text-ink outline-none"
                   />
@@ -192,7 +206,7 @@ export function Sidework() {
                     </button>
                   )}
                   <button
-                    onClick={() => setEditingSec(editing ? null : sec.section)}
+                    onClick={() => setEditingSec(editing ? null : si)}
                     aria-label={editing ? `Done editing ${sec.section}` : `Edit ${sec.section}`}
                     title={editing ? 'Done editing' : 'Edit this list'}
                     className={`grid size-7 place-items-center rounded-lg ${
