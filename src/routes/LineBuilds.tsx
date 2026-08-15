@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Printer } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { PageHeader } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { SPECS, GROUP_ORDER } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
@@ -64,33 +64,52 @@ export function LineBuilds() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-2">
           {cards.map((s) => {
             const photo = dishPhoto(s.name)
+            const tag = s.g === 'Line Builds' ? 'LTO' : s.g.replace(' Builds', '')
             return (
-            <Card key={`${s.g}-${s.name}`} className="break-inside-avoid overflow-hidden p-3.5 print:border print:shadow-none">
-              {photo && (
-                <img
-                  src={photo}
-                  alt={s.name}
-                  className="-mx-3.5 -mt-3.5 mb-2.5 h-28 w-[calc(100%+1.75rem)] max-w-none object-cover print:hidden"
-                />
-              )}
-              <div className="mb-0.5 flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1 truncate font-display text-[15px] font-semibold text-ink">{s.name}</div>
-                <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-muted">
-                  {s.g === 'Line Builds' ? 'LTO' : s.g.replace(' Builds', '')}
-                </span>
-              </div>
-              <ol className="mt-1.5 space-y-0.5">
-                {s.ing.map(([n, qty], i) => (
-                  <li key={i} className="flex items-baseline justify-between gap-2 text-[13px] leading-snug">
-                    <span className="text-ink/85">
-                      <span className="mr-1.5 font-mono text-[10px] text-muted">{i + 1}</span>
-                      {n}
+              <article
+                key={`${s.g}-${s.name}`}
+                className="group break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.07] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:ring-black/10 print:rounded-none print:border print:shadow-none print:ring-0 print:transition-none print:hover:translate-y-0"
+              >
+                {photo && (
+                  // Square, because the photos are square-to-portrait (0.54–1.79,
+                  // most near 0.75–1.0). The old card cropped them into a 112px
+                  // letterbox — roughly 3:1 — which kept a thin band across the
+                  // middle and cut the dish off top and bottom.
+                  <div className="relative aspect-square overflow-hidden bg-navy/5 print:hidden">
+                    <img
+                      src={photo}
+                      alt={s.name}
+                      loading="lazy"
+                      className="size-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.04]"
+                    />
+                    <span className="absolute right-2 top-2 rounded-full bg-black/50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white backdrop-blur-sm">
+                      {tag}
                     </span>
-                    {qty && <span className="shrink-0 font-mono text-[11px] font-semibold text-brand">{qty}</span>}
-                  </li>
-                ))}
-              </ol>
-            </Card>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2.5 pt-10">
+                      <h3 className="font-display text-[15px] font-semibold leading-tight text-white">{s.name}</h3>
+                    </div>
+                  </div>
+                )}
+                {/* The name again for print and for builds with no photo yet —
+                    the overlay above rides on an image that print drops. */}
+                <div
+                  className={`items-center justify-between gap-2 px-3.5 pt-3 ${photo ? 'hidden print:flex' : 'flex'}`}
+                >
+                  <div className="min-w-0 flex-1 truncate font-display text-[15px] font-semibold text-ink">{s.name}</div>
+                  <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-muted">{tag}</span>
+                </div>
+                <ol className="space-y-0.5 p-3.5">
+                  {s.ing.map(([n, qty], i) => (
+                    <li key={i} className="flex items-baseline justify-between gap-2 text-[13px] leading-snug">
+                      <span className="text-ink/85">
+                        <span className="mr-1.5 font-mono text-[10px] text-muted">{i + 1}</span>
+                        {n}
+                      </span>
+                      {qty && <span className="shrink-0 font-mono text-[11px] font-semibold text-brand">{qty}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </article>
             )
           })}
         </div>

@@ -128,7 +128,9 @@ export const NAV: NavSection[] = [
     items: [
       { to: '/period', label: 'Period Review', icon: BarChart3, color: '#A78BFA', anim: BarsIcon },
       { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays, color: '#60A5FA', anim: ClockIcon },
-      { to: '/posted', label: 'Posted schedule', icon: CalendarCheck, color: '#34D399', anim: ClockIcon, staff: true },
+      // Managers only — the staff experience is the shift in front of you, and
+      // the posted schedule was the one thing in My Tasks that wasn't a task.
+      { to: '/posted', label: 'Posted schedule', icon: CalendarCheck, color: '#34D399', anim: ClockIcon },
       { to: '/staff', label: 'Staff', icon: Users, color: '#F472B6', anim: PeopleIcon },
       { to: '/users', label: 'Users & PINs', icon: Users, color: '#E4B84C', anim: KeyTurnIcon },
       { to: '/stores', label: 'Stores & Concepts', icon: Store, color: '#E4B84C', anim: StorefrontIcon },
