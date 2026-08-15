@@ -321,7 +321,7 @@ export function Prep() {
           setDragName(null)
           setOverName(null)
         }}
-        className={`group grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
+        className={`group grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
           dragName === it.name ? 'opacity-40' : ''
         } ${overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''}`}
       >
@@ -390,6 +390,18 @@ export function Prep() {
             )}
           </div>
         </div>
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.5"
+          value={counted ? onHand[it.name] : ''}
+          placeholder="—"
+          onChange={(e) => {
+            const v = e.target.value
+            setCount(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
+          }}
+          className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
+        />
         {it.pars.map((p, i) =>
           editingPars ? (
             <input
@@ -412,18 +424,6 @@ export function Prep() {
             </span>
           ),
         )}
-        <input
-          type="number"
-          inputMode="decimal"
-          step="0.5"
-          value={counted ? onHand[it.name] : ''}
-          placeholder="—"
-          onChange={(e) => {
-            const v = e.target.value
-            setCount(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
-          }}
-          className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
-        />
         <span className="text-right">
           {n > 0 ? (
             <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
@@ -672,15 +672,15 @@ export function Prep() {
                 )}
               </div>
               <div className="min-w-[880px]">
-                <div className="grid grid-cols-[20px_minmax(0,2fr)_repeat(7,52px)_86px_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
                   <span />
                   <span>Prep item</span>
+                  <span className="text-center">On hand</span>
                   {DOWS.map((d, i) => (
                     <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
                       {d}
                     </span>
                   ))}
-                  <span className="text-center">On hand</span>
                   <span className="text-right">Prep today</span>
                 </div>
                 {rows.length === 0 ? (
