@@ -98,7 +98,7 @@ export const NAV: NavSection[] = [
     ],
   },
   {
-    title: 'Menu & Sales',
+    title: 'Training',
     areaIcon: BookOpen,
     items: [
       { to: '/forecast', label: 'Forecast', icon: TrendingUp, color: '#4ADE80', anim: GraphIcon },
