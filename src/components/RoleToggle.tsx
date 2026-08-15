@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useRole, type Role } from '../lib/role'
+import { pinMatches } from '../lib/users'
+import { forgetUnlock } from '../lib/daycode'
 
 /** Admin ↔ Manager ↔ Staff view switch (a stand-in for real per-account roles).
  *  Admin is the owner — the only role that can switch stores and see other
@@ -9,7 +11,18 @@ export function RoleToggle() {
   const setRole = useRole((s) => s.setRole)
   const navigate = useNavigate()
 
+  // Stepping UP needs a PIN. Without this the day code is decoration: a cook
+  // who is in as staff could tap 'admin' and read every store's numbers.
+  // Dropping to staff is free -- that is a manager handing the tablet over.
   const pick = (r: Role) => {
+    if (r !== 'staff' && role === 'staff') {
+      const pin = window.prompt('Manager PIN to leave the staff view:')
+      if (!pin || !pinMatches(pin.trim())) {
+        if (pin) window.alert('That PIN is not on the manager list.')
+        return
+      }
+    }
+    if (r === 'staff') forgetUnlock()
     setRole(r)
     navigate(r === 'staff' ? '/shift' : '/')
   }

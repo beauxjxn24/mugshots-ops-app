@@ -2,6 +2,7 @@ import { type ReactNode } from 'react'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { AppShell } from './components/AppShell'
+import { DayGate } from './components/DayGate'
 import { Dashboard } from './routes/Dashboard'
 import { Combined } from './routes/Combined'
 import { Shift } from './routes/Shift'
@@ -42,7 +43,13 @@ import { Placeholder } from './routes/Placeholder'
 const router = createHashRouter([
   {
     path: '/',
-    element: <AppShell />,
+    // Nothing renders until someone identifies themselves — today's staff code,
+    // or a manager's PIN.
+    element: (
+      <DayGate>
+        <AppShell />
+      </DayGate>
+    ),
     children: [
       { index: true, element: <Home /> },
       { path: 'combined', element: <Combined /> },

@@ -5,6 +5,7 @@ import { usePersistentState } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { requirePin } from '../lib/pin'
 import { DEFAULT_USERS, USER_ROLES, newUserId, type User } from '../lib/users'
+import { dayCode } from '../lib/daycode'
 
 /**
  * Admin → Users & privileges. Managers only (name, role, PIN) — the schedule
@@ -36,6 +37,26 @@ export function Users() {
         subtitle={`${users.length} manager${users.length === 1 ? '' : 's'} · PINs unlock schedule, publish & store setup`}
       />
       <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+        {/* Today's staff code. Managers read it off here and give it to the
+            floor; it changes on its own at midnight. */}
+        <Card className="flex flex-wrap items-center gap-x-4 gap-y-2 border-brand/30 bg-navy p-4 text-white">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand">
+            <KeyRound size={18} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[10px] font-extrabold uppercase tracking-wider text-white/45">
+              Today's staff code
+            </span>
+            <span className="block text-xs text-white/55">
+              Give this to the floor — it changes at midnight, and every device at this store shows
+              the same four digits.
+            </span>
+          </span>
+          <span className="ml-auto font-mono text-3xl font-bold tracking-[0.2em] text-signal">
+            {dayCode()}
+          </span>
+        </Card>
+
         <Card className="border-brand/20 bg-brand/5 p-4 text-sm text-ink/80">
           <div className="flex gap-2.5">
             <ShieldCheck size={18} className="mt-0.5 shrink-0 text-brand" />
