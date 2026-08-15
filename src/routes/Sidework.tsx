@@ -104,15 +104,23 @@ export function Sidework() {
     setSections((secs) => secs.map((s, i) => (i === si ? { ...s, tasks: [...s.tasks, text] } : s)))
     setAdding((a) => ({ ...a, [si]: '' }))
   }
-  // Reset just one section's duties back to the default sheet.
-  const resetSection = (name: string) =>
-    setSections((secs) =>
-      secs.map((s) =>
-        s.section === name
-          ? ((SIDEWORK[role][activePhase] ?? []).find((x) => x.section === name) ?? s)
-          : s,
-      ),
-    )
+  // The default tile at this position, or undefined for a tile added beyond the
+  // stock sheet — there is nothing to put back for one of those.
+  const defaultAt = (si: number): Section | undefined => SIDEWORK[role]?.[activePhase]?.[si]
+
+  // Reset just one tile's duties back to the default sheet.
+  //
+  // Matched by position. Matching the stored title against the default sheet's
+  // title meant that renaming a tile — the whole point of the rename — left
+  // nothing for the lookup to find, so the button silently did nothing.
+  //
+  // Restores the duties and keeps the tile's name: the name is the store's own
+  // label ("Cut 1"), and resetting a duty list shouldn't undo the labelling.
+  const resetSection = (si: number) => {
+    const d = defaultAt(si)
+    if (!d) return
+    setSections((secs) => secs.map((s, i) => (i === si ? { ...s, tasks: [...d.tasks] } : s)))
+  }
   // ---- closer sign-off ----------------------------------------------------
   // Signed per role + phase, per day: the closer verifies the Servers' close
   // separately from the Bartenders', and tomorrow starts unsigned.
@@ -233,7 +241,13 @@ export function Sidework() {
                     </span>
                   )}
                   {editing && (
-                    <button onClick={() => resetSection(sec.section)} className="text-[11px] font-semibold text-down">
+                    <button
+                      onClick={() => resetSection(si)}
+                      // Hidden for a tile with no counterpart in the stock sheet,
+                      // where the button could only ever be a no-op.
+                      hidden={!defaultAt(si)}
+                      className="text-[11px] font-semibold text-down"
+                    >
                       Reset to default
                     </button>
                   )}
