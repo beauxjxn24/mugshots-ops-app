@@ -20,6 +20,11 @@ export function Sidework() {
   const [editingSec, setEditingSec] = useState<number | null>(null)
   const [done, setDone] = usePersistentState<Record<string, boolean>>(`sidework:done:${today()}`, {})
   const [adding, setAdding] = useState<Record<number, string>>({})
+  // Closer sign-off, keyed by role|phase and dated like the checkmarks are.
+  const [verified, setVerified] = usePersistentState<
+    Record<string, { init: string; at: string; done: number; total: number }>
+  >(`sidework:verified:${today()}`, {})
+  const [vInit, setVInit] = useState('')
 
   const activePhase = phases.includes(phase) ? phase : phases[0]
   const sections = data[role]?.[activePhase] ?? []
@@ -72,6 +77,8 @@ export function Sidework() {
     [sections, role, activePhase],
   )
   const doneCount = allTasks.filter((k) => done[k]).length
+  const vKey = `${role}|${activePhase}`
+  const vRec = verified[vKey]
 
   // ---- editing helpers (immutable updates on data[role][activePhase]) ----
   const setSections = (updater: (secs: Section[]) => Section[]) =>
@@ -106,6 +113,31 @@ export function Sidework() {
           : s,
       ),
     )
+  // ---- closer sign-off ----------------------------------------------------
+  // Signed per role + phase, per day: the closer verifies the Servers' close
+  // separately from the Bartenders', and tomorrow starts unsigned.
+  const verifySidework = async () => {
+    const ini = vInit.trim().toUpperCase()
+    if (!ini) {
+      alert('Closer initials required to verify')
+      return
+    }
+    const left = allTasks.length - doneCount
+    if (left > 0) {
+      const ok = await confirmDelete(
+        `${left} ${left === 1 ? 'duty is' : 'duties are'} still unchecked`,
+        'Sign off anyway? The shortfall is recorded with your initials.',
+        'Verify anyway',
+      )
+      if (!ok) return
+    }
+    setVerified((v) => ({
+      ...v,
+      [vKey]: { init: ini, at: new Date().toISOString(), done: doneCount, total: allTasks.length },
+    }))
+    setVInit('')
+  }
+
   const clearChecks = () =>
     setDone((d) => {
       const next = { ...d }
@@ -280,7 +312,60 @@ export function Sidework() {
             </Card>
           )
         })}
+
+        {/* The closer's sign-off on this role + phase, for today. */}
+        {sections.length > 0 && (
+          <Card className={`overflow-hidden ${vRec ? 'ring-2 ring-up/40' : ''}`}>
+            <div className="flex items-center gap-2 border-b border-black/5 bg-black/[0.02] px-4 py-2">
+              <span className="font-display text-sm font-semibold text-ink">Closer verification</span>
+              <span className="ml-auto text-xs text-muted">
+                {doneCount}/{allTasks.length} checked
+              </span>
+            </div>
+            {vRec ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 p-4">
+                <span className="rounded-lg bg-up/10 px-2.5 py-1 text-sm font-extrabold uppercase text-up">
+                  ✓ {vRec.init}
+                </span>
+                <span className="text-xs text-muted">
+                  verified {timeOf(vRec.at)} · {vRec.done}/{vRec.total} checked
+                  {vRec.done < vRec.total && <b className="text-down"> · signed off short</b>}
+                </span>
+                <button
+                  onClick={() => setVerified((v) => { const n = { ...v }; delete n[vKey]; return n })}
+                  className="ml-auto text-[11px] font-semibold text-muted hover:text-ink"
+                >
+                  Undo
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 p-4">
+                <span className="text-xs text-muted">
+                  {role} · {activePhase} — initials to sign off:
+                </span>
+                <input
+                  value={vInit}
+                  onChange={(e) => setVInit(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && void verifySidework()}
+                  placeholder="——"
+                  maxLength={4}
+                  aria-label="Closer initials"
+                  className="w-14 rounded-lg border-[1.5px] border-black/15 bg-white px-1 py-1.5 text-center text-sm font-extrabold uppercase text-ink outline-none focus:border-brand"
+                />
+                <button
+                  onClick={() => void verifySidework()}
+                  className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white"
+                >
+                  ✓ Verify
+                </button>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </>
   )
 }
+
+const timeOf = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
