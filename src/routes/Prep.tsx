@@ -9,6 +9,7 @@ import { BarPrep } from '../components/BarPrep'
 import PREP_SEED from '../data/prep-items.json'
 import { usageIndex } from '../lib/linebuilds'
 import { prepSpecName } from '../lib/specs'
+import { SpecPeek } from '../components/SpecPeek'
 import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface PrepItem {
@@ -103,6 +104,9 @@ export function Prep() {
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
   const [addMsg, setAddMsg] = useState('')
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
+  // The card for the item just tapped -- read over the sheet, so a count in
+  // progress doesn't lose its place.
+  const [peek, setPeek] = useState<string | null>(null)
 
   // One-time station migrations, per location:
   //  • v3: a store still on the first-pass default (Fry side / Grill side) is
@@ -362,13 +366,13 @@ export function Prep() {
           {(() => {
             const card = prepSpecName(it.name)
             return card ? (
-              <Link
-                to={`/specs?open=${encodeURIComponent(card)}`}
-                title={`Open the spec for ${card}`}
-                className="block truncate text-sm font-bold text-ink underline-offset-2 hover:text-brand-600 hover:underline"
+              <button
+                onClick={() => setPeek(card)}
+                title={`Spec for ${card}`}
+                className="block w-full truncate text-left text-sm font-bold text-ink underline-offset-2 hover:text-brand-600 hover:underline"
               >
                 {it.name}
-              </Link>
+              </button>
             ) : (
               <div className="truncate text-sm font-bold text-ink">{it.name}</div>
             )
@@ -876,6 +880,7 @@ export function Prep() {
         {/* Bottom action bar — same buttons as the top, so there's no scroll-back */}
         <div className="flex flex-wrap items-center justify-end gap-2">{actionButtons}</div>
       </div>
+      <SpecPeek name={peek} onClose={() => setPeek(null)} />
     </>
   )
 }
