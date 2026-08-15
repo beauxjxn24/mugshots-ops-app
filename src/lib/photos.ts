@@ -11,4 +11,35 @@ export const DISH_PHOTOS: Record<string, string> = Object.fromEntries(
 export const slugify = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
-export const dishPhoto = (name: string): string | undefined => DISH_PHOTOS[slugify(name)]
+/**
+ * Photos filed under a shorter name than the item they belong to.
+ *
+ * Twelve dishes looked like they had no photo when the photo was sitting in the
+ * folder all along — "Mugshot Burger" looks for mugshot-burger.jpg and the file
+ * is mugshot.jpg. Aliased rather than renamed because the line-build sheets name
+ * several of these files directly, so renaming would break them there.
+ *
+ * item slug → file name (without .jpg)
+ */
+const PHOTO_ALIASES: Record<string, string> = {
+  'mugshot-burger': 'mugshot',
+  'southern-burger': 'southern',
+  'texan-burger': 'texan',
+  'comeback-burger': 'comeback',
+  'breakfast-burger': 'breakfast',
+  'garlic-parm-burger': 'garlic-parm',
+  'mac-cheese-burger': 'mac-cheese',
+  middleberger: 'middle',
+  'davis-dill-pickles': 'dill-pickles',
+  'southwest-eggrolls-build': 'eggrolls',
+  'mombo-combo-build': 'mombo-combo',
+  'firecracker-popper-dog': 'firecracker-popper-dog-250',
+  '10-oz-mugshots-milkshake': '10-oz-milkshake',
+  '22-oz-mugshots-milkshake': '22-oz-milkshake',
+  'root-beer-float': '10-root-beer-float',
+}
+
+export const dishPhoto = (name: string): string | undefined => {
+  const s = slugify(name)
+  return DISH_PHOTOS[s] ?? DISH_PHOTOS[PHOTO_ALIASES[s] ?? '']
+}
