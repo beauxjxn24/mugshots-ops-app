@@ -4,6 +4,7 @@ import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
+import { rolesOf, type Person } from '../lib/staff'
 
 type Data = Record<Role, Record<string, Section[]>>
 
@@ -25,6 +26,25 @@ export function Sidework() {
     Record<string, { init: string; at: string; done: number; total: number }>
   >(`sidework:verified:${today()}`, {})
   const [vInit, setVInit] = useState('')
+  // Who is on each tile tonight, keyed role|phase|position and dated — an
+  // assignment is for one shift, not a standing property of the duty sheet.
+  const [assigned, setAssigned] = usePersistentState<Record<string, string>>(
+    `sidework:assigned:${today()}`,
+    {},
+  )
+  const [staff] = usePersistentState<Person[]>('staff:list', [])
+  // Whoever holds the code for the role being viewed — a Server tile offers the
+  // servers, not all seventy-one people on the roster. The duty sheet's tab is
+  // "Bar" while the roster's job code is "Bartender", so the two are bridged
+  // here rather than the picker coming up empty.
+  const crew = useMemo(() => {
+    const code = role === 'Bar' ? 'Bartender' : role
+    return staff
+      .filter((p) => rolesOf(p).includes(code))
+      .map((p) => p.name)
+      .sort((a, b) => a.localeCompare(b))
+  }, [staff, role])
+  const aKey = (si: number) => `${role}|${activePhase}|${si}`
 
   const activePhase = phases.includes(phase) ? phase : phases[0]
   const sections = data[role]?.[activePhase] ?? []
@@ -236,9 +256,43 @@ export function Sidework() {
                 )}
                 <span className="flex items-center gap-2">
                   {!editing && (
-                    <span className="text-xs text-muted">
-                      {secDone}/{sec.tasks.length}
-                    </span>
+                    <>
+                      {/* Who has this tile tonight. Names come from the roster,
+                          filtered to the role on screen, so it stays a pick
+                          rather than a spelling. */}
+                      <select
+                        value={assigned[aKey(si)] ?? ''}
+                        onChange={(e) =>
+                          setAssigned((a) => {
+                            const next = { ...a }
+                            if (e.target.value) next[aKey(si)] = e.target.value
+                            else delete next[aKey(si)]
+                            return next
+                          })
+                        }
+                        aria-label={`Assign ${sec.section}`}
+                        className={`max-w-[8.5rem] truncate rounded-lg border px-2 py-1 text-[11.5px] font-semibold outline-none focus:border-brand ${
+                          assigned[aKey(si)]
+                            ? 'border-brand/40 bg-brand/10 text-brand-600'
+                            : 'border-black/10 bg-white text-muted'
+                        }`}
+                      >
+                        <option value="">Unassigned</option>
+                        {crew.map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                        {/* Keeps a name visible after they're taken off the
+                            roster mid-shift, instead of silently clearing. */}
+                        {assigned[aKey(si)] && !crew.includes(assigned[aKey(si)]) && (
+                          <option value={assigned[aKey(si)]}>{assigned[aKey(si)]}</option>
+                        )}
+                      </select>
+                      <span className="text-xs text-muted">
+                        {secDone}/{sec.tasks.length}
+                      </span>
+                    </>
                   )}
                   {editing && (
                     <button
