@@ -2549,6 +2549,105 @@
   ]
  },
  {
+  "name": "Caesar's Lemon Blackout Wrap",
+  "g": "Sandwich & Wrap Builds",
+  "storage": "Basket w/ liner",
+  "shelf": "12\" tortilla",
+  "yields": "6 oz fries",
+  "ing": [
+   [
+    "Tortilla",
+    "12\", microwaved 15 sec"
+   ],
+   [
+    "Blackened Chicken",
+    "diced portion, heated"
+   ],
+   [
+    "Lemon Blackout",
+    "1/2 tbsp, instead of blackening spice when heating"
+   ],
+   [
+    "Chopped Romaine",
+    "3 oz"
+   ],
+   [
+    "Parmesan Cheese",
+    "1 tbsp"
+   ],
+   [
+    "Caesar Dressing",
+    "1 oz"
+   ],
+   [
+    "Lemon Wedge",
+    "1 squeezed + 1 to close"
+   ],
+   [
+    "Shredded Cheese",
+    "1 tbsp on the flap"
+   ],
+   [
+    "Beer-Battered Fries",
+    "6 oz"
+   ]
+  ],
+  "steps": [
+   "Heat the 12\" tortilla in the microwave for 15 seconds.",
+   "Heat the diced blackened chicken portion using 1/2 tbsp Lemon Blackout instead of blackening spice.",
+   "Mix 3 oz chopped romaine with 1 tbsp parmesan and 1 oz caesar dressing; place in the middle of the tortilla.",
+   "Place the heated chicken on the romaine mixture and squeeze one lemon wedge over it.",
+   "Fold the wrap like an envelope.",
+   "Place 1 tbsp shredded cheese on the flap; grill cheese-side down 30 seconds, flip and repeat.",
+   "Cut diagonally and shingle; close with a picked lemon wedge. 6 oz fries on the side."
+  ]
+ },
+ {
+  "name": "Mugs Chicken Sandwich",
+  "g": "Sandwich & Wrap Builds",
+  "storage": "Basket w/ liner",
+  "shelf": "Bun",
+  "yields": "6 oz fries",
+  "ing": [
+   [
+    "Bun",
+    "1"
+   ],
+   [
+    "Sriracha Ranch",
+    "1/2 tbsp bottom bun + 1/2 tbsp top bun"
+   ],
+   [
+    "Pickles",
+    "3"
+   ],
+   [
+    "Shredded Lettuce",
+    "1/3 cup"
+   ],
+   [
+    "Brined Chicken Breast",
+    "1"
+   ],
+   [
+    "American Cheese",
+    "1 slice"
+   ],
+   [
+    "Beer-Battered Fries",
+    "6 oz"
+   ]
+  ],
+  "steps": [
+   "Dress the bottom bun: 1/2 tbsp sriracha ranch, 3 pickles, 1/3 cup shredded lettuce.",
+   "Using a brined chicken breast, follow the chicken tender breading process.",
+   "Fry 6 minutes; pull and drain the grease in a Sav a Day.",
+   "American cheese on the chicken; 1/2 tbsp sriracha ranch on the top bun.",
+   "Leave the top bun OFF in the window so the cheese melts - place it on BEFORE taking to the guest.",
+   "6 oz fries on the side."
+  ]
+ },
+ {
   "name": "Mombo Combo Build",
   "g": "Appetizer Builds",
   "storage": "Lined Burger Basket",
@@ -2572,35 +2671,45 @@
  {
   "name": "Seans Nachos",
   "g": "Appetizer Builds",
-  "storage": "Lined Burger Basket",
-  "shelf": "Basket of chips, fries or tots",
+  "storage": "Basket w/ Liner",
+  "shelf": "6 oz chips",
   "yields": "",
   "ing": [
    [
-    "Protein",
-    "choose: no meat, chili, blackened chicken, BBQ chicken or chopped sirloin"
+    "Chips",
+    "6 oz"
    ],
    [
     "Rotel",
-    "4 oz"
+    "6 oz"
    ],
    [
-    "Pico de Gallo",
-    "1/3 cup"
+    "Protein",
+    "choose: no meat, chopped sirloin (philly puck), diced blackened chicken portion (heated), or 4 oz chili"
    ],
    [
-    "Fresh Jalapeños",
+    "Diced Tomatoes",
+    "1/4 cup"
+   ],
+   [
+    "Diced Onions",
     "1/4 cup"
    ],
    [
     "Sour Cream",
     "#40 scoop"
+   ],
+   [
+    "Fresh Jalapenos",
+    "8 slices"
    ]
   ],
   "steps": [
-   "Base of chips, fries or tots.",
-   "Protein is chosen at order — nachos no longer come with chili automatically.",
-   "Layer protein, rotel, pico, fresh jalapeños, sour cream."
+   "6 oz chips in a lined basket; 6 oz rotel.",
+   "Protein is chosen at order - no meat, chopped sirloin, diced blackened chicken, or 4 oz chili.",
+   "If chili is chosen, the rotel goes ON TOP of the chili.",
+   "Add 1/4 cup diced tomatoes and 1/4 cup diced onions.",
+   "Finish with a #40 scoop of sour cream and 8 slices of fresh jalapenos."
   ]
  },
  {
@@ -2818,6 +2927,53 @@
   ]
  },
  {
+  "name": "BBQ Nachos",
+  "g": "Appetizer Builds",
+  "storage": "Basket w/ liner",
+  "shelf": "6 oz chips",
+  "yields": "",
+  "ing": [
+   [
+    "Chips",
+    "6 oz"
+   ],
+   [
+    "Rotel",
+    "6 oz"
+   ],
+   [
+    "Blackened Chicken",
+    "diced portion, heated"
+   ],
+   [
+    "BBQ Sauce",
+    "6 zig zags"
+   ],
+   [
+    "Diced Tomatoes",
+    "1/4 cup"
+   ],
+   [
+    "Diced Onions",
+    "1/4 cup"
+   ],
+   [
+    "Sour Cream",
+    "#40 scoop"
+   ],
+   [
+    "Fresh Jalapenos",
+    "8 slices"
+   ]
+  ],
+  "steps": [
+   "6 oz chips in a lined basket; 6 oz rotel.",
+   "Diced blackened chicken portion, heated, then 6 zig zags of BBQ.",
+   "Add 1/4 cup diced tomatoes and 1/4 cup diced onions.",
+   "Finish with a #40 scoop of sour cream and 8 slices of fresh jalapenos."
+  ]
+ },
+ {
   "name": "She-E-O",
   "g": "Burger Builds",
   "storage": "Basket w/ liner",
@@ -2973,33 +3129,39 @@
     "6 oz"
    ],
    [
+    "Diced Tomatoes",
+    "1/4 cup"
+   ],
+   [
+    "Diced Red Onions",
+    "1/8 cup"
+   ],
+   [
     "Shredded Cheese",
     "1/2 cup"
    ],
    [
-    "Diced Tomatoes",
-    "1/3 cup"
+    "Blackened Chicken",
+    "diced portion, heated"
    ],
    [
-    "Diced Red Onions",
-    "1/3 cup"
+    "Tony Chachere's Creole Seasoning",
+    "on top"
    ],
    [
-    "Diced Bacon",
-    "1/3 cup"
-   ],
-   [
-    "Blackened Chicken Breast",
-    "thinly sliced"
-   ],
-   [
-    "Tony's + Parsley",
+    "Parsley",
     "garnish"
+   ],
+   [
+    "Ranch Dressing",
+    "(2) 2 oz on side"
    ]
   ],
   "steps": [
-   "Build greens and toppings — no pico, diced tomatoes and diced red onions.",
-   "Top with sliced blackened chicken; garnish."
+   "6 oz salad mix in a large salad bowl.",
+   "Build with 1/4 cup diced tomatoes, 1/8 cup diced red onions, 1/2 cup shredded cheese.",
+   "Diced blackened chicken portion, heated, on top.",
+   "Finish with Tony Chachere's and parsley; two 2 oz ranch on the side."
   ]
  },
  {
@@ -3668,12 +3830,18 @@
    [
     "Whole Fresh Jalapeños",
     "4"
+   ],
+   [
+    "Water",
+    "A/N"
    ]
   ],
   "steps": [
-   "Rinse whole jalapeños and allow to dry to prevent slipping.",
+   "Rinse whole fresh jalapenos and allow to dry to prevent slipping.",
    "Slice across into 1/4\" rounds (width of a pencil); discard the stem cap.",
-   "Place in shallow 1/6 pan and cover; label; cooler."
+   "Place in shallow 1/6 pan and cover with water; lid on pan.",
+   "Label and place in cooler until needed.",
+   "On the line, keep the slices covered in water so they do not dry out. Do not over prep."
   ]
  },
  {
