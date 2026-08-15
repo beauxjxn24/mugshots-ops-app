@@ -88,7 +88,10 @@ export const NAV: NavSection[] = [
       { to: '/checklists', label: 'Checklists', icon: ListChecks, color: '#34D399', anim: CheckBoxIcon, staff: true },
       { to: '/sidework', label: 'Sidework', icon: Sparkles, color: '#2DD4BF', anim: SparkleIcon, staff: true },
       { to: '/tipshare', label: 'Tipshare', icon: Banknote, color: '#4ADE80', anim: CoinIcon },
-      { to: '/prep', label: 'Prep', icon: ChefHat, color: '#FB7185', anim: ChefIcon },
+      // Staff see this too — prep IS the shift for a cook, and it was the one
+      // daily task missing from their menu. The screen itself is read-only for
+      // them: counts editable, pars and setup are not.
+      { to: '/prep', label: 'Prep', icon: ChefHat, color: '#FB7185', anim: ChefIcon, staff: true },
       { to: '/ordering', label: 'Ordering', icon: PackageOpen, color: '#F0A94C', anim: BoxIcon },
       { to: '/invoices', label: 'Invoices', icon: ReceiptText, color: '#A78BFA', anim: ReceiptIcon },
       { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },
