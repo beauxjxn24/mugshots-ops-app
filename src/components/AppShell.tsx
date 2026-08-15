@@ -290,15 +290,20 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
     () => areas.findIndex((a) => a.items.some((x) => x.to === loc.pathname)),
     [areas, loc.pathname],
   )
-  // Hover peeks into another area; clicking pins it so a touch device (and the
-  // keyboard) can get there without a pointer. Null means "follow the route".
-  const [peek, setPeek] = useState<number | null>(null)
-  const [pinned, setPinned] = useState<number | null>(null)
-  useEffect(() => setPinned(null), [loc.pathname])
-  const open = peek ?? pinned ?? routeArea
+  // Which area is open, as one value rather than a hover state layered over a
+  // click state: layering them meant a click could not close what the pointer
+  // was still hovering, so the header appeared dead. -1 is "all closed".
+  const [open, setOpen] = useState(routeArea)
+  // Follow the route, including on first paint and after navigating.
+  useEffect(() => setOpen(routeArea), [routeArea])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" onMouseLeave={() => setPeek(null)}>
+    <div
+      className="flex min-h-0 flex-1 flex-col"
+      // Leaving the rail drops any hover-opened area and goes back to showing
+      // wherever you actually are.
+      onMouseLeave={() => setOpen(routeArea)}
+    >
       {/* The shortcut has to be visible to be discovered — a rail that hides
           its escape hatch just costs you the extra click. */}
       <button
@@ -316,7 +321,7 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
             key={it.to}
             to={it.to}
             onClick={onNavigate}
-            onMouseEnter={() => setPeek(null)}
+            onMouseEnter={() => setOpen(-1)}
             className={({ isActive }) =>
               `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
                 isActive
@@ -344,7 +349,7 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
                 key={sec.title}
                 to={only.to}
                 onClick={onNavigate}
-                onMouseEnter={() => setPeek(null)}
+                onMouseEnter={() => setOpen(-1)}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
                     isActive
@@ -360,9 +365,12 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
           }
 
           return (
-            <div key={sec.title} onMouseEnter={() => setPeek(i)}>
+            <div key={sec.title} onMouseEnter={() => setOpen(i)}>
               <button
-                onClick={() => setPinned(i)}
+                // Toggle, so the same header that opens an area also closes it.
+                // mouseEnter does not re-fire while the pointer sits still, so
+                // closing sticks until you leave the area and come back.
+                onClick={() => setOpen((o) => (o === i ? -1 : i))}
                 aria-expanded={isOpen}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
                   isOpen || here ? 'text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
