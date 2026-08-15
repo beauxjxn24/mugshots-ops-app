@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
-import { Upload, Users, ChevronDown } from 'lucide-react'
+import { Upload, Users } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
 import { type Person, ROLES, newId, importPeople, addPeople, rolesOf } from '../lib/staff'
@@ -40,6 +40,8 @@ const DOT: Record<string, string> = {
   Manager: 'bg-purple-400',
   Corporate: 'bg-rose-400',
 }
+/** Dropdown value for "don't filter" — not a role, so it can't collide with one. */
+const ALL = '*'
 /** Group headings — most roles just take an "s", these don't. */
 const GROUP_LABEL: Record<string, string> = {
   ToGo: 'To-Go',
@@ -59,8 +61,10 @@ export function Staff() {
   const [form, setForm] = useState({ name: '', role: 'Server', phone: '' })
   const [showImport, setShowImport] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
-  // One role open at a time. Every group expanded at once ran 118 listings down
-  // the page — you scrolled past three roles to reach the one you wanted.
+  // Pick a job code, get the people who hold it. Listing every group at once ran
+  // 118 rows down the page, so reaching Bartenders meant scrolling past three
+  // other roles. ALL is still offered, for finding someone whose code you don't
+  // know — it just isn't the default.
   const [openRole, setOpenRole] = useState<string>('Server')
 
   const add = () => {
@@ -100,6 +104,14 @@ export function Staff() {
     role: r,
     people: staff.filter((p) => rolesOf(p).includes(r)),
   })).filter((g) => g.people.length > 0)
+
+  // Fall back to the first code that has anyone in it, so a roster with no
+  // Servers (or one emptied by deletions) doesn't leave the dropdown naming a
+  // group that isn't in its own list.
+  const active =
+    openRole === ALL || byRole.some((g) => g.role === openRole) ? openRole : byRole[0]?.role ?? ALL
+  // What the dropdown is showing: one code, or every group in order.
+  const shown = active === ALL ? byRole : byRole.filter((g) => g.role === active)
   const sel = staff.find((p) => p.id === selected) ?? null
 
   // Selected employee's shift-by-shift history.
@@ -200,24 +212,38 @@ export function Staff() {
               </div>
             )}
 
-            {byRole.map((g) => (
-              <div key={g.role}>
-                <button
-                  onClick={() => setOpenRole((r) => (r === g.role ? '' : g.role))}
-                  aria-expanded={openRole === g.role}
-                  className={`flex w-full items-center gap-1.5 border-t border-black/5 px-4 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
-                    openRole === g.role ? 'bg-black/[0.03] text-ink' : 'text-muted hover:bg-black/[0.02]'
-                  }`}
+            {staff.length > 0 && (
+              <div className="mx-3 mb-2 flex items-center gap-2 rounded-xl bg-black/[0.03] p-3">
+                <span className={`size-2.5 shrink-0 rounded-full ${DOT[active] ?? 'bg-black/20'}`} />
+                <label htmlFor="staff-role" className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                  Show
+                </label>
+                <select
+                  id="staff-role"
+                  value={active}
+                  onChange={(e) => setOpenRole(e.target.value)}
+                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-brand"
                 >
-                  <span className={`size-2 rounded-full ${DOT[g.role] ?? 'bg-black/20'}`} />
-                  {GROUP_LABEL[g.role] ?? `${g.role}s`}
-                  <span className="font-bold text-muted/60">{g.people.length}</span>
-                  <ChevronDown
-                    size={13}
-                    className={`ml-auto opacity-50 transition-transform ${openRole === g.role ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openRole === g.role && g.people.map((p) => {
+                  {byRole.map((g) => (
+                    <option key={g.role} value={g.role}>
+                      {GROUP_LABEL[g.role] ?? `${g.role}s`} ({g.people.length})
+                    </option>
+                  ))}
+                  <option value={ALL}>Everyone ({staff.length})</option>
+                </select>
+              </div>
+            )}
+
+            {shown.map((g) => (
+              <div key={g.role}>
+                {active === ALL && (
+                  <div className="flex items-center gap-1.5 border-t border-black/5 bg-black/[0.02] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                    <span className={`size-2 rounded-full ${DOT[g.role] ?? 'bg-black/20'}`} />
+                    {GROUP_LABEL[g.role] ?? `${g.role}s`}
+                    <span className="font-bold text-muted/60">{g.people.length}</span>
+                  </div>
+                )}
+                {g.people.map((p) => {
                   const tt = tipTotals.get(p.name.toLowerCase())
                   const isServer = rolesOf(p).includes('Server')
                   const amt = isServer ? (tt?.tippedOut ?? 0) : (tt?.received ?? 0)
