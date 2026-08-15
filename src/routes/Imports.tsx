@@ -1304,20 +1304,37 @@ function CategoryImport({ text, fileName, hintDate, periodLevel }: { text: strin
 function StaffImport({ text, fileName }: { text: string; fileName: string }) {
   const people = useMemo(() => importPeople(text), [text])
   const [added, setAdded] = useState<number | null>(null)
+
+  // A dropped roster IS the import, the same as every other report here. It used
+  // to wait behind an "Import N to Staff" button, and the drop log already read
+  // "employee roster -- review below", so a manager who dropped the file saw a
+  // success line, never scrolled to the button, and found Staff still empty.
+  // Safe to run on sight: addPeople matches on name and skips anyone already on
+  // the roster, so a re-drop adds nobody twice.
+  const ran = useRef(false)
+  useEffect(() => {
+    if (ran.current || people.length === 0) return
+    ran.current = true
+    const n = addPeople(people)
+    setAdded(n)
+    logImport(fileName, `${n} people → Staff roster`)
+  }, [people, fileName])
+
   if (people.length === 0) return null
 
-  if (added !== null) {
-    return (
-      <div className="mt-3 flex items-center gap-2 rounded-xl border border-up/30 bg-up/5 p-3 text-sm font-semibold text-up">
-        <Users size={16} /> Added {added} of {people.length} to Staff (rest already on roster).
-      </div>
-    )
-  }
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
-        <Users size={14} /> Employee roster — {people.length} people detected
+        <Users size={14} /> Employee roster — {people.length} people read
       </div>
+      {added !== null && (
+        <div className="mb-2 flex items-center gap-2 rounded-lg border border-up/30 bg-up/5 p-2.5 text-sm font-semibold text-up">
+          <Users size={16} />
+          {added > 0
+            ? `Added ${added} to Staff${added < people.length ? ` — ${people.length - added} already on the roster` : ''}.`
+            : 'Everyone here was already on the Staff roster.'}
+        </div>
+      )}
       <div className="max-h-52 overflow-y-auto rounded-lg bg-white">
         <table className="w-full text-sm">
           <tbody>
@@ -1330,12 +1347,6 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
           </tbody>
         </table>
       </div>
-      <button
-        onClick={() => { const n = addPeople(people); setAdded(n); logImport(fileName, `${n} people → Staff roster`) }}
-        className="mt-3 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
-      >
-        Import {people.length} to Staff
-      </button>
     </div>
   )
 }
