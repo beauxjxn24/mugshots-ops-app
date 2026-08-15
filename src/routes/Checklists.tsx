@@ -8,35 +8,22 @@ import { useScopeKey } from '../lib/scope'
 import { periodWeek } from '../lib/forecast'
 import MAINT from '../data/maintenance-checklists.json'
 import AM_MANAGER from '../data/am-manager-checklist.json'
+import PM_MANAGER from '../data/pm-manager-checklist.json'
 
-type Phase = 'AM' | 'Closing' | 'Weekly' | 'Period'
-const PHASES: Phase[] = ['AM', 'Closing', 'Weekly', 'Period']
+type Phase = 'AM' | 'PM' | 'Weekly' | 'Period'
+const PHASES: Phase[] = ['AM', 'PM', 'Weekly', 'Period']
 
 interface Section {
-  title: string // '' renders with no section header (used for Closing)
+  title: string // '' renders with no section header
   items: string[]
 }
 
-// AM is the manager's real shift walkthrough, sectioned by the clock the way the
-// printed form is; Closing is the daily shift walkthrough; Weekly/Period come
-// straight from the owner's maintenance checklist (same source Maintenance uses).
+// AM and PM are the managers' real shift walkthroughs, sectioned by the clock the
+// way the printed forms are; Weekly/Period come straight from the owner's
+// maintenance checklist (same source the Maintenance page uses).
 const DEFAULTS: Record<Phase, Section[]> = {
   AM: AM_MANAGER as Section[],
-  Closing: [
-    {
-      title: '',
-      items: [
-        'All stations broken down & sanitized',
-        'Reconcile drawers & run end-of-day on POS',
-        'Deposit prepared & logged',
-        'Walk-in / line temps logged',
-        'Trash out, floors swept & mopped',
-        'Equipment off (except overnight units)',
-        'Set alarm, lock all doors',
-        'Confirm tomorrow’s prep & orders are set',
-      ],
-    },
-  ],
+  PM: PM_MANAGER as Section[],
   Weekly: MAINT.weekly as Section[],
   Period: MAINT.period as Section[],
 }
@@ -44,23 +31,30 @@ const DEFAULTS: Record<Phase, Section[]> = {
 /** How often each phase's checkmarks reset — daily, weekly (Mon), or by period. */
 const CADENCE: Record<Phase, string> = {
   AM: 'resets daily',
-  Closing: 'resets daily',
+  PM: 'resets daily',
   Weekly: 'resets every Monday',
   Period: 'resets each period',
 }
 
-// The phase list used to be keyed 'Opening' with a generic eight-line walkthrough.
-// Swapping it in place would have been invisible: every phone already has the old
-// list saved, and a saved value always beats a new default. So the list moved to a
-// new key -- and this carries the other three phases across, because a manager who
-// edited Closing or the maintenance walks should not lose that work to get the AM
-// form. Runs once per store; after that the new key exists and it is a no-op.
+// The phase list used to be keyed 'Opening'/'Closing' with generic walkthroughs
+// nobody wrote. Swapping those in place would have been invisible: the list is
+// persisted per store and a saved value always beats a new default, so every
+// phone that had opened the page would have kept the old one. The list moved to a
+// new key instead, and this carries the maintenance walks across, because a
+// manager who edited those should not lose that work to get the manager forms.
+// Runs once per store; after that the new key exists and it is a no-op.
+//
+// Opening/Closing are deliberately NOT carried: they are replaced by the AM and
+// PM forms, which is the whole point. Renaming them also means a phone holding
+// the first version of this key finds no 'PM' entry and falls through to the
+// default below -- so the PM form lands without another key bump.
 const SECTIONS_KEY = 'checklists:sections:v2'
 const LEGACY_KEY = 'checklists:sections'
+const CARRIED = ['Weekly', 'Period'] as const
 
 function carryOverLegacy(scope: string): Record<Phase, Section[]> | null {
-  const old = load<Partial<Record<'Opening' | Phase, Section[]>>>(`${scope}::${LEGACY_KEY}`, {})
-  const kept = (['Closing', 'Weekly', 'Period'] as const).filter((p) => Array.isArray(old[p]))
+  const old = load<Partial<Record<Phase, Section[]>>>(`${scope}::${LEGACY_KEY}`, {})
+  const kept = CARRIED.filter((p) => Array.isArray(old[p]))
   if (kept.length === 0) return null
   const merged = { ...DEFAULTS }
   for (const p of kept) merged[p] = old[p] as Section[]
@@ -82,9 +76,9 @@ function scopeFor(phase: Phase): string {
 }
 
 /**
- * Checklists — one page, one toggle: Opening · Closing · Weekly · Period.
- * Opening/Closing are the daily shift walkthroughs; Weekly/Period are the
- * owner's maintenance checklist. Each phase's checks reset on its own cadence.
+ * Checklists — one page, one toggle: AM · PM · Weekly · Period.
+ * AM/PM are the managers' shift forms; Weekly/Period are the owner's
+ * maintenance checklist. Each phase's checks reset on its own cadence.
  */
 export function Checklists() {
   const scope = useScopeKey()
