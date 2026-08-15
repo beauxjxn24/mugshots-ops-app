@@ -516,7 +516,7 @@ export function Imports() {
             )}
 
             {job.text && isCateringDoc(job.text) && !isRosterDoc(job.text) && (
-              <CateringImport text={job.text} fileName={job.fileName} />
+              <CateringImport text={job.text} fileName={job.fileName} docId={job.docId} />
             )}
 
             {job.text && isCountSheet(job.text) && (
@@ -1110,14 +1110,15 @@ function PriceUpdate({ lineItems, text, fileName }: { lineItems: LineItem[]; tex
   )
 }
 
-function CateringImport({ text, fileName }: { text: string; fileName: string }) {
+function CateringImport({ text, fileName, docId }: { text: string; fileName: string; docId?: string }) {
   const [form, setForm] = useState(() => parseCatering(text, fileName))
   const [added, setAdded] = useState<'' | 'added' | 'duplicate'>('')
 
   const save = () => {
     if (!form.event.trim() || !form.date) return
-    // Keep the full ticket text on the booking — Catering opens the actual order.
-    const result = addBooking({ ...form, id: `c${Date.now()}`, event: form.event.trim(), raw: text.slice(0, 6000) })
+    // Keep the full ticket text AND the original PDF on the booking — Catering
+    // shows our reading of the order, and prints the caterer's own sheet.
+    const result = addBooking({ ...form, id: `c${Date.now()}`, event: form.event.trim(), raw: text.slice(0, 6000), docId })
     recordCateringImport(fileName)
     setAdded(result)
     logImport(fileName, result === 'duplicate' ? `duplicate order #${form.orderNo ?? ''} — skipped` : `booking "${form.event.trim()}" → Catering`)

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Check, Undo2, Plus, Pencil } from 'lucide-react'
+import { Check, Undo2, Plus, Pencil, Printer, ExternalLink } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
+import { getDoc } from '../lib/docs'
 import { getLastCateringImport, type Booking, type Reservation } from '../lib/catering'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -307,6 +308,7 @@ function OrderSheet({ b }: { b: Booking }) {
           ))}
         </ul>
       )}
+      {b.docId && <TicketPdf docId={b.docId} />}
       {b.raw && (
         <details className="mt-3">
           <summary className="cursor-pointer text-xs font-semibold text-muted">Full ticket text</summary>
@@ -315,9 +317,92 @@ function OrderSheet({ b }: { b: Booking }) {
           </pre>
         </details>
       )}
-      {detailLines.length === 0 && !b.raw && (
+      {detailLines.length === 0 && !b.raw && !b.docId && (
         <p className="text-xs text-muted">No extra details on this booking — edit it or re-drop the order PDF on Imports.</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * The caterer's own order PDF, under the row it belongs to.
+ *
+ * The file was already kept at import time; this just hands it back. Printing
+ * goes through the frame when the browser allows it and falls back to a new tab
+ * otherwise — phone PDF viewers vary too much to rely on one path, and a manager
+ * who needs the sheet on the line cannot be left with a dead button.
+ */
+function TicketPdf({ docId }: { docId: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [missing, setMissing] = useState(false)
+  const frame = useRef<HTMLIFrameElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let made = ''
+    void getDoc(docId).then((rec) => {
+      if (cancelled) return
+      if (!rec) return setMissing(true)
+      made = URL.createObjectURL(rec.blob)
+      setUrl(made)
+    })
+    // Revoked on unmount so collapsing the row doesn't leak the blob.
+    return () => {
+      cancelled = true
+      if (made) URL.revokeObjectURL(made)
+    }
+  }, [docId])
+
+  const openTab = () => {
+    if (url) window.open(url, '_blank', 'noopener')
+  }
+  const print = () => {
+    try {
+      const w = frame.current?.contentWindow
+      if (w) {
+        w.focus()
+        w.print()
+        return
+      }
+    } catch {
+      /* viewer blocked scripted printing — fall through to the tab */
+    }
+    openTab()
+  }
+
+  if (missing)
+    return (
+      <p className="mt-3 text-xs text-muted">
+        The original PDF isn’t on this device — only the most recent imports are kept. Re-drop it on
+        Imports to print it.
+      </p>
+    )
+  if (!url) return <p className="mt-3 text-xs text-muted">Loading the order…</p>
+
+  return (
+    <div className="mt-3">
+      <div className="mb-2 flex items-center gap-2 print:hidden">
+        <span className="mr-auto text-xs font-semibold text-muted">Original order</span>
+        <button
+          onClick={print}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-1.5 text-xs font-bold text-white"
+        >
+          <Printer size={12} /> Print
+        </button>
+        <button
+          onClick={openTab}
+          aria-label="Open the order in a new tab"
+          className="grid size-8 place-items-center rounded-lg border border-black/10 bg-white text-ink"
+        >
+          <ExternalLink size={13} />
+        </button>
+      </div>
+      <iframe
+        ref={frame}
+        src={url}
+        title="Catering order"
+        className="h-[28rem] w-full rounded-lg border border-black/10 bg-white"
+      />
     </div>
   )
 }

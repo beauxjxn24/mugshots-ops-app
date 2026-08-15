@@ -1,38 +1,27 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Check, Printer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
-import { usePersistentState, today } from '../lib/store'
+import { load, usePersistentState, today } from '../lib/store'
+import { useScopeKey } from '../lib/scope'
 import { periodWeek } from '../lib/forecast'
 import MAINT from '../data/maintenance-checklists.json'
+import AM_MANAGER from '../data/am-manager-checklist.json'
 
-type Phase = 'Opening' | 'Closing' | 'Weekly' | 'Period'
-const PHASES: Phase[] = ['Opening', 'Closing', 'Weekly', 'Period']
+type Phase = 'AM' | 'Closing' | 'Weekly' | 'Period'
+const PHASES: Phase[] = ['AM', 'Closing', 'Weekly', 'Period']
 
 interface Section {
-  title: string // '' renders with no section header (used for Opening/Closing)
+  title: string // '' renders with no section header (used for Closing)
   items: string[]
 }
 
-// Opening/Closing are the daily shift walkthroughs; Weekly/Period come straight
-// from the owner's maintenance checklist (same source the Maintenance page uses).
+// AM is the manager's real shift walkthrough, sectioned by the clock the way the
+// printed form is; Closing is the daily shift walkthrough; Weekly/Period come
+// straight from the owner's maintenance checklist (same source Maintenance uses).
 const DEFAULTS: Record<Phase, Section[]> = {
-  Opening: [
-    {
-      title: '',
-      items: [
-        'Disarm alarm, unlock doors',
-        'Turn on all equipment (grills, fryers, ovens)',
-        'Check walk-in & freezer temps, log them',
-        'Verify prep is stocked to par for the day',
-        'Count opening drawer / set up POS',
-        'Walk the dining room & patio — clean and set',
-        'Review reservations, caterings & 86 list',
-        'Pre-shift huddle with staff',
-      ],
-    },
-  ],
+  AM: AM_MANAGER as Section[],
   Closing: [
     {
       title: '',
@@ -54,10 +43,28 @@ const DEFAULTS: Record<Phase, Section[]> = {
 
 /** How often each phase's checkmarks reset — daily, weekly (Mon), or by period. */
 const CADENCE: Record<Phase, string> = {
-  Opening: 'resets daily',
+  AM: 'resets daily',
   Closing: 'resets daily',
   Weekly: 'resets every Monday',
   Period: 'resets each period',
+}
+
+// The phase list used to be keyed 'Opening' with a generic eight-line walkthrough.
+// Swapping it in place would have been invisible: every phone already has the old
+// list saved, and a saved value always beats a new default. So the list moved to a
+// new key -- and this carries the other three phases across, because a manager who
+// edited Closing or the maintenance walks should not lose that work to get the AM
+// form. Runs once per store; after that the new key exists and it is a no-op.
+const SECTIONS_KEY = 'checklists:sections:v2'
+const LEGACY_KEY = 'checklists:sections'
+
+function carryOverLegacy(scope: string): Record<Phase, Section[]> | null {
+  const old = load<Partial<Record<'Opening' | Phase, Section[]>>>(`${scope}::${LEGACY_KEY}`, {})
+  const kept = (['Closing', 'Weekly', 'Period'] as const).filter((p) => Array.isArray(old[p]))
+  if (kept.length === 0) return null
+  const merged = { ...DEFAULTS }
+  for (const p of kept) merged[p] = old[p] as Section[]
+  return merged
 }
 
 function mondayOf(iso: string): string {
@@ -80,9 +87,17 @@ function scopeFor(phase: Phase): string {
  * owner's maintenance checklist. Each phase's checks reset on its own cadence.
  */
 export function Checklists() {
-  const [data, setData] = usePersistentState<Record<Phase, Section[]>>('checklists:sections', DEFAULTS)
-  const [phase, setPhase] = useState<Phase>('Opening')
+  const scope = useScopeKey()
+  const [data, setData] = usePersistentState<Record<Phase, Section[]>>(SECTIONS_KEY, DEFAULTS)
+  const [phase, setPhase] = useState<Phase>('AM')
   const [editing, setEditing] = useState(false)
+
+  // Carry a pre-AM install's edits over the first time this store is opened.
+  useEffect(() => {
+    if (load<unknown>(`${scope}::${SECTIONS_KEY}`, null) !== null) return
+    const merged = carryOverLegacy(scope)
+    if (merged) setData(merged)
+  }, [scope, setData])
 
   // Guard against a stale/legacy shape so a bad value never blanks the page.
   const sections = Array.isArray(data?.[phase]) ? data[phase] : DEFAULTS[phase]

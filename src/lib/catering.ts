@@ -16,6 +16,12 @@ export interface Booking {
   depositPaid?: boolean
   estimate?: number
   raw?: string // full ticket text from the import — the actual order
+  /**
+   * The original order PDF, kept in IndexedDB (see lib/docs). The extracted
+   * `raw` text is what the app reads; this is what the kitchen prints, so the
+   * printed copy is the caterer's own sheet rather than our reading of it.
+   */
+  docId?: string
 }
 
 /** Dining-room reservations — the prototype keeps these beside caterings. */
