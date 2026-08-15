@@ -10,6 +10,8 @@ import PREP_SEED from '../data/prep-items.json'
 import { usageIndex } from '../lib/linebuilds'
 import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from '../components/SpecPeek'
+import { PrepChecklist, type ChecklistItem } from '../components/PrepChecklist'
+import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
 import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface PrepItem {
@@ -107,6 +109,8 @@ export function Prep() {
   // The card for the item just tapped -- read over the sheet, so a count in
   // progress doesn't lose its place.
   const [peek, setPeek] = useState<string | null>(null)
+  // What the floor has ticked off today, and who ticked it.
+  const [doneLog] = usePersistentState<Record<string, PrepCheck>>(prepDoneKey(t), {})
 
   // One-time station migrations, per location:
   //  • v3: a store still on the first-pass default (Fry side / Grill side) is
@@ -472,6 +476,24 @@ export function Prep() {
           )}
         </span>
       </div>
+    )
+  }
+
+  // A cook on a phone gets the list as a column of tick boxes. The manager's
+  // grid is twelve columns wide, built for a desk and a printer, and scrolls
+  // sideways on a handset -- unusable one-handed on a line. Same items, same
+  // day's numbers, different shape.
+  if (!canEdit && mode === 'kitchen') {
+    const checklist: ChecklistItem[] = SECTIONS.flatMap((sec) =>
+      inSection(sec).map((it) => ({ name: it.name, unit: it.unit, need: need(it), section: sec })),
+    )
+    return (
+      <>
+        <PageHeader title={`Prep list · ${fmtLong(t)}`} subtitle="Tick each one off as you finish it" />
+        <div className="mx-auto max-w-2xl p-4 sm:p-6">
+          <PrepChecklist items={checklist} />
+        </div>
+      </>
     )
   }
 
@@ -875,6 +897,35 @@ export function Prep() {
             </div>
           )}
         </details>
+        )}
+
+        {/* Who has actually made what today — the answer to "was the alfredo
+            done?" without asking around the kitchen. */}
+        {Object.keys(doneLog).length > 0 && (
+          <Card className="overflow-hidden print:hidden">
+            <div className="flex items-center gap-2 border-b border-black/5 bg-black/[0.02] px-4 py-2">
+              <span className="font-display text-sm font-semibold text-ink">Checked off today</span>
+              <span className="ml-auto text-xs text-muted">{Object.keys(doneLog).length} items</span>
+            </div>
+            {Object.entries(doneLog)
+              .sort((a, b) => a[1].at.localeCompare(b[1].at))
+              .map(([name, rec]) => (
+                <div key={name} className="flex items-center gap-3 border-b border-black/5 px-4 py-2 last:border-0">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{name}</span>
+                  {rec.qty > 0 && (
+                    <span className="shrink-0 font-mono text-[11px] text-muted">
+                      {fmtQty(rec.qty)} {rec.unit}
+                    </span>
+                  )}
+                  <span className="shrink-0 rounded-full bg-up/10 px-2 py-0.5 text-[11px] font-extrabold uppercase text-up">
+                    {rec.by}
+                  </span>
+                  <span className="shrink-0 font-mono text-[11px] text-muted">
+                    {new Date(rec.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+          </Card>
         )}
 
         {/* Bottom action bar — same buttons as the top, so there's no scroll-back */}
