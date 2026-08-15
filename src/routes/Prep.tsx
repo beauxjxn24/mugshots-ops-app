@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Printer, Pencil, Check, GripVertical, Archive } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
+import { useRole } from '../lib/role'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { BarPrep } from '../components/BarPrep'
@@ -84,6 +85,12 @@ export function Prep() {
   const [rawHistory, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
   const history = Array.isArray(rawHistory) ? rawHistory : []
   const [editingPars, setEditingPars] = useState(false)
+  // Cooks and servers open this to work the list, not to rewrite it. Pars,
+  // stations, parking, reordering and adding items are a manager's job, and
+  // leaving them one tap away on a shared tablet is how a par quietly changes
+  // mid-shift. Staff get the same sheet, read-only, with the counts editable.
+  const role = useRole((s) => s.role)
+  const canEdit = role !== 'staff'
   // Line stations (owner spec): each prep item can be assigned to a station so
   // fry side and grill side can print — and work off — their own sheet.
   const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', [])
@@ -284,9 +291,12 @@ export function Prep() {
 
   const actionButtons = (
     <>
+      {canEdit && (
       <button onClick={resetDay} className="rounded-lg border border-down/30 bg-white px-3 py-2 text-xs font-bold text-down">
         Reset day
       </button>
+      )}
+      {canEdit && (
       <button
         onClick={() => setEditingPars((e) => !e)}
         className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
@@ -295,6 +305,7 @@ export function Prep() {
       >
         {editingPars ? <Check size={13} /> : <Pencil size={12} />} {editingPars ? 'Done' : 'Edit daily pars'}
       </button>
+      )}
       <button
         onClick={() => window.print()}
         className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white"
@@ -326,8 +337,9 @@ export function Prep() {
         } ${overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''}`}
       >
         <span
-          draggable
+          draggable={canEdit}
           onDragStart={(e) => {
+            if (!canEdit) return
             setDragName(it.name)
             e.dataTransfer.effectAllowed = 'move'
             e.dataTransfer.setData('text/plain', it.name)
@@ -337,18 +349,26 @@ export function Prep() {
             setOverName(null)
           }}
           title="Drag to reorder — drop into another box to move it there"
-          className="cursor-grab text-muted/50 hover:text-ink active:cursor-grabbing"
+          className={canEdit ? 'cursor-grab text-muted/50 hover:text-ink active:cursor-grabbing' : 'invisible'}
         >
           <GripVertical size={14} />
         </span>
         <div className="min-w-0">
-          <div className="truncate text-sm font-bold text-ink">{it.name}</div>
+          {/* Straight to the card -- someone prepping it should be able to read
+              the spec without hunting for it on another screen. */}
+          <Link
+            to={`/specs?open=${encodeURIComponent(it.name)}`}
+            title={`Open the spec for ${it.name}`}
+            className="block truncate text-sm font-bold text-ink underline-offset-2 hover:text-brand-600 hover:underline"
+          >
+            {it.name}
+          </Link>
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="truncate">{it.spec || it.unit}</span>
             {/* What this prep feeds. Diced Tomatoes goes on half the menu, and
                 that count is the honest reason its par is what it is. */}
             <DishCount name={it.name} />
-            {stations.length > 0 &&
+            {canEdit && stations.length > 0 &&
               (() => {
                 const hex = it.station ? stationHex(it.station) : undefined
                 return (
@@ -370,6 +390,7 @@ export function Prep() {
                   </select>
                 )
               })()}
+            {canEdit && (
             <button
               onClick={() => park(it.name, true)}
               title="Park it — off the list and the print, kept in the Parked box below"
@@ -377,6 +398,7 @@ export function Prep() {
             >
               park
             </button>
+            )}
             {editingPars && (
               <button
                 onClick={async () => {
@@ -684,7 +706,7 @@ export function Prep() {
                   <span className="text-right">Prep today</span>
                 </div>
                 {rows.length === 0 ? (
-                  <p className="px-4 py-4 text-center text-xs text-muted">Nothing here — drag an item in, or add one below.</p>
+                  <p className="px-4 py-4 text-center text-xs text-muted">{canEdit ? 'Nothing here — drag an item in, or add one below.' : 'Nothing on the prep list here today.'}</p>
                 ) : (
                   rows.map(renderRow)
                 )}
@@ -694,6 +716,7 @@ export function Prep() {
         })}
 
         {/* Add row */}
+        {canEdit && (
         <Card className="flex flex-wrap gap-2 p-3">
           <input
             value={adding.name}
@@ -744,9 +767,11 @@ export function Prep() {
             <p className={`basis-full text-xs font-semibold ${/already/i.test(addMsg) ? 'text-warn' : 'text-up'}`}>{addMsg}</p>
           )}
         </Card>
+        )}
 
         {/* Manage line stations — add / remove; renaming happens by removing and
             re-adding, and each item's station picker moves it. */}
+        {canEdit && (
         <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
           <summary className="cursor-pointer text-sm font-bold text-ink">
             Line stations
@@ -801,8 +826,10 @@ export function Prep() {
             </p>
           )}
         </details>
+        )}
 
         {/* Parked — archived, never lost */}
+        {canEdit && (
         <details className="rounded-2xl border border-black/10 bg-white px-4 py-3">
           <summary className="cursor-pointer text-sm font-bold text-ink">
             <span className="inline-flex items-center gap-1.5">
@@ -834,6 +861,7 @@ export function Prep() {
             </div>
           )}
         </details>
+        )}
 
         {/* Bottom action bar — same buttons as the top, so there's no scroll-back */}
         <div className="flex flex-wrap items-center justify-end gap-2">{actionButtons}</div>
