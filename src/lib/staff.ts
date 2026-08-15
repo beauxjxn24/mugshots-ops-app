@@ -6,8 +6,22 @@ import { useScope } from './scope'
 export interface Person {
   id: string
   name: string
+  /** Primary job code — the first one that mapped. Tipshare still reads this. */
   role: string
+  /**
+   * Every job code this person holds. Most of the roster carries several
+   * ("Expo; Host; Server; ToGo"), and collapsing that to one hid who could
+   * actually cover a station. Absent on anyone added before this existed, so
+   * read it through rolesOf(), which falls back to `role`.
+   */
+  roles?: string[]
   phone: string
+}
+
+/** Every role a person should be listed under. */
+export function rolesOf(p: Pick<Person, 'role' | 'roles'>): string[] {
+  if (p.roles?.length) return p.roles
+  return p.role ? [p.role] : []
 }
 
 function key(): string {
@@ -17,15 +31,36 @@ function key(): string {
 export const getStaff = (): Person[] => load<Person[]>(key(), [])
 export const setStaff = (p: Person[]): void => save(key(), p)
 
-/** Add people to the roster, skipping names already present. Returns added count. */
-export function addPeople(people: Omit<Person, 'id'>[]): number {
+/**
+ * Add people to the roster, and refresh the job codes of anyone already on it.
+ *
+ * A re-dropped export used to skip known names outright, which meant a roster
+ * already imported could never pick up a new job code — someone cross-trained
+ * onto the bar stayed a Host forever. Toast owns job codes, so a re-drop
+ * updates them; everything entered by hand here (the person, their phone) is
+ * left alone.
+ */
+export function addPeople(people: Omit<Person, 'id'>[]): { added: number; updated: number } {
   const cur = getStaff()
+  const incoming = new Map(people.filter((p) => p.name).map((p) => [p.name.toLowerCase(), p]))
+
+  let updated = 0
+  const merged = cur.map((p) => {
+    const inc = incoming.get(p.name.toLowerCase())
+    if (!inc) return p
+    const sameRoles = rolesOf(p).join('|') === rolesOf(inc).join('|')
+    if (sameRoles && p.role === inc.role) return p
+    updated++
+    return { ...p, role: inc.role, roles: inc.roles }
+  })
+
   const have = new Set(cur.map((p) => p.name.toLowerCase()))
   const fresh = people
     .filter((p) => p.name && !have.has(p.name.toLowerCase()))
     .map((p) => ({ ...p, id: newId() }))
-  setStaff([...cur, ...fresh])
-  return fresh.length
+
+  setStaff([...merged, ...fresh])
+  return { added: fresh.length, updated }
 }
 
 /** Does this text look like an employee roster export (e.g. from Toast)? */
@@ -34,7 +69,10 @@ export function isRosterDoc(text: string): boolean {
   return (/first name/.test(h) && /last name/.test(h)) || /employee id|job description|job title/.test(h)
 }
 
-export const ROLES = ['Server', 'Bartender', 'Host', 'Cook', 'Expo', 'Dish', 'Manager']
+// Front of house first, then the line, then who runs the place — the order the
+// roster groups read in. ToGo and Corporate are their own codes in Toast and are
+// their own groups here.
+export const ROLES = ['Server', 'Bartender', 'Host', 'ToGo', 'Expo', 'Cook', 'Dish', 'Manager', 'Corporate']
 
 export function newId(): string {
   return `p${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`
@@ -98,7 +136,12 @@ export function importPeople(text: string): Omit<Person, 'id'>[] {
     const dedupe = name.toLowerCase()
     if (seen.has(dedupe)) continue
     seen.add(dedupe)
-    out.push({ name, role: primaryRole(job), phone: (iPhone >= 0 ? c[iPhone] : '') || '' })
+    out.push({
+      name,
+      role: primaryRole(job),
+      roles: allRoles(job),
+      phone: (iPhone >= 0 ? c[iPhone] : '') || '',
+    })
   }
   return out
 }
@@ -154,13 +197,32 @@ function splitCsv(line: string): string[] {
 function mapRole(raw?: string): string | '' {
   const s = (raw || '').toLowerCase()
   if (!s) return ''
-  if (/gm|general manager|manager|mgr|owner|kitchen manager/.test(s)) return 'Manager'
+  // Before the manager test: office staff carry a "Corporate" code and belong
+  // on the roster labelled as such, not mixed in with the store's team.
+  if (/corporate|corp\b/.test(s)) return 'Corporate'
+  if (/gm|general manager|manager|mgr|owner|kitchen manager|shift lead/.test(s)) return 'Manager'
   if (/bartender|bar\b/.test(s)) return 'Bartender'
-  if (/host|hostess|busser|bus\b|to.?go|takeout/.test(s)) return 'Host'
+  // Before the host test: ToGo is its own job code in Toast, and folding it into
+  // Host hid who can actually run the to-go station.
+  if (/to.?go|take.?out|curbside/.test(s)) return 'ToGo'
+  if (/host|hostess|busser|bus\b/.test(s)) return 'Host'
   if (/expo|food runner|runner/.test(s)) return 'Expo'
   if (/dish|steward/.test(s)) return 'Dish'
   if (/cook|line|kitchen|grill|fry|prep|boh/.test(s)) return 'Cook'
   if (/server|wait|foh/.test(s)) return 'Server'
   return ROLES.find((r) => r.toLowerCase() === s) || ''
+}
+
+/**
+ * Every role a Toast "Job Descriptions" cell maps to, in the cell's own order.
+ * Codes that aren't roles — Training, Catering — simply don't map and drop out.
+ */
+export function allRoles(cell?: string): string[] {
+  const out: string[] = []
+  for (const part of (cell || '').split(/[;,]/)) {
+    const r = mapRole(part.trim())
+    if (r && !out.includes(r)) out.push(r)
+  }
+  return out
 }
 

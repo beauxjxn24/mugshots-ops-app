@@ -4,7 +4,7 @@ import { confirmDelete } from '../lib/confirm'
 import { Upload, Users } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
-import { type Person, ROLES, newId, importPeople } from '../lib/staff'
+import { type Person, ROLES, newId, importPeople, addPeople, rolesOf } from '../lib/staff'
 
 interface Entry {
   id: string
@@ -34,9 +34,18 @@ const DOT: Record<string, string> = {
   Bartender: 'bg-sky-400',
   Expo: 'bg-orange-400',
   Host: 'bg-emerald-500',
+  ToGo: 'bg-amber-500',
   Cook: 'bg-navy',
   Dish: 'bg-slate-400',
   Manager: 'bg-purple-400',
+  Corporate: 'bg-rose-400',
+}
+/** Group headings — most roles just take an "s", these don't. */
+const GROUP_LABEL: Record<string, string> = {
+  ToGo: 'To-Go',
+  Expo: 'Expo',
+  Dish: 'Dish',
+  Corporate: 'Corporate',
 }
 
 /**
@@ -57,18 +66,10 @@ export function Staff() {
     setForm({ name: '', role: 'Server', phone: '' })
   }
 
-  const bulkAdd = (people: ReturnType<typeof importPeople>): number => {
-    let added = 0
-    setStaff((s) => {
-      const have = new Set(s.map((p) => p.name.toLowerCase()))
-      const fresh = people
-        .filter((p) => p.name && !have.has(p.name.toLowerCase()))
-        .map((p) => ({ ...p, id: newId() }))
-      added = fresh.length
-      return [...s, ...fresh]
-    })
-    return added
-  }
+  // Goes through addPeople so a paste and a dropped export behave identically —
+  // new people added, existing people's job codes refreshed. The write fires a
+  // same-tab save event, which is what pulls the list above back into sync.
+  const bulkAdd = (people: ReturnType<typeof importPeople>): number => addPeople(people).added
 
   // Tip totals per person, from the tipshare shift log — real history only.
   const tipTotals = useMemo(() => {
@@ -89,9 +90,13 @@ export function Staff() {
     return out
   }, [shifts])
 
-  const byRole = ROLES.map((r) => ({ role: r, people: staff.filter((p) => p.role === r) })).filter(
-    (g) => g.people.length > 0,
-  )
+  // A person appears under every job code they hold, so the Server group answers
+  // "who can serve tonight" rather than "whose first job code happens to be
+  // Server". Most of the roster carries three or four.
+  const byRole = ROLES.map((r) => ({
+    role: r,
+    people: staff.filter((p) => rolesOf(p).includes(r)),
+  })).filter((g) => g.people.length > 0)
   const sel = staff.find((p) => p.id === selected) ?? null
 
   // Selected employee's shift-by-shift history.
@@ -196,11 +201,12 @@ export function Staff() {
               <div key={g.role}>
                 <div className="flex items-center gap-1.5 px-4 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
                   <span className={`size-2 rounded-full ${DOT[g.role] ?? 'bg-black/20'}`} />
-                  {g.role}s
+                  {GROUP_LABEL[g.role] ?? `${g.role}s`}
+                  <span className="font-bold text-muted/60">{g.people.length}</span>
                 </div>
                 {g.people.map((p) => {
                   const tt = tipTotals.get(p.name.toLowerCase())
-                  const isServer = p.role === 'Server'
+                  const isServer = rolesOf(p).includes('Server')
                   const amt = isServer ? (tt?.tippedOut ?? 0) : (tt?.received ?? 0)
                   return (
                     <button

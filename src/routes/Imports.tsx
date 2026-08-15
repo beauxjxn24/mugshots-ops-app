@@ -1303,7 +1303,7 @@ function CategoryImport({ text, fileName, hintDate, periodLevel }: { text: strin
 /** Import a dropped employee roster (e.g. Toast export) into Staff. */
 function StaffImport({ text, fileName }: { text: string; fileName: string }) {
   const people = useMemo(() => importPeople(text), [text])
-  const [added, setAdded] = useState<number | null>(null)
+  const [added, setAdded] = useState<{ added: number; updated: number } | null>(null)
 
   // A dropped roster IS the import, the same as every other report here. It used
   // to wait behind an "Import N to Staff" button, and the drop log already read
@@ -1315,9 +1315,12 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
   useEffect(() => {
     if (ran.current || people.length === 0) return
     ran.current = true
-    const n = addPeople(people)
-    setAdded(n)
-    logImport(fileName, `${n} people → Staff roster`)
+    const r = addPeople(people)
+    setAdded(r)
+    logImport(
+      fileName,
+      `${r.added} people → Staff roster${r.updated ? `, ${r.updated} job codes refreshed` : ''}`,
+    )
   }, [people, fileName])
 
   if (people.length === 0) return null
@@ -1330,9 +1333,12 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
       {added !== null && (
         <div className="mb-2 flex items-center gap-2 rounded-lg border border-up/30 bg-up/5 p-2.5 text-sm font-semibold text-up">
           <Users size={16} />
-          {added > 0
-            ? `Added ${added} to Staff${added < people.length ? ` — ${people.length - added} already on the roster` : ''}.`
-            : 'Everyone here was already on the Staff roster.'}
+          {[
+            added.added > 0 ? `Added ${added.added} to Staff` : '',
+            added.updated > 0 ? `refreshed job codes on ${added.updated}` : '',
+          ]
+            .filter(Boolean)
+            .join(' · ') || 'Everyone here was already on the Staff roster, unchanged.'}
         </div>
       )}
       <div className="max-h-52 overflow-y-auto rounded-lg bg-white">
@@ -1341,7 +1347,9 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
             {people.slice(0, 100).map((p, i) => (
               <tr key={i} className="border-b border-black/5 last:border-0">
                 <td className="px-3 py-1.5">{p.name}</td>
-                <td className="px-3 py-1.5 text-right text-xs text-muted">{p.role}</td>
+                <td className="px-3 py-1.5 text-right text-xs text-muted">
+                  {(p.roles?.length ? p.roles : [p.role]).join(' · ')}
+                </td>
               </tr>
             ))}
           </tbody>
