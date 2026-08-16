@@ -421,7 +421,7 @@
  },
  {
   "name": "Bread Pudding Bites",
-  "spec": "15 per portion \u00b7 1x = 1 tray",
+  "spec": "15 per portion · 1x = 1 tray",
   "unit": "trays",
   "pars": [
    1.0,
@@ -491,7 +491,7 @@
  },
  {
   "name": "Pow Pow Shrimp",
-  "spec": "4 oz portions (case)",
+  "spec": "6 oz portions (Pow Pow) · 10 ea (pasta)",
   "unit": "cs",
   "pars": [
    1.0,
@@ -659,7 +659,7 @@
  },
  {
   "name": "Jalepeno Popper Mix",
-  "spec": "1/9 pan \u00b7 LTO",
+  "spec": "1/9 pan · LTO",
   "unit": "pans",
   "pars": [
    1.0,
@@ -673,7 +673,7 @@
  },
  {
   "name": "Boneless Wangs",
-  "spec": "3 oz portions \u00b7 LTO",
+  "spec": "3 oz portions · LTO",
   "unit": "ptns",
   "pars": [
    10.0,
