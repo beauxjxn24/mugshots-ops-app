@@ -206,35 +206,46 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
     ],
   },
   Bar: {
-    Opening: [
+    AM: [
       {
-        section: 'Bar',
+        section: 'AM Bartenders',
         tasks: [
-          'Put out the bar mats',
-          'Remove all tap and liquor covers',
-          'Cut fresh fruit for fruit holder',
-          'Fill ice bin',
-          'Check and restock any empty kegs or liquor bottles',
-          'Restock straws, bev naps, and drink coasters',
-          'All liquor bottles wiped with damp towel',
-          'All beer coolers cleaned, organized, restocked, and beer fronted',
-          'Count register for accuracy',
-          'Lock register',
+          'Stock: liquor, beer, wine, fruit, silverware, ketchup, lids, napkins, straws, ToGo boxes, cups, salt, bev naps, 2 oz cups & lids',
+          'Stock, clean, sweep your tables (if applicable)',
+          'Sweep under bar stools',
+          'Wipe down frozen machine & drip catcher on machine',
+          'Restock clean glassware',
+          'Check sour & straw lemonade',
+          'Fill ice bins',
+          'Wipe cooler sliding doors & rails',
+          'Take out the trash. Clean cans as needed',
+          'Clean & sanitize bar',
+          'Do weekly side work',
         ],
       },
     ],
-    Closing: [
+    PM: [
       {
-        section: 'Bar',
+        section: 'PM Bartenders',
         tasks: [
-          'All mats pulled and cleaned',
-          'All taps and liquor bottles covered',
-          'Fruits covered and put in cooler',
-          'Beer cooler stocked and beer pulled to front at end of shift',
-          'Fill ice bin (except Thursday — ice will be burned)',
-          'All beer coolers cleaned, organized, restocked, and beer fronted',
-          'Bar cleaned, swept, and mopped',
-          'NO empty kegs left in cooler for any reason',
+          'Clean & sanitize bar top',
+          'Stock, clean, sweep your tables',
+          'Restock clean glassware',
+          'Check sour & strawberry lemonade',
+          'Fill ice bins',
+          'Wipe cooler sliding doors & rails',
+          'Clean & sanitize all ice bin covers & accessories',
+          'Breakdown, WIPE, & soak soda guns overnight',
+          'Wipe beer nozzles & cover with dust caps',
+          'Wipe all bottles & liquor rails',
+          'Cover all speed pours with dust caps',
+          'Wash bar supplies (mats, shakers, fruit tray, tier rimmer, etc)',
+          'Clean ALL stainless surface areas',
+          'Take out the trash. Clean cans as needed',
+          'Sweep/scrub/squeegee or mop bar area',
+          'Flip bar stools & sweep around the bar',
+          'Wipe down frozen machine & drip catcher on machine',
+          'Do weekly side work',
         ],
       },
     ],
@@ -243,3 +254,50 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
 
 export const ROLES = Object.keys(SIDEWORK) as Role[]
 export const phasesFor = (role: Role): Phase[] => Object.keys(SIDEWORK[role])
+
+
+/**
+ * The bar's weekly side work — one AM job and one PM job per day, off the
+ * laminated sheet behind the bar. Kept apart from the daily lists because it is
+ * indexed by the day of the week, which the daily sheets are not; the app shows
+ * today's line alongside whichever daily list is open.
+ *
+ * Monday-first, matching the prep sheet.
+ */
+export const BAR_WEEKLY: { AM: string; PM: string }[] = [
+  {
+    AM: 'Burn ice & detail ice bins deep & fill back up',
+    PM: 'Clean & wipe down all legs on bar chairs',
+  },
+  {
+    AM: 'Clean & organize display shelf & grenadine corner (wipe down all bottles on shelf & grenadine corner)',
+    PM: 'Clean, organize & restock ice storage & ToGo corner',
+  },
+  {
+    AM: 'All rails cleaned and wiped down (includes mats and bottles)',
+    PM: 'Sweep & detail entire floor behind bar',
+  },
+  {
+    AM: 'Detail inside & out of all 3 coolers (mugs / tequila / juice coolers)',
+    PM: 'Organize & detail POS and storage areas',
+  },
+  {
+    AM: 'Clean & wipe underneath all mats under glassware',
+    PM: 'Organize & clean beer bottle cooler (inside & glass doors)',
+  },
+  {
+    AM: 'Clean & wipe down all walls in keg room',
+    PM: 'Sweep & mop out keg room floor',
+  },
+  {
+    AM: 'Detail all sinks & legs under sinks',
+    PM: 'Clean frozen machine & filter on the side. Leave empty to dry overnight (includes the lids, inside and drip catcher)',
+  },
+]
+
+/** Speed pours are soaked, cleaned and left to dry on these days (Mon-first). */
+export const SPEED_POUR_DAYS = [1, 3, 6]
+
+/** The sheet's own warning, carried through to the screen. */
+export const BAR_WEEKLY_NOTE =
+  'If not done, write-ups will be given and bar shifts will be taken away.'

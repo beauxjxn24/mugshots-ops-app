@@ -3,10 +3,26 @@ import { Pencil, Check } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
-import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
+import {
+  SIDEWORK,
+  ROLES,
+  phasesFor,
+  BAR_WEEKLY,
+  SPEED_POUR_DAYS,
+  BAR_WEEKLY_NOTE,
+  type Role,
+  type Section,
+} from '../lib/sidework'
 import { rolesOf, type Person } from '../lib/staff'
 
 type Data = Record<Role, Record<string, Section[]>>
+
+const DOW_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+/** Monday-first index for a yyyy-mm-dd date, matching the prep sheet. */
+function weekdayOf(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number)
+  return (new Date(y, m - 1, d).getDay() + 6) % 7
+}
 
 export function Sidework() {
   // Editable copy of the duty sheet, persisted to the device.
@@ -26,6 +42,7 @@ export function Sidework() {
     Record<string, { init: string; at: string; done: number; total: number }>
   >(`sidework:verified:${today()}`, {})
   const [vInit, setVInit] = useState('')
+  const weekdayIdx = weekdayOf(today())
   // Who is on each tile tonight, keyed role|phase|position and dated — an
   // assignment is for one shift, not a standing property of the duty sheet.
   const [assigned, setAssigned] = usePersistentState<Record<string, string>>(
@@ -48,6 +65,23 @@ export function Sidework() {
 
   const activePhase = phases.includes(phase) ? phase : phases[0]
   const sections = data[role]?.[activePhase] ?? []
+
+  // One-time: the bar's phases were Opening / Closing before the real laminated
+  // sheet went in, and are AM / PM now. A stored copy keyed by the old names
+  // would read as an empty list, so carry it across.
+  useEffect(() => {
+    setData((d) => {
+      const bar = d?.Bar as Record<string, Section[]> | undefined
+      if (!bar || (!bar.Opening && !bar.Closing)) return d
+      const next: Record<string, Section[]> = { ...bar }
+      if (bar.Opening && !bar.AM) next.AM = bar.Opening
+      if (bar.Closing && !bar.PM) next.PM = bar.Closing
+      delete next.Opening
+      delete next.Closing
+      return { ...d, Bar: next } as Data
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // One-time: the default sheet used to jump Section 3 → Section 5; stored
   // copies get the renumber too (titles stay editable below).
@@ -230,6 +264,41 @@ export function Sidework() {
             </button>
           ))}
         </div>
+
+        {/* Today's weekly detail. Both bar daily lists end with "do weekly side
+            work", and the sheet it points at lives behind the bar — so the one
+            line that applies today is shown here rather than being looked up. */}
+        {role === 'Bar' && (
+          <Card className="overflow-hidden border-warn/30">
+            <div className="flex items-center gap-2 border-b border-black/5 bg-warn/[0.07] px-4 py-2">
+              <span className="font-display text-sm font-semibold text-ink">
+                Weekly side work — {DOW_LONG[weekdayIdx]}
+              </span>
+              {SPEED_POUR_DAYS.includes(weekdayIdx) && (
+                <span className="ml-auto rounded-full bg-warn/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-ink">
+                  Speed pours today
+                </span>
+              )}
+            </div>
+            <div className="space-y-1.5 p-4">
+              {(['AM', 'PM'] as const).map((slot) => (
+                <div key={slot} className="flex gap-2.5 text-sm">
+                  <span className="w-7 shrink-0 font-mono text-xs font-extrabold text-muted">{slot}</span>
+                  <span className="text-ink/90">{BAR_WEEKLY[weekdayIdx][slot]}</span>
+                </div>
+              ))}
+              {SPEED_POUR_DAYS.includes(weekdayIdx) && (
+                <div className="flex gap-2.5 pt-1 text-sm">
+                  <span className="w-7 shrink-0" />
+                  <span className="font-semibold text-ink">
+                    Speed pours soaked, cleaned and left to dry.
+                  </span>
+                </div>
+              )}
+              <p className="pt-2 text-[11px] font-semibold text-down">{BAR_WEEKLY_NOTE}</p>
+            </div>
+          </Card>
+        )}
 
         {/* Sections — each tile carries its own pencil */}
         {sections.map((sec, si) => {
