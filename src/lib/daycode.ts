@@ -52,4 +52,27 @@ export function rememberUnlock(): void {
 /** Send the device back to the code screen (end of shift, wrong hands). */
 export function forgetUnlock(): void {
   save(UNLOCK_KEY, null)
+  save(PERSON_KEY, null)
+}
+
+const PERSON_KEY = '__shiftPerson'
+
+/**
+ * Who is on this device for this shift.
+ *
+ * The day code is shared — everyone on the floor types the same four digits —
+ * so the code alone cannot say who is holding the phone. Asking once at sign-in
+ * means the prep sheet and the sidework can stamp a name without prompting for
+ * initials on every tick.
+ *
+ * Cleared with the unlock, so the next person to pick the tablet up identifies
+ * themselves rather than inheriting the last person's name.
+ */
+export function shiftPerson(): string {
+  const rec = load<{ on: string; who: string } | null>(PERSON_KEY, null)
+  return rec && rec.on === today() ? rec.who : ''
+}
+
+export function setShiftPerson(who: string): void {
+  save(PERSON_KEY, { on: today(), who })
 }

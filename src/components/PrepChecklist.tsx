@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { usePersistentState, today } from '../lib/store'
 import { prepDoneKey, prepWho, setPrepWho, type PrepCheck } from '../lib/prepdone'
+import { shiftPerson } from '../lib/daycode'
 import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from './SpecPeek'
 
@@ -25,7 +26,9 @@ export interface ChecklistItem {
  */
 export function PrepChecklist({ items }: { items: ChecklistItem[] }) {
   const [done, setDone] = usePersistentState<Record<string, PrepCheck>>(prepDoneKey(today()), {})
-  const [who, setWho] = useState(prepWho())
+  // Whoever signed in for this shift. Only falls back to asking when nobody
+  // did -- a manager's own device, or a session that predates the sign-in step.
+  const [who, setWho] = useState(() => shiftPerson() || prepWho())
   const [peek, setPeek] = useState<string | null>(null)
 
   const toggle = (it: ChecklistItem) => {
@@ -60,7 +63,7 @@ export function PrepChecklist({ items }: { items: ChecklistItem[] }) {
         <span className="text-sm font-bold text-ink">
           {complete}/{items.length} done
         </span>
-        {who && <span className="ml-auto text-xs text-muted">checking off as {who}</span>}
+        {who && <span className="ml-auto truncate text-xs text-muted">checking off as {who}</span>}
       </div>
 
       <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.07]">
