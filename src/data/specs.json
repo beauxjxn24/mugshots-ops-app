@@ -2758,26 +2758,46 @@
  {
   "name": "Pow Pow Shrimp Build",
   "g": "Appetizer Builds",
-  "storage": "Lined Burger Basket",
-  "shelf": "6 oz fried shrimp",
+  "storage": "Small Black Plate",
+  "shelf": "6 oz shrimp portion",
   "yields": "",
   "ing": [
    [
-    "Fried Shrimp",
-    "6 oz, tossed in Pow Pow sauce"
+    "Sriracha",
+    "drizzled on the plate"
    ],
    [
     "Salad Mix",
-    "bed"
+    "1/2 cup"
    ],
    [
-    "Sriracha",
-    "on plate"
+    "Breaded Shrimp",
+    "6 oz portion, thawed"
+   ],
+   [
+    "Buttermilk",
+    "shrimp-designated only"
+   ],
+   [
+    "Breader",
+    "shrimp-designated only"
+   ],
+   [
+    "Pow Pow Sauce",
+    "2 oz, tossed"
+   ],
+   [
+    "Parsley",
+    "dusting"
    ]
   ],
   "steps": [
-   "Toss shrimp in Pow Pow; serve on salad-mix bed.",
-   "To-go: Pow Pow and sriracha on the side."
+   "Drizzle sriracha on the plate; 1/2 cup salad mix on top.",
+   "Using the buttermilk and breader designated for shrimp ONLY, double-bread the thawed shrimp: coat evenly in breader, dip in buttermilk, coat evenly in breader again, shake off any excess.",
+   "Fry 3 minutes in the shrimp-designated fryer.",
+   "Drain the grease in a Sav A Day.",
+   "Toss the fried shrimp in 2 oz Pow Pow sauce.",
+   "Place the shrimp on the lettuce mix; finish with a dusting of parsley."
   ]
  },
  {
