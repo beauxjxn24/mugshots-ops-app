@@ -1,4 +1,4 @@
-import { SPECS } from './specs'
+import { SPECS, ACTIVE_SPECS } from './specs'
 import { slugify } from './photos'
 
 /**
@@ -99,10 +99,10 @@ export type LinkKind = 'prep' | 'stock' | 'build'
  */
 function knownItems(prep: string[] = [], stock: string[] = []) {
   const out = [
-    ...SPECS.filter((s) => s.g === 'Prep').map((s) => ({ name: s.name, kind: 'prep' as LinkKind })),
+    ...ACTIVE_SPECS.filter((s) => s.g === 'Prep').map((s) => ({ name: s.name, kind: 'prep' as LinkKind })),
     ...prep.map((n) => ({ name: n, kind: 'prep' as LinkKind })),
     ...stock.map((n) => ({ name: n, kind: 'stock' as LinkKind })),
-    ...SPECS.filter((s) => s.g !== 'Prep').map((s) => ({ name: s.name, kind: 'build' as LinkKind })),
+    ...ACTIVE_SPECS.filter((s) => s.g !== 'Prep').map((s) => ({ name: s.name, kind: 'build' as LinkKind })),
   ].map((x) => ({ ...x, key: componentKey(x.name) }))
   // First name wins per key, so a prep recipe beats a same-named stock item.
   const seen = new Set<string>()

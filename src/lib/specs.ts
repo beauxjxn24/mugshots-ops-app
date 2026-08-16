@@ -3,6 +3,15 @@ import type { Spec } from './types'
 
 export const SPECS = raw as Spec[]
 
+/**
+ * The live menu — everything guests can order today.
+ *
+ * Screens that answer "what do we sell" read this; Specs reads the full SPECS
+ * so an archived card can still be looked up, which is the point of archiving
+ * rather than deleting.
+ */
+export const ACTIVE_SPECS = SPECS.filter((s) => !s.off)
+
 /** Stable category order for the Specs screen. */
 export const GROUP_ORDER = [
   'Burger Builds',

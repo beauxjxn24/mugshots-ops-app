@@ -10,7 +10,7 @@ import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
-import { SPECS } from '../lib/specs'
+import { ACTIVE_SPECS } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
 import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
 import { ordersDueOn, deliveriesOn } from '../lib/orderDays'
@@ -578,7 +578,7 @@ function LtoFocus() {
   const [paused, setPaused] = useState(false)
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
-  const allLtos = SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
+  const allLtos = ACTIVE_SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
   // The LTOs lead — they're what the shift is being pushed on — followed by the
   // burgers actually selling best, so the tile rotates through what's new AND
   // what's carrying the menu instead of only the promo.
@@ -589,7 +589,7 @@ function LtoFocus() {
         if (it.sales <= 0) continue
         sold.set(it.name.toLowerCase(), (sold.get(it.name.toLowerCase()) ?? 0) + it.qty)
       }
-    return SPECS.filter((x) => /Burger Builds/i.test(x.g))
+    return ACTIVE_SPECS.filter((x) => /Burger Builds/i.test(x.g))
       .map((x) => ({ spec: x, qty: sold.get(x.name.toLowerCase()) ?? 0 }))
       .filter((x) => x.qty > 0)
       .sort((a, b) => b.qty - a.qty)

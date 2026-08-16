@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Printer } from 'lucide-react'
 import { PageHeader } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
-import { SPECS, GROUP_ORDER } from '../lib/specs'
+import { ACTIVE_SPECS, GROUP_ORDER } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
 
 /**
@@ -12,7 +12,7 @@ import { dishPhoto } from '../lib/photos'
  */
 export function LineBuilds() {
   const buildGroups = useMemo(
-    () => GROUP_ORDER.filter((g) => g.endsWith('Builds') && SPECS.some((s) => s.g === g)),
+    () => GROUP_ORDER.filter((g) => g.endsWith('Builds') && ACTIVE_SPECS.some((s) => s.g === g)),
     [],
   )
   const [group, setGroup] = useState('All')
@@ -20,7 +20,7 @@ export function LineBuilds() {
 
   const cards = useMemo(() => {
     const query = q.trim().toLowerCase()
-    return SPECS.filter(
+    return ACTIVE_SPECS.filter(
       (s) =>
         s.g.endsWith('Builds') &&
         (group === 'All' || s.g === group) &&

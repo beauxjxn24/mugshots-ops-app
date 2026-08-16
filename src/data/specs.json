@@ -1289,7 +1289,8 @@
   ],
   "steps": [
    "Double-stacked patties, beer-battered fries."
-  ]
+  ],
+  "off": "Summer 2026 LTO — ended; the live build is Single Classic Smash"
  },
  {
   "name": "Firecracker Bites",
@@ -2282,7 +2283,8 @@
   "steps": [
    "Comeback + lettuce on bottom bun.",
    "Philly set, rotel, pico on top."
-  ]
+  ],
+  "off": "Moved to the OG menu — no pico, diced tomatoes & red onions"
  },
  {
   "name": "Callie's Mahi",
@@ -2347,7 +2349,8 @@
   ],
   "steps": [
    "Dress bottom bun; turkey patty with american cheese on top."
-  ]
+  ],
+  "off": "Off the menu — the patty is still available as a protein"
  },
  {
   "name": "Briscoe",
@@ -2472,7 +2475,8 @@
   "steps": [
    "Mic tortilla 15 sec; build.",
    "Grill 30 sec each side; cut and shingle."
-  ]
+  ],
+  "off": "Off the menu — Aug 2026 rollout"
  },
  {
   "name": "Caitlin's Cajun",
@@ -2546,7 +2550,8 @@
   "steps": [
    "Build on sourdough.",
    "Cut before serving."
-  ]
+  ],
+  "off": "Moved to the OG menu — still on the catering menu"
  },
  {
   "name": "Caesar's Lemon Blackout Wrap",
@@ -3008,7 +3013,8 @@
   "steps": [
    "Mayo + lettuce on bottom bun.",
    "Patty, waffle fries, cheese sauce, pico."
-  ]
+  ],
+  "off": "Off the menu — Aug 2026 rollout"
  },
  {
   "name": "Guthrie's Godfather",
@@ -3041,7 +3047,8 @@
   "steps": [
    "Garlic mayo on bottom bun.",
    "Patty, mozz wedges, marinara, pesto on bun."
-  ]
+  ],
+  "off": "Off the menu — Aug 2026 rollout"
  },
  {
   "name": "Breakfast Burger",
@@ -3115,7 +3122,8 @@
   "steps": [
    "Cheese side down on flat top, 30 sec each side.",
    "To-go: pico on quesadilla, sriracha mayo in 2 oz ramekin."
-  ]
+  ],
+  "off": "Moved to the OG menu — no pico, diced tomatoes & red onions"
  },
  {
   "name": "Rajun Cajun Salad",
@@ -3291,7 +3299,8 @@
   "steps": [
    "Build greens and slaw.",
    "Cut tenders bite-size; drizzle teriyaki across bowl."
-  ]
+  ],
+  "off": "Off the menu — Aug 2026 rollout"
  },
  {
   "name": "Side House Salad",
@@ -3481,7 +3490,8 @@
   "steps": [
    "Cook philly set on flat top.",
    "Toss with pasta & cheese sauce BEFORE plating."
-  ]
+  ],
+  "off": "Off the menu — the pastas are combined, see Cajun Pasta"
  },
  {
   "name": "Hamburger Steak Plate",
@@ -3771,7 +3781,8 @@
   ],
   "steps": [
    "Fry 2 minutes; toss in cinnamon sugar."
-  ]
+  ],
+  "off": "Off the menu — Aug 2026 rollout"
  },
  {
   "name": "Root Beer Float",

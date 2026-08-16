@@ -27,7 +27,13 @@ export function Specs() {
   const [archived, setArchived] = usePersistentState<string[]>('recipes:archived', [])
 
   const gs = foodGroups
-  const archivedSet = useMemo(() => new Set(archived), [archived])
+  // An item pulled in a rollout is archived for everyone, on every device --
+  // that is the whole point of marking it in the data rather than tapping
+  // Archive on each tablet. A card archived by hand still is too.
+  const archivedSet = useMemo(
+    () => new Set([...archived, ...FOOD_SPECS.filter((s) => s.off).map((s) => s.name)]),
+    [archived],
+  )
   const viewingOldies = group === OLDIES
 
   const filtered = useMemo(() => {
@@ -77,8 +83,8 @@ export function Specs() {
         title="Specs & Recipes"
         subtitle={
           viewingOldies
-            ? `${archived.length} archived — restore anytime`
-            : `${FOOD_SPECS.length - archived.filter((n) => FOOD_SPECS.some((s) => s.name === n)).length} active builds & prep cards`
+            ? `${archivedSet.size} archived — pulled from the menu, or shelved here`
+            : `${FOOD_SPECS.length - archivedSet.size} active builds & prep cards`
         }
         right={
           <SearchInput
@@ -121,7 +127,7 @@ export function Specs() {
           >
             <Archive size={13} />
             {OLDIES}
-            {archived.length > 0 && ` · ${archived.length}`}
+            {archivedSet.size > 0 && ` · ${archivedSet.size}`}
           </button>
         </div>
 
@@ -184,6 +190,9 @@ function SpecCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="font-display text-base font-semibold text-ink">{spec.name}</div>
+          {/* Why it left — "gone" and "moved to the OG menu" are different
+              facts, and the kitchen asks which one. */}
+          {spec.off && <div className="mt-0.5 text-[11px] font-semibold text-down">{spec.off}</div>}
           <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
             {spec.storage && <Chip>{spec.storage}</Chip>}
             {spec.shelf && <Chip>{spec.shelf}</Chip>}

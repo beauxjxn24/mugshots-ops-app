@@ -13,6 +13,13 @@ export interface Spec {
   yields: string
   ing: Ingredient[]
   steps: string[]
+  /**
+   * Set when the item has left the live menu — the reason, not just a flag,
+   * because "gone" and "moved to the OG menu" are different facts and the
+   * kitchen asks which one. Archived rather than deleted: the build is still
+   * wanted for catering, for the OG menu, and for the next time it comes back.
+   */
+  off?: string
 }
 
 /** A source the app can sync from — file import today, live API later. */
