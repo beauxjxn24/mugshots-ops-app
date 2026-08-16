@@ -10,6 +10,8 @@ import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
 import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, parseCategoryRows, applyCategoryRows, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashSummary, applyCashSummary, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseDiningRows, togoFromDining, applyDining, isNetSalesSummary, parseNetSummary, applyNetSummary, isSalesBreakdown, parseSalesBreakdown, applySalesBreakdown, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
+import { isBuildSheet } from '../lib/buildsheet'
+import { BuildSheetImport } from '../components/BuildSheetImport'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
 import { logImport, useImportLog } from '../lib/importlog'
@@ -130,6 +132,8 @@ export function Imports() {
         ? `labor report (${parseLaborByDay(res.text).length} days) — review below`
         : isSalesSummary(res.text)
         ? `sales summary (${parseSalesSummary(res.text).length} days) — review below`
+        : isBuildSheet(res.text)
+        ? 'kitchen build sheet — review below'
         : isRosterDoc(res.text)
           ? 'employee roster — review below'
           : isCateringDoc(res.text)
@@ -493,6 +497,9 @@ export function Imports() {
 
             {job.text && (
               <CardBoundary name={job.fileName}>
+            {job.text && isBuildSheet(job.text) && (
+              <BuildSheetImport text={job.text} fileName={job.fileName} />
+            )}
             {job.text && isRosterDoc(job.text) && <StaffImport text={job.text} fileName={job.fileName} />}
 
             {job.text && isCategorySummary(job.text) && <CategoryImport text={job.text} fileName={job.fileName} hintDate={job.hintDate} periodLevel={job.periodLevel} />}
@@ -536,7 +543,7 @@ export function Imports() {
               const t = job.text ?? ''
               if (!t || job.status !== 'done') return null
               const recognized =
-                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isNetSalesSummary(t) || isSalesBreakdown(t) || isRosterDoc(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
+                isSalesSummary(t) || isCategorySummary(t) || isLaborReport(t) || isLaborSummary(t) || isCashSummary(t) || isDiscountReport(t) || isDiningOptions(t) || isNetSalesSummary(t) || isSalesBreakdown(t) || isRosterDoc(t) || isBuildSheet(t) || isCateringDoc(t) || isCountSheet(t) || (isPmixReport(t) && !isCountSheet(t))
               if (recognized) return null
               const hasQtyLines = !!job.lineItems?.some((li) => li.qty)
               const scan = job.kind === 'image' || job.kind === 'pdf'

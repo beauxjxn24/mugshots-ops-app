@@ -6,7 +6,7 @@ import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
 import { usePersistentState } from '../lib/store'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
-import { LINE_BUILDS, buildFor } from '../lib/linebuilds'
+import { allBuilds, buildFor } from '../lib/linebuilds'
 import { LineBuildCard } from '../components/LineBuildCard'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -54,7 +54,7 @@ export function Drinks() {
   // matches a drink already on the menu.
   const drinkBuilds = useMemo(
     () =>
-      LINE_BUILDS.filter(
+      allBuilds().filter(
         (b) => /drink|rita|shake|cocktail/i.test(b.sheet) || drinks.some((d) => buildFor(d.name) === b),
       ),
     [drinks],

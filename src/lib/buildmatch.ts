@@ -1,7 +1,7 @@
 import { load, save } from './store'
 import { useScope } from './scope'
 import { SPECS } from './specs'
-import { LINE_BUILDS, buildFor, norm, type LineBuild } from './linebuilds'
+import { allBuilds, buildFor, norm, type LineBuild } from './linebuilds'
 import type { Spec } from './types'
 
 /**
@@ -98,7 +98,7 @@ export function pendingMatches(): PendingMatch[] {
       .map((b) => norm(b.sheetName)),
   )
   const out: PendingMatch[] = []
-  for (const b of LINE_BUILDS) {
+  for (const b of allBuilds()) {
     if (decided.has(norm(b.sheetName))) continue
     if (claimed.has(norm(b.sheetName))) continue // a menu item already owns it
     const candidates = SPECS.filter((s) => s.g !== 'Prep')
@@ -119,7 +119,7 @@ export function pendingMatches(): PendingMatch[] {
 export function buildForSpec(specName: string): LineBuild | undefined {
   const pinned = getDecisions().find((d) => d.spec && norm(d.spec) === norm(specName))
   if (pinned) {
-    const hit = LINE_BUILDS.find((b) => norm(b.sheetName) === norm(pinned.sheetName))
+    const hit = allBuilds().find((b) => norm(b.sheetName) === norm(pinned.sheetName))
     if (hit) return hit
   }
   // A sheet answered as "its own dish" must not be claimed by the name rules.

@@ -89,7 +89,12 @@ async function readImage(file: File | HTMLCanvasElement, onProgress?: (p: number
  * digit in a font the text layer can't expose — "Deliver at __:__",
  * "HEADCOUNT __") and scanned PDFs with no text layer at all.
  */
-async function ocrPdfPages(file: File, onProgress?: (p: number) => void, maxPages = 2): Promise<string> {
+// Was two pages, which suited the invoices this was written for and silently
+// truncated everything else — a rollout pack of build sheets is one dish per
+// page, so page three onwards simply didn't exist. Eight is enough for a pack
+// without letting a hundred-page PDF grind a tablet to a halt; the cap is
+// reported below rather than passed over.
+async function ocrPdfPages(file: File, onProgress?: (p: number) => void, maxPages = 8): Promise<string> {
   const buf = await file.arrayBuffer()
   // standardFontDataUrl: without it, non-embedded fonts (ezCater's digit
   // font) render as BLANKS on the canvas and even OCR can't see the numbers.
@@ -103,6 +108,10 @@ async function ocrPdfPages(file: File, onProgress?: (p: number) => void, maxPage
   }).promise
   const pages = Math.min(pdf.numPages, maxPages)
   const out: string[] = []
+  // Say so rather than quietly reading part of the document.
+  if (pdf.numPages > pages) {
+    out.push(`[Read the first ${pages} of ${pdf.numPages} pages — split the file to read the rest.]`)
+  }
   for (let p = 1; p <= pages; p++) {
     const page = await pdf.getPage(p)
     const viewport = page.getViewport({ scale: 3 })

@@ -1,5 +1,6 @@
 import { SPECS, ACTIVE_SPECS } from './specs'
 import { slugify } from './photos'
+import { getImported } from './buildsheet'
 
 /**
  * Line builds — the kitchen's plating sheets, as data.
@@ -42,7 +43,7 @@ const SHEETS = Object.values(
   import.meta.glob<SheetFile>('../data/linebuilds-*.json', { eager: true, import: 'default' }),
 )
 
-export const LINE_BUILDS: LineBuild[] = SHEETS.flatMap((s) =>
+const SHIPPED: LineBuild[] = SHEETS.flatMap((s) =>
   s.dishes.map((d) => ({ ...d, sheet: s.sheet })),
 ).filter(
   // One card per item, first sheet wins. The sheets themselves no longer
@@ -51,6 +52,28 @@ export const LINE_BUILDS: LineBuild[] = SHEETS.flatMap((s) =>
   // twice on Specs would be worse than picking one.
   (d, i, all) => all.findIndex((x) => norm(x.sheetName) === norm(d.sheetName)) === i,
 )
+
+/**
+ * Every build the app knows: the sheets shipped with it, plus any dropped on
+ * the Imports screen.
+ *
+ * An imported sheet WINS over the shipped one of the same dish — a manager who
+ * has just imported the new Pow Pow sheet means the new one, and a build that
+ * quietly kept the old version would be worse than not importing at all. The
+ * shipped copy stays underneath, so deleting the import restores it.
+ *
+ * A function rather than a constant because imports change while the app is
+ * running; module-level data read once would go stale the moment a sheet lands.
+ */
+export function allBuilds(): LineBuild[] {
+  const imported = getImported()
+  if (imported.length === 0) return SHIPPED
+  const overridden = new Set(imported.map((b) => norm(b.sheetName)))
+  return [...imported, ...SHIPPED.filter((b) => !overridden.has(norm(b.sheetName)))]
+}
+
+/** @deprecated Reads only the shipped sheets — use allBuilds(). */
+export const LINE_BUILDS = SHIPPED
 
 /** Lowercase, punctuation-free, singular-ish — for name comparison only. */
 export function norm(s: string): string {
@@ -143,7 +166,7 @@ export function isComponent(body: string, qty?: string): boolean {
  */
 export function missingComponents(prepNames: string[] = [], stockNames: string[] = []): string[] {
   const out = new Map<string, string>()
-  for (const b of LINE_BUILDS)
+  for (const b of allBuilds())
     for (const s of b.sections)
       for (const raw of s.lines) {
         const r = readLine(raw, prepNames, stockNames)
@@ -170,9 +193,9 @@ const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo|b
 /** The build for a menu item, matched on name. */
 export function buildFor(name: string): LineBuild | undefined {
   const n = norm(name)
-  const exact = LINE_BUILDS.find((b) => norm(b.sheetName) === n)
+  const exact = allBuilds().find((b) => norm(b.sheetName) === n)
   if (exact) return exact
-  return LINE_BUILDS.find((b) => {
+  return allBuilds().find((b) => {
     const s = norm(b.sheetName)
     const [long, short] = n.length > s.length ? [n, s] : [s, n]
     if (!long.startsWith(`${short} `)) return false
@@ -193,7 +216,7 @@ export function buildFor(name: string): LineBuild | undefined {
  */
 export function usageIndex(prepNames: string[] = [], stockNames: string[] = []): Map<string, string[]> {
   const idx = new Map<string, string[]>()
-  for (const b of LINE_BUILDS)
+  for (const b of allBuilds())
     for (const s of b.sections)
       for (const raw of s.lines) {
         const link = readLine(raw, prepNames, stockNames).link
