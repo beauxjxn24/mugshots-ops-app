@@ -14,6 +14,18 @@ import {
   type Section,
 } from '../lib/sidework'
 import { rolesOf, type Person } from '../lib/staff'
+import { useRole } from '../lib/role'
+import { shiftPerson } from '../lib/daycode'
+import { CutPlanner, type Duty } from '../components/CutPlanner'
+import {
+  cutFor,
+  dealEvenly,
+  dutiesForCut,
+  dutyId,
+  emptyPlan,
+  planKey,
+  type ShiftPlan,
+} from '../lib/shiftcuts'
 
 type Data = Record<Role, Record<string, Section[]>>
 
@@ -43,6 +55,11 @@ export function Sidework() {
   >(`sidework:verified:${today()}`, {})
   const [vInit, setVInit] = useState('')
   const weekdayIdx = weekdayOf(today())
+  const viewerRole = useRole((r) => r.role)
+  const isCloser = viewerRole !== 'staff'
+  // Tonight's deal, per role and phase. The duty sheet is the library; this is
+  // who has what, and it only lasts the day.
+  const [plans, setPlans] = usePersistentState<Record<string, ShiftPlan>>(planKey(today()), {})
   // Who is on each tile tonight, keyed role|phase|position and dated — an
   // assignment is for one shift, not a standing property of the duty sheet.
   const [assigned, setAssigned] = usePersistentState<Record<string, string>>(
@@ -131,6 +148,30 @@ export function Sidework() {
     [sections, role, activePhase],
   )
   const doneCount = allTasks.filter((k) => done[k]).length
+
+  // Every duty on the sheet for this role and phase, flattened out of its
+  // sections — the sections stay the library, the cuts are tonight's deal.
+  const duties: Duty[] = useMemo(
+    () =>
+      sections.flatMap((sec) =>
+        sec.tasks.map((t) => ({
+          id: dutyId(role, activePhase, sec.section, t),
+          task: t,
+          section: sec.section,
+        })),
+      ),
+    [sections, role, activePhase],
+  )
+  const planId = `${role}|${activePhase}`
+  // Dealt evenly the first time this sheet is opened tonight, so the closer
+  // starts with a working split rather than forty unassigned duties. Everything
+  // is movable afterwards; the deal is a starting point, not a decision.
+  const plan =
+    plans[planId] ?? (duties.length > 0 ? dealEvenly(emptyPlan(), duties.map((d) => d.id)) : emptyPlan())
+  const setPlan = (next: ShiftPlan) => setPlans((p) => ({ ...p, [planId]: next }))
+  // Which cut the person signed in on this device is working.
+  const myCut = cutFor(plan, shiftPerson())
+  const myDuties = myCut ? dutiesForCut(plan, myCut, duties.map((d) => d.id)) : []
   const vKey = `${role}|${activePhase}`
   const vRec = verified[vKey]
 
@@ -206,6 +247,80 @@ export function Sidework() {
       allTasks.forEach((k) => delete next[k])
       return next
     })
+
+  const byId = new Map(duties.map((d) => [d.id, d]))
+
+  // A server sees the cut they were dealt, and nothing else. The full sheet is
+  // the closer's tool -- handing a server forty duties to find their six in is
+  // how the list stops being read.
+  if (!isCloser) {
+    const mineDone = myDuties.filter((id) => done[id]).length
+    return (
+      <>
+        <PageHeader
+          title="Your sidework"
+          subtitle={
+            myCut
+              ? `Cut ${myCut} · ${role} ${activePhase} · ${mineDone}/${myDuties.length} done`
+              : `${role} ${activePhase} · ${today()}`
+          }
+        />
+        <div className="mx-auto max-w-2xl space-y-3 p-4 sm:p-6">
+          <div className="flex flex-wrap gap-2">
+            {phases.map((ph) => (
+              <button
+                key={ph}
+                onClick={() => setPhase(ph)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                  activePhase === ph
+                    ? 'border-navy bg-navy text-white'
+                    : 'border-black/10 bg-white text-muted'
+                }`}
+              >
+                {ph}
+              </button>
+            ))}
+          </div>
+
+          {!myCut ? (
+            <Card className="p-6 text-center">
+              <p className="text-sm text-muted text-pretty">
+                No cut yet for {shiftPerson() || 'you'} on the {activePhase} sheet. Your closer deals
+                the cuts out at the start of the shift.
+              </p>
+            </Card>
+          ) : myDuties.length === 0 ? (
+            <Card className="p-6 text-center">
+              <p className="text-sm text-muted">Cut {myCut} has nothing on it yet.</p>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden">
+              {myDuties.map((id) => (
+                <button
+                  key={id}
+                  onClick={() => setDone((d) => ({ ...d, [id]: !d[id] }))}
+                  className={`flex w-full items-center gap-3 border-b border-black/5 px-3 py-3 text-left last:border-0 ${
+                    done[id] ? 'bg-up/[0.04]' : ''
+                  }`}
+                >
+                  <span
+                    className={`grid size-9 shrink-0 place-items-center rounded-xl border-2 ${
+                      done[id] ? 'border-up bg-up text-white' : 'border-black/15 text-transparent'
+                    }`}
+                  >
+                    <Check size={18} strokeWidth={3} />
+                  </span>
+                  <span className={`text-[15px] ${done[id] ? 'text-muted line-through' : 'text-ink'}`}>
+                    {byId.get(id)?.task}
+                  </span>
+                </button>
+              ))}
+            </Card>
+          )}
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -299,6 +414,10 @@ export function Sidework() {
             </div>
           </Card>
         )}
+
+        {/* Dealing tonight's work. The sheet below is the library it deals
+            from -- edited when the duties themselves change, not nightly. */}
+        <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
 
         {/* Sections — each tile carries its own pencil */}
         {sections.map((sec, si) => {
