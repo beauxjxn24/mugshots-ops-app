@@ -46,6 +46,9 @@ export function CutPlanner({
   const pool = unassigned(plan, ids)
   const byId = new Map(duties.map((d) => [d.id, d]))
 
+  // Tap a duty on the selected cut and it goes back to the pool; tap one
+  // anywhere else -- pool or another cut -- and it moves here. One tap to move
+  // work between cuts, which is what rebalancing a night actually is.
   const deal = (id: string) =>
     setPlan({
       ...plan,
@@ -72,6 +75,13 @@ export function CutPlanner({
           className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[11px] font-bold text-muted hover:border-brand/40 hover:text-brand-600"
         >
           Deal evenly
+        </button>
+        {/* The full override: throw the deal away and hand it out by hand. */}
+        <button
+          onClick={() => setPlan({ ...plan, assign: {} })}
+          className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[11px] font-bold text-muted hover:border-down/40 hover:text-down"
+        >
+          Clear
         </button>
         <span className="ml-auto flex items-center gap-1 rounded-lg border border-black/10 bg-white p-0.5">
           <button
@@ -143,43 +153,23 @@ export function CutPlanner({
         </select>
       </div>
 
-      {/* The pool, then what this cut already holds. */}
+      {/* The whole deal, laid out. Seeing only the selected cut meant a closer
+          rebalancing the night had to click through five cuts to find out who
+          was carrying too much. Every cut is visible, and tapping any duty --
+          in the pool or on another cut -- moves it to the selected one. */}
       <div className="p-3">
-        <div className="mb-1.5 px-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-          Tap to give to cut {active}
-        </div>
-        {pool.length === 0 ? (
-          <p className="px-1 py-3 text-sm text-muted">Everything's dealt.</p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {pool.map((id) => (
-              <button
-                key={id}
-                onClick={() => deal(id)}
-                className="rounded-lg border border-dashed border-black/20 bg-white px-2.5 py-1.5 text-left text-[12.5px] text-ink hover:border-brand hover:bg-brand/5"
-              >
-                {byId.get(id)?.task}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {dutiesForCut(plan, active, ids).length > 0 && (
+        {pool.length > 0 && (
           <>
-            <div className="mb-1.5 mt-4 px-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-              Cut {active} has {plan.people[active] ? `· ${plan.people[active]}` : ''}
+            <div className="mb-1.5 px-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+              Not dealt yet · {pool.length}
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {dutiesForCut(plan, active, ids).map((id) => (
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {pool.map((id) => (
                 <button
                   key={id}
                   onClick={() => deal(id)}
-                  title="Tap to put it back in the pool"
-                  className={`rounded-lg border px-2.5 py-1.5 text-left text-[12.5px] ${
-                    done[id]
-                      ? 'border-up/40 bg-up/10 text-up line-through'
-                      : 'border-brand/40 bg-brand/10 text-ink'
-                  }`}
+                  title={`Give to cut ${active}`}
+                  className="rounded-lg border border-dashed border-black/25 bg-white px-2.5 py-1.5 text-left text-[12.5px] text-ink hover:border-brand hover:bg-brand/5"
                 >
                   {byId.get(id)?.task}
                 </button>
@@ -187,6 +177,50 @@ export function CutPlanner({
             </div>
           </>
         )}
+
+        <div className="space-y-3">
+          {cuts.map((c) => {
+            const mine = dutiesForCut(plan, c, ids)
+            return (
+              <div key={c} className={`rounded-xl border p-2.5 ${c === active ? 'border-brand/50 bg-brand/[0.04]' : 'border-black/10'}`}>
+                <div className="mb-1.5 flex items-center gap-2 px-1">
+                  <button
+                    onClick={() => setActive(c)}
+                    className={`text-[10px] font-extrabold uppercase tracking-wider ${c === active ? 'text-brand-600' : 'text-muted hover:text-ink'}`}
+                  >
+                    Cut {c}
+                    {plan.people[c] ? ` · ${plan.people[c]}` : ''}
+                  </button>
+                  <span className="ml-auto text-[10px] font-bold text-muted">{mine.length}</span>
+                </div>
+                {mine.length === 0 ? (
+                  <p className="px-1 py-1 text-xs text-muted">
+                    {c === active ? 'Tap duties above to deal them here.' : 'Nothing yet.'}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {mine.map((id) => (
+                      <button
+                        key={id}
+                        onClick={() => deal(id)}
+                        title={c === active ? 'Tap to put it back in the pool' : `Move to cut ${active}`}
+                        className={`rounded-lg border px-2.5 py-1.5 text-left text-[12.5px] ${
+                          done[id]
+                            ? 'border-up/40 bg-up/10 text-up line-through'
+                            : c === active
+                              ? 'border-brand/50 bg-brand/15 text-ink'
+                              : 'border-black/10 bg-white text-ink hover:border-brand/50'
+                        }`}
+                      >
+                        {byId.get(id)?.task}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </Card>
   )
