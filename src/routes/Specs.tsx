@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, ArchiveRestore } from 'lucide-react'
+import { Archive, ArchiveRestore, UtensilsCrossed } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '../components/SearchInput'
-import { SPECS, slug } from '../lib/specs'
+import { SPECS, OG_SPECS, slug } from '../lib/specs'
 import { buildPhoto } from '../lib/linebuilds'
 import { buildForSpec } from '../lib/buildmatch'
 import { BuildReconcile } from '../components/BuildReconcile'
@@ -15,6 +15,7 @@ import { usePersistentState } from '../lib/store'
 import type { Spec } from '../lib/types'
 
 const OLDIES = 'Oldies'
+const OG = 'OG'
 // Food only — drinks live in the Signature Drinks section.
 const FOOD_SPECS = SPECS.filter(isFood)
 const foodGroups = ['All', ...[...new Set(FOOD_SPECS.map((s) => s.g))]]
@@ -35,14 +36,17 @@ export function Specs() {
     [archived],
   )
   const viewingOldies = group === OLDIES
+  const viewingOG = group === OG
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
-    const base = viewingOldies
-      ? FOOD_SPECS.filter((s) => archivedSet.has(s.name))
-      : FOOD_SPECS.filter((s) => !archivedSet.has(s.name))
+    const base = viewingOG
+      ? FOOD_SPECS.filter((s) => s.og)
+      : viewingOldies
+        ? FOOD_SPECS.filter((s) => archivedSet.has(s.name) && !s.og)
+        : FOOD_SPECS.filter((s) => !archivedSet.has(s.name))
     return base.filter((s) => {
-      if (!viewingOldies && group !== 'All' && s.g !== group) return false
+      if (!viewingOldies && !viewingOG && group !== 'All' && s.g !== group) return false
       if (!query) return true
       if (s.name.toLowerCase().includes(query)) return true
       if (s.ing.some(([n]) => n.toLowerCase().includes(query))) return true
@@ -51,7 +55,7 @@ export function Specs() {
       const b = buildForSpec(s.name)
       return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
-  }, [q, group, viewingOldies, archivedSet])
+  }, [q, group, viewingOldies, viewingOG, archivedSet])
 
   const archive = (name: string) => setArchived((a) => [...new Set([...a, name])])
   const restore = (name: string) => setArchived((a) => a.filter((n) => n !== name))
@@ -82,8 +86,10 @@ export function Specs() {
       <PageHeader
         title="Specs & Recipes"
         subtitle={
-          viewingOldies
-            ? `${archivedSet.size} archived — pulled from the menu, or shelved here`
+          viewingOG
+            ? `${OG_SPECS.length} OG builds — off the menu, still made on request`
+            : viewingOldies
+            ? `${archivedSet.size - OG_SPECS.length} retired — off the menu and not coming back`
             : `${FOOD_SPECS.length - archivedSet.size} active builds & prep cards`
         }
         right={
@@ -118,6 +124,19 @@ export function Specs() {
             </button>
           ))}
           <button
+            onClick={() => setGroup(OG)}
+            title="Off the menu, still made on request"
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              viewingOG
+                ? 'border-brand bg-brand text-white'
+                : 'border-dashed border-brand/40 bg-white text-brand-600 hover:border-brand'
+            }`}
+          >
+            <UtensilsCrossed size={13} />
+            {OG}
+            {OG_SPECS.length > 0 && ` · ${OG_SPECS.length}`}
+          </button>
+          <button
             onClick={() => setGroup(OLDIES)}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
               viewingOldies
@@ -127,13 +146,17 @@ export function Specs() {
           >
             <Archive size={13} />
             {OLDIES}
-            {archivedSet.size > 0 && ` · ${archivedSet.size}`}
+            {archivedSet.size - OG_SPECS.length > 0 && ` · ${archivedSet.size - OG_SPECS.length}`}
           </button>
         </div>
 
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
-            {viewingOldies ? 'No archived recipes yet.' : `No builds match “${q}”.`}
+            {viewingOG
+              ? 'Nothing on the OG list yet.'
+              : viewingOldies
+                ? 'Nothing retired yet.'
+                : `No builds match “${q}”.`}
           </p>
         )}
 
@@ -192,7 +215,11 @@ function SpecCard({
           <div className="font-display text-base font-semibold text-ink">{spec.name}</div>
           {/* Why it left — "gone" and "moved to the OG menu" are different
               facts, and the kitchen asks which one. */}
-          {spec.off && <div className="mt-0.5 text-[11px] font-semibold text-down">{spec.off}</div>}
+          {spec.off && (
+            <div className={`mt-0.5 text-[11px] font-semibold ${spec.og ? 'text-brand-600' : 'text-down'}`}>
+              {spec.off}
+            </div>
+          )}
           <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
             {spec.storage && <Chip>{spec.storage}</Chip>}
             {spec.shelf && <Chip>{spec.shelf}</Chip>}

@@ -2314,7 +2314,8 @@
    "Comeback + lettuce on bottom bun.",
    "Philly set, rotel, pico on top."
   ],
-  "off": "Moved to the OG menu — no pico, diced tomatoes & red onions"
+  "off": "OG — on request. No pico: diced tomatoes & red onions",
+  "og": true
  },
  {
   "name": "Callie's Mahi",
@@ -2581,7 +2582,8 @@
    "Build on sourdough.",
    "Cut before serving."
   ],
-  "off": "Moved to the OG menu — still on the catering menu"
+  "off": "OG — on request. Also on the catering menu",
+  "og": true
  },
  {
   "name": "Caesar's Lemon Blackout Wrap",
@@ -3184,7 +3186,8 @@
    "Cheese side down on flat top, 30 sec each side.",
    "To-go: pico on quesadilla, sriracha mayo in 2 oz ramekin."
   ],
-  "off": "Moved to the OG menu — no pico, diced tomatoes & red onions"
+  "off": "OG — on request. No pico: diced tomatoes & red onions",
+  "og": true
  },
  {
   "name": "Rajun Cajun Salad",
@@ -3857,7 +3860,9 @@
    "Fry, drain, toss in cinnamon sugar.",
    "Scoop of ice cream + both drizzles on top.",
    "To-go: sauces 2 oz each, scoop on side."
-  ]
+  ],
+  "off": "OG — on request",
+  "og": true
  },
  {
   "name": "Bread Puddin' Bites",

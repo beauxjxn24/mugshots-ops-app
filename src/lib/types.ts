@@ -20,6 +20,13 @@ export interface Spec {
    * wanted for catering, for the OG menu, and for the next time it comes back.
    */
   off?: string
+  /**
+   * OG — off the printed menu but still made on request, product allowing.
+   * Distinct from retired: a retired build is not coming back, an OG one is
+   * cooked the moment a guest asks for it, so the line still needs the card
+   * within reach rather than buried in an archive.
+   */
+  og?: boolean
 }
 
 /** A source the app can sync from — file import today, live API later. */

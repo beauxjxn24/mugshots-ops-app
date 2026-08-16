@@ -12,6 +12,9 @@ export const SPECS = raw as Spec[]
  */
 export const ACTIVE_SPECS = SPECS.filter((s) => !s.off)
 
+/** OG — off the menu, still cooked on request. */
+export const OG_SPECS = SPECS.filter((s) => s.og)
+
 /** Stable category order for the Specs screen. */
 export const GROUP_ORDER = [
   'Burger Builds',
