@@ -1197,6 +1197,36 @@
   ]
  },
  {
+  "name": "Chili Dog",
+  "g": "Hot Dog Builds",
+  "storage": "Basket w/ liner",
+  "shelf": "Nathan’s dog",
+  "yields": "",
+  "ing": [
+   [
+    "Hot Dog",
+    "1"
+   ],
+   [
+    "Chili",
+    ""
+   ],
+   [
+    "Rotel Cheese Sauce",
+    ""
+   ],
+   [
+    "Fried Jalapeños",
+    ""
+   ]
+  ],
+  "steps": [
+   "Grilled hot dog in the bun.",
+   "Topped with chili, rotel cheese and fried jalapeños.",
+   "Built from the printed menu — no build sheet yet, confirm portions with your manager."
+  ]
+ },
+ {
   "name": "The Colony Classic",
   "g": "Summer LTO",
   "storage": "Menu deal",
@@ -2979,6 +3009,37 @@
   ]
  },
  {
+  "name": "Chuck's Clucks",
+  "g": "Appetizer Builds",
+  "storage": "Basket w/ liner",
+  "shelf": "Boneless wangs",
+  "yields": "",
+  "ing": [
+   [
+    "Boneless Wangs",
+    "hand-breaded, fried"
+   ],
+   [
+    "Wang Sauce",
+    "choice of: mild, hot, BBQ, teriyaki, lemon pepper, sweet chili, Nashville hot, lemon blackout, honey hot, Carolina gold BBQ, garlic parmesan"
+   ],
+   [
+    "House-Made Ranch",
+    "served with"
+   ],
+   [
+    "Celery",
+    "served with"
+   ]
+  ],
+  "steps": [
+   "Hand-breaded boneless chicken wangs, fried.",
+   "Tossed in the guest’s choice of wang sauce.",
+   "Served with house-made ranch and celery.",
+   "Built from the printed menu — no build sheet yet, confirm portions with your manager."
+  ]
+ },
+ {
   "name": "She-E-O",
   "g": "Burger Builds",
   "storage": "Basket w/ liner",
@@ -3333,6 +3394,41 @@
   "steps": [
    "Build and top with croutons.",
    "Side salads get 1 dressing on the side."
+  ]
+ },
+ {
+  "name": "Caesar Salad",
+  "g": "Salad & Bowl Builds",
+  "storage": "Large Salad Bowl",
+  "shelf": "Romaine",
+  "yields": "",
+  "ing": [
+   [
+    "Romaine Lettuce",
+    "tossed"
+   ],
+   [
+    "Caesar Dressing",
+    "tossed"
+   ],
+   [
+    "Croutons",
+    ""
+   ],
+   [
+    "Parmesan Cheese",
+    "on top"
+   ],
+   [
+    "Protein",
+    "must choose: blackened chicken 13.49 or blackened Gulf shrimp 16.49"
+   ]
+  ],
+  "steps": [
+   "Romaine tossed with croutons and caesar dressing.",
+   "Topped with parmesan cheese.",
+   "A protein must be chosen — blackened chicken or blackened Gulf shrimp.",
+   "Built from the printed menu — no build sheet yet, confirm portions with your manager."
   ]
  },
  {
