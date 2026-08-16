@@ -1108,7 +1108,9 @@
    "Drizzle ketchup + mustard; 1 Tbsp red onion.",
    "1 oz pickle relish on the side.",
    "Serve with 6 oz fries."
-  ]
+  ],
+  "off": "OG — on request",
+  "og": true
  },
  {
   "name": "Chicago-ish Freedom Dog",
@@ -1194,7 +1196,9 @@
    "4 fried pickles on top.",
    "Sprinkle 1 chopped bacon slice over pickles.",
    "Serve with 6 oz fries."
-  ]
+  ],
+  "off": "OG — on request",
+  "og": true
  },
  {
   "name": "Chili Dog",
@@ -3784,7 +3788,9 @@
   "steps": [
    "PB on one slice, jelly on the other.",
    "Do NOT grill; cut in half."
-  ]
+  ],
+  "off": "OG — on request",
+  "og": true
  },
  {
   "name": "Taylor's Mini Pasta",
