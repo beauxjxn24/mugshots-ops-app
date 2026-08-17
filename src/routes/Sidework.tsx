@@ -171,9 +171,21 @@ export function Sidework() {
   const plan =
     plans[planId] ?? (duties.length > 0 ? dealEvenly(emptyPlan(), duties.map((d) => d.id)) : emptyPlan())
   const setPlan = (next: ShiftPlan) => setPlans((p) => ({ ...p, [planId]: next }))
-  // Which cut the person signed in on this device is working.
-  const myCut = cutFor(plan, shiftPerson())
+  // Whose sidework the staff view is showing.
+  //
+  // It followed whoever signed in on the device and offered no way to change,
+  // so a manager checking a cut they had just made saw their OWN cut -- which
+  // is none -- and the cut looked broken when it wasn't. On a shared tablet the
+  // same thing happens to the second person to pick it up.
+  const [viewAs, setViewAs] = useState('')
+  const viewer = viewAs || shiftPerson()
+  const myCut = cutFor(plan, viewer)
   const myDuties = myCut ? dutiesForCut(plan, myCut, duties.map((d) => d.id)) : []
+  // Everyone the closer has put on a cut tonight.
+  const onCuts = Object.entries(plan.people)
+    .filter(([, who]) => who)
+    .map(([c, who]) => ({ cut: Number(c), who }))
+    .sort((a, b) => a.cut - b.cut)
   const vKey = `${role}|${activePhase}`
   const vRec = verified[vKey]
 
@@ -270,6 +282,14 @@ export function Sidework() {
           }
         />
         <div className="mx-auto max-w-2xl space-y-3 p-4 sm:p-6">
+          {viewAs && (
+            <div className="flex items-center gap-2 rounded-xl bg-brand/10 px-3 py-2 text-xs">
+              <span className="font-semibold text-ink">Showing {viewAs}'s sidework</span>
+              <button onClick={() => setViewAs('')} className="ml-auto font-bold text-brand-600">
+                switch
+              </button>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             {phases.map((ph) => (
               <button
@@ -287,11 +307,34 @@ export function Sidework() {
           </div>
 
           {!myCut ? (
-            <Card className="p-6 text-center">
-              <p className="text-sm text-muted text-pretty">
-                No cut yet for {shiftPerson() || 'you'} on the {activePhase} sheet. Your closer deals
-                the cuts out at the start of the shift.
+            <Card className="p-4">
+              <p className="text-center text-sm text-muted text-pretty">
+                No cut for {viewer || 'you'} on the {activePhase} sheet yet.
               </p>
+              {onCuts.length > 0 && (
+                <>
+                  <p className="mt-3 text-center text-[11px] font-extrabold uppercase tracking-wider text-muted">
+                    Not you? Tap your name
+                  </p>
+                  <div className="mt-2 space-y-1.5">
+                    {onCuts.map(({ cut, who }) => (
+                      <button
+                        key={cut}
+                        onClick={() => setViewAs(who)}
+                        className="flex w-full items-center gap-3 rounded-xl border border-black/10 px-3 py-2.5 text-left hover:border-brand"
+                      >
+                        <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-extrabold text-brand-600">
+                          Cut {cut}
+                        </span>
+                        <span className="truncate text-sm font-semibold text-ink">{who}</span>
+                        {isReleased(plan, cut) && (
+                          <span className="ml-auto text-[11px] font-bold text-up">cut</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </Card>
           ) : !isReleased(plan, myCut) ? (
             /* Dealt a cut but still on section. Sidework opens when the closer
