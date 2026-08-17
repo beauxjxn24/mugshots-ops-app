@@ -137,6 +137,16 @@ export interface ReadLine {
   body: string
   /** A prep recipe or catalog item this line uses, if one is on file. */
   link?: { name: string; kind: LinkKind }
+  /**
+   * EVERY known item the line refers to.
+   *
+   * One line often names several: "Mashed Potatoes (gravy on top)" is both the
+   * potatoes and the gravy, and "3 Mozzarella or Pepperjack" is two preps
+   * offered as a choice. Taking only the first match meant the second item
+   * looked like nothing used it — which is most of why prep cards were showing
+   * an empty "used in".
+   */
+  links: { name: string; kind: LinkKind }[]
 }
 
 export type LinkKind = 'prep' | 'stock' | 'build'
@@ -159,6 +169,10 @@ export type LinkKind = 'prep' | 'stock' | 'build'
  * the pepper jack, so neither is guessed at.
  */
 const SHEET_ALIASES: Record<string, string> = {
+  // The sheets write "Alfredo Sauce" where the prep card is just "Alfredo".
+  // Without this a longer catalog key ("Alfredo Sauce" as a stocked item) won
+  // the match first and the prep card showed as used by nothing.
+  'Alfredo Sauce': 'Alfredo',
   'Garlic Parm Sauce': 'Garlic Parmesan Sauce',
   Lettuce: 'Burger Lettuce',
   'Shredded Lettuce': 'Iceberg Lettuce (chopped)',
@@ -172,6 +186,18 @@ const SHEET_ALIASES: Record<string, string> = {
   Penne: 'New Pasta',
   'Fried Shrimp': 'Pow Pow Shrimp',
   'Pow Pow Sauce': 'Pow Pow Shrimp Sauce',
+  // What the sheets print, where it differs from the prep card's name.
+  'Mozz Wedges': 'Mozzarella Wedges',
+  // NOT a bare "Pepperjack" — that matched the pepper jack SLICE on Caitlin's
+  // Cajun, the Comeback and the Patty Melt, which is a different product from
+  // the breaded wedge. A wrong link is worse than none.
+  'Slice Tomato': 'Sliced Tomatoes',
+  Rotel: 'Rotel Cheese Sauce',
+  Rolls: 'Egg Rolls',
+  'Sauteed Mushrooms': 'Shrooms',
+  'Sautéed Mushrooms': 'Shrooms',
+  Mushrooms: 'Shrooms',
+  'Monster Cookie': 'Monster Cookie Prep',
 }
 
 function knownItems(prep: string[] = [], stock: string[] = []) {
@@ -205,13 +231,16 @@ export function readLine(raw: string, prepNames: string[] = [], stockNames: stri
   const qty = m && m[0].trim() ? m[0].trim().replace(/\s+of$/i, '') : undefined
   const body = (m ? raw.slice(m[0].length) : raw).trim() || raw
   const hay = componentKey(raw)
-  const hit = knownItems(prepNames, stockNames).find(
+  const matches = knownItems(prepNames, stockNames).filter(
     (k) => hay === k.key || hay.includes(` ${k.key} `) || hay.startsWith(`${k.key} `) || hay.endsWith(` ${k.key}`),
   )
   // An alias links to the prep card it stands for, not to its own wording —
   // "Grilled Veggies" on a sheet should open the Veggie Mix card.
-  const name = hit ? ((hit as { as?: string }).as ?? hit.name) : ''
-  return { raw, qty, body, link: hit ? { name, kind: hit.kind } : undefined }
+  const seen = new Set<string>()
+  const links = matches
+    .map((k) => ({ name: (k as { as?: string }).as ?? k.name, kind: k.kind }))
+    .filter((l) => !seen.has(l.name) && seen.add(l.name))
+  return { raw, qty, body, links, link: links[0] }
 }
 
 /** Is this line a thing the kitchen stocks or preps, rather than a method? */
@@ -282,11 +311,11 @@ export function usageIndex(prepNames: string[] = [], stockNames: string[] = []):
   for (const b of allBuilds())
     for (const s of b.sections)
       for (const raw of s.lines) {
-        const link = readLine(raw, prepNames, stockNames).link
-        if (!link) continue
-        const list = idx.get(link.name) ?? []
-        if (!list.includes(b.sheetName)) list.push(b.sheetName)
-        idx.set(link.name, list)
+        for (const link of readLine(raw, prepNames, stockNames).links) {
+          const list = idx.get(link.name) ?? []
+          if (!list.includes(b.sheetName)) list.push(b.sheetName)
+          idx.set(link.name, list)
+        }
       }
   for (const list of idx.values()) list.sort((a, b) => a.localeCompare(b))
   return idx

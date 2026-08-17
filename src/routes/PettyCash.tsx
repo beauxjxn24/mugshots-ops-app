@@ -8,20 +8,24 @@ import { ArrowDownLeft, ArrowUpRight, RotateCcw } from 'lucide-react'
 // column, Bar/ToGo drawer banks + safe denominations + checks, counted three
 // times a day (open · mid · close), each count verified with MGR initials. ----
 
+// Short heads on purpose. "HUNDREDS" and "QUARTERS" were setting the column
+// width — eight characters of label over a two-character count — which is what
+// pushed the sheet past the screen and made it scroll sideways. The counts are
+// what get read; the denominations are known by anyone counting a drawer.
 const COLS = [
   ['bar', 'BAR'],
   ['togo', 'TOGO'],
-  ['h', 'HUNDREDS'],
-  ['f', 'FIFTIES'],
-  ['tw', 'TWENTIES'],
-  ['te', 'TENS'],
-  ['fv', 'FIVES'],
-  ['on', 'ONES'],
-  ['q', 'QUARTERS'],
-  ['d', 'DIMES'],
-  ['n', 'NICKLES'],
-  ['p', 'PENNIES'],
-  ['ck', 'CHECKS'],
+  ['h', '100s'],
+  ['f', '50s'],
+  ['tw', '20s'],
+  ['te', '10s'],
+  ['fv', '5s'],
+  ['on', '1s'],
+  ['q', '25¢'],
+  ['d', '10¢'],
+  ['n', '5¢'],
+  ['p', '1¢'],
+  ['ck', 'CHK'],
 ] as const
 const SLOTS = [
   ['open', 'OPEN'],
@@ -144,9 +148,9 @@ export function PettyCash() {
             </span>
           </div>
 
-          <div ref={gridRef} onKeyDown={onGridKey} className="min-w-[1180px]">
+          <div ref={gridRef} onKeyDown={onGridKey} className="min-w-[720px]">
             {/* Navy header — the sheet's column band */}
-            <div className="grid grid-cols-[54px_repeat(13,1fr)_92px_118px] items-center gap-1.5 rounded-[10px] bg-navy px-2.5 py-2 text-[8.5px] font-extrabold tracking-[0.07em] text-white/60">
+            <div className="grid grid-cols-[42px_repeat(13,minmax(0,1fr))_74px_86px] items-center gap-1 rounded-[10px] bg-navy px-2 py-2 text-[8.5px] font-extrabold tracking-[0.07em] text-white/60">
               <div className="text-[#E8A33C]">SHIFT</div>
               {COLS.map(([k, label]) => (
                 <div key={k} className="text-right">
@@ -167,7 +171,7 @@ export function PettyCash() {
               return (
                 <div
                   key={slot}
-                  className={`grid grid-cols-[54px_repeat(13,1fr)_92px_118px] items-center gap-1.5 px-2.5 py-2 ${
+                  className={`grid grid-cols-[42px_repeat(13,minmax(0,1fr))_74px_86px] items-center gap-1 px-2 py-2 ${
                     si % 2 ? 'bg-black/[0.02]' : ''
                   } ${si < 2 ? 'border-b border-black/5' : ''}`}
                 >
