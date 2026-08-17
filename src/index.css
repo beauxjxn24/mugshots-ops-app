@@ -692,6 +692,11 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
 /* Print: only the sheet — no rail, bars, or buttons. */
 @media print {
   aside, header, nav, .print\:hidden { display: none !important; }
+  /* The aurora is a fixed, full-page canvas of blurred teal and gold blobs at
+     55% opacity, sitting OUTSIDE main — so none of the rules below reached it
+     and it printed straight over the sheet. That's the coloured wash that made
+     every page look faded. The Mugsy launcher is fixed and outside main too. */
+  #app-aurora, .mugsy-fab { display: none !important; }
   main { padding: 0 !important; }
   body { background: #fff !important; }
   /* The app pins html/body/#root to height:100% for the on-screen scroll
@@ -717,6 +722,10 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   .prep-print * { overflow-wrap: anywhere; }
   .prep-print .whitespace-nowrap { overflow-wrap: normal; }
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }
+  /* A dedicated sheet owns the paper: nothing fixed or floating from the app
+     shell may paint on it, whether or not it remembered to opt out. */
+  body:has(.prep-print) canvas,
+  body:has(.prep-print) [class*="fixed"]:not(:has(.prep-print)) { display: none !important; }
   @page { margin: 11mm; }
 }
 
