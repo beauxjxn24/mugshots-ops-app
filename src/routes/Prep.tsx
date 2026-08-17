@@ -85,6 +85,17 @@ export const unitFor = (n: number, unit: string): string =>
  */
 const RETIRED_PREP = ['Pico De Gallo', 'Pico de Gallo']
 
+/**
+ * Prep added to the sheet after devices already had their own copy.
+ *
+ * The mirror of RETIRED_PREP. Adding a row to the shipped list reaches a fresh
+ * device and nothing else, so a new item never appears on the tablet that
+ * matters. Named explicitly rather than diffed against the seed, because
+ * anything in the seed and missing from a device might have been taken off on
+ * purpose — re-adding all of those would undo a manager's own housekeeping.
+ */
+const ADDED_PREP = ['Blackened Shrimp']
+
 /** First-run classification (owner spec): brined chicken / queso meat /
  *  sliced jals were tests; LTO items get their own box; the originals are
  *  the recipes. */
@@ -197,10 +208,10 @@ export function Prep() {
    * pencil owns it, and this never runs again.
    */
   useEffect(() => {
-    if (specsVer >= 3) return
+    if (specsVer >= 4) return
     const seed = new Map((PREP_SEED as PrepItem[]).map((s) => [s.name, s]))
-    setItems((is) =>
-      is
+    setItems((is) => {
+      const kept = is
         // Items pulled off the menu have to leave every device's sheet, or a
         // cook keeps making something the kitchen no longer serves. Listed by
         // name rather than diffed against the seed, because a name missing from
@@ -210,9 +221,23 @@ export function Prep() {
           const s = seed.get(x.name)
           if (!s || (x.spec === s.spec && x.unit === s.unit)) return x
           return { ...x, spec: s.spec, unit: s.unit }
-        }),
-    )
-    setSpecsVer(3)
+        })
+      // New rows land next to where the shipped sheet puts them, not on the end
+      // — the sheet is ordered the way the cooler is walked.
+      const have = new Set(kept.map((x) => x.name.trim().toLowerCase()))
+      let out = kept
+      for (const name of ADDED_PREP) {
+        if (have.has(name.toLowerCase())) continue
+        const row = (PREP_SEED as PrepItem[]).find((x) => x.name === name)
+        if (!row) continue
+        const seedIdx = (PREP_SEED as PrepItem[]).findIndex((x) => x.name === name)
+        const before = (PREP_SEED as PrepItem[])[seedIdx + 1]?.name
+        const at = before ? out.findIndex((x) => x.name === before) : -1
+        out = at >= 0 ? [...out.slice(0, at), row, ...out.slice(at)] : [...out, row]
+      }
+      return out
+    })
+    setSpecsVer(4)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

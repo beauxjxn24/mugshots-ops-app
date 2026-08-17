@@ -476,8 +476,22 @@
     ]
   },
   {
+    "name": "Blackened Shrimp",
+    "spec": "10 shrimp per portion · 1/3 pan with drip",
+    "unit": "portions",
+    "pars": [
+      6.0,
+      6.0,
+      6.0,
+      6.0,
+      12.0,
+      12.0,
+      6.0
+    ]
+  },
+  {
     "name": "Pow Pow Shrimp",
-    "spec": "6 oz portions (Pow Pow) · 10 each (pasta)",
+    "spec": "6 oz portions (case)",
     "unit": "cases",
     "pars": [
       1.0,

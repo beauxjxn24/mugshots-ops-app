@@ -712,7 +712,7 @@
     "g": "Prep",
     "storage": "1/3 Pan",
     "shelf": "96 Hours (frozen)",
-    "yields": "6 oz portions (Pow Pow) · 10 ea portions (shrimp pasta)",
+    "yields": "6 oz portions",
     "ing": [
       [
         "Breaded Shrimp",
@@ -720,9 +720,7 @@
       ]
     ],
     "steps": [
-      "Portion into bags and roll tight.",
-      "Pow Pow Shrimp: 6 oz per portion bag.",
-      "Shrimp pasta: 10 shrimp per portion bag.",
+      "Portion into bags at 6 oz each and roll tight.",
       "1/3 pan with lid; day dot; FREEZER."
     ]
   },
