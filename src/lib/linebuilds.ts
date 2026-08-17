@@ -90,12 +90,41 @@ export function norm(s: string): string {
     .trim()
 }
 
-/** Words that describe a build rather than name a thing you keep on a shelf. */
-const NOISE = /\b(the|of|a|an|with|and|on|in|to|for|each|side|top|bottom|bun|per|cut|into|thinly|sliced|chopped|diced|fresh|prepped|portion)\b/g
+/**
+ * Words that describe a build rather than name a thing you keep on a shelf.
+ *
+ * "Sliced", "diced" and "chopped" are NOT noise — they are the whole
+ * difference between two prep items. Stripping them collapsed Sliced Tomatoes
+ * and Diced Tomatoes onto the same key, so one of them silently won every
+ * match and the other looked unused.
+ */
+const NOISE = /\b(the|of|a|an|with|and|on|in|to|for|each|side|top|bottom|bun|per|into|thinly|fresh|prepped|portion)\b/g
 
-/** A component name reduced to its identity: "1/3 Cup of Diced Onions" → "onions". */
+/**
+ * A word reduced to its singular.
+ *
+ * Both sides of a match go through this, so the sheets can write "Tomatoes"
+ * where a prep card says "Sliced Tomatoes" and they still meet. Without it the
+ * two never touched, and a fifth of the prep cards showed nothing under "used
+ * in" purely because one side happened to be plural.
+ */
+function singular(w: string): string {
+  if (w.length <= 3) return w
+  if (/(?:ch|sh|s|x|z|o)es$/.test(w)) return w.slice(0, -2) // tomatoes, glasses
+  if (/ies$/.test(w)) return `${w.slice(0, -3)}y` // fries
+  if (/s$/.test(w) && !/ss$/.test(w)) return w.slice(0, -1) // wings, crumbles
+  return w
+}
+
+/** A component name reduced to its identity: "1/3 Cup of Diced Onions" → "onion". */
 function componentKey(s: string): string {
-  return norm(s).replace(NOISE, ' ').replace(/\s+/g, ' ').trim()
+  return norm(s)
+    .replace(NOISE, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(singular)
+    .join(' ')
+    .trim()
 }
 
 /** Leading quantity on a build line, e.g. "1/3 Cup of", "4 oz", "3", "12\"". */
@@ -120,8 +149,39 @@ export type LinkKind = 'prep' | 'stock' | 'build'
  * it), a stocked catalog item (it arrives on a truck), then another build (a
  * component that is itself a menu item, like the Philly inside a Philly Pasta).
  */
+/**
+ * What the sheets call a prep, where that differs from the prep's own name.
+ *
+ * Hand-checked, one at a time, against the live builds — a wrong entry points a
+ * cook at the wrong recipe, which is worse than a card that links to nothing.
+ * Anything genuinely ambiguous is left out: the sheets say "Tenders" for both
+ * the brined and the blackened, and "Cheese Wedges" for both the mozzarella and
+ * the pepper jack, so neither is guessed at.
+ */
+const SHEET_ALIASES: Record<string, string> = {
+  'Garlic Parm Sauce': 'Garlic Parmesan Sauce',
+  Lettuce: 'Burger Lettuce',
+  'Shredded Lettuce': 'Iceberg Lettuce (chopped)',
+  Queso: 'Mugshots Queso Dip',
+  Jalapeños: 'Sliced Jalapeños',
+  Jalapenos: 'Sliced Jalapeños',
+  Wings: 'Blanched Wings',
+  'Monster Cookie: Cookie Crumble': 'Monster Cookie Prep',
+  'Grilled Veggies': 'Veggie Mix',
+  Mahi: 'Mahi Mahi',
+  Penne: 'New Pasta',
+  'Fried Shrimp': 'Pow Pow Shrimp',
+  'Pow Pow Sauce': 'Pow Pow Shrimp Sauce',
+}
+
 function knownItems(prep: string[] = [], stock: string[] = []) {
+  const prepNames = new Set(ACTIVE_SPECS.filter((s) => s.g === 'Prep').map((s) => s.name))
   const out = [
+    // Aliases first, so a sheet's own wording resolves to the prep card before
+    // a looser name gets a chance at it.
+    ...Object.entries(SHEET_ALIASES)
+      .filter(([, target]) => prepNames.has(target))
+      .map(([alias, target]) => ({ name: alias, kind: 'prep' as LinkKind, as: target })),
     ...ACTIVE_SPECS.filter((s) => s.g === 'Prep').map((s) => ({ name: s.name, kind: 'prep' as LinkKind })),
     ...prep.map((n) => ({ name: n, kind: 'prep' as LinkKind })),
     ...stock.map((n) => ({ name: n, kind: 'stock' as LinkKind })),
@@ -148,7 +208,10 @@ export function readLine(raw: string, prepNames: string[] = [], stockNames: stri
   const hit = knownItems(prepNames, stockNames).find(
     (k) => hay === k.key || hay.includes(` ${k.key} `) || hay.startsWith(`${k.key} `) || hay.endsWith(` ${k.key}`),
   )
-  return { raw, qty, body, link: hit ? { name: hit.name, kind: hit.kind } : undefined }
+  // An alias links to the prep card it stands for, not to its own wording —
+  // "Grilled Veggies" on a sheet should open the Veggie Mix card.
+  const name = hit ? ((hit as { as?: string }).as ?? hit.name) : ''
+  return { raw, qty, body, link: hit ? { name, kind: hit.kind } : undefined }
 }
 
 /** Is this line a thing the kitchen stocks or preps, rather than a method? */
