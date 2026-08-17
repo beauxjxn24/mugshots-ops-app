@@ -45,6 +45,10 @@ const PHOTO_ALIASES: Record<string, string> = {
   'queso-portions': 'mugshots-queso-dip',
   // The apostrophe splits the slug where the file name doesn't.
   'don-t-be-jelly-double-stack': 'dont-be-jelly-double-stack',
+  // The menu says Katie's Kickin' Chicken; the line's sheet says Chicken
+  // Basket. Same six tenders, same six ounces of fries, same photo — which had
+  // been sitting in the folder unused because the two names never met.
+  'katie-s-kickin-chicken': 'chicken-basket',
 }
 
 export const dishPhoto = (name: string): string | undefined => {

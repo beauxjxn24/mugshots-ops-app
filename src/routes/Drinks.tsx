@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
-import { SPECS } from '../lib/specs'
+import { PageHeader } from '../components/ui'
+import { SpecGrid } from '../components/SpecGrid'
+import { SPECS, slug } from '../lib/specs'
 import { isDrink } from '../lib/categories'
-import { dishPhoto } from '../lib/photos'
 import { usePersistentState } from '../lib/store'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
-import type { Spec } from '../lib/types'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
@@ -44,43 +42,42 @@ function matchesDrink(item: string, drinkNames: string[]): boolean {
 }
 
 /**
- * The decks, and which spec groups feed each.
+ * The sections, in the order the bar menu reads.
  *
- * "Cocktail pairings" is gone as an idea — those drinks were paired with the
- * SmashBurger LTO and they are the house cocktail list now, so the deck is just
- * Cocktails.
+ * "Cocktail pairings" is gone as an idea — those drinks were paired against the
+ * SmashBurger LTO and they are the house cocktail list now, so the section is
+ * just Cocktails.
  *
  * `also` picks up cards filed elsewhere: the root beer float is a dessert build
  * on the food side, which is right, but a bartender making one comes looking
- * here and the deck is called floats.
+ * here and the section is called floats.
  */
-const DECKS: { title: string; groups: string[]; also?: string[] }[] = [
+const SECTIONS: { title: string; groups: string[]; also?: string[] }[] = [
   { title: 'Cocktails', groups: ['Pairings'] },
   { title: 'Frozen', groups: ['Frozen Drinks'] },
   { title: 'Shakes & floats', groups: ['Shakes'], also: ['Root Beer Float'] },
   { title: 'Specials', groups: ['Summer LTO'] },
 ]
 
-/**
- * Signature drinks — a rolodex.
+const anchor = (title: string) => `drinks-${slug(title)}`/**
+ * Signature drinks — laid out the way Specs & Recipes is.
  *
- * The page showed every drink three times over: a strip of bar recipe cards at
- * the top, then three columns of names, then a grid of those same cards again
- * underneath. Reading it meant scrolling past the same margarita twice to work
- * out whether you had already passed it.
+ * The page used to render every drink three times over: a strip of bar recipe
+ * cards, then three columns of names, then a grid of those same cards again.
+ * Reading it meant scrolling past the same margarita twice to work out whether
+ * you'd already passed it.
  *
- * One card at a time now, the way the recipe binder behind the bar works: pick
- * the deck, flip with the arrows or the keyboard, and the whole build sits on
- * screen at once with the photo beside it.
+ * Now it's the food page's shape — chips with counts, a sticky jump bar, and
+ * one headed section per part of the bar menu — so a cook and a bartender are
+ * reading the same screen in two places rather than learning two screens.
  */
 export function Drinks() {
   const drinks = useMemo(() => SPECS.filter((s) => isDrink(s) && !s.off), [])
-  const [deck, setDeck] = useState(0)
-  const [i, setI] = useState(0)
+  const [group, setGroup] = useState('All')
 
-  const decks = useMemo(() => {
+  const sections = useMemo(() => {
     const live = SPECS.filter((s) => !s.off)
-    return DECKS.map((d) => ({
+    return SECTIONS.map((d) => ({
       ...d,
       items: live
         .filter(
@@ -95,34 +92,28 @@ export function Drinks() {
     })).filter((d) => d.items.length > 0)
   }, [])
 
-  const cards: Spec[] = decks[deck]?.items ?? []
-  const at = Math.min(i, Math.max(0, cards.length - 1))
-  const card = cards[at]
+  const shown = useMemo(
+    () => (group === 'All' ? sections : sections.filter((s) => s.title === group)),
+    [sections, group],
+  )
+  const total = shown.reduce((n, s) => n + s.items.length, 0)
 
-  const go = (step: number) => setI(cards.length ? (at + step + cards.length) % cards.length : 0)
-
-  // Arrow keys flip the card — this gets read standing at the well, one hand.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return
-      if (e.key === 'ArrowRight') go(1)
-      if (e.key === 'ArrowLeft') go(-1)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards.length, at])
-
-  // Deep link from Bar prep: /drinks?spec=<name> opens that card in its deck.
+  // Deep link from Bar prep: /drinks?spec=<name> opens that card and scrolls
+  // to it. Clears the section filter first, or a card outside the chosen
+  // section stays hidden.
   const [params] = useSearchParams()
+  const want = params.get('spec')
+  const [open, setOpen] = useState<string | undefined>(undefined)
   useEffect(() => {
-    const want = params.get('spec')
     if (!want) return
-    const d = decks.findIndex((x) => x.items.some((s) => s.name.toLowerCase() === want.toLowerCase()))
-    if (d < 0) return
-    setDeck(d)
-    setI(decks[d].items.findIndex((s) => s.name.toLowerCase() === want.toLowerCase()))
-  }, [params, decks])
+    const hit = SPECS.find((s) => s.name.toLowerCase() === want.toLowerCase())
+    if (!hit) return
+    setGroup('All')
+    setOpen(hit.name)
+    requestAnimationFrame(() =>
+      document.getElementById(`spec-${slug(hit.name)}`)?.scrollIntoView({ block: 'center' }),
+    )
+  }, [want])
 
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
@@ -164,7 +155,7 @@ export function Drinks() {
     <>
       <PageHeader
         title="Signature drinks"
-        subtitle="Flip through the deck — arrow keys work, or tap a name below"
+        subtitle={`${total} build${total === 1 ? '' : 's'} — tap any drink for the full card`}
         right={
           sold && (
             <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-right backdrop-blur">
@@ -181,140 +172,70 @@ export function Drinks() {
         }
       />
 
-      <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6 lg:p-8">
-        {/* Which deck */}
-        <div className="flex flex-wrap gap-2">
-          {decks.map((d, n) => (
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* Section chips, each carrying its count. */}
+        <div className="mb-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => setGroup('All')}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              group === 'All'
+                ? 'border-brand bg-brand text-white'
+                : 'border-black/10 bg-white text-muted hover:border-brand/40'
+            }`}
+          >
+            Everything
+          </button>
+          {sections.map((s) => (
             <button
-              key={d.title}
-              onClick={() => {
-                setDeck(n)
-                setI(0)
-              }}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-                n === deck
+              key={s.title}
+              onClick={() => setGroup(s.title)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                group === s.title
                   ? 'border-brand bg-brand text-white'
-                  : 'border-white/10 bg-white/[0.03] text-muted hover:text-ink'
+                  : 'border-black/10 bg-white text-muted hover:border-brand/40'
               }`}
             >
-              {d.title}
-              <span className={n === deck ? 'ml-1.5 text-white/60' : 'ml-1.5 text-muted/60'}>{d.items.length}</span>
+              {s.title}
+              <span className={group === s.title ? 'ml-1.5 text-white/60' : 'ml-1.5 text-muted/60'}>
+                {s.items.length}
+              </span>
             </button>
           ))}
         </div>
 
-        {card && (
-          <Card className="overflow-hidden">
-            <div className="grid gap-0 sm:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
-              <DrinkPhoto spec={card} />
-
-              <div className="min-w-0 p-5">
-                <div className="font-display text-2xl font-semibold text-ink">{card.name}</div>
-                <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
-                  {[card.storage, card.shelf, card.yields].filter(Boolean).map((c, n) => (
-                    <span key={n} className="rounded-full bg-black/5 px-2 py-0.5 font-semibold">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-
-                {card.ing.length > 0 && (
-                  <>
-                    <div className="mb-1.5 mt-4 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                      Pour
-                    </div>
-                    <ul className="space-y-1">
-                      {card.ing.map(([n, qty], k) => (
-                        <li
-                          key={k}
-                          className="flex justify-between gap-3 border-b border-black/5 pb-1 text-sm last:border-0"
-                        >
-                          <span className="text-ink">{n}</span>
-                          <span className="shrink-0 font-mono text-xs font-bold text-brand">{qty}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-
-                {card.steps.length > 0 && (
-                  <>
-                    <div className="mb-1.5 mt-4 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                      Build
-                    </div>
-                    <ol className="list-decimal space-y-1 pl-4 text-sm text-ink/90">
-                      {card.steps.map((st, k) => (
-                        <li key={k}>{st}</li>
-                      ))}
-                    </ol>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Flip */}
-            <div className="flex items-center gap-2 border-t border-black/5 bg-black/[0.02] px-4 py-2.5">
+        {/* Jump bar — same as the food page, so a category is a tap rather than
+            a scroll. Only earns its space when there's more than one section. */}
+        {shown.length > 1 && (
+          <div className="sticky top-0 z-20 -mx-4 mb-4 flex gap-1.5 overflow-x-auto border-b border-white/10 bg-cream/85 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <span className="shrink-0 self-center pr-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+              Jump
+            </span>
+            {shown.map((s) => (
               <button
-                onClick={() => go(-1)}
-                aria-label="Previous drink"
-                className="grid size-8 place-items-center rounded-lg border border-black/10 bg-white text-muted hover:border-brand/40 hover:text-brand-600"
+                key={s.title}
+                onClick={() =>
+                  document.getElementById(anchor(s.title))?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+                }
+                className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-muted hover:bg-brand/10 hover:text-brand-600"
               >
-                <ChevronLeft size={16} />
+                {s.title} <span className="text-muted/50">{s.items.length}</span>
               </button>
-              <span className="font-mono text-xs text-muted">
-                {at + 1} of {cards.length}
-              </span>
-              <button
-                onClick={() => go(1)}
-                aria-label="Next drink"
-                className="grid size-8 place-items-center rounded-lg border border-black/10 bg-white text-muted hover:border-brand/40 hover:text-brand-600"
-              >
-                <ChevronRight size={16} />
-              </button>
-              <span className="ml-auto truncate text-[11px] text-muted">{decks[deck]?.title}</span>
-            </div>
-          </Card>
+            ))}
+          </div>
         )}
 
-        {/* The tabs down the side of a rolodex — every drink in the deck one tap
-            away, with the one you're on marked. */}
-        <div className="flex flex-wrap gap-1.5">
-          {cards.map((s, n) => (
-            <button
-              key={s.name}
-              onClick={() => setI(n)}
-              className={`rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition-colors ${
-                n === at
-                  ? 'border-brand bg-brand/10 text-brand-600'
-                  : 'border-black/10 bg-white text-muted hover:border-brand/40 hover:text-ink'
-              }`}
-            >
-              {s.name}
-            </button>
+        <div className="space-y-7">
+          {shown.map((s) => (
+            <section key={s.title} id={anchor(s.title)} className="scroll-mt-16">
+              <h2 className="mb-2.5 flex items-baseline gap-2 border-b border-white/10 pb-1.5">
+                <span className="font-display text-sm font-semibold text-ink">{s.title}</span>
+                <span className="text-xs text-muted">{s.items.length}</span>
+              </h2>
+              <SpecGrid specs={s.items} initialOpen={open} />
+            </section>
           ))}
         </div>
       </div>
     </>
-  )
-}
-
-/** The photo, or the drink's initials where there isn't one yet. */
-function DrinkPhoto({ spec }: { spec: Spec }) {
-  const photo = dishPhoto(spec.name)
-  if (photo) {
-    return <img src={photo} alt="" className="h-56 w-full object-cover object-center sm:h-full sm:min-h-[20rem]" />
-  }
-  const initials = spec.name
-    .replace(/[^A-Za-z ]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-  return (
-    <div className="grid h-40 w-full place-items-center bg-black/[0.04] sm:h-full sm:min-h-[20rem]">
-      <span className="font-display text-3xl font-semibold text-muted/40">{initials}</span>
-    </div>
   )
 }

@@ -35,7 +35,7 @@ const COLS = [
  * a built class name would be purged.
  */
 const GRID: React.CSSProperties = {
-  gridTemplateColumns: `42px repeat(${COLS.length}, minmax(0, 1fr)) 74px 86px`,
+  gridTemplateColumns: `52px repeat(${COLS.length}, minmax(0, 1fr)) 92px 96px`,
 }
 
 /**
@@ -43,7 +43,7 @@ const GRID: React.CSSProperties = {
  * label's right edge sits exactly over the digits beneath it instead of the
  * border's width off.
  */
-const HEAD_CELL = 'border-[1.5px] border-transparent px-0.5 text-right'
+const HEAD_CELL = 'border-[1.5px] border-transparent px-1 text-right'
 const SLOTS = [
   ['open', 'OPEN'],
   ['mid', 'MID'],
@@ -165,9 +165,9 @@ export function PettyCash() {
             </span>
           </div>
 
-          <div ref={gridRef} onKeyDown={onGridKey} className="min-w-[720px]">
+          <div ref={gridRef} onKeyDown={onGridKey} className="min-w-[1180px]">
             {/* Navy header — the sheet's column band */}
-            <div style={GRID} className="grid items-center gap-1 rounded-[10px] bg-navy px-2 py-2 text-[8.5px] font-extrabold tracking-[0.07em] text-white/60">
+            <div style={GRID} className="grid items-center gap-1 rounded-[10px] bg-navy px-2 py-2 text-[10.5px] font-extrabold tracking-[0.05em] text-white/70">
               <div className="text-[#E8A33C]">SHIFT</div>
               {COLS.map(([k, label]) => (
                 <div key={k} className={HEAD_CELL}>
@@ -193,7 +193,7 @@ export function PettyCash() {
                     si % 2 ? 'bg-black/[0.02]' : ''
                   } ${si < 2 ? 'border-b border-black/5' : ''}`}
                 >
-                  <div className="text-[11px] font-extrabold tracking-wide text-ink/60">{label}</div>
+                  <div className="text-[13px] font-extrabold tracking-wide text-ink/70">{label}</div>
                   {COLS.map(([k]) => (
                     <input
                       key={k}
@@ -205,14 +205,14 @@ export function PettyCash() {
                       disabled={locked}
                       value={rec.v[k] ?? ''}
                       onChange={(e) => setCell(slot, k, e.target.value)}
-                      className={`w-full rounded-[7px] border-[1.5px] px-0.5 py-1.5 text-right font-mono text-[11px] tabular-nums text-ink outline-none focus:border-brand ${
+                      className={`w-full rounded-[7px] border-[1.5px] px-1 py-2 text-right font-mono text-[15px] tabular-nums text-ink outline-none focus:border-brand ${
                         locked ? 'border-black/5 bg-black/[0.04]' : 'border-black/15 bg-white'
                       }`}
                     />
                   ))}
                   <div
                     title={!any ? '' : balanced ? 'Balances to $1,500' : `${diff > 0 ? 'Over by ' : 'Short by '}${money(Math.abs(diff))}`}
-                    className={`text-right font-mono text-[13px] font-bold ${
+                    className={`text-right font-mono text-[15px] font-bold ${
                       !any ? 'text-muted/50' : balanced ? 'text-up' : 'text-down'
                     }`}
                   >
