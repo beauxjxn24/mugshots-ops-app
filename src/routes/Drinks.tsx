@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
-import { SpecGrid } from '../components/SpecGrid'
 import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
+import { dishPhoto } from '../lib/photos'
 import { usePersistentState } from '../lib/store'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
-import { allBuilds, buildFor } from '../lib/linebuilds'
-import { LineBuildCard } from '../components/LineBuildCard'
+import type { Spec } from '../lib/types'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
@@ -44,51 +44,93 @@ function matchesDrink(item: string, drinkNames: string[]): boolean {
 }
 
 /**
- * Signature drinks — prototype layout: three build lists (frozen / shakes &
- * floats / pairings, tap any drink for the full card). Sales chip fills from
- * your PMIX. Bar prep lives under Prep now.
+ * The decks, and which spec groups feed each.
+ *
+ * "Cocktail pairings" is gone as an idea — those drinks were paired with the
+ * SmashBurger LTO and they are the house cocktail list now, so the deck is just
+ * Cocktails.
+ *
+ * `also` picks up cards filed elsewhere: the root beer float is a dessert build
+ * on the food side, which is right, but a bartender making one comes looking
+ * here and the deck is called floats.
+ */
+const DECKS: { title: string; groups: string[]; also?: string[] }[] = [
+  { title: 'Cocktails', groups: ['Pairings'] },
+  { title: 'Frozen', groups: ['Frozen Drinks'] },
+  { title: 'Shakes & floats', groups: ['Shakes'], also: ['Root Beer Float'] },
+  { title: 'Specials', groups: ['Summer LTO'] },
+]
+
+/**
+ * Signature drinks — a rolodex.
+ *
+ * The page showed every drink three times over: a strip of bar recipe cards at
+ * the top, then three columns of names, then a grid of those same cards again
+ * underneath. Reading it meant scrolling past the same margarita twice to work
+ * out whether you had already passed it.
+ *
+ * One card at a time now, the way the recipe binder behind the bar works: pick
+ * the deck, flip with the arrows or the keyboard, and the whole build sits on
+ * screen at once with the photo beside it.
  */
 export function Drinks() {
-  const drinks = useMemo(() => SPECS.filter(isDrink), [])
-  // A sheet is a drink's build when it came off a drink sheet, or when it
-  // matches a drink already on the menu.
-  const drinkBuilds = useMemo(
-    () =>
-      allBuilds().filter(
-        (b) => /drink|rita|shake|cocktail/i.test(b.sheet) || drinks.some((d) => buildFor(d.name) === b),
-      ),
-    [drinks],
-  )
+  const drinks = useMemo(() => SPECS.filter((s) => isDrink(s) && !s.off), [])
+  const [deck, setDeck] = useState(0)
+  const [i, setI] = useState(0)
+
+  const decks = useMemo(() => {
+    const live = SPECS.filter((s) => !s.off)
+    return DECKS.map((d) => ({
+      ...d,
+      items: live
+        .filter(
+          (s) =>
+            // The Summer LTO group is half food — the Colony Classic and the
+            // Freedom Feast are burgers — so a group alone isn't enough to put
+            // something on the drinks page. isDrink() reads the name for that
+            // group; `also` is the hand-picked exception.
+            (d.groups.includes(s.g) && isDrink(s)) || d.also?.includes(s.name),
+        )
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    })).filter((d) => d.items.length > 0)
+  }, [])
+
+  const cards: Spec[] = decks[deck]?.items ?? []
+  const at = Math.min(i, Math.max(0, cards.length - 1))
+  const card = cards[at]
+
+  const go = (step: number) => setI(cards.length ? (at + step + cards.length) % cards.length : 0)
+
+  // Arrow keys flip the card — this gets read standing at the well, one hand.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return
+      if (e.key === 'ArrowRight') go(1)
+      if (e.key === 'ArrowLeft') go(-1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards.length, at])
+
+  // Deep link from Bar prep: /drinks?spec=<name> opens that card in its deck.
+  const [params] = useSearchParams()
+  useEffect(() => {
+    const want = params.get('spec')
+    if (!want) return
+    const d = decks.findIndex((x) => x.items.some((s) => s.name.toLowerCase() === want.toLowerCase()))
+    if (d < 0) return
+    setDeck(d)
+    setI(decks[d].items.findIndex((s) => s.name.toLowerCase() === want.toLowerCase()))
+  }, [params, decks])
+
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
-  const [params] = useSearchParams()
-  const [open, setOpen] = useState<string | undefined>(undefined)
 
-  // Deep link from Bar prep: /drinks?spec=<name> opens that build's card.
-  useEffect(() => {
-    const spec = params.get('spec')
-    if (!spec) return
-    setOpen(spec)
-    setTimeout(() => document.getElementById('drink-specs')?.scrollIntoView({ behavior: 'smooth' }), 120)
-  }, [params])
-
-  const groups = useMemo(() => {
-    const frozen = drinks.filter((s) => s.g === 'Frozen Drinks')
-    const shakes = drinks.filter((s) => s.g === 'Shakes')
-    const pairings = drinks.filter((s) => s.g === 'Pairings')
-    const rest = drinks.filter((s) => !['Frozen Drinks', 'Shakes', 'Pairings'].includes(s.g))
-    return [
-      { title: 'Frozen drinks', items: frozen },
-      { title: 'Shakes & floats', items: [...shakes, ...rest] },
-      { title: 'Cocktail pairings', items: pairings },
-    ].filter((g) => g.items.length > 0)
-  }, [drinks])
-
-  // Signature drinks sold over the last 7 days of product mix on file — PMIX
-  // items matched to a build by name.
-  // items whose name matches a build. A count with no dates behind it is just a
-  // number, so this carries the exact window AND how many of those days were
-  // actually imported: 383 over 6 days reads very differently from 383 over 2.
+  // Signature drinks sold over the last 7 days of product mix on file. A count
+  // with no dates behind it is just a number, so this carries the exact window
+  // AND how many of those days were actually imported: 383 over 6 days reads
+  // very differently from 383 over 2.
   const sold = useMemo(() => {
     const keys = Object.keys(days).sort()
     const latest = keys[keys.length - 1]
@@ -115,25 +157,14 @@ export function Drinks() {
       const [y, mo, da] = d.split('-').map(Number)
       return new Date(y, mo - 1, da).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     }
-    return {
-      qty,
-      sales,
-      from: md(window[0] ?? from),
-      to: md(latest),
-      days: window.length,
-    }
+    return { qty, sales, from: md(window[0] ?? from), to: md(latest), days: window.length }
   }, [days, drinks])
-
-  const openBuild = (name: string) => {
-    setOpen(name)
-    setTimeout(() => document.getElementById('drink-specs')?.scrollIntoView({ behavior: 'smooth' }), 60)
-  }
 
   return (
     <>
       <PageHeader
         title="Signature drinks"
-        subtitle="Every frozen drink, shake, float & pairing build — tap any drink for the full card"
+        subtitle="Flip through the deck — arrow keys work, or tap a name below"
         right={
           sold && (
             <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-right backdrop-blur">
@@ -149,58 +180,141 @@ export function Drinks() {
           )
         }
       />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
-        {/* Bar recipe cards, read straight off the sheets — same treatment the
-            kitchen's line builds get, with each ingredient linked to the bar
-            prep that makes it. */}
-        {drinkBuilds.length > 0 && (
-          <div>
-            <div className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-muted">
-              Bar recipe cards · {drinkBuilds.length}
-            </div>
-            <div className="grid gap-4 xl:grid-cols-2">
-              {drinkBuilds.map((b) => (
-                <LineBuildCard key={b.sheetName} build={b} />
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Three build lists */}
-        <div className="grid items-start gap-5 lg:grid-cols-3">
-          {groups.map((g) => (
-            <Card key={g.title} className="overflow-hidden border-t-4 border-t-brand">
-              <div className="px-4 pb-1 pt-3 font-display text-lg font-semibold text-ink">{g.title}</div>
-              {g.items.map((s) => (
-                <button
-                  key={s.name}
-                  onClick={() => openBuild(s.name)}
-                  className="flex w-full items-center justify-between gap-2 border-t border-black/5 px-4 py-2.5 text-left hover:bg-black/[0.02]"
-                >
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-2 text-sm font-bold text-ink">
-                      <span className="truncate">{s.name}</span>
-                      {/LTO/i.test(`${s.shelf} ${s.yields}`) && (
-                        <span className="shrink-0 rounded bg-brand/15 px-1.5 py-px text-[9px] font-extrabold uppercase text-brand-600">
-                          LTO
-                        </span>
-                      )}
-                    </span>
-                    <span className="block truncate text-[11px] text-muted">
-                      {s.g === 'Pairings' ? s.shelf : s.ing.slice(0, 3).map(([n]) => n).join(' · ')}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs font-bold text-brand">build →</span>
-                </button>
-              ))}
-            </Card>
+
+      <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6 lg:p-8">
+        {/* Which deck */}
+        <div className="flex flex-wrap gap-2">
+          {decks.map((d, n) => (
+            <button
+              key={d.title}
+              onClick={() => {
+                setDeck(n)
+                setI(0)
+              }}
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                n === deck
+                  ? 'border-brand bg-brand text-white'
+                  : 'border-white/10 bg-white/[0.03] text-muted hover:text-ink'
+              }`}
+            >
+              {d.title}
+              <span className={n === deck ? 'ml-1.5 text-white/60' : 'ml-1.5 text-muted/60'}>{d.items.length}</span>
+            </button>
           ))}
         </div>
 
-        {/* Full build cards */}
-        <div id="drink-specs">
-          <SpecGrid key={open ?? 'none'} specs={drinks} initialOpen={open} />
+        {card && (
+          <Card className="overflow-hidden">
+            <div className="grid gap-0 sm:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+              <DrinkPhoto spec={card} />
+
+              <div className="min-w-0 p-5">
+                <div className="font-display text-2xl font-semibold text-ink">{card.name}</div>
+                <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
+                  {[card.storage, card.shelf, card.yields].filter(Boolean).map((c, n) => (
+                    <span key={n} className="rounded-full bg-black/5 px-2 py-0.5 font-semibold">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+
+                {card.ing.length > 0 && (
+                  <>
+                    <div className="mb-1.5 mt-4 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                      Pour
+                    </div>
+                    <ul className="space-y-1">
+                      {card.ing.map(([n, qty], k) => (
+                        <li
+                          key={k}
+                          className="flex justify-between gap-3 border-b border-black/5 pb-1 text-sm last:border-0"
+                        >
+                          <span className="text-ink">{n}</span>
+                          <span className="shrink-0 font-mono text-xs font-bold text-brand">{qty}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {card.steps.length > 0 && (
+                  <>
+                    <div className="mb-1.5 mt-4 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                      Build
+                    </div>
+                    <ol className="list-decimal space-y-1 pl-4 text-sm text-ink/90">
+                      {card.steps.map((st, k) => (
+                        <li key={k}>{st}</li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Flip */}
+            <div className="flex items-center gap-2 border-t border-black/5 bg-black/[0.02] px-4 py-2.5">
+              <button
+                onClick={() => go(-1)}
+                aria-label="Previous drink"
+                className="grid size-8 place-items-center rounded-lg border border-black/10 bg-white text-muted hover:border-brand/40 hover:text-brand-600"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="font-mono text-xs text-muted">
+                {at + 1} of {cards.length}
+              </span>
+              <button
+                onClick={() => go(1)}
+                aria-label="Next drink"
+                className="grid size-8 place-items-center rounded-lg border border-black/10 bg-white text-muted hover:border-brand/40 hover:text-brand-600"
+              >
+                <ChevronRight size={16} />
+              </button>
+              <span className="ml-auto truncate text-[11px] text-muted">{decks[deck]?.title}</span>
+            </div>
+          </Card>
+        )}
+
+        {/* The tabs down the side of a rolodex — every drink in the deck one tap
+            away, with the one you're on marked. */}
+        <div className="flex flex-wrap gap-1.5">
+          {cards.map((s, n) => (
+            <button
+              key={s.name}
+              onClick={() => setI(n)}
+              className={`rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition-colors ${
+                n === at
+                  ? 'border-brand bg-brand/10 text-brand-600'
+                  : 'border-black/10 bg-white text-muted hover:border-brand/40 hover:text-ink'
+              }`}
+            >
+              {s.name}
+            </button>
+          ))}
         </div>
       </div>
     </>
+  )
+}
+
+/** The photo, or the drink's initials where there isn't one yet. */
+function DrinkPhoto({ spec }: { spec: Spec }) {
+  const photo = dishPhoto(spec.name)
+  if (photo) {
+    return <img src={photo} alt="" className="h-56 w-full object-cover object-center sm:h-full sm:min-h-[20rem]" />
+  }
+  const initials = spec.name
+    .replace(/[^A-Za-z ]/g, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+  return (
+    <div className="grid h-40 w-full place-items-center bg-black/[0.04] sm:h-full sm:min-h-[20rem]">
+      <span className="font-display text-3xl font-semibold text-muted/40">{initials}</span>
+    </div>
   )
 }
