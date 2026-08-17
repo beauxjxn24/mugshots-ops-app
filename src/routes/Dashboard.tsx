@@ -11,6 +11,7 @@ import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
 import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
 import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
 import { ACTIVE_SPECS } from '../lib/specs'
+import { DashDrop } from '../components/DashDrop'
 import { dishPhoto } from '../lib/photos'
 import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
 import { ordersDueOn, deliveriesOn } from '../lib/orderDays'
@@ -275,12 +276,11 @@ export function Dashboard() {
                       )}
                     </div>
                   </div>
-                  {/* The week's graph, right beside the number */}
+                  {/* Where the week's graph was. The graph restated what the
+                      number above already says; a report waiting to be imported
+                      is the thing that actually needs a hand. */}
                   <div className="min-w-0 flex-1 lg:border-l lg:border-black/5 lg:pl-6">
-                    <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
-                      This week · last week vs forecast
-                    </div>
-                    <WeekBars nights={sorted} h={104} />
+                    <DashDrop />
                   </div>
                 </div>
               </Card>

@@ -366,10 +366,17 @@ function RoleCard({
 }) {
   const [name, setName] = useState('')
   const [hours, setHours] = useState('')
+  // Add used to return silently when either field was empty -- parseFloat('')
+  // is NaN -- so pressing Add with a name and no hours did nothing at all and
+  // said nothing about why. The reason is on screen now.
+  const why = !name.trim()
+    ? 'Enter a name'
+    : !Number.isFinite(parseFloat(hours)) || parseFloat(hours) <= 0
+      ? 'Enter hours'
+      : ''
   const add = () => {
-    const h = parseFloat(hours)
-    if (!name.trim() || !Number.isFinite(h) || h <= 0) return
-    onAdd(name.trim(), h)
+    if (why) return
+    onAdd(name.trim(), parseFloat(hours))
     setName('')
     setHours('')
   }
@@ -440,10 +447,18 @@ function RoleCard({
           placeholder="Hrs"
           className="w-16 rounded-lg border-0 bg-white px-2 py-2 text-center text-sm text-ink outline-none"
         />
-        <button onClick={add} className={`rounded-lg ${btn} px-3.5 py-2 text-sm font-bold text-white`}>
+        <button
+          onClick={add}
+          disabled={!!why}
+          title={why || `Add to ${title}`}
+          className={`rounded-lg ${btn} px-3.5 py-2 text-sm font-bold text-white disabled:opacity-40`}
+        >
           Add
         </button>
       </div>
+      {(name.trim() || hours.trim()) && why && (
+        <p className="mt-1.5 text-[11px] font-semibold text-[#eec263]">{why} to add them.</p>
+      )}
     </Card>
   )
 }
@@ -462,10 +477,14 @@ function ServersCard({
 }) {
   const [name, setName] = useState('')
   const [amt, setAmt] = useState('')
+  const why = !name.trim()
+    ? 'Enter a name'
+    : !Number.isFinite(parseFloat(amt)) || parseFloat(amt) <= 0
+      ? 'Enter an amount'
+      : ''
   const add = () => {
-    const a = parseFloat(amt)
-    if (!name.trim() || !Number.isFinite(a) || a <= 0) return
-    onAdd(name.trim(), a)
+    if (why) return
+    onAdd(name.trim(), parseFloat(amt))
     setName('')
     setAmt('')
   }
@@ -516,10 +535,18 @@ function ServersCard({
           placeholder="$"
           className="w-20 rounded-lg border-0 bg-white px-2 py-2 text-center text-sm text-ink outline-none"
         />
-        <button onClick={add} className="rounded-lg bg-brand px-3.5 py-2 text-sm font-bold text-white">
+        <button
+          onClick={add}
+          disabled={!!why}
+          title={why || 'Add this tip-out'}
+          className="rounded-lg bg-brand px-3.5 py-2 text-sm font-bold text-white disabled:opacity-40"
+        >
           Add
         </button>
       </div>
+      {(name.trim() || amt.trim()) && why && (
+        <p className="mt-1.5 text-[11px] font-semibold text-[#eec263]">{why} to add the tip-out.</p>
+      )}
     </Card>
   )
 }

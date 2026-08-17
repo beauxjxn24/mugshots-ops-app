@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Printer, Check, GripVertical, Plus } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
-import { suggested, setParEntry, getReceiptLog, vendors } from '../lib/ordering'
+import { suggested, setParEntry, getReceiptLog, getParEdits, vendors } from '../lib/ordering'
 import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog } from '../lib/catalog'
 import {
   GUIDE_SHELVES,
@@ -522,12 +522,51 @@ export function Ordering() {
           </Card>
         )}
 
+        <EditTrail rows={allRows} />
+
         <p className="text-[11px] text-muted print:hidden">
           Guides are stored per store; items live once in the Item Catalog. Direct vendor-API ordering plugs in on the
           Connections page when your reps support it.
         </p>
       </div>
     </>
+  )
+}
+
+/**
+ * Who changed what on the order sheet.
+ *
+ * An order sheet is money — a par quietly moved from 2 to 6 is a delivery
+ * nobody asked for — and it used to be possible to change any number without
+ * leaving a mark. The last twenty edits, newest first, named.
+ */
+function EditTrail({ rows }: { rows: Row[] }) {
+  const edits = getParEdits().slice(-20).reverse()
+  if (edits.length === 0) return null
+  const nameOf = (id: string) => rows.find((r) => r.id === id)?.name ?? id
+  return (
+    <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
+      <summary className="cursor-pointer text-sm font-bold text-ink">
+        Recent changes
+        <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">
+          {edits.length}
+        </span>
+      </summary>
+      <div className="mt-2 space-y-1">
+        {edits.map((e, i) => (
+          <div key={i} className="flex flex-wrap items-baseline gap-x-2 border-t border-black/5 pt-1 text-[12px]">
+            <span className="font-semibold text-ink">{nameOf(e.id)}</span>
+            <span className="text-muted">{e.field === 'par' ? 'par' : 'on hand'}</span>
+            <span className="font-mono text-muted">
+              {e.from} → <b className="text-ink">{e.to}</b>
+            </span>
+            <span className="ml-auto text-[11px] text-muted">
+              {e.by} · {new Date(e.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+            </span>
+          </div>
+        ))}
+      </div>
+    </details>
   )
 }
 

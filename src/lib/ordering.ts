@@ -3,6 +3,7 @@
 // order guides using THIS store's on/off flags and par/on-hand counts, and
 // keeps the same API the Imports receiving flow already uses.
 import { load, save } from './store'
+import { shiftPerson } from './daycode'
 import { useScope } from './scope'
 import type { LineItem } from './reader'
 import {
@@ -76,9 +77,51 @@ export const vendors = (): string[] => {
 }
 
 /** Set this store's par / on-hand for a catalog item. */
+/** One change to an order sheet: what moved, who moved it, when. */
+export interface ParEdit {
+  id: string
+  /** 'par' or 'onHand' — which number was touched. */
+  field: string
+  from: number
+  to: number
+  by: string
+  at: string
+}
+
+const editKey = (): string => {
+  const s = useScope.getState()
+  return `${s.currentConcept}|${s.currentLocation}::ordering:edits`
+}
+
+/** The order sheet's edit trail, newest last. */
+export function getParEdits(): ParEdit[] {
+  const r = load<ParEdit[]>(editKey(), [])
+  return Array.isArray(r) ? r : []
+}
+
+/**
+ * Change a par or an on-hand, and record who did it.
+ *
+ * An order sheet is money: a par quietly moved from 2 to 6 becomes a delivery
+ * nobody ordered, and until now the sheet couldn't say who had changed
+ * anything. Every edit is stamped with whoever is signed in on the device.
+ *
+ * Only real movement is logged — a field re-entered with the same number is not
+ * a change, and logging it would bury the ones that matter.
+ */
 export function setParEntry(id: string, patch: Partial<{ par: number; onHand: number }>): void {
   const pars = getPars()
   const cur = pars[id] ?? { par: 0, onHand: 0 }
+  const who = shiftPerson() || 'unknown'
+  const now = new Date().toISOString()
+  const log = getParEdits()
+  for (const [field, to] of Object.entries(patch)) {
+    const from = field === 'par' ? cur.par : cur.onHand
+    if (typeof to !== 'number' || to === from) continue
+    log.push({ id, field, from, to, by: who, at: now })
+  }
+  // Capped — this is a trail, not an archive, and it lives in device storage.
+  if (log.length > getParEdits().length) save(editKey(), log.slice(-500))
   pars[id] = { ...cur, ...patch }
   setPars(pars)
 }

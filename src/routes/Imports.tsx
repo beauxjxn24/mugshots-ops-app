@@ -11,6 +11,7 @@ import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '
 import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, parseCategoryRows, applyCategoryRows, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashSummary, applyCashSummary, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseDiningRows, togoFromDining, applyDining, isNetSalesSummary, parseNetSummary, applyNetSummary, isSalesBreakdown, parseSalesBreakdown, applySalesBreakdown, latestNightDate } from '../lib/nightly'
 import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
 import { isBuildSheet } from '../lib/buildsheet'
+import { takeStaged } from '../lib/dropstage'
 import { BuildSheetImport } from '../components/BuildSheetImport'
 import { isCountSheet, parseCountSheet, getCountSheet, setCountSheet, sheetLocations, receiveIntoInventory, type CountItem } from '../lib/countsheet'
 import { isPmixReport, parsePmix, savePmixDay } from '../lib/pmix'
@@ -243,6 +244,13 @@ export function Imports() {
   )
 
   // ONE drop path only: the window listener below catches drops anywhere on
+  // A file dropped on the dashboard is waiting — read it as if it had been
+  // dropped here, which is where the review belongs.
+  useEffect(() => {
+    const staged = takeStaged()
+    if (staged.length > 0) void handleFiles(staged)
+  }, [handleFiles])
+
   // the page, including on the box. (A second onDrop on the box itself made
   // every drop process twice — two tiles per file.)
   useEffect(() => {
