@@ -9,7 +9,7 @@ import {
   getFlags,
   setOnGuide,
   registerItem,
-  renameItem,
+  updateItem,
   findSimilar,
   isInPrep,
   addToPrep,
@@ -30,6 +30,22 @@ const CAT_COLOR: Record<string, string> = {
   'Paper / Supply': '#60A5FA', Kitchen: '#A78BFA', Other: '#8a97ab',
 }
 const dotFor = (c: string) => CAT_COLOR[c] ?? '#8a97ab'
+
+const INPUT =
+  'w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-signal'
+
+/** A labelled box in the item editor — label above, so nothing is guessed at. */
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-0.5 block text-[10px] font-extrabold uppercase tracking-wider text-muted">
+        {label}
+        {hint && <span className="ml-1 font-semibold normal-case tracking-normal text-muted/60">{hint}</span>}
+      </span>
+      {children}
+    </label>
+  )
+}
 
 // The three places an item can live besides the catalog itself.
 type Dest = 'guide' | 'prep' | 'count'
@@ -59,13 +75,42 @@ export function Catalog() {
   const [cat, setCat] = useState('All')
   const [form, setForm] = useState({ name: '', unit: 'cs', category: 'Food', vendor: '' })
   const [dest, setDest] = useState<Set<Dest>>(new Set())
+  // The whole item, not just its name. Held as strings because these are form
+  // fields — the cost is parsed once on save rather than fighting the keyboard
+  // on every character.
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
+  const [edit, setEdit] = useState({ name: '', unit: '', category: '', vendor: '', code: '', size: '', cost: '' })
 
   const similar = useMemo(() => findSimilar(form.name.trim()), [form.name, tick])
 
-  const commitRename = () => {
-    if (editingId) renameItem(editingId, editName)
+  const startEdit = (it: CatalogItem) => {
+    setEditingId(it.id)
+    setEdit({
+      name: it.name,
+      unit: it.unit ?? '',
+      category: it.category ?? 'Food',
+      vendor: it.vendor ?? '',
+      code: it.code ?? '',
+      size: it.size ?? '',
+      cost: it.cost != null ? String(it.cost) : '',
+    })
+  }
+
+  const commitEdit = () => {
+    if (!editingId) return
+    const raw = edit.cost.trim()
+    const parsed = parseFloat(raw)
+    updateItem(editingId, {
+      name: edit.name,
+      unit: edit.unit,
+      category: edit.category,
+      vendor: edit.vendor,
+      code: edit.code,
+      size: edit.size,
+      // An empty box means "no price" and clears it. Anything that isn't a
+      // number is left alone rather than quietly wiping a real cost.
+      cost: raw === '' ? 0 : Number.isFinite(parsed) ? parsed : undefined,
+    })
     setEditingId(null)
     refresh()
   }
@@ -231,26 +276,21 @@ export function Catalog() {
                 <div className="flex items-start gap-2.5">
                   <span className="mt-1.5 size-2.5 shrink-0 rounded-full" style={{ background: dotFor(it.category) }} />
                   <div className="min-w-0 flex-1">
-                    {editingId === it.id ? (
-                      <input
-                        autoFocus
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onBlur={commitRename}
-                        onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null) }}
-                        className="w-full rounded-lg border border-signal/50 bg-white px-2 py-1 text-sm font-semibold text-ink outline-none"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate font-semibold text-ink">{it.name}</span>
-                        <button onClick={() => { setEditingId(it.id); setEditName(it.name) }} title="Fix the spelling — imports keep matching the old name" className="shrink-0 text-muted/50 hover:text-signal">
-                          <Pencil size={12} />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate font-semibold text-ink">{it.name}</span>
+                      <button
+                        onClick={() => (editingId === it.id ? setEditingId(null) : startEdit(it))}
+                        title="Edit this item — name, unit, vendor, pack size, price"
+                        aria-label={`Edit ${it.name}`}
+                        className={`shrink-0 ${editingId === it.id ? 'text-signal' : 'text-muted/50 hover:text-signal'}`}
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    </div>
                     <div className="mt-0.5 text-xs text-muted">
                       {it.code && <span className="font-mono">{it.code} · </span>}
                       {it.category} · {it.unit}
+                      {it.size ? ` · ${it.size}` : ''}
                       {it.vendor ? ` · ${it.vendor}` : ''}
                       {it.cost != null && <> · <b className="font-mono text-ink">{money(it.cost)}</b></>}
                     </div>
@@ -270,6 +310,103 @@ export function Catalog() {
                     <X size={16} />
                   </button>
                 </div>
+
+                {/* The whole item, editable. It used to be the name only, so a
+                    bottle logged as a case, or a price that moved, meant
+                    deleting the item and adding it back — losing the aliases
+                    that keep invoices matching it. */}
+                {editingId === it.id && (
+                  <div
+                    className="mt-3 space-y-2 border-t border-white/5 pt-3"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitEdit()
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                  >
+                    <Field label="Name">
+                      <input
+                        autoFocus
+                        value={edit.name}
+                        onChange={(e) => setEdit({ ...edit, name: e.target.value })}
+                        className={INPUT}
+                      />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="Category">
+                        <select
+                          value={edit.category}
+                          onChange={(e) => setEdit({ ...edit, category: e.target.value })}
+                          className={INPUT}
+                        >
+                          {SHELVES.map((s) => (
+                            <option key={s}>{s}</option>
+                          ))}
+                          {edit.category && !SHELVES.includes(edit.category) && <option>{edit.category}</option>}
+                        </select>
+                      </Field>
+                      <Field label="Unit" hint="bottle, case, each…">
+                        <input
+                          value={edit.unit}
+                          onChange={(e) => setEdit({ ...edit, unit: e.target.value })}
+                          placeholder="cs"
+                          className={INPUT}
+                        />
+                      </Field>
+                      <Field label="Pack size" hint="750ml, 4/5LB, 24 ct…">
+                        <input
+                          value={edit.size}
+                          onChange={(e) => setEdit({ ...edit, size: e.target.value })}
+                          placeholder="—"
+                          className={INPUT}
+                        />
+                      </Field>
+                      <Field label="Vendor">
+                        <input
+                          value={edit.vendor}
+                          onChange={(e) => setEdit({ ...edit, vendor: e.target.value })}
+                          placeholder="—"
+                          className={INPUT}
+                        />
+                      </Field>
+                      <Field label="Vendor code">
+                        <input
+                          value={edit.code}
+                          onChange={(e) => setEdit({ ...edit, code: e.target.value })}
+                          placeholder="—"
+                          className={`${INPUT} font-mono`}
+                        />
+                      </Field>
+                      <Field label="Price" hint="per unit · blank clears it">
+                        <input
+                          value={edit.cost}
+                          onChange={(e) => setEdit({ ...edit, cost: e.target.value })}
+                          inputMode="decimal"
+                          placeholder="—"
+                          className={`${INPUT} font-mono`}
+                        />
+                      </Field>
+                    </div>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        onClick={commitEdit}
+                        className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-muted hover:text-ink"
+                      >
+                        Cancel
+                      </button>
+                      {it.cost != null && it.costDate && (
+                        <span className="ml-auto text-[10px] text-muted">
+                          price from {it.costVendor || 'invoice'} · {it.costDate}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Destination toggles */}
                 <div className="mt-3 flex flex-wrap gap-1.5 border-t border-white/5 pt-3">

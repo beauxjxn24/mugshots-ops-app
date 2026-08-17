@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { GripVertical } from 'lucide-react'
 import { Card } from './ui'
+import { SpecPeek } from './SpecPeek'
 import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
 import { usePersistentState, today } from '../lib/store'
-import { Link } from 'react-router-dom'
-import { usageIndex } from '../lib/linebuilds'
-import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface BarPrepItem {
   name: string
@@ -44,7 +41,6 @@ function findSpec(name: string, list: typeof SPECS) {
  * items with a recipe card jump to it on Signature Drinks. Lives under Prep.
  */
 export function BarPrep() {
-  const navigate = useNavigate()
   const drinks = useMemo(() => SPECS.filter(isDrink), [])
   const [rawBarItems, setBarItems] = usePersistentState<BarPrepItem[]>('barprep:items', BAR_PREP_SEED)
   const barItems = (Array.isArray(rawBarItems) ? rawBarItems : BAR_PREP_SEED).map((it) => ({
@@ -64,6 +60,7 @@ export function BarPrep() {
 
   const di = (new Date().getDay() + 6) % 7
   const dow = new Date().toLocaleDateString('en-US', { weekday: 'long' })
+  const [peek, setPeek] = useState<string | null>(null)
   const [dragName, setDragName] = useState<string | null>(null)
   const [overName, setOverName] = useState<string | null>(null)
   const dropOn = (targetName: string | null) => {
@@ -79,27 +76,25 @@ export function BarPrep() {
     })
   }
 
-  const openRecipe = (name: string) => navigate(`/drinks?spec=${encodeURIComponent(name)}`)
 
   return (
     <Card className="overflow-x-auto">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <span className="font-display text-lg font-semibold text-ink">Bar prep · {dow}</span>
         <span className="rounded-full bg-brand/10 px-2.5 py-1 text-[10px] font-bold text-brand-600">
-          a par for every day · drag ⠿ to reorder · tap an item for its recipe
+          a par for every day · drag ⠿ to reorder · tap an item for its card
         </span>
       </div>
-      <div className="min-w-[1000px]">
-        <div className="grid grid-cols-[20px_minmax(0,1.5fr)_minmax(0,1fr)_repeat(7,44px)_72px_96px] items-center gap-1.5 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+      <div className="min-w-[880px]">
+        <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1.5 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
           <span />
-          <span>Item · tap for the recipe</span>
-          <span>Batch / storage · shelf life</span>
+          <span>Prep item</span>
+          <span className="text-center">On hand</span>
           {DOWS.map((d, i) => (
             <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
               {d}
             </span>
           ))}
-          <span className="text-center">On hand</span>
           <span className="text-right">Prep today</span>
         </div>
         {barItems.map((it) => {
@@ -121,7 +116,7 @@ export function BarPrep() {
                 setDragName(null)
                 setOverName(null)
               }}
-              className={`grid grid-cols-[20px_minmax(0,1.5fr)_minmax(0,1fr)_repeat(7,44px)_72px_96px] items-center gap-1.5 border-b border-black/5 px-4 py-2 last:border-0 ${
+              className={`grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1.5 border-b border-black/5 px-4 py-2 last:border-0 ${
                 dragName === it.name ? 'opacity-40' : ''
               } ${overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''}`}
             >
@@ -141,21 +136,42 @@ export function BarPrep() {
               >
                 <GripVertical size={14} />
               </span>
-              {spec ? (
-                <button onClick={() => openRecipe(spec.name)} title={`Open the ${spec.name} card`} className="min-w-0 text-left">
-                  <span className="block truncate text-sm font-bold text-ink hover:text-brand-600">
-                    {it.name} <span className="text-xs font-bold text-brand">→</span>
-                  </span>
-                </button>
-              ) : (
-                <span className="truncate text-sm font-bold text-ink">{it.name}</span>
-              )}
-              {/* What this bar prep feeds — the same trail the kitchen's prep
-                  sheet carries, read off the drink recipe cards. */}
-              <BarUsedIn name={it.name} />
-              <span className="truncate text-xs text-muted">
-                {it.storage} · {it.shelf}
-              </span>
+              {/* Name over its batch and shelf life, and the card opens in a
+                  popup — the same as the kitchen sheet. It used to leave for
+                  the Signature Drinks page, which loses your place mid-count. */}
+              <div className="min-w-0">
+                {spec ? (
+                  <button
+                    onClick={() => setPeek(spec.name)}
+                    title={`Open the ${spec.name} card`}
+                    className="block min-w-0 max-w-full truncate text-left text-sm font-bold text-ink hover:text-brand-600"
+                  >
+                    {it.name}
+                  </button>
+                ) : (
+                  <div className="truncate text-sm font-bold text-ink">{it.name}</div>
+                )}
+                <div className="truncate text-[10px] text-muted">
+                  {it.storage} · {it.shelf}
+                </div>
+              </div>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                value={counted ? onHand[it.name] : ''}
+                placeholder="—"
+                onChange={(e) => {
+                  const v = e.target.value
+                  setOnHand((o) => {
+                    const next = { ...o }
+                    if (v === '') delete next[it.name]
+                    else next[it.name] = Math.max(0, parseFloat(v) || 0)
+                    return next
+                  })
+                }}
+                className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
+              />
               {pars.map((p, i) => (
                 <input
                   key={i}
@@ -177,23 +193,6 @@ export function BarPrep() {
                   }`}
                 />
               ))}
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.5"
-                value={counted ? onHand[it.name] : ''}
-                placeholder="—"
-                onChange={(e) => {
-                  const v = e.target.value
-                  setOnHand((o) => {
-                    const next = { ...o }
-                    if (v === '') delete next[it.name]
-                    else next[it.name] = Math.max(0, parseFloat(v) || 0)
-                    return next
-                  })
-                }}
-                className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
-              />
               <span className="text-right">
                 {need > 0 ? (
                   <span className="text-xs font-extrabold text-brand-600">
@@ -209,25 +208,10 @@ export function BarPrep() {
           )
         })}
       </div>
+      {/* The card, without leaving the count. What a bar prep goes into lives on
+          that card now too — it has no business on a row being read while
+          someone counts bottles. */}
+      <SpecPeek name={peek} onClose={() => setPeek(null)} />
     </Card>
-  )
-}
-
-
-/** How many drinks this bar prep goes into, read off the recipe cards. */
-function BarUsedIn({ name }: { name: string }) {
-  const drinks = useMemo(
-    () => usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? [],
-    [name],
-  )
-  if (drinks.length === 0) return null
-  return (
-    <Link
-      to={`/drinks?spec=${encodeURIComponent(drinks[0])}`}
-      title={`Used in: ${drinks.join(', ')}`}
-      className="shrink-0 rounded-full bg-signal/10 px-1.5 py-0.5 text-[10px] font-bold text-signal hover:bg-signal/20"
-    >
-      {drinks.length} drink{drinks.length === 1 ? '' : 's'}
-    </Link>
   )
 }

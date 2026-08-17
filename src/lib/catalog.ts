@@ -200,6 +200,73 @@ export function setItemVendor(id: string, vendor: string): void {
   setCatalog(items)
 }
 
+/**
+ * Edit a whole item at once.
+ *
+ * The pencil renamed and nothing else, so a wrong unit, vendor, pack size or
+ * price meant deleting the item and adding it back — which throws away the
+ * aliases that stop every future invoice matching it as a brand new item.
+ *
+ * Name and cost still go through their own paths rather than being written
+ * flat, so a rename keeps the old spelling as an alias and a price change still
+ * lands in the ticker. Only fields actually passed are touched.
+ */
+export function updateItem(
+  id: string,
+  patch: Partial<Pick<CatalogItem, 'name' | 'unit' | 'category' | 'vendor' | 'code' | 'size' | 'cost'>>,
+): void {
+  const before = getCatalog().find((x) => x.id === id)
+  if (!before) return
+
+  if (patch.name != null) renameItem(id, patch.name)
+
+  // Re-priced, or re-measured? Switching an item from the case to the bottle
+  // drops the number by most of its value without anything having got cheaper,
+  // and putting that in the price ticker as an 80% fall is a false alarm on the
+  // one screen that exists to catch real ones. A cost that moves alongside its
+  // unit is written straight in; a cost that moves on its own is news.
+  const unitChanged = patch.unit != null && patch.unit.trim() !== (before.unit ?? '')
+  if (patch.cost != null && patch.cost > 0 && !unitChanged)
+    setItemCost(id, patch.cost, patch.vendor?.trim() || before.vendor)
+
+  const items = getCatalog()
+  const it = items.find((x) => x.id === id)
+  if (!it) return
+  let touched = false
+  const set = (key: 'unit' | 'category' | 'vendor' | 'code' | 'size', v: string | undefined) => {
+    if (v == null) return
+    const s = v.trim()
+    if ((it[key] ?? '') === s) return
+    if (s) it[key] = s
+    else delete it[key]
+    touched = true
+  }
+  set('unit', patch.unit)
+  set('category', patch.category)
+  set('vendor', patch.vendor)
+  set('code', patch.code)
+  set('size', patch.size)
+
+  // The re-measured case from above: the new cost still has to land, it just
+  // doesn't go in the ticker.
+  if (unitChanged && patch.cost != null && patch.cost > 0 && it.cost !== patch.cost) {
+    it.cost = patch.cost
+    it.costVendor = patch.vendor?.trim() || it.vendor
+    it.costDate = isoToday()
+    touched = true
+  }
+
+  // Emptying the price is a real edit — setItemCost only ever writes one in, so
+  // clearing has to happen here or a wrong cost could never be taken back out.
+  if (patch.cost === 0 && it.cost != null) {
+    delete it.cost
+    delete it.costVendor
+    delete it.costDate
+    touched = true
+  }
+  if (touched) setCatalog(items)
+}
+
 export function addAlias(id: string, alias: string): void {
   const items = getCatalog()
   const it = items.find((x) => x.id === id)

@@ -123,8 +123,9 @@ export function useShift(): {
  * Pick the sheet phase that goes with a shift.
  *
  * The sidework sheets each name their phases their own way: Servers run "AM
- * Opening", "AM Closing" and "PM Closing", Host & To-Go just "AM" and "PM", and
- * the bar "Opening" and "Closing" with no shift in the name at all. Narrow to
+ * Opening", "AM Closing" and "PM Closing", the bar "AM Opening" and "PM
+ * Closing", and Host and To-Go just "Opening" and "Closing" with no shift in
+ * the name at all. Narrow to
  * the shift's own phases where the sheet says which shift it means, then take
  * the close for dinner and the open for lunch. Sheets are written in the order
  * they're worked, so where the wording doesn't say, last and first do.

@@ -32,6 +32,9 @@ import {
 type Data = Record<Role, Record<string, Section[]>>
 
 const DOW_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+/** Duty-sheet tab → the roster's job code, where the two are spelled differently. */
+const JOB_CODE: Record<string, string> = { Bar: 'Bartender', 'To-Go': 'ToGo' }
 /** Monday-first index for a yyyy-mm-dd date, matching the prep sheet. */
 function weekdayOf(iso: string): number {
   const [y, m, d] = iso.split('-').map(Number)
@@ -74,11 +77,12 @@ export function Sidework() {
   )
   const [staff] = usePersistentState<Person[]>('staff:list', [])
   // Whoever holds the code for the role being viewed — a Server tile offers the
-  // servers, not all seventy-one people on the roster. The duty sheet's tab is
-  // "Bar" while the roster's job code is "Bartender", so the two are bridged
-  // here rather than the picker coming up empty.
+  // servers, not all seventy-one people on the roster. The duty sheet and the
+  // roster don't spell every job the same way ("Bar" against "Bartender",
+  // "To-Go" against "ToGo"), so the two are bridged here rather than the picker
+  // coming up empty.
   const crew = useMemo(() => {
-    const code = role === 'Bar' ? 'Bartender' : role
+    const code = JOB_CODE[role] ?? role
     return staff
       .filter((p) => rolesOf(p).includes(code))
       .map((p) => p.name)
@@ -115,6 +119,35 @@ export function Sidework() {
         delete next[from]
       }
       return { ...d, Bar: next } as Data
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Host and To-Go used to share one sheet with a section each. A device that
+  // edited it holds those edits under the old joint name, so the sections are
+  // split out to the role whose name they carry rather than being dropped.
+  useEffect(() => {
+    setData((d) => {
+      const joint = (d as Record<string, unknown>)?.['Host & To-Go'] as
+        | Record<string, Section[]>
+        | undefined
+      if (!joint) return d
+      const next = { ...(d as Record<string, unknown>) }
+      for (const [target, match] of [
+        ['Host', /host/i],
+        ['To-Go', /to.?go/i],
+      ] as [string, RegExp][]) {
+        // Don't clobber a sheet the split already gave them.
+        if (next[target]) continue
+        const phases: Record<string, Section[]> = {}
+        for (const [phase, secs] of Object.entries(joint)) {
+          const mine = secs.filter((s) => match.test(s.section))
+          if (mine.length) phases[phase] = mine
+        }
+        if (Object.keys(phases).length) next[target] = phases
+      }
+      delete next['Host & To-Go']
+      return next as Data
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

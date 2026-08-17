@@ -6,7 +6,7 @@ export interface Section {
   tasks: string[]
 }
 export type Phase = string
-export type Role = 'Server' | 'Host & To-Go' | 'Bar'
+export type Role = 'Server' | 'Host' | 'To-Go' | 'Bar'
 
 export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
   Server: {
@@ -166,9 +166,10 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
       },
     ],
   },
-  'Host & To-Go': {
+  // Host and To-Go are two jobs, cut separately -- one sheet with a section
+  // each meant cutting the host cut the To-Go stand with them.
+  Host: {
     Opening: [
-      { section: 'To-Go', tasks: ['Count register for accuracy', 'Lock register'] },
       {
         section: 'Host',
         tasks: [
@@ -183,6 +184,22 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
     ],
     Closing: [
       {
+        section: 'Host',
+        tasks: [
+          'Wipe ALL menus — clean for next morning',
+          'Rugs swept and rolled',
+          'Host stand clean and organized',
+          'Glass windows and doors cleaned',
+        ],
+      },
+    ],
+  },
+  'To-Go': {
+    Opening: [
+      { section: 'To-Go', tasks: ['Count register for accuracy', 'Lock register'] },
+    ],
+    Closing: [
+      {
         section: 'To-Go',
         tasks: [
           'All to-go orders are closed',
@@ -192,15 +209,6 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
           'Clean, sweep, and organize Host To-Go stand',
           'Ensure cordless phone is on the charger',
           'Wipe counter before clocking out',
-        ],
-      },
-      {
-        section: 'Host',
-        tasks: [
-          'Wipe ALL menus — clean for next morning',
-          'Rugs swept and rolled',
-          'Host stand clean and organized',
-          'Glass windows and doors cleaned',
         ],
       },
     ],
