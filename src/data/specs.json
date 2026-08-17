@@ -2976,6 +2976,37 @@
   ]
  },
  {
+  "name": "Chicken Basket",
+  "g": "Appetizer Builds",
+  "storage": "Lined Burger Basket",
+  "shelf": "6 tenders + fries",
+  "yields": "3 to a Mombo",
+  "ing": [
+   [
+    "Tenders",
+    "6 — knuckled, double battered, fried or grilled"
+   ],
+   [
+    "Fries",
+    "6 oz"
+   ],
+   [
+    "Dipping Sauce",
+    "2 oz, on side"
+   ],
+   [
+    "Sauce",
+    "Mild · Hot · BBQ · Teriyaki · Sesame Ginger · Lemon Pepper · Carolina Gold · Honey Hot · Sweet Chili · Mango Habanero · Garlic Parm"
+   ]
+  ],
+  "steps": [
+   "Knuckle the tenders, double batter and fry — or grill.",
+   "Toss in the chosen sauce.",
+   "Lined burger basket with 6 oz fries; 2 oz dipping sauce on the side.",
+   "3 tenders to a Mombo."
+  ]
+ },
+ {
   "name": "Davis’ Dill Pickles",
   "g": "Appetizer Builds",
   "storage": "Lined Wire Basket on Lined Burger Basket",
