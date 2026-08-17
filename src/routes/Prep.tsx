@@ -866,7 +866,7 @@ export function Prep() {
                           <span className="block text-[12px] font-bold leading-[14px]">{it.name}</span>
                           <span className="block text-[9px] leading-[11px] text-black/60">{it.spec || it.unit}</span>
                         </span>
-                        <span className="w-16 shrink-0 text-right font-mono text-[12px] font-bold">
+                        <span className="w-[104px] shrink-0 whitespace-nowrap text-right font-mono text-[12px] font-bold">
                           {onHand[it.name] != null && need(it) > 0
                             ? `${fmtQty(need(it))} ${unitFor(need(it), it.unit)}`
                             : `${fmtQty(it.pars[di] ?? 0)} ${unitFor(it.pars[di] ?? 0, it.unit)}`}

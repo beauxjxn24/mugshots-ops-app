@@ -706,8 +706,16 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      unprintable border and chopped the first/last characters on both sides.
      Internal padding also protects the content if the print dialog's margins
      are set to "None" (which zeroes @page margin). */
-  .prep-print { display: block !important; padding: 0 5mm !important; overflow: visible !important; }
+  /* Ink on paper. The app's text colour is #e9eef6 — near-white, right for a
+     dark screen and invisible on white paper. The sheet forced a white
+     background and never forced the text, so every line WITHOUT its own colour
+     printed as a ghost: the item names vanished while the small grey spec lines
+     under them, which carry an explicit colour, came out fine.
+     Set here rather than !important so the deliberate greys and the station
+     colours still win. */
+  .prep-print { display: block !important; padding: 0 5mm !important; overflow: visible !important; color: #000; }
   .prep-print * { overflow-wrap: anywhere; }
+  .prep-print .whitespace-nowrap { overflow-wrap: normal; }
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }
   @page { margin: 11mm; }
 }

@@ -353,7 +353,7 @@ export function BarPrep() {
                       {it.storage} · {it.shelf}
                     </span>
                   </span>
-                  <span className="w-16 shrink-0 text-right font-mono text-[12px] font-bold">
+                  <span className="w-[104px] shrink-0 whitespace-nowrap text-right font-mono text-[12px] font-bold">
                     {fmtQty(n)} {n === 1 && it.unit.endsWith('s') ? it.unit.slice(0, -1) : it.unit}
                   </span>
                   <span className="h-[16px] w-10 shrink-0 rounded-[3px] border border-black/50" />
