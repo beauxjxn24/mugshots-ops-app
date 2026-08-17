@@ -203,6 +203,9 @@ export function Tipshare() {
                 onAdd={(nm, hrs) =>
                   setCur({ entries: [...cur.entries, { id: `t${++seq}-${Date.now()}`, name: nm, role, hours: hrs }] })
                 }
+                onHours={(e, hrs) =>
+                  setCur({ entries: cur.entries.map((x) => (x.id === e.id ? { ...x, hours: hrs } : x)) })
+                }
                 onRemove={async (e) => {
                   if (await confirmDelete(`Remove ${e.name}?`)) setCur({ entries: cur.entries.filter((x) => x.id !== e.id) })
                 }}
@@ -216,6 +219,9 @@ export function Tipshare() {
             <ServersCard
               servers={cur.servers}
               onAdd={(nm, amt) => setCur({ servers: [...cur.servers, { id: `sv${++seq}-${Date.now()}`, name: nm, amount: amt }] })}
+              onAmount={(sv, amt) =>
+                setCur({ servers: cur.servers.map((x) => (x.id === sv.id ? { ...x, amount: amt } : x)) })
+              }
               onRemove={async (sv) => {
                 if (await confirmDelete(`Remove ${sv.name}'s tip-out?`)) setCur({ servers: cur.servers.filter((x) => x.id !== sv.id) })
               }}
@@ -349,6 +355,7 @@ function RoleCard({
   perHour,
   staff,
   onAdd,
+  onHours,
   onRemove,
   onPickup,
 }: {
@@ -361,22 +368,21 @@ function RoleCard({
   staff: Person[]
   roleOf?: (name: string) => Entry['role'] | undefined
   onAdd: (name: string, hours: number) => void
+  onHours: (e: Entry, hours: number) => void
   onRemove: (e: Entry) => void
   onPickup: (e: Entry) => void
 }) {
   const [name, setName] = useState('')
   const [hours, setHours] = useState('')
-  // Add used to return silently when either field was empty -- parseFloat('')
-  // is NaN -- so pressing Add with a name and no hours did nothing at all and
-  // said nothing about why. The reason is on screen now.
-  const why = !name.trim()
-    ? 'Enter a name'
-    : !Number.isFinite(parseFloat(hours)) || parseFloat(hours) <= 0
-      ? 'Enter hours'
-      : ''
+  // A name is all it takes. The shift is built at the start -- everyone who is
+  // on tonight goes on the sheet -- and the hours are what gets typed at the
+  // end, in one pass down the list. Requiring hours up front meant the sheet
+  // couldn't be prepared, which is the opposite of how the shift runs.
+  const why = !name.trim() ? 'Enter a name' : ''
   const add = () => {
     if (why) return
-    onAdd(name.trim(), parseFloat(hours))
+    const h = parseFloat(hours)
+    onAdd(name.trim(), Number.isFinite(h) && h > 0 ? h : 0)
     setName('')
     setHours('')
   }
@@ -404,7 +410,24 @@ function RoleCard({
                 <span className="text-[10px] text-emerald-300">picked up ✓ {e.pickedUp.by} · {e.pickedUp.at}</span>
               )}
             </span>
-            <span className="text-right font-mono text-xs">{e.hours}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.25"
+              value={e.hours || ''}
+              placeholder="—"
+              onChange={(ev) => {
+                const v = parseFloat(ev.target.value)
+                onHours(e, Number.isFinite(v) && v > 0 ? v : 0)
+              }}
+              aria-label={`Hours for ${e.name}`}
+              title="Hours worked — fill these in at the end of the shift"
+              className={`w-full rounded-md border px-1 py-0.5 text-right font-mono text-xs outline-none ${
+                e.hours > 0
+                  ? 'border-transparent bg-white/10 text-white'
+                  : 'border-[#eec263]/40 bg-transparent text-white placeholder:text-[#eec263]/60'
+              }`}
+            />
             <span className="text-right font-mono text-xs font-bold text-[#eec263]">{money(perHour * e.hours)}</span>
             <span className="flex items-center gap-1">
               {!e.pickedUp && (
@@ -444,7 +467,7 @@ function RoleCard({
           value={hours}
           onChange={(e) => setHours(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
-          placeholder="Hrs"
+          placeholder="Hrs·later"
           className="w-16 rounded-lg border-0 bg-white px-2 py-2 text-center text-sm text-ink outline-none"
         />
         <button
@@ -468,23 +491,24 @@ function ServersCard({
   servers,
   staff,
   onAdd,
+  onAmount,
   onRemove,
 }: {
   servers: ServerOut[]
   staff: Person[]
   onAdd: (name: string, amount: number) => void
+  onAmount: (s: ServerOut, amount: number) => void
   onRemove: (s: ServerOut) => void
 }) {
   const [name, setName] = useState('')
   const [amt, setAmt] = useState('')
-  const why = !name.trim()
-    ? 'Enter a name'
-    : !Number.isFinite(parseFloat(amt)) || parseFloat(amt) <= 0
-      ? 'Enter an amount'
-      : ''
+  // Same as the hours: the servers go on the sheet when the shift starts, the
+  // tip-out is what gets entered when they cash out.
+  const why = !name.trim() ? 'Enter a name' : ''
   const add = () => {
     if (why) return
-    onAdd(name.trim(), parseFloat(amt))
+    const a = parseFloat(amt)
+    onAdd(name.trim(), Number.isFinite(a) && a > 0 ? a : 0)
     setName('')
     setAmt('')
   }
@@ -505,7 +529,24 @@ function ServersCard({
         servers.map((s) => (
           <div key={s.id} className="grid grid-cols-[minmax(0,1fr)_90px_auto] items-center gap-2 border-b border-white/10 py-1.5 text-sm last:border-0">
             <span className="truncate font-semibold">{s.name}</span>
-            <span className="text-right font-mono text-xs font-bold text-[#eec263]">{money(s.amount)}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              value={s.amount || ''}
+              placeholder="—"
+              onChange={(ev) => {
+                const v = parseFloat(ev.target.value)
+                onAmount(s, Number.isFinite(v) && v > 0 ? v : 0)
+              }}
+              aria-label={`Tip-out for ${s.name}`}
+              title="Tip-out — fill this in when they cash out"
+              className={`w-full rounded-md border px-1 py-0.5 text-right font-mono text-xs font-bold outline-none ${
+                s.amount > 0
+                  ? 'border-transparent bg-white/10 text-[#eec263]'
+                  : 'border-[#eec263]/40 bg-transparent text-[#eec263] placeholder:text-[#eec263]/60'
+              }`}
+            />
             <button onClick={() => onRemove(s)} aria-label={`Remove ${s.name}`} className="text-white/50 hover:text-white">
               ✕
             </button>
@@ -532,7 +573,7 @@ function ServersCard({
           value={amt}
           onChange={(e) => setAmt(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
-          placeholder="$"
+          placeholder="$·later"
           className="w-20 rounded-lg border-0 bg-white px-2 py-2 text-center text-sm text-ink outline-none"
         />
         <button
