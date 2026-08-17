@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Printer, Pencil, Check, GripVertical, Archive } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useRole } from '../lib/role'
+import { useCurrentNames } from '../lib/scope'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { BarPrep } from '../components/BarPrep'
@@ -141,6 +142,9 @@ export function Prep() {
   // mid-shift. Staff get the same sheet, read-only, with the counts editable.
   const role = useRole((s) => s.role)
   const canEdit = role !== 'staff'
+  // The printed sheet named the store in its footer — and named Flowood on it
+  // whichever store you were in, so Pearl printed Flowood's sheets.
+  const { concept, location } = useCurrentNames()
   // Line stations (owner spec): each prep item can be assigned to a station so
   // fry side and grill side can print — and work off — their own sheet.
   const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', [])
@@ -837,7 +841,9 @@ export function Prep() {
                   </span>
                   <span className="text-[11px] font-semibold">{fmtLong(t)}</span>
                 </div>
-                <div className="text-[8.5px] text-black/60">par − on hand = prep · Mugshots Flowood</div>
+                <div className="text-[8.5px] text-black/60">
+                  par − on hand = prep · {concept} {location}
+                </div>
               </div>
               {/* Single full-width column — CSS multi-column prints unreliably
                   (iOS/Safari balances into one half-width column and spills into
