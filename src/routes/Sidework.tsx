@@ -91,18 +91,29 @@ export function Sidework() {
   const activePhase = phases.includes(phase) ? phase : phaseForShift(phases, shift)
   const sections = data[role]?.[activePhase] ?? []
 
-  // One-time: the bar's phases were Opening / Closing before the real laminated
-  // sheet went in, and are AM / PM now. A stored copy keyed by the old names
-  // would read as an empty list, so carry it across.
+  // The bar's phases have been renamed twice: Opening / Closing before the real
+  // laminated sheet went in, then AM / PM, and now AM Opening / PM Closing to
+  // read the same way the servers' sheet does. A device holding an edited copy
+  // under any older name would show an empty list, so every old name is carried
+  // forward. Both hops run in order, so a device that skipped the middle one
+  // still lands in the right place.
   useEffect(() => {
+    const RENAMES: [string, string][] = [
+      ['Opening', 'AM'],
+      ['Closing', 'PM'],
+      ['AM', 'AM Opening'],
+      ['PM', 'PM Closing'],
+    ]
     setData((d) => {
       const bar = d?.Bar as Record<string, Section[]> | undefined
-      if (!bar || (!bar.Opening && !bar.Closing)) return d
+      if (!bar || !RENAMES.some(([from]) => bar[from])) return d
       const next: Record<string, Section[]> = { ...bar }
-      if (bar.Opening && !bar.AM) next.AM = bar.Opening
-      if (bar.Closing && !bar.PM) next.PM = bar.Closing
-      delete next.Opening
-      delete next.Closing
+      for (const [from, to] of RENAMES) {
+        if (!next[from]) continue
+        // A newer name already carrying work wins — never overwrite it.
+        if (!next[to]) next[to] = next[from]
+        delete next[from]
+      }
       return { ...d, Bar: next } as Data
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps

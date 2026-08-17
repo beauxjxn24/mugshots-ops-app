@@ -206,7 +206,7 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
     ],
   },
   Bar: {
-    AM: [
+    'AM Opening': [
       {
         section: 'AM Bartenders',
         tasks: [
@@ -224,7 +224,7 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
         ],
       },
     ],
-    PM: [
+    'PM Closing': [
       {
         section: 'PM Bartenders',
         tasks: [
