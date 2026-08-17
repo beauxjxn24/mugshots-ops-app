@@ -5,6 +5,7 @@ import { prepDoneKey, prepWho, setPrepWho, type PrepCheck } from '../lib/prepdon
 import { shiftPerson } from '../lib/daycode'
 import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from './SpecPeek'
+import { unitFor } from '../routes/Prep'
 
 export interface ChecklistItem {
   name: string
@@ -116,7 +117,7 @@ export function PrepChecklist({ items }: { items: ChecklistItem[] }) {
 
               {!rec && it.need > 0 && (
                 <span className="shrink-0 rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
-                  {Number.isInteger(it.need) ? it.need : it.need.toFixed(1)} {it.unit}
+                  {Number.isInteger(it.need) ? it.need : it.need.toFixed(1)} {unitFor(it.need, it.unit)}
                 </span>
               )}
             </div>

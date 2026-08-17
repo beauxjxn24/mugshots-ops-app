@@ -2,7 +2,7 @@
   {
     "name": "Veggies",
     "spec": "6 oz portions",
-    "unit": "ptns",
+    "unit": "portions",
     "pars": [
       10.0,
       10.0,
@@ -71,7 +71,7 @@
   },
   {
     "name": "Sliced Toms",
-    "spec": "Clear 1/3 pan w/ drip",
+    "spec": "Clear 1/3 pan with drip tray",
     "unit": "pans",
     "pars": [
       2.0,
@@ -127,7 +127,7 @@
   },
   {
     "name": "Shredded Lettuce",
-    "spec": "Clear 1/3 pan w/ drip",
+    "spec": "Clear 1/3 pan with drip tray",
     "unit": "pans",
     "pars": [
       4.0,
@@ -155,7 +155,7 @@
   },
   {
     "name": "Romaine",
-    "spec": "Clear 1/3 pan w/ drip",
+    "spec": "Clear 1/3 pan with drip tray",
     "unit": "pans",
     "pars": [
       2.0,
@@ -282,7 +282,7 @@
   {
     "name": "Turkey",
     "spec": "8 slices per portion",
-    "unit": "ptns",
+    "unit": "portions",
     "pars": [
       3.0,
       3.0,
@@ -337,8 +337,8 @@
   },
   {
     "name": "Caitlyn Ckn Breasts",
-    "spec": "Marinated in blk spice",
-    "unit": "ea",
+    "spec": "Marinated in blackening spice",
+    "unit": "each",
     "pars": [
       6.0,
       6.0,
@@ -380,7 +380,7 @@
   {
     "name": "Sriracha Ranch",
     "spec": "Blue squeeze bottle",
-    "unit": "btl",
+    "unit": "bottles",
     "pars": [
       1.0,
       1.0,
@@ -450,7 +450,7 @@
   {
     "name": "Philly",
     "spec": "Portioned (case)",
-    "unit": "cs",
+    "unit": "cases",
     "pars": [
       2.0,
       2.0,
@@ -464,7 +464,7 @@
   {
     "name": "Hicks",
     "spec": "Portioned (case)",
-    "unit": "cs",
+    "unit": "cases",
     "pars": [
       1.0,
       1.0,
@@ -477,8 +477,8 @@
   },
   {
     "name": "Pow Pow Shrimp",
-    "spec": "6 oz portions (Pow Pow) · 10 ea (pasta)",
-    "unit": "cs",
+    "spec": "6 oz portions (Pow Pow) · 10 each (pasta)",
+    "unit": "cases",
     "pars": [
       1.0,
       1.0,
@@ -492,7 +492,7 @@
   {
     "name": "Pasta",
     "spec": "7 oz portions (case)",
-    "unit": "cs",
+    "unit": "cases",
     "pars": [
       1.0,
       1.0,
@@ -506,7 +506,7 @@
   {
     "name": "Tots",
     "spec": "6 oz portions (case)",
-    "unit": "cs",
+    "unit": "cases",
     "pars": [
       1.0,
       1.0,
@@ -520,7 +520,7 @@
   {
     "name": "Sweet Fries",
     "spec": "6 oz portions (case)",
-    "unit": "cs",
+    "unit": "cases",
     "pars": [
       1.0,
       1.0,
@@ -548,7 +548,7 @@
   {
     "name": "Bacon",
     "spec": "Case",
-    "unit": "cs",
+    "unit": "cases",
     "pars": [
       1.0,
       1.0,
@@ -618,7 +618,7 @@
   {
     "name": "Queso Meat",
     "spec": "Patty",
-    "unit": "ea",
+    "unit": "each",
     "pars": [
       3.0,
       3.0,
@@ -660,7 +660,7 @@
   {
     "name": "Boneless Wangs",
     "spec": "3 oz portions · LTO",
-    "unit": "ptns",
+    "unit": "portions",
     "pars": [
       10.0,
       10.0,

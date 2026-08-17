@@ -13,6 +13,8 @@ import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } fro
 import { ACTIVE_SPECS } from '../lib/specs'
 import { DashDrop } from '../components/DashDrop'
 import { dishPhoto } from '../lib/photos'
+import { isDrink } from '../lib/categories'
+import type { Spec } from '../lib/types'
 import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
 import { ordersDueOn, deliveriesOn } from '../lib/orderDays'
 
@@ -573,12 +575,30 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
  * first, then the burgers actually selling best from your product mix. Each
  * card says which it is, so "Top seller" is never mistaken for a promo.
  */
+/**
+ * Where a Food Focus card actually opens.
+ *
+ * Every card linked to /lto, including the best-selling burgers the tile
+ * deliberately rotates in alongside the promo — and a burger has never been on
+ * the LTO screen, so half the tile's links landed on a page that couldn't find
+ * the item and quietly opened nothing.
+ */
+function cardLink(s: Spec): string {
+  const n = encodeURIComponent(s.name)
+  if (isDrink(s)) return `/drinks?spec=${n}`
+  if (s.lto || s.g === 'Summer LTO' || /\bLTO\b/i.test(s.shelf)) return `/lto?item=${n}`
+  return `/specs?open=${n}`
+}
+
 function LtoFocus() {
   const [idx, setIdx] = useState(0)
   const [paused, setPaused] = useState(false)
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
-  const allLtos = ACTIVE_SPECS.filter((s) => s.g === 'Summer LTO' || /LTO/i.test(s.shelf) || /LTO/i.test(s.yields))
+  // Matched to what the LTO screen actually holds. Not the yield line — the
+  // milkshakes carry "$3.99 LTO pricing" there, so they were being pushed as
+  // the shift's LTO and linking to a screen they aren't on.
+  const allLtos = ACTIVE_SPECS.filter((s) => s.lto || s.g === 'Summer LTO' || /\bLTO\b/i.test(s.shelf))
   // The LTOs lead — they're what the shift is being pushed on — followed by the
   // burgers actually selling best, so the tile rotates through what's new AND
   // what's carrying the menu instead of only the promo.
@@ -668,7 +688,7 @@ function LtoFocus() {
             ) : (
               <span className="text-xs text-white/50">sales fill in from your PMIX drops</span>
             )}
-            <Link to={`/lto?item=${encodeURIComponent(s.name)}`} className="ml-auto text-sm font-semibold text-[#e0b23c]">
+            <Link to={cardLink(s)} className="ml-auto text-sm font-semibold text-[#e0b23c]">
               View build →
             </Link>
           </div>

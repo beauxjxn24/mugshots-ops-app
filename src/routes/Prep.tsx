@@ -65,6 +65,17 @@ function PrepField({ label, hint, children }: { label: string; hint?: string; ch
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
 /**
+ * The unit, agreeing with the number in front of it.
+ *
+ * Units are written out in full on the sheet now — cases, portions, bottles —
+ * rather than cs, ptns, btl. Spelled out, they have to agree: "1 cases" reads
+ * worse than the abbreviation it replaced. Exactly one drops the plural;
+ * anything else, a half pan included, keeps it.
+ */
+export const unitFor = (n: number, unit: string): string =>
+  n === 1 && unit.endsWith('s') ? unit.slice(0, -1) : unit
+
+/**
  * Prep taken off the menu, which has to come off every device's stored sheet.
  *
  * Dropping it from the shipped list isn't enough: the sheet is seeded once per
@@ -186,7 +197,7 @@ export function Prep() {
    * pencil owns it, and this never runs again.
    */
   useEffect(() => {
-    if (specsVer >= 2) return
+    if (specsVer >= 3) return
     const seed = new Map((PREP_SEED as PrepItem[]).map((s) => [s.name, s]))
     setItems((is) =>
       is
@@ -201,7 +212,7 @@ export function Prep() {
           return { ...x, spec: s.spec, unit: s.unit }
         }),
     )
-    setSpecsVer(2)
+    setSpecsVer(3)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -577,7 +588,7 @@ export function Prep() {
         <span className="text-right">
           {n > 0 ? (
             <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
-              {fmtQty(n)} {it.unit}
+              {fmtQty(n)} {unitFor(n, it.unit)}
             </span>
           ) : counted ? (
             <span className="rounded-full bg-up/10 px-2.5 py-1 text-xs font-extrabold text-up">✓ at par</span>
@@ -820,7 +831,9 @@ export function Prep() {
                           <span className="block text-[9px] leading-[11px] text-black/60">{it.spec || it.unit}</span>
                         </span>
                         <span className="w-16 shrink-0 text-right font-mono text-[12px] font-bold">
-                          {onHand[it.name] != null && need(it) > 0 ? `${fmtQty(need(it))} ${it.unit}` : `${fmtQty(it.pars[di] ?? 0)} ${it.unit}`}
+                          {onHand[it.name] != null && need(it) > 0
+                            ? `${fmtQty(need(it))} ${unitFor(need(it), it.unit)}`
+                            : `${fmtQty(it.pars[di] ?? 0)} ${unitFor(it.pars[di] ?? 0, it.unit)}`}
                         </span>
                         <span className="h-[16px] w-10 shrink-0 rounded-[3px] border border-black/50" />
                       </div>
