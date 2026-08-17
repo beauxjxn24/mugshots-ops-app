@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Printer } from 'lucide-react'
+import { Printer, Archive } from 'lucide-react'
+import { useRole } from '../lib/role'
+import { confirmDelete } from '../lib/confirm'
+import { toast } from '../lib/toast'
 import { PageHeader } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { ACTIVE_SPECS, GROUP_ORDER } from '../lib/specs'
 import { dishPhoto } from '../lib/photos'
+import { useArchived } from '../lib/archived'
 
 /**
  * Line builds — the kitchen line's board view (handoff spec): every build
@@ -18,15 +22,30 @@ export function LineBuilds() {
   const [group, setGroup] = useState('All')
   const [q, setQ] = useState('')
 
+  // Archived on Specs & Recipes means archived here. This board and that page
+  // are two views of the SAME cards, and until they shared this set a recipe
+  // pulled from the menu carried on printing onto the line's board.
+  const { setArchived, archivedSet } = useArchived()
+  const { role } = useRole()
+  const canEdit = role !== 'staff'
+
+  const park = async (name: string) => {
+    if (!(await confirmDelete(`Park ${name}?`, 'It comes off the line board and the menu, and stays on Specs & Recipes under Oldies.', 'Park')))
+      return
+    setArchived((a) => (a.includes(name) ? a : [...a, name]))
+    toast(`${name} parked`, 'success')
+  }
+
   const cards = useMemo(() => {
     const query = q.trim().toLowerCase()
     return ACTIVE_SPECS.filter(
       (s) =>
         s.g.endsWith('Builds') &&
+        !archivedSet.has(s.name) &&
         (group === 'All' || s.g === group) &&
         (!query || s.name.toLowerCase().includes(query) || s.ing.some(([n]) => n.toLowerCase().includes(query))),
     )
-  }, [group, q])
+  }, [group, q, archivedSet])
 
   return (
     <>
@@ -109,6 +128,20 @@ export function LineBuilds() {
                     </li>
                   ))}
                 </ol>
+                {/* Park it from the board. It was archive-on-Specs-only, so
+                    pulling an item meant leaving this screen to do it. Same
+                    list either way — it comes back under Oldies on Specs. */}
+                {canEdit && (
+                  <div className="flex justify-end border-t border-black/5 px-3.5 py-2 print:hidden">
+                    <button
+                      onClick={() => park(s.name)}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-bold text-muted transition-colors hover:bg-black/5 hover:text-ink"
+                    >
+                      <Archive size={12} />
+                      Park
+                    </button>
+                  </div>
+                )}
               </article>
             )
           })}

@@ -5,11 +5,12 @@ import { useShift, shiftLabel } from '../lib/shift'
 import { usePersistentState, today } from '../lib/store'
 import { prepSendKey, type PrepSend } from '../lib/prepsend'
 import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
-import { Sparkles, ListChecks, ChefHat, Banknote, BookOpen, ChevronRight, Check } from 'lucide-react'
+import { Sparkles, ChefHat, Banknote, BookOpen, ChevronRight, Check } from 'lucide-react'
 
+// No Checklists tile: open/close/weekly is the manager's walk of the building.
+// An hourly's opening and closing duties are their sidework, the tile above.
 const TILES = [
   { to: '/sidework', label: 'Sidework', desc: 'Your opening & closing duties', icon: Sparkles, color: '#2DD4BF' },
-  { to: '/checklists', label: 'Checklists', desc: 'Open / close / weekly', icon: ListChecks, color: '#34D399' },
   { to: '/prep', label: 'Prep List', desc: 'What to prep today', icon: ChefHat, color: '#FB7185' },
   { to: '/tipshare', label: 'Tipshare', desc: 'Tonight’s tip split', icon: Banknote, color: '#4ADE80' },
   { to: '/specs', label: 'Recipes', desc: 'Builds & prep cards', icon: BookOpen, color: '#E4B84C' },

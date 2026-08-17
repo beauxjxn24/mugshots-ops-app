@@ -85,7 +85,11 @@ export const NAV: NavSection[] = [
     items: [
       { to: '/catering', label: 'Catering', icon: PartyPopper, color: '#E0559B', anim: PopperIcon },
       { to: '/nightly', label: 'Nightly Numbers', icon: Moon, color: '#818CF8', anim: MoonZIcon },
-      { to: '/checklists', label: 'Checklists', icon: ListChecks, color: '#34D399', anim: CheckBoxIcon, staff: true },
+      // Managers only. The open/close/weekly checklists are a manager's walk of
+      // the building; an hourly's version of the same duties is their sidework,
+      // which they already have. Two lists of duties under My Tasks just left
+      // them guessing which one was theirs.
+      { to: '/checklists', label: 'Checklists', icon: ListChecks, color: '#34D399', anim: CheckBoxIcon },
       { to: '/sidework', label: 'Sidework', icon: Sparkles, color: '#2DD4BF', anim: SparkleIcon, staff: true },
       { to: '/tipshare', label: 'Tipshare', icon: Banknote, color: '#4ADE80', anim: CoinIcon },
       // Staff see this too — prep IS the shift for a cook, and it was the one
@@ -178,7 +182,11 @@ export const STAFF_SECTIONS: NavSection[] = [
  *  invoice → inventory → ordering flow; hourly staff get My Shift + tasks. */
 export const bottomItems = (role: 'admin' | 'manager' | 'staff'): NavItem[] =>
   role === 'staff'
-    ? [SHIFT_ITEM, ...STAFF_ITEMS].slice(0, 5)
+    ? // Line Builds is left off the phone bar on purpose: it's the same cards
+      // as Specs & Recipes in a board layout, and the bar truncates labels to
+      // one word, so it read as "Specs" next to "Line" — two tabs, one set of
+      // recipes. It's still in My Tasks in the menu.
+      [SHIFT_ITEM, ...STAFF_ITEMS.filter((i) => i.to !== '/builds')].slice(0, 5)
     : [
         NAV_FLAT[0],
         NAV_FLAT.find((i) => i.to === '/imports')!,

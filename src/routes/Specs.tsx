@@ -11,7 +11,7 @@ import { LineBuildCard } from '../components/LineBuildCard'
 import { UsedIn } from '../components/UsedIn'
 import { dishPhoto } from '../lib/photos'
 import { isFood } from '../lib/categories'
-import { usePersistentState } from '../lib/store'
+import { useArchived } from '../lib/archived'
 import type { Spec } from '../lib/types'
 
 const OLDIES = 'Oldies'
@@ -49,16 +49,10 @@ export function Specs() {
   const [q, setQ] = useState('')
   const [group, setGroup] = useState<string>('All')
   const [openName, setOpenName] = useState<string | null>(null)
-  // Archived recipes (soft-deleted) live here by name, persisted to the device.
-  const [archived, setArchived] = usePersistentState<string[]>('recipes:archived', [])
-
-  // An item pulled in a rollout is archived for everyone, on every device --
-  // that is the whole point of marking it in the data rather than tapping
-  // Archive on each tablet. A card archived by hand still is too.
-  const archivedSet = useMemo(
-    () => new Set([...archived, ...FOOD_SPECS.filter((s) => s.off).map((s) => s.name)]),
-    [archived],
-  )
+  // Archived recipes (soft-deleted). Shared with Line Builds now — that screen
+  // renders these same specs, so a card pulled here has to leave the line's
+  // board too, not just this list.
+  const { archived, setArchived, archivedSet } = useArchived()
   const viewingOldies = group === OLDIES
   const viewingOG = group === OG
 
