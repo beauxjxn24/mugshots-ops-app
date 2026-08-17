@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Printer, Check, GripVertical, Plus } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
+import { entryColumn, entryField } from '../lib/nextfield'
 import { suggested, setParEntry, getReceiptLog, getParEdits, vendors } from '../lib/ordering'
 import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog } from '../lib/catalog'
 import {
@@ -275,6 +276,8 @@ export function Ordering() {
             {allRows.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-muted">Nothing on this guide yet — drop an invoice on Imports, or add items on a computer.</p>
             )}
+            <div {...entryColumn}>
+            {/* Enter in a count box drops to the same box on the next line. */}
             {sections.map((sec, si) => (
               <div key={sec.title + si}>
                 <div className="border-b border-brand/20 bg-brand/[0.07] px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-brand-600">
@@ -304,6 +307,7 @@ export function Ordering() {
                             setParEntry(r.id, { onHand: Math.max(0, parseFloat(e.target.value) || 0) })
                             refresh()
                           }}
+                          {...entryField('onhand')}
                           className="mt-0.5 w-16 rounded-lg border border-black/15 bg-white px-1 py-2 text-center font-mono text-base text-ink outline-none focus:border-brand"
                         />
                       </label>
@@ -315,6 +319,7 @@ export function Ordering() {
                 })}
               </div>
             ))}
+            </div>
             <p className="px-4 py-2.5 text-[11px] text-muted">Order = par − on hand. Edit pars, prices &amp; layout on a computer.</p>
           </Card>
         ) : (
@@ -341,6 +346,8 @@ export function Ordering() {
               </p>
             )}
 
+            <div {...entryColumn}>
+            {/* Enter in a count box drops to the same box on the next line. */}
             {sections.map((sec, si) => (
               <div key={sec.title + si}>
                 {/* Section header — the paper sheet's VODKA / RUM / WHISKEY bands */}
@@ -450,8 +457,8 @@ export function Ordering() {
                         >
                           {r.cost != null ? money2(r.cost) : <span className="text-muted underline decoration-dotted underline-offset-2">add $</span>}
                         </button>
-                        <NumCell value={r.par} onChange={(v) => { setParEntry(r.id, { par: v }); refresh() }} />
-                        <NumCell value={r.onHand} onChange={(v) => { setParEntry(r.id, { onHand: v }); refresh() }} />
+                        <NumCell col="par" value={r.par} onChange={(v) => { setParEntry(r.id, { par: v }); refresh() }} />
+                        <NumCell col="onhand" value={r.onHand} onChange={(v) => { setParEntry(r.id, { onHand: v }); refresh() }} />
                         <div className={`text-right font-display text-base font-semibold ${need > 0 ? 'text-brand' : 'text-ink/25'}`}>
                           {need > 0 ? `${need} ${r.unit}` : '—'}
                         </div>
@@ -519,6 +526,7 @@ export function Ordering() {
                 })}
               </div>
             ))}
+            </div>
           </Card>
         )}
 
@@ -668,7 +676,9 @@ function Usage({ shelf, rows }: { shelf: GuideShelf; rows: Row[] }) {
   )
 }
 
-function NumCell({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+/** One number on a count row. `col` groups it with the same box on every other
+ *  row, so Enter walks down that column instead of sideways into the next one. */
+function NumCell({ value, onChange, col }: { value: number; onChange: (v: number) => void; col: string }) {
   return (
     <input
       type="number"
@@ -676,6 +686,7 @@ function NumCell({ value, onChange }: { value: number; onChange: (v: number) => 
       value={value || ''}
       placeholder="0"
       onChange={(e) => onChange(Math.max(0, parseFloat(e.target.value) || 0))}
+      {...entryField(col)}
       className="w-full rounded-lg border border-black/10 bg-white px-1 py-1 text-center font-mono text-sm outline-none focus:border-brand"
     />
   )

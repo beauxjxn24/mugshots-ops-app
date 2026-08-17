@@ -702,54 +702,8 @@ export function Prep() {
           </Card>
         </div>
 
-        {/* One box per section — Recipes / Test items / LTO */}
-        {SECTIONS.map((sec) => {
-          const rows = inSection(sec)
-          return (
-            <Card key={sec} className="overflow-x-auto">
-              <div
-                onDragOver={(e) => {
-                  if (!dragName) return
-                  e.preventDefault()
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  dropOn(null, sec)
-                  setDragName(null)
-                  setOverName(null)
-                }}
-                className="flex items-center justify-between border-b border-brand/20 bg-brand/[0.07] px-4 py-2"
-              >
-                <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600">
-                  {sec} <span className="ml-1 font-semibold text-muted">{rows.length}</span>
-                </span>
-                {sec !== 'Recipes' && (
-                  <span className="text-[10px] text-muted">{sec === 'LTO' ? 'limited-time builds' : 'trial recipes — park or promote'}</span>
-                )}
-              </div>
-              <div className="min-w-[880px]">
-                <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-                  <span />
-                  <span>Prep item</span>
-                  <span className="text-center">On hand</span>
-                  {DOWS.map((d, i) => (
-                    <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
-                      {d}
-                    </span>
-                  ))}
-                  <span className="text-right">Prep today</span>
-                </div>
-                {rows.length === 0 ? (
-                  <p className="px-4 py-4 text-center text-xs text-muted">{canEdit ? 'Nothing here — drag an item in, or add one below.' : 'Nothing on the prep list here today.'}</p>
-                ) : (
-                  rows.map(renderRow)
-                )}
-              </div>
-            </Card>
-          )
-        })}
-
-        {/* Add row */}
+        {/* Add row — above the sheet, so adding an item doesn't mean scrolling
+            past every section to reach the box and back again to see the result. */}
         {canEdit && (
         <Card className="flex flex-wrap gap-2 p-3">
           <input
@@ -802,6 +756,54 @@ export function Prep() {
           )}
         </Card>
         )}
+
+        {/* One box per section — Recipes / Test items / LTO */}
+        {SECTIONS.map((sec) => {
+          const rows = inSection(sec)
+          return (
+            <Card key={sec} className="overflow-x-auto">
+              <div
+                onDragOver={(e) => {
+                  if (!dragName) return
+                  e.preventDefault()
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  dropOn(null, sec)
+                  setDragName(null)
+                  setOverName(null)
+                }}
+                className="flex items-center justify-between border-b border-brand/20 bg-brand/[0.07] px-4 py-2"
+              >
+                <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600">
+                  {sec} <span className="ml-1 font-semibold text-muted">{rows.length}</span>
+                </span>
+                {sec !== 'Recipes' && (
+                  <span className="text-[10px] text-muted">{sec === 'LTO' ? 'limited-time builds' : 'trial recipes — park or promote'}</span>
+                )}
+              </div>
+              <div className="min-w-[880px]">
+                <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                  <span />
+                  <span>Prep item</span>
+                  <span className="text-center">On hand</span>
+                  {DOWS.map((d, i) => (
+                    <span key={i} className={`text-center ${i === di ? 'text-brand-600' : ''}`}>
+                      {d}
+                    </span>
+                  ))}
+                  <span className="text-right">Prep today</span>
+                </div>
+                {rows.length === 0 ? (
+                  <p className="px-4 py-4 text-center text-xs text-muted">{canEdit ? 'Nothing here — drag an item in, or add one below.' : 'Nothing on the prep list here today.'}</p>
+                ) : (
+                  rows.map(renderRow)
+                )}
+              </div>
+            </Card>
+          )
+        })}
+
 
         {/* Manage line stations — add / remove; renaming happens by removing and
             re-adding, and each item's station picker moves it. */}

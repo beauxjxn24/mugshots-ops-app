@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, X } from 'lucide-react'
 import { Card } from './ui'
+import { useRole } from '../lib/role'
+import { confirmDelete } from '../lib/confirm'
 import { SpecPeek } from './SpecPeek'
 import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
@@ -61,6 +63,44 @@ export function BarPrep() {
   const di = (new Date().getDay() + 6) % 7
   const dow = new Date().toLocaleDateString('en-US', { weekday: 'long' })
   const [peek, setPeek] = useState<string | null>(null)
+
+  // The bar sheet had no way to add anything — it was stuck with the five items
+  // it shipped with. Same box as the kitchen's, and above the list rather than
+  // under it.
+  const canEdit = useRole((s) => s.role) !== 'staff'
+  const [adding, setAdding] = useState({ name: '', storage: '', shelf: '', unit: 'batch' })
+  const [addMsg, setAddMsg] = useState('')
+
+  const addItem = () => {
+    const name = adding.name.trim()
+    if (!name) {
+      setAddMsg('Type an item name first.')
+      return
+    }
+    if (barItems.some((x) => norm(x.name) === norm(name))) {
+      setAddMsg(`${name} is already on the bar sheet.`)
+      return
+    }
+    setBarItems((is) => [
+      ...(Array.isArray(is) ? is : []),
+      {
+        name,
+        storage: adding.storage.trim(),
+        shelf: adding.shelf.trim(),
+        unit: adding.unit.trim() || 'batch',
+        pars: Array(7).fill(1) as number[],
+      },
+    ])
+    setAdding({ name: '', storage: '', shelf: '', unit: adding.unit })
+    setAddMsg(`${name} added — set its pars on the row.`)
+  }
+
+  const removeItem = async (name: string) => {
+    if (!(await confirmDelete(`Remove ${name} from bar prep?`, 'Its pars and today’s count go with it.')))
+      return
+    setBarItems((is) => is.filter((x) => x.name !== name))
+  }
+
   const [dragName, setDragName] = useState<string | null>(null)
   const [overName, setOverName] = useState<string | null>(null)
   const dropOn = (targetName: string | null) => {
@@ -85,6 +125,49 @@ export function BarPrep() {
           a par for every day · drag ⠿ to reorder · tap an item for its card
         </span>
       </div>
+      {canEdit && (
+        <div className="flex flex-wrap gap-2 border-b border-black/5 px-4 pb-3">
+          <input
+            value={adding.name}
+            onChange={(e) => {
+              setAdding({ ...adding, name: e.target.value })
+              if (addMsg) setAddMsg('')
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && addItem()}
+            placeholder="Add bar prep item…"
+            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <input
+            value={adding.storage}
+            onChange={(e) => setAdding({ ...adding, storage: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && addItem()}
+            placeholder="Batch / storage (squeeze bottles…)"
+            className="w-56 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <input
+            value={adding.shelf}
+            onChange={(e) => setAdding({ ...adding, shelf: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && addItem()}
+            placeholder="Shelf life"
+            className="w-32 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <input
+            value={adding.unit}
+            onChange={(e) => setAdding({ ...adding, unit: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && addItem()}
+            placeholder="unit"
+            className="w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+          <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
+            Add
+          </button>
+          {addMsg && (
+            <p className={`basis-full text-xs font-semibold ${/already/i.test(addMsg) ? 'text-warn' : 'text-up'}`}>
+              {addMsg}
+            </p>
+          )}
+        </div>
+      )}
       <div className="min-w-[880px]">
         <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1.5 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
           <span />
@@ -151,8 +234,20 @@ export function BarPrep() {
                 ) : (
                   <div className="truncate text-sm font-bold text-ink">{it.name}</div>
                 )}
-                <div className="truncate text-[10px] text-muted">
-                  {it.storage} · {it.shelf}
+                <div className="flex items-center gap-1 text-[10px] text-muted">
+                  <span className="truncate">
+                    {it.storage} · {it.shelf}
+                  </span>
+                  {canEdit && (
+                    <button
+                      onClick={() => removeItem(it.name)}
+                      aria-label={`Remove ${it.name}`}
+                      title="Remove from bar prep"
+                      className="shrink-0 text-muted/40 hover:text-down"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
                 </div>
               </div>
               <input

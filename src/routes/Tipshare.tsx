@@ -1,10 +1,11 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useMemo, useState } from 'react'
 import { Lock, Undo2, ChevronDown, HandCoins } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { requirePin, usePin } from '../lib/pin'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useShift } from '../lib/shift'
+import { entryColumn, entryField } from '../lib/nextfield'
 import type { Person } from '../lib/staff'
 
 interface Entry {
@@ -58,29 +59,6 @@ const whole = (n: number) => `$${payout(n)}`
 const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 let seq = 0
 
-/**
- * Enter drops to the next person's box instead of doing nothing.
- *
- * Hours and tip-outs are typed in one pass down the list at cash-out. Having
- * to reach for each next box — on a phone, one thumb, at midnight — is what
- * makes that pass slow. Enter lands on the next name down with the value
- * selected, so it can be typed straight over. On the last row it lets go of
- * the keyboard, which is the end of the pass.
- */
-function enterMovesDown(ev: KeyboardEvent<HTMLInputElement>) {
-  if (ev.key !== 'Enter') return
-  ev.preventDefault()
-  const column = ev.currentTarget.closest('[data-tipcol]')
-  if (!column) return
-  const boxes = Array.from(column.querySelectorAll<HTMLInputElement>('input[data-tiprow]'))
-  const next = boxes[boxes.indexOf(ev.currentTarget) + 1]
-  if (next) {
-    next.focus()
-    next.select()
-  } else {
-    ev.currentTarget.blur()
-  }
-}
 
 // Command Deck: dark glass cards (matches the app), role-colored dots + Add buttons.
 const SLATE = 'border border-white/10 !bg-white/[0.045] text-ink backdrop-blur-xl'
@@ -453,7 +431,7 @@ function RoleCard({
         <span className="text-right">Hrs</span>
         <span className="text-right">$</span>
       </div>
-      <div data-tipcol>
+      <div {...entryColumn}>
       {entries.length === 0 ? (
         <p className="py-2 text-xs text-white/50">{hint}</p>
       ) : (
@@ -469,14 +447,13 @@ function RoleCard({
               type="number"
               inputMode="decimal"
               step="0.25"
-              data-tiprow
               value={e.hours || ''}
               placeholder="—"
               onChange={(ev) => {
                 const v = parseFloat(ev.target.value)
                 onHours(e, Number.isFinite(v) && v > 0 ? v : 0)
               }}
-              onKeyDown={enterMovesDown}
+              {...entryField('hours')}
               aria-label={`Hours for ${e.name}`}
               title="Hours worked — Enter jumps to the next name down"
               className={`w-full rounded-md border px-1 py-0.5 text-right font-mono text-xs outline-none ${
@@ -581,7 +558,7 @@ function ServersCard({
         <span>Server</span>
         <span className="text-right">Tip-out $</span>
       </div>
-      <div data-tipcol>
+      <div {...entryColumn}>
       {servers.length === 0 ? (
         <p className="py-2 text-xs text-white/50">Add each server and the amount they tip out.</p>
       ) : (
@@ -592,14 +569,13 @@ function ServersCard({
               type="number"
               inputMode="decimal"
               step="0.01"
-              data-tiprow
               value={s.amount || ''}
               placeholder="—"
               onChange={(ev) => {
                 const v = parseFloat(ev.target.value)
                 onAmount(s, Number.isFinite(v) && v > 0 ? v : 0)
               }}
-              onKeyDown={enterMovesDown}
+              {...entryField('tipout')}
               aria-label={`Tip-out for ${s.name}`}
               title="Tip-out — Enter jumps to the next server down"
               className={`w-full rounded-md border px-1 py-0.5 text-right font-mono text-xs font-bold outline-none ${
