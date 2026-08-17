@@ -281,6 +281,32 @@ export function Sidework() {
     if (!d) return
     setSections((secs) => secs.map((s, i) => (i === si ? { ...s, tasks: [...d.tasks] } : s)))
   }
+
+  /**
+   * Put the whole sheet back to the one the app ships.
+   *
+   * The duty sheet is stored per device and only seeded the first time a device
+   * opens it, so a sheet corrected in the app — the bar's real laminated list
+   * replacing the placeholder it shipped with — never reaches a tablet that
+   * already had its own copy. Per-tile reset can't fix that: it restores a tile
+   * at a position, and a stale sheet has different tiles in different places.
+   *
+   * Not automatic, because these lists are meant to be edited — overwriting
+   * without asking would throw away real changes. This asks.
+   */
+  const stockSheet = SIDEWORK[role]?.[activePhase]
+  const resetSheet = async () => {
+    if (!stockSheet) return
+    if (
+      !(await confirmDelete(
+        `Put the ${role} ${activePhase} sheet back to the app's version?`,
+        'Replaces every tile and duty on this sheet. Tonight\'s cuts and check-offs are untouched.',
+        'Replace',
+      ))
+    )
+      return
+    setSections(() => stockSheet.map((s) => ({ ...s, tasks: [...s.tasks] })))
+  }
   // ---- closer sign-off ----------------------------------------------------
   // Signed per role + phase, per day: the closer verifies the Servers' close
   // separately from the Bartenders', and tomorrow starts unsigned.
@@ -544,6 +570,20 @@ export function Sidework() {
               everything the cuts are dealt from — edit it here
             </span>
           </summary>
+          {isCloser && stockSheet && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-black/10 bg-black/[0.02] px-3 py-2">
+              <span className="text-[11px] text-muted">
+                This sheet is stored on this device. If it doesn't match the app's current one —
+                the bar's list changed, and an older tablet keeps what it first saved —
+              </span>
+              <button
+                onClick={resetSheet}
+                className="ml-auto shrink-0 rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[11px] font-bold text-muted hover:border-brand/40 hover:text-brand-600"
+              >
+                Put back the app's sheet
+              </button>
+            </div>
+          )}
           <div className="mt-3 space-y-3">
         {sections.map((sec, si) => {
           const secKeys = sec.tasks.map((t) => key(sec.section, t))

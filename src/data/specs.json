@@ -1861,9 +1861,9 @@
   {
     "name": "Anthony's Peanut Butter Burger",
     "g": "Burger Builds",
-    "storage": "Basket w/ liner",
+    "storage": "Basket w/ Liner",
     "shelf": "Bun",
-    "yields": "peanut butter",
+    "yields": "1 burger",
     "ing": [
       [
         "Peanut Butter",
@@ -1872,10 +1872,16 @@
       [
         "Beef Patty",
         "1"
+      ],
+      [
+        "Bacon",
+        "2 slices"
       ]
     ],
     "steps": [
-      "Peanut butter on the bottom bun; patty on top."
+      "1 Tbsp peanut butter on the bottom bun.",
+      "Beef patty on top.",
+      "2 slices of bacon on the patty."
     ]
   },
   {
