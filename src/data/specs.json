@@ -3100,32 +3100,32 @@
   {
     "name": "Chuck's Clucks",
     "g": "Appetizer Builds",
-    "storage": "Basket w/ liner",
-    "shelf": "Boneless wangs",
-    "yields": "",
+    "storage": "Lined small bowl",
+    "shelf": "Chicken chunks",
+    "yields": "6 oz · 3 oz on Mombo / Happy Hour",
     "ing": [
       [
-        "Boneless Wangs",
-        "hand-breaded, fried"
+        "Chicken Chunks",
+        "6 oz, double-battered and fried (3 oz on Mombo or Happy Hour)"
       ],
       [
         "Wang Sauce",
-        "choice of: mild, hot, BBQ, teriyaki, lemon pepper, sweet chili, Nashville hot, lemon blackout, honey hot, Carolina gold BBQ, garlic parmesan"
+        "tossed — choice of: mild, hot, Nashville hot, honey hot, BBQ, teriyaki, sweet chili, Carolina gold, garlic parmesan, lemon pepper, lemon blackout"
       ],
       [
-        "House-Made Ranch",
-        "served with"
+        "Ranch",
+        "2 oz, on the side"
       ],
       [
         "Celery",
-        "served with"
+        "2 pieces, on the side"
       ]
     ],
     "steps": [
-      "Hand-breaded boneless chicken wangs, fried.",
-      "Tossed in the guest’s choice of wang sauce.",
-      "Served with house-made ranch and celery.",
-      "Built from the printed menu — no build sheet yet, confirm portions with your manager."
+      "Double-batter 6 oz chicken chunks and fry. On a Mombo or Happy Hour order the portion is 3 oz.",
+      "Toss in the guest’s choice of sauce: mild, hot, Nashville hot, honey hot, BBQ, teriyaki, sweet chili, Carolina gold, garlic parmesan, lemon pepper, lemon blackout.",
+      "Plate in a lined small bowl.",
+      "Serve with 2 oz ranch and 2 celery pieces on the side."
     ]
   },
   {
@@ -3489,66 +3489,67 @@
   {
     "name": "Caesar Salad",
     "g": "Salad & Bowl Builds",
-    "storage": "Large Salad Bowl",
+    "storage": "Large salad bowl",
     "shelf": "Romaine",
-    "yields": "",
+    "yields": "5 oz romaine",
     "ing": [
       [
-        "Romaine Lettuce",
-        "tossed"
+        "Chopped Romaine",
+        "5 oz"
       ],
       [
         "Caesar Dressing",
-        "tossed"
+        "4 oz, tossed"
       ],
       [
         "Croutons",
-        ""
+        "1/2 cup, tossed"
+      ],
+      [
+        "Blackened Shrimp",
+        "10 — or 5 oz blackened chicken tender portion, heated"
       ],
       [
         "Parmesan Cheese",
-        "on top"
-      ],
-      [
-        "Protein",
-        "must choose: blackened chicken 13.49 or blackened Gulf shrimp 16.49"
+        "1 oz, garnish"
       ]
     ],
     "steps": [
-      "Romaine tossed with croutons and caesar dressing.",
-      "Topped with parmesan cheese.",
-      "A protein must be chosen — blackened chicken or blackened Gulf shrimp.",
-      "Built from the printed menu — no build sheet yet, confirm portions with your manager."
+      "Toss 5 oz chopped romaine with 4 oz caesar dressing and 1/2 cup croutons.",
+      "Plate in a large salad bowl.",
+      "Top with the chosen protein: 10 blackened shrimp, or a 5 oz blackened chicken tender portion, heated.",
+      "Garnish with 1 oz parmesan cheese."
     ]
   },
   {
     "name": "Side Caesar Salad",
     "g": "Salad & Bowl Builds",
-    "storage": "Side Bowl",
+    "storage": "Small salad bowl",
     "shelf": "Romaine",
-    "yields": "",
+    "yields": "3 oz romaine",
     "ing": [
       [
         "Chopped Romaine",
-        ""
+        "3 oz"
       ],
       [
         "Caesar Dressing",
-        "tossed"
+        "2 oz, tossed"
       ],
       [
         "Croutons",
-        ""
+        "1/4 cup, tossed"
       ],
       [
         "Parmesan Cheese",
-        "on top"
+        "1 oz, garnish"
       ]
     ],
     "steps": [
-      "Chopped romaine tossed with caesar dressing.",
-      "Croutons and parmesan on top.",
-      "Built from the menu — no build sheet yet, confirm portions with your manager."
+      "Toss 3 oz chopped romaine with 2 oz caesar dressing and 1/4 cup croutons.",
+      "Plate in a small salad bowl.",
+      "Garnish with 1 oz parmesan cheese.",
+      "No protein on the side salad."
     ]
   },
   {
