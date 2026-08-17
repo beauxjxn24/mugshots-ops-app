@@ -141,7 +141,7 @@ export function Tipshare() {
 
   // Manager-approved pickup — works on the live shift and on logged ones.
   const pickup = async (shiftId: string | null, entryId: string) => {
-    if (!(await requirePin('Approve a tip pickup'))) return
+    if (!(await requirePin('Approve a tip pickup', 'tips'))) return
     const by = usePin.getState().unlockedBy || 'Manager'
     const stamp = { by, at: now() }
     if (shiftId === null) {
@@ -158,7 +158,7 @@ export function Tipshare() {
   // Manager sign-off closes the meal into the log; lunch sign-off opens dinner.
   const logShift = async () => {
     if (cur.entries.length === 0 && cur.servers.length === 0) return
-    if (!(await requirePin(`Log ${meal === 'AM' ? 'lunch' : 'dinner'} tip-out`))) return
+    if (!(await requirePin(`Log ${meal === 'AM' ? 'lunch' : 'dinner'} tip-out`, 'tips'))) return
     const by = usePin.getState().unlockedBy || 'Manager'
     let trail: string[] = []
     try {
@@ -176,7 +176,7 @@ export function Tipshare() {
 
   // Corrections require a manager; the audit trail survives re-logging.
   const reopen = async (shift: Shift) => {
-    if (!(await requirePin('Reopen a logged shift (correction)'))) return
+    if (!(await requirePin('Reopen a logged shift (correction)', 'tips'))) return
     const by = usePin.getState().unlockedBy || 'Manager'
     if (cur.entries.length > 0 || cur.servers.length > 0) {
       alert('Finish or log the current shift before reopening an old one.')

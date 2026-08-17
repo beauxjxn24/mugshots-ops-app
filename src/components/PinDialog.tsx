@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Lock } from 'lucide-react'
 import { usePin } from '../lib/pin'
+import { PERMS } from '../lib/users'
 
 /** Rendered once at the app root; opens whenever requirePin(...) is awaited. */
 export function PinDialog() {
-  const { open, action, submit, cancel } = usePin()
+  const { open, action, perm, submit, cancel } = usePin()
   const [pin, setPin] = useState('')
   const [shake, setShake] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -57,7 +58,14 @@ export function PinDialog() {
           className="mx-auto mt-4 block w-32 rounded-xl border-2 border-black/10 bg-white py-2.5 text-center font-mono text-2xl tracking-[0.4em] outline-none focus:border-brand"
           aria-label="4-digit PIN"
         />
-        <p className="mt-2 text-[11px] text-muted">GM, Area Director, or Admin PIN · unlocks for 20 min</p>
+        {/* Naming the right, not the rank — since an AGM can now be handed one
+            grant on its own, "GM or above" would be a lie on that PIN. */}
+        <p className="mt-2 text-[11px] text-muted">
+          {perm === 'unlock'
+            ? 'A PIN with Unlock all'
+            : `A PIN with ${PERMS.find((p) => p.key === perm)?.label ?? perm} rights`}{' '}
+          · unlocks for 20 min
+        </p>
         <button onClick={cancel} className="mt-3 text-sm font-semibold text-muted hover:text-ink">
           Cancel
         </button>

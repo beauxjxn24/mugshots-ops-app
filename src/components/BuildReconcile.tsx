@@ -28,7 +28,7 @@ export function BuildReconcile() {
   if (pending.length === 0) return null
 
   const answer = async (sheetName: string, spec: string) => {
-    if (!(await requirePin('Match a line build'))) return
+    if (!(await requirePin('Match a line build', 'catalog'))) return
     decide(sheetName, spec, currentEditor())
     toast(spec ? `✓ ${sheetName} → ${spec}` : `✓ ${sheetName} kept as its own card`, 'success')
     setTick((t) => t + 1)

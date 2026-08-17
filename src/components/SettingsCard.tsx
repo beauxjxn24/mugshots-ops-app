@@ -54,7 +54,7 @@ export function SettingsCard<T>({
   const dirty = useMemo(() => JSON.stringify(draft) !== savedJson, [draft, savedJson])
 
   const edit = async () => {
-    if (!(await requirePin(`Edit ${area.toLowerCase()}`))) return
+    if (!(await requirePin(`Edit ${area.toLowerCase()}`, 'catalog'))) return
     setDraft(JSON.parse(savedJson))
     setJustSaved(false)
     setUnlocked(true)

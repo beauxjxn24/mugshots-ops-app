@@ -194,22 +194,22 @@ export function Schedule() {
   const setCell = (uid: string, date: string, val: string) => setWeeks((w) => withCell(w, uid, date, val))
 
   const grant = async (req: TimeOff) => {
-    if (!unlocked && !(await requirePin('Grant time off'))) return
+    if (!unlocked && !(await requirePin('Grant time off', 'schedule'))) return
     setWeeks((w) => req.dates.reduce((acc, d) => withCell(acc, req.userId, d, req.type === 'vac' ? 'VAC' : 'R✓'), w))
     setRequests((rs) => rs.map((r) => (r.id === req.id ? { ...r, status: 'granted' } : r)))
   }
   const deny = async (req: TimeOff) => {
-    if (!unlocked && !(await requirePin('Deny time off'))) return
+    if (!unlocked && !(await requirePin('Deny time off', 'schedule'))) return
     setRequests((rs) => rs.map((r) => (r.id === req.id ? { ...r, status: 'denied' } : r)))
   }
 
   const copyLastWeek = async () => {
-    if (!(await requirePin('Copy last week into this one'))) return
+    if (!(await requirePin('Copy last week into this one', 'schedule'))) return
     const prev = shiftDays(weekStart, -7)
     setWeeks((w) => (w[prev] ? { ...w, [weekStart]: structuredClone(w[prev]) } : w))
   }
   const publish = async () => {
-    if (!(await requirePin(isPublished ? 'Unpublish this week' : 'Publish this week'))) return
+    if (!(await requirePin(isPublished ? 'Unpublish this week' : 'Publish this week', 'schedule'))) return
     setPublished((p) => ({ ...p, [weekStart]: !isPublished }))
   }
 
@@ -247,7 +247,7 @@ export function Schedule() {
               </button>
             ) : (
               <button
-                onClick={() => requirePin('Edit the schedule')}
+                onClick={() => requirePin('Edit the schedule', 'schedule')}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink"
               >
                 <Lock size={13} /> Unlock to edit

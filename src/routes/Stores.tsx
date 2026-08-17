@@ -415,7 +415,7 @@ export function Stores() {
   const [editingNames, setEditingNames] = useState<string | null>(null)
 
   const openNames = async (conceptId: string) => {
-    if (!(await requirePin('Rename stores'))) return
+    if (!(await requirePin('Rename stores', 'stores'))) return
     setEditingNames(conceptId)
   }
   /** Rename only on a real change, and stamp it. Blank or unchanged = no-op. */
@@ -430,14 +430,14 @@ export function Stores() {
   const gatedAddLocation = async (conceptId: string) => {
     const name = (newLoc[conceptId] ?? '').trim()
     if (!name) return
-    if (!(await requirePin('Add a location'))) return
+    if (!(await requirePin('Add a location', 'stores'))) return
     addLocation(conceptId, name)
     logSettingChange('Stores & locations', `added location ${name}`)
     setNewLoc((m) => ({ ...m, [conceptId]: '' }))
   }
   const gatedAddConcept = async () => {
     if (!newConcept.trim()) return
-    if (!(await requirePin('Add a concept'))) return
+    if (!(await requirePin('Add a concept', 'stores'))) return
     addConcept(newConcept)
     logSettingChange('Stores & locations', `added concept ${newConcept.trim()}`)
     setNewConcept('')
