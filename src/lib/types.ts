@@ -27,6 +27,24 @@ export interface Spec {
    * within reach rather than buried in an archive.
    */
   og?: boolean
+  /**
+   * An intermediate prep — it feeds other prep, not a dish directly.
+   *
+   * Brined chicken becomes the fried tenders and the blackened breast; the
+   * queso portions come out of the queso dip. Asking which menu item uses them
+   * is the wrong question, and leaving them looking unlinked reads as a fault
+   * when it isn't one.
+   */
+  prepOnly?: boolean
+  /**
+   * Menu items this prep feeds, set by hand.
+   *
+   * The sheets phrase some things in ways no matcher should be asked to read —
+   * "3 Mozzarella or Pepperjack" is one line offering two preps, and the caesar
+   * romaine is named on cards that have no sheet yet. Owner-confirmed, and
+   * merged with whatever the sheets themselves say.
+   */
+  usedIn?: string[]
 }
 
 /** A source the app can sync from — file import today, live API later. */

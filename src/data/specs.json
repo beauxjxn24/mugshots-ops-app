@@ -248,6 +248,10 @@
    "Portion equally into 2 lined 1/6 pans.",
    "Low usage: scoop 6 oz portions into togo squats with lids.",
    "Label, date; cooler."
+  ],
+  "usedIn": [
+   "Mac & Cheese Burger",
+   "Meg's Mac-N-Cheese"
   ]
  },
  {
@@ -302,6 +306,10 @@
    "Core, halve; GREEN Saber King chopper (1\"×1\").",
    "Ice bath; rinse; drain.",
    "Bag, tie, day dot; cooler."
+  ],
+  "usedIn": [
+   "Caesar Salad",
+   "Caesar's Lemon Blackout Wrap"
   ]
  },
  {
@@ -872,6 +880,9 @@
    "Batter, then coat in crumb mix.",
    "Layer in 8 qt container with deli paper between layers.",
    "Lid + day dot; FREEZER."
+  ],
+  "usedIn": [
+   "Cheese Wedges"
   ]
  },
  {
@@ -907,6 +918,9 @@
    "Slice 1/4\"; cut into 4 equal squares per slice.",
    "Batter, then coat.",
    "Layer with deli paper; lid + day dot; FREEZER."
+  ],
+  "usedIn": [
+   "Cheese Wedges"
   ]
  },
  {
@@ -3959,6 +3973,9 @@
    "Combine all ingredients in a large mixing bowl and whisk together.",
    "Scrape into a 1/6 pan with a rubber spatula and cover.",
    "Label and place in cooler until needed."
+  ],
+  "usedIn": [
+   "Mugs Chicken Sandwich"
   ]
  },
  {
@@ -4011,7 +4028,8 @@
    "Strain to fully drain grease; cool to 40°.",
    "Weigh 2 oz portions into 3.25 portion cups; add 2 tsp pickled jalapeño juice each; lid.",
    "Place in shallow 1/4 pan; label and date; cooler."
-  ]
+  ],
+  "prepOnly": true
  },
  {
   "name": "Brined Chicken Tenders",
@@ -4043,7 +4061,8 @@
    "Brine 12–14 hours.",
    "Drain fully (drip lexan or colander).",
    "Deep 1/3 pan with drip insert; cover, label; cooler."
-  ]
+  ],
+  "prepOnly": true
  },
  {
   "name": "Blackened Chicken Tenders",
@@ -4072,7 +4091,8 @@
    "Cool fully on sheet tray with cling wrap.",
    "Cut each tender into 6 cubes (once lengthwise, twice across).",
    "Portion 5 oz; label; cooler."
-  ]
+  ],
+  "prepOnly": true
  },
  {
   "name": "Brined Chicken Breast",
@@ -4104,7 +4124,8 @@
    "Brine 8–12 hours.",
    "Drain fully in colander.",
    "Deep 1/3 pan with drip insert; cover, label; cooler."
-  ]
+  ],
+  "prepOnly": true
  },
  {
   "name": "Blackened Chicken Breast",
@@ -4150,6 +4171,10 @@
    "Place the crumbled 1/4 cookie into 2 oz ramekin and top with lid — one cookie = 2 crumble portions.",
    "Individually wrap the remaining quarters in plastic wrap (used for garnish); place on top of portioned crumbles in a deep 1/4 pan.",
    "Label and date container; place in cooler until ready to use."
+  ],
+  "usedIn": [
+   "10 oz Mugshots Milkshake",
+   "22 oz Mugshots Milkshake"
   ]
  },
  {

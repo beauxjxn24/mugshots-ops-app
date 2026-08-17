@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { UtensilsCrossed } from 'lucide-react'
 import { usageIndex } from '../lib/linebuilds'
+import { SPECS } from '../lib/specs'
 import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 /**
@@ -13,7 +14,28 @@ import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
  * without opening sixty build cards.
  */
 export function UsedIn({ name, className = '' }: { name: string; className?: string }) {
-  const dishes = useMemo(() => usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? [], [name])
+  const spec = SPECS.find((s) => s.name === name)
+  const dishes = useMemo(() => {
+    const derived = usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? []
+    // Hand-set links sit alongside whatever the sheets say. Some phrasing no
+    // matcher should be asked to read — "3 Mozzarella or Pepperjack" is one
+    // line offering two preps — so those are recorded rather than guessed.
+    return [...new Set([...(spec?.usedIn ?? []), ...derived])].sort((a, b) => a.localeCompare(b))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name])
+
+  // An intermediate prep feeds other prep, not a dish. Saying so beats an empty
+  // space that reads as a missing link.
+  if (spec?.prepOnly) {
+    return (
+      <div className={className}>
+        <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+          <UtensilsCrossed size={11} aria-hidden />
+          Prep component — feeds other prep, not a dish directly
+        </div>
+      </div>
+    )
+  }
   if (dishes.length === 0) return null
   return (
     <div className={className}>
