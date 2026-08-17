@@ -46,6 +46,22 @@ const STATION_HEX: Record<string, string> = {
   'Portion/Pan': '#ea580c', // orange
 }
 const stationHex = (s: string): string | undefined => STATION_HEX[s]
+
+const PREP_INPUT =
+  'w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm text-ink outline-none focus:border-brand'
+
+/** A labelled box in the item editor — the label sits above, so nothing is guessed at. */
+function PrepField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-0.5 block text-[10px] font-extrabold uppercase tracking-wider text-muted">
+        {label}
+        {hint && <span className="ml-1 font-semibold normal-case tracking-normal text-muted/60">{hint}</span>}
+      </span>
+      {children}
+    </label>
+  )
+}
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
 /** First-run classification (owner spec): brined chicken / queso meat /
@@ -97,12 +113,19 @@ export function Prep() {
   // fry side and grill side can print — and work off — their own sheet.
   const [rawStations, setStations] = usePersistentState<string[]>('prep:stations', [])
   const [stationsVer, setStationsVer] = usePersistentState<number>('prep:stationsVer', 0)
+  const [specsVer, setSpecsVer] = usePersistentState<number>('prep:specsVer', 0)
   const stations = Array.isArray(rawStations) ? rawStations.filter((s) => typeof s === 'string' && s.trim()) : []
   // '' = show/print every station together; a station name = just that one.
   const [station, setStation] = useState('')
   const [newStation, setNewStation] = useState('')
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
   const [addMsg, setAddMsg] = useState('')
+  // Editing an item itself -- its name, its pan and portion spec, its unit.
+  // None of that could be changed once an item existed: a portion that moved
+  // from 4 oz to 6 meant deleting the row and adding it back, which threw away
+  // its pars for all seven days.
+  const [editing, setEditing] = useState<string | null>(null)
+  const [edit, setEdit] = useState({ name: '', spec: '', unit: '', section: 'Recipes' })
   const [mode, setMode] = useState<'kitchen' | 'bar'>('kitchen')
   // The card for the item just tapped -- read over the sheet, so a count in
   // progress doesn't lose its place.
@@ -135,6 +158,34 @@ export function Prep() {
       if (cur.length > 0 && !everUsed && !wasOldDefault) setStations([])
     }
     setStationsVer(4)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * One-time: take the pan and portion specs from the shipped sheet.
+   *
+   * The list is stored per device and only seeded on first run, so a spec
+   * corrected in the app — Pow Pow Shrimp going from 4 oz portions to 6 —
+   * never reached a tablet that already had its own copy. It read the old
+   * number for as long as that device lived.
+   *
+   * Safe to overwrite exactly once, here: until this build there was no way to
+   * edit an item's spec at all, so anything stored against a shipped item's
+   * name can only be an older seed, never somebody's deliberate change. Items
+   * added by hand aren't in the seed and aren't touched. From here on the
+   * pencil owns it, and this never runs again.
+   */
+  useEffect(() => {
+    if (specsVer >= 1) return
+    const seed = new Map((PREP_SEED as PrepItem[]).map((s) => [s.name, s]))
+    setItems((is) =>
+      is.map((x) => {
+        const s = seed.get(x.name)
+        if (!s || (x.spec === s.spec && x.unit === s.unit)) return x
+        return { ...x, spec: s.spec, unit: s.unit }
+      }),
+    )
+    setSpecsVer(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -261,6 +312,37 @@ export function Prep() {
       setOnHand({})
   }
 
+  const startEdit = (it: PrepItem) => {
+    setEditing(it.name)
+    setEdit({
+      name: it.name,
+      spec: it.spec ?? '',
+      unit: it.unit ?? '',
+      section: it.section ?? classify(it),
+    })
+  }
+
+  const commitEdit = (was: string) => {
+    const name = edit.name.trim() || was
+    // Renaming has to carry the day's count and the check-offs with it, or a
+    // cook who already counted the pan finds an empty box under a new name.
+    setItems((is) =>
+      is.map((x) =>
+        x.name === was
+          ? { ...x, name, spec: edit.spec.trim(), unit: edit.unit.trim() || x.unit, section: edit.section }
+          : x,
+      ),
+    )
+    if (name !== was)
+      setOnHand((o) => {
+        if (o[was] == null) return o
+        const next = { ...o, [name]: o[was] }
+        delete next[was]
+        return next
+      })
+    setEditing(null)
+  }
+
   const addItem = () => {
     const name = adding.name.trim()
     if (!name) {
@@ -326,8 +408,8 @@ export function Prep() {
     const n = need(it)
     const counted = onHand[it.name] != null
     return (
+      <div key={it.name}>
       <div
-        key={it.name}
         onDragOver={(e) => {
           if (!dragName) return
           e.preventDefault()
@@ -407,6 +489,20 @@ export function Prep() {
                 )
               })()}
             {canEdit && (
+              <button
+                onClick={() => (editing === it.name ? setEditing(null) : startEdit(it))}
+                title="Edit this item — name, pan and portion spec, unit"
+                aria-label={`Edit ${it.name}`}
+                className={`shrink-0 transition-opacity ${
+                  editing === it.name
+                    ? 'text-brand-600 opacity-100'
+                    : 'text-muted opacity-0 hover:text-brand-600 group-hover:opacity-100'
+                }`}
+              >
+                <Pencil size={11} />
+              </button>
+            )}
+            {canEdit && (
             <button
               onClick={() => park(it.name, true)}
               title="Park it — off the list and the print, kept in the Parked box below"
@@ -473,6 +569,69 @@ export function Prep() {
             <span className="text-xs text-muted">—</span>
           )}
         </span>
+      </div>
+
+      {/* The item itself. Pan size, portion size and unit live on the row's
+          sub-line and were read-only, so a portion moving from 4 oz to 6 meant
+          deleting the row and adding it back -- losing its seven pars. */}
+      {editing === it.name && canEdit && (
+        <div
+          className="grid gap-2 border-b border-brand/20 bg-brand/[0.05] px-4 py-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_100px_140px_auto]"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitEdit(it.name)
+            if (e.key === 'Escape') setEditing(null)
+          }}
+        >
+          <PrepField label="Item">
+            <input
+              autoFocus
+              value={edit.name}
+              onChange={(e) => setEdit({ ...edit, name: e.target.value })}
+              className={PREP_INPUT}
+            />
+          </PrepField>
+          <PrepField label="Pan / portion spec" hint="Clear 1/6 pan · 6 oz portions">
+            <input
+              value={edit.spec}
+              onChange={(e) => setEdit({ ...edit, spec: e.target.value })}
+              placeholder="—"
+              className={PREP_INPUT}
+            />
+          </PrepField>
+          <PrepField label="Unit" hint="pans, cs, ea">
+            <input
+              value={edit.unit}
+              onChange={(e) => setEdit({ ...edit, unit: e.target.value })}
+              className={PREP_INPUT}
+            />
+          </PrepField>
+          <PrepField label="Box">
+            <select
+              value={edit.section}
+              onChange={(e) => setEdit({ ...edit, section: e.target.value })}
+              className={PREP_INPUT}
+            >
+              {SECTIONS.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </PrepField>
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => commitEdit(it.name)}
+              className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setEditing(null)}
+              className="rounded-lg px-2 py-2 text-xs font-bold text-muted hover:text-ink"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       </div>
     )
   }

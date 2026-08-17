@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card } from './ui'
+import { dishPhoto } from '../lib/photos'
+import { buildPhoto } from '../lib/linebuilds'
+import { buildForSpec } from '../lib/buildmatch'
 import type { Spec } from '../lib/types'
 
 /** Shared recipe/build card grid used by Specs, Signature Drinks, and LTO. */
@@ -55,10 +58,24 @@ function SpecCard({
       return () => clearTimeout(t)
     }
   }, [highlight])
+  // A sheet may name a dish "Texan" where the app calls it "Texan Burger", so
+  // the photo can be filed under the sheet's name rather than the spec's.
+  // Shared with Specs & Recipes, which has always shown one — this grid feeds
+  // the LTO and Signature Drinks screens, and neither had a picture on it.
+  const build = buildForSpec(spec.name)
+  const thumb = dishPhoto(spec.name) ?? (build ? buildPhoto(build) : undefined)
   return (
     <div ref={ref}>
       <Card className={`overflow-hidden ${highlight ? 'ring-2 ring-brand' : ''}`}>
         <button onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left">
+          {thumb && (
+            <img
+              src={thumb}
+              alt=""
+              loading="lazy"
+              className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
+            />
+          )}
           <div className="min-w-0 flex-1">
             <div className="font-display text-base font-semibold text-ink">{spec.name}</div>
             <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted">
