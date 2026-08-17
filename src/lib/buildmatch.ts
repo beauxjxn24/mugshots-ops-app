@@ -125,5 +125,30 @@ export function buildForSpec(specName: string): LineBuild | undefined {
   // A sheet answered as "its own dish" must not be claimed by the name rules.
   const own = new Set(getDecisions().filter((d) => !d.spec).map((d) => norm(d.sheetName)))
   const guess = buildFor(specName)
-  return guess && !own.has(norm(guess.sheetName)) ? guess : undefined
+  if (!guess || own.has(norm(guess.sheetName))) return undefined
+
+  // A plating sheet belongs to the PLATE, not to the prep that feeds it.
+  //
+  // Several dishes name their prep card exactly what the menu calls the dish:
+  // "Pow Pow Shrimp" is both a bag of portioned shrimp in the freezer and a
+  // plated appetizer, and "Shrooms" is the same. The name rules handed the
+  // sheet to whichever card shared its name, so the prep card for portioning
+  // frozen shrimp displayed "sriracha on the plate, bed of salad mix, dusting
+  // of parsley" directly above its own "portion at 6 oz, day dot, FREEZER" --
+  // two different jobs printed as one card.
+  //
+  // pendingMatches() already refuses to let a Prep card claim a sheet; this
+  // applies the same rule where the app actually reads the match. A prep card
+  // still keeps a sheet no plated dish wants.
+  const me = SPECS.find((s) => norm(s.name) === norm(specName))
+  if (me?.g === 'Prep') {
+    const sheet = norm(guess.sheetName)
+    const platedOwner = SPECS.some((s) => {
+      if (s.g === 'Prep') return false
+      const b = buildFor(s.name)
+      return !!b && norm(b.sheetName) === sheet
+    })
+    if (platedOwner) return undefined
+  }
+  return guess
 }

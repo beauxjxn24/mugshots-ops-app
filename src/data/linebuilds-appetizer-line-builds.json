@@ -1,353 +1,353 @@
 {
-  "sheet": "Appetizer Line Builds",
-  "source": "ad57ea66-Menu_Study_Guide_Apps.pdf",
-  "dishes": [
+ "sheet": "Appetizer Line Builds",
+ "source": "ad57ea66-Menu_Study_Guide_Apps.pdf",
+ "dishes": [
+  {
+   "sheetName": "Chips 'n",
+   "photo": "chips-n.jpg",
+   "sections": [
     {
-      "sheetName": "Chips 'n",
-      "photo": "chips-n.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Mugshots Squat Cup on Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "porion-size-prep",
-          "label": "Porion Size. & Prep",
-          "lines": [
-            "6 oz. Rotel, Queso, or Salsa"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On side",
-          "lines": [
-            "Chips"
-          ]
-        }
-      ]
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Mugshots Squat Cup on Lined Burger Basket"
+     ]
     },
     {
-      "sheetName": "Cheese Wedges",
-      "photo": "cheese-wedges.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Wire Basket on Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "porion-size-prep",
-          "label": "Porion Size. & Prep",
-          "lines": [
-            "6 Mozz or Pepperjack.",
-            "3 Each Mixed.",
-            "3 to a Mombo."
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On side",
-          "lines": [
-            "Marinara"
-          ]
-        }
-      ]
+     "key": "porion-size-prep",
+     "label": "Porion Size. & Prep",
+     "lines": [
+      "6 oz. Rotel, Queso, or Salsa"
+     ]
     },
     {
-      "sheetName": "Eggrolls",
-      "photo": "eggrolls.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Wire Basket on Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "porion-size-prep",
-          "label": "Porion Size. & Prep",
-          "lines": [
-            "3 Rolls Cut in Half Corner to Corner. 2 to a Mombo"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On side",
-          "lines": [
-            "2 oz Sweet Chili (SW Eggrolls)"
-          ]
-        },
-        {
-          "key": "garnish",
-          "label": "Garnish",
-          "lines": [
-            "Ingredients are: Chicken, Peppers, Black Beans, Spinach, Corn, Pepper",
-            "Jack Cheese"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Wangs",
-      "photo": "wangs.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Wire Basket on Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "porion-size-prep",
-          "label": "Porion Size. & Prep",
-          "lines": [
-            "5,10,15, 20, or 50.",
-            "Fried and Tossed"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On side",
-          "lines": [
-            "1 Ranch, 2 Celery per 5 Wings"
-          ]
-        },
-        {
-          "key": "garnish",
-          "label": "Garnish",
-          "lines": [
-            "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
-            "Garlic Parmesean"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Seans Nachos",
-      "photo": "seans-nachos.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "porion-size-prep",
-          "label": "Porion Size. & Prep",
-          "lines": [
-            "Basket of Chips, Fries or Tots"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On side",
-          "lines": [
-            "N/A"
-          ]
-        },
-        {
-          "key": "garnish",
-          "label": "Garnish",
-          "lines": [
-            "4 oz Chili, 4 oz Rotel",
-            "1/3 c Diced Tomatoes & Red Onions",
-            "1/4 c Pickled Jalapenos, #40 Scoop Sour Cream"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Dill Pickles",
-      "photo": "dill-pickles.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Wire Basket on Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "portion-size-prep",
-          "label": "Portion Size / Prep",
-          "lines": [
-            "8 oz. of Pickles Battered and Fried. 4 oz on a Mombo or Happy Hour"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On Side",
-          "lines": [
-            "2 oz Comeback Sauce"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Shrooms",
-      "photo": "shrooms.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Wire Basket on Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "portion-size-prep",
-          "label": "Portion Size / Prep",
-          "lines": [
-            "8 oz. of Mushrooms",
-            "Battered and Fried. 4 oz on a Mombo or Happy",
-            "Hour"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On Side",
-          "lines": [
-            "2 oz Ranch"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Mombo Combo",
-      "photo": "mombo-combo.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "portion-size-prep",
-          "label": "Portion Size / Prep",
-          "lines": [
-            "Choose Any Three.",
-            "Excludes Pow Pow Shrimp and Wangs"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On Side",
-          "lines": [
-            "Match sauce to app - 2 oz ea"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Chicken Basket",
-      "photo": "chicken-basket.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Lined Burger Basket"
-          ]
-        },
-        {
-          "key": "portion-size-prep",
-          "label": "Portion Size / Prep",
-          "lines": [
-            "6 Tenders Knuckled, Double Battered and Fried or Grilled. (3 to a Mombo)",
-            "6oz Fries"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On Side",
-          "lines": [
-            "2 oz Dipping Sauce"
-          ]
-        },
-        {
-          "key": "on-top-tossed",
-          "label": "On Top / Tossed",
-          "lines": [
-            "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
-            "Garlic Parmesean"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Pow Pow Shrimp",
-      "photo": "pow-pow-shrimp.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Black plate"
-          ]
-        },
-        {
-          "key": "portion-size-prep",
-          "label": "Portion Size / Prep",
-          "lines": [
-            "8 oz fried shrimp tossed in Pow Pow Sauce.",
-            "Sriracha on plate with bed of Salad Mix."
-          ]
-        },
-        {
-          "key": "on-top-tossed",
-          "label": "On Top / Tossed",
-          "lines": [
-            "Dusting of Parsley"
-          ]
-        }
-      ]
-    },
-    {
-      "sheetName": "Chili",
-      "photo": "chili.jpg",
-      "sections": [
-        {
-          "key": "plateware",
-          "label": "Plateware",
-          "lines": [
-            "Mugs Squat Cup on Red Saucer or Blue Bowl on Red Plate Both with Bev Nap"
-          ]
-        },
-        {
-          "key": "portion-size-prep",
-          "label": "Portion Size / Prep",
-          "lines": [
-            "Cup = 6 oz",
-            "Bowl = 8 oz"
-          ]
-        },
-        {
-          "key": "on-side",
-          "label": "On Side",
-          "lines": [
-            "Cup = 1 Pack of Crackers Bowl = 2 Packs of Crackers"
-          ]
-        },
-        {
-          "key": "on-top-tossed",
-          "label": "On Top / Tossed",
-          "lines": [
-            "Cup = 1 tbsp Shredded Cheese and Red Onions.",
-            "Bowl = 2 tbsp Shredded Cheese and Red Onion"
-          ]
-        }
-      ]
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "Chips"
+     ]
     }
-  ]
+   ]
+  },
+  {
+   "sheetName": "Cheese Wedges",
+   "photo": "cheese-wedges.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "porion-size-prep",
+     "label": "Porion Size. & Prep",
+     "lines": [
+      "6 Mozz or Pepperjack.",
+      "3 Each Mixed.",
+      "3 to a Mombo."
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "Marinara"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Eggrolls",
+   "photo": "eggrolls.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "porion-size-prep",
+     "label": "Porion Size. & Prep",
+     "lines": [
+      "3 Rolls Cut in Half Corner to Corner. 2 to a Mombo"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "2 oz Sweet Chili (SW Eggrolls)"
+     ]
+    },
+    {
+     "key": "garnish",
+     "label": "Garnish",
+     "lines": [
+      "Ingredients are: Chicken, Peppers, Black Beans, Spinach, Corn, Pepper",
+      "Jack Cheese"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Wangs",
+   "photo": "wangs.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "porion-size-prep",
+     "label": "Porion Size. & Prep",
+     "lines": [
+      "5,10,15, 20, or 50.",
+      "Fried and Tossed"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "1 Ranch, 2 Celery per 5 Wings"
+     ]
+    },
+    {
+     "key": "garnish",
+     "label": "Garnish",
+     "lines": [
+      "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
+      "Garlic Parmesean"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Seans Nachos",
+   "photo": "seans-nachos.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "porion-size-prep",
+     "label": "Porion Size. & Prep",
+     "lines": [
+      "Basket of Chips, Fries or Tots"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On side",
+     "lines": [
+      "N/A"
+     ]
+    },
+    {
+     "key": "garnish",
+     "label": "Garnish",
+     "lines": [
+      "4 oz Chili, 4 oz Rotel",
+      "1/3 c Diced Tomatoes & Red Onions",
+      "1/4 c Pickled Jalapenos, #40 Scoop Sour Cream"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Dill Pickles",
+   "photo": "dill-pickles.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "8 oz. of Pickles Battered and Fried. 4 oz on a Mombo or Happy Hour"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Comeback Sauce"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Shrooms",
+   "photo": "shrooms.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Wire Basket on Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "8 oz. of Mushrooms",
+      "Battered and Fried. 4 oz on a Mombo or Happy",
+      "Hour"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Ranch"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Mombo Combo",
+   "photo": "mombo-combo.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Choose Any Three.",
+      "Excludes Pow Pow Shrimp and Wangs"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "Match sauce to app - 2 oz ea"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Chicken Basket",
+   "photo": "chicken-basket.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Lined Burger Basket"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "6 Tenders Knuckled, Double Battered and Fried or Grilled. (3 to a Mombo)",
+      "6oz Fries"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "2 oz Dipping Sauce"
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
+      "Garlic Parmesean"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Pow Pow Shrimp",
+   "photo": "pow-pow-shrimp.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Black plate"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "6 oz fried shrimp tossed in Pow Pow Sauce.",
+      "Sriracha on plate with bed of Salad Mix."
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "Dusting of Parsley"
+     ]
+    }
+   ]
+  },
+  {
+   "sheetName": "Chili",
+   "photo": "chili.jpg",
+   "sections": [
+    {
+     "key": "plateware",
+     "label": "Plateware",
+     "lines": [
+      "Mugs Squat Cup on Red Saucer or Blue Bowl on Red Plate Both with Bev Nap"
+     ]
+    },
+    {
+     "key": "portion-size-prep",
+     "label": "Portion Size / Prep",
+     "lines": [
+      "Cup = 6 oz",
+      "Bowl = 8 oz"
+     ]
+    },
+    {
+     "key": "on-side",
+     "label": "On Side",
+     "lines": [
+      "Cup = 1 Pack of Crackers Bowl = 2 Packs of Crackers"
+     ]
+    },
+    {
+     "key": "on-top-tossed",
+     "label": "On Top / Tossed",
+     "lines": [
+      "Cup = 1 tbsp Shredded Cheese and Red Onions.",
+      "Bowl = 2 tbsp Shredded Cheese and Red Onion"
+     ]
+    }
+   ]
+  }
+ ]
 }
