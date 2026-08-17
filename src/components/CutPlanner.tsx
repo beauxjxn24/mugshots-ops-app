@@ -4,10 +4,13 @@ import { Card } from './ui'
 import {
   dealEvenly,
   dutiesForCut,
+  isReleased,
   setCutCount,
+  setCutReleased,
   unassigned,
   type ShiftPlan,
 } from '../lib/shiftcuts'
+import { shiftPerson } from '../lib/daycode'
 
 export interface Duty {
   id: string
@@ -191,6 +194,26 @@ export function CutPlanner({
                     Cut {c}
                     {plan.people[c] ? ` · ${plan.people[c]}` : ''}
                   </button>
+                  {/* Being dealt a list isn't being cut. Until this is pressed
+                      the server is still on section and sees nothing. */}
+                  {plan.people[c] &&
+                    (isReleased(plan, c) ? (
+                      <button
+                        onClick={() => setPlan(setCutReleased(plan, c, false, shiftPerson()))}
+                        title={`Cut by ${plan.cutAt?.[c]?.by} at ${new Date(plan.cutAt![c].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — tap to put them back on the floor`}
+                        className="rounded-full bg-up/15 px-2 py-0.5 text-[10px] font-extrabold uppercase text-up"
+                      >
+                        cut {new Date(plan.cutAt![c].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setPlan(setCutReleased(plan, c, true, shiftPerson()))}
+                        title={`Cut ${plan.people[c]} — releases their sidework to them`}
+                        className="rounded-full border border-brand/40 px-2 py-0.5 text-[10px] font-extrabold uppercase text-brand-600 hover:bg-brand/10"
+                      >
+                        cut them
+                      </button>
+                    ))}
                   <span className="ml-auto text-[10px] font-bold text-muted">{mine.length}</span>
                 </div>
                 {mine.length === 0 ? (

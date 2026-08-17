@@ -23,6 +23,7 @@ import {
   dutiesForCut,
   dutyId,
   emptyPlan,
+  isReleased,
   planKey,
   type ShiftPlan,
 } from '../lib/shiftcuts'
@@ -100,8 +101,9 @@ export function Sidework() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // One-time: the default sheet used to jump Section 3 → Section 5; stored
-  // copies get the renumber too (titles stay editable below).
+  // One-time: the sheet's sections ran 1, 2, 3, 4, 6 — there was never a
+  // Section 5, so the boxes didn't read as a set. Stored copies get the
+  // renumber too; a renamed box ("Cut 3") is left alone.
   useEffect(() => {
     setData((d) => {
       let changed = false
@@ -109,13 +111,13 @@ export function Sidework() {
       for (const r of Object.keys(next) as Role[]) {
         for (const ph of Object.keys(next[r] ?? {})) {
           const secs = next[r][ph] ?? []
-          if (secs.some((s) => s.section === 'Section 5') && !secs.some((s) => s.section === 'Section 4')) {
+          if (secs.some((s) => s.section === 'Section 6') && !secs.some((s) => s.section === 'Section 5')) {
             changed = true
             next[r] = {
               ...next[r],
               [ph]: secs.map((s) =>
-                s.section === 'Section 5'
-                  ? { ...s, section: 'Section 4', tasks: s.tasks.map((t) => t.replace(/Section 5/g, 'Section 4')) }
+                s.section === 'Section 6'
+                  ? { ...s, section: 'Section 5', tasks: s.tasks.map((t) => t.replace(/Section 6/g, 'Section 5')) }
                   : s,
               ),
             }
@@ -260,9 +262,11 @@ export function Sidework() {
         <PageHeader
           title="Your sidework"
           subtitle={
-            myCut
-              ? `Cut ${myCut} · ${role} ${activePhase} · ${mineDone}/${myDuties.length} done`
-              : `${role} ${activePhase} · ${today()}`
+            !myCut
+              ? `${role} ${activePhase} · ${today()}`
+              : isReleased(plan, myCut)
+                ? `Cut ${myCut} · ${role} ${activePhase} · ${mineDone}/${myDuties.length} done`
+                : `Cut ${myCut} · not cut yet`
           }
         />
         <div className="mx-auto max-w-2xl space-y-3 p-4 sm:p-6">
@@ -287,6 +291,18 @@ export function Sidework() {
               <p className="text-sm text-muted text-pretty">
                 No cut yet for {shiftPerson() || 'you'} on the {activePhase} sheet. Your closer deals
                 the cuts out at the start of the shift.
+              </p>
+            </Card>
+          ) : !isReleased(plan, myCut) ? (
+            /* Dealt a cut but still on section. Sidework opens when the closer
+               cuts them -- showing it early is how a section goes unwatched. */
+            <Card className="p-6 text-center">
+              <div className="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-brand/10 text-brand">
+                <Check size={22} />
+              </div>
+              <p className="font-display text-base font-semibold text-ink">You're on cut {myCut}</p>
+              <p className="mt-1 text-sm text-muted text-pretty">
+                Your sidework opens when a manager cuts you. Stay on your section until then.
               </p>
             </Card>
           ) : myDuties.length === 0 ? (

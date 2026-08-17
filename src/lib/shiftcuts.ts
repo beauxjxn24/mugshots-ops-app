@@ -21,9 +21,36 @@ export interface ShiftPlan {
   people: Record<number, string>
   /** Duty id → the cut it was dealt to. Absent means still in the pool. */
   assign: Record<string, number>
+  /**
+   * When each cut was actually cut, and by whom.
+   *
+   * Being dealt a list is not the same as being released from the floor. A
+   * server given cut 3 at four o'clock is still on section until the closer
+   * cuts them, and showing them their sidework before that invites it being
+   * started early — which is how a section goes unwatched at seven.
+   *
+   * Absent means still on the floor.
+   */
+  cutAt?: Record<number, { at: string; by: string }>
 }
 
-export const emptyPlan = (cuts = 4): ShiftPlan => ({ cuts, people: {}, assign: {} })
+export const emptyPlan = (cuts = 4): ShiftPlan => ({ cuts, people: {}, assign: {}, cutAt: {} })
+
+/** Release a cut to their sidework, or put them back on the floor. */
+export function setCutReleased(
+  plan: ShiftPlan,
+  cut: number,
+  released: boolean,
+  by: string,
+): ShiftPlan {
+  const cutAt = { ...(plan.cutAt ?? {}) }
+  if (released) cutAt[cut] = { at: new Date().toISOString(), by: by || 'manager' }
+  else delete cutAt[cut]
+  return { ...plan, cutAt }
+}
+
+/** Has this cut been released from the floor? */
+export const isReleased = (plan: ShiftPlan, cut: number): boolean => !!plan.cutAt?.[cut]
 
 export const planKey = (date: string): string => `sidework:cuts:${date}`
 
@@ -60,7 +87,9 @@ export function setCutCount(plan: ShiftPlan, cuts: number): ShiftPlan {
   for (const [id, c] of Object.entries(plan.assign)) if (c <= n) assign[id] = c
   const people: Record<number, string> = {}
   for (const [c, who] of Object.entries(plan.people)) if (Number(c) <= n) people[Number(c)] = who
-  return { cuts: n, people, assign }
+  const cutAt: Record<number, { at: string; by: string }> = {}
+  for (const [c, rec] of Object.entries(plan.cutAt ?? {})) if (Number(c) <= n) cutAt[Number(c)] = rec
+  return { cuts: n, people, assign, cutAt }
 }
 
 /**
