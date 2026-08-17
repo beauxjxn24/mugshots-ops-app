@@ -12,6 +12,7 @@ import { ArrowDownLeft, ArrowUpRight, RotateCcw } from 'lucide-react'
 // width — eight characters of label over a two-character count — which is what
 // pushed the sheet past the screen and made it scroll sideways. The counts are
 // what get read; the denominations are known by anyone counting a drawer.
+/** The sheet's thirteen money columns, in the order the paper sheet reads. */
 const COLS = [
   ['bar', 'BAR'],
   ['togo', 'TOGO'],
@@ -27,6 +28,22 @@ const COLS = [
   ['p', '1¢'],
   ['ck', 'CHK'],
 ] as const
+
+/**
+ * One template for the header band and every row, so the two can never drift
+ * apart. Inline rather than a Tailwind class because the widths are computed —
+ * a built class name would be purged.
+ */
+const GRID: React.CSSProperties = {
+  gridTemplateColumns: `42px repeat(${COLS.length}, minmax(0, 1fr)) 74px 86px`,
+}
+
+/**
+ * Header cells carry the input's own padding and an invisible border, so the
+ * label's right edge sits exactly over the digits beneath it instead of the
+ * border's width off.
+ */
+const HEAD_CELL = 'border-[1.5px] border-transparent px-0.5 text-right'
 const SLOTS = [
   ['open', 'OPEN'],
   ['mid', 'MID'],
@@ -150,10 +167,10 @@ export function PettyCash() {
 
           <div ref={gridRef} onKeyDown={onGridKey} className="min-w-[720px]">
             {/* Navy header — the sheet's column band */}
-            <div className="grid grid-cols-[42px_repeat(13,minmax(0,1fr))_74px_86px] items-center gap-1 rounded-[10px] bg-navy px-2 py-2 text-[8.5px] font-extrabold tracking-[0.07em] text-white/60">
+            <div style={GRID} className="grid items-center gap-1 rounded-[10px] bg-navy px-2 py-2 text-[8.5px] font-extrabold tracking-[0.07em] text-white/60">
               <div className="text-[#E8A33C]">SHIFT</div>
               {COLS.map(([k, label]) => (
-                <div key={k} className="text-right">
+                <div key={k} className={HEAD_CELL}>
                   {label}
                 </div>
               ))}
@@ -171,7 +188,8 @@ export function PettyCash() {
               return (
                 <div
                   key={slot}
-                  className={`grid grid-cols-[42px_repeat(13,minmax(0,1fr))_74px_86px] items-center gap-1 px-2 py-2 ${
+                  style={GRID}
+                  className={`grid items-center gap-1 px-2 py-2 ${
                     si % 2 ? 'bg-black/[0.02]' : ''
                   } ${si < 2 ? 'border-b border-black/5' : ''}`}
                 >
@@ -187,7 +205,7 @@ export function PettyCash() {
                       disabled={locked}
                       value={rec.v[k] ?? ''}
                       onChange={(e) => setCell(slot, k, e.target.value)}
-                      className={`w-full rounded-[7px] border-[1.5px] px-1 py-1.5 text-right font-mono text-xs text-ink outline-none focus:border-brand ${
+                      className={`w-full rounded-[7px] border-[1.5px] px-0.5 py-1.5 text-right font-mono text-[11px] tabular-nums text-ink outline-none focus:border-brand ${
                         locked ? 'border-black/5 bg-black/[0.04]' : 'border-black/15 bg-white'
                       }`}
                     />

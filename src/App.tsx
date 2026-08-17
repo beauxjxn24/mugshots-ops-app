@@ -106,12 +106,17 @@ function AdminOnly({ children }: { children: ReactNode }) {
 }
 
 export function App() {
+  // Mugsy reads the whole app to answer — sales and labor history, product mix,
+  // costs, tips. That is a manager's view of the business, and it has no place
+  // behind a floor code on a shared tablet, so the launcher isn't there at all
+  // for staff rather than being there and refusing.
+  const role = useRole((s) => s.role)
   return (
     <>
       <RouterProvider router={router} />
       <ConfirmDialog />
       <PinDialog />
-      <Mugsy />
+      {role !== 'staff' && <Mugsy />}
     </>
   )
 }
