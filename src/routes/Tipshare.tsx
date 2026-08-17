@@ -42,6 +42,18 @@ const EMPTY_LIVE: Live = { date: '', meal: 'AM', servers: [], entries: [] }
 
 const ROLE_FROM_STAFF: Record<string, Entry['role']> = { Bartender: 'Bar', Expo: 'Expo', Host: 'Host' }
 const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
+
+/**
+ * What a person actually gets handed, to the dollar.
+ *
+ * Tip-out is paid in cash out of the drawer and nobody is counting quarters at
+ * one in the morning — $1.54 goes out as $2. The rounding happens at the point
+ * of payment rather than to the rate, so each person's share still tracks the
+ * hours they worked; the couple of dollars of drift against the pool is shown
+ * on the totals instead of being buried.
+ */
+const payout = (n: number) => Math.round(n ?? 0)
+const whole = (n: number) => `$${payout(n)}`
 const now = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 let seq = 0
 
@@ -102,8 +114,12 @@ export function Tipshare() {
   const pool = useMemo(() => cur.servers.reduce((s, x) => s + x.amount, 0), [cur.servers])
   const totalHours = useMemo(() => cur.entries.reduce((s, e) => s + (e.hours || 0), 0), [cur.entries])
   const perHour = totalHours > 0 ? pool / totalHours : 0
-  const pickedUp = cur.entries.filter((e) => e.pickedUp).reduce((s, e) => s + perHour * e.hours, 0)
-  const notPicked = perHour * totalHours - pickedUp
+  // Both sides are sums of what actually gets handed over, so they add up to
+  // the same money the safe is holding — not to the raw pool, which is a cent
+  // or two off once every share is rounded to the dollar.
+  const pickedUp = cur.entries.filter((e) => e.pickedUp).reduce((s, e) => s + payout(perHour * e.hours), 0)
+  const notPicked = cur.entries.filter((e) => !e.pickedUp).reduce((s, e) => s + payout(perHour * e.hours), 0)
+  const paidOut = pickedUp + notPicked
 
   // Tip-out Safe: everything earned but not yet picked up, across ALL shifts.
   const safe = useMemo(() => {
@@ -113,12 +129,12 @@ export function Tipshare() {
       const hrs = sEntries.reduce((x, e) => x + e.hours, 0)
       const rate = hrs > 0 ? s.pool / hrs : 0
       for (const e of sEntries)
-        if (!e.pickedUp && rate * e.hours > 0.004)
-          rows.push({ shiftId: s.id, entryId: e.id, name: e.name, amount: rate * e.hours, when: `${s.date} ${s.meal ?? ''}` })
+        if (!e.pickedUp && payout(rate * e.hours) > 0)
+          rows.push({ shiftId: s.id, entryId: e.id, name: e.name, amount: payout(rate * e.hours), when: `${s.date} ${s.meal ?? ''}` })
     }
     for (const e of cur.entries)
-      if (!e.pickedUp && perHour * e.hours > 0.004)
-        rows.push({ shiftId: null, entryId: e.id, name: e.name, amount: perHour * e.hours, when: 'this shift' })
+      if (!e.pickedUp && payout(perHour * e.hours) > 0)
+        rows.push({ shiftId: null, entryId: e.id, name: e.name, amount: payout(perHour * e.hours), when: 'this shift' })
     return rows
   }, [shifts, cur.entries, perHour])
   const safeTotal = safe.reduce((s, r) => s + r.amount, 0)
@@ -260,8 +276,17 @@ export function Tipshare() {
               <TotalRow label="Recipient hours" value={totalHours.toFixed(2)} />
               <TotalRow label="Rate / hour" value={money(perHour)} gold />
               <div className="my-2 border-t border-white/15" />
-              <TotalRow label="Picked up" value={money(pickedUp)} strong />
-              <TotalRow label="Not yet picked up" value={money(notPicked)} gold />
+              <TotalRow label="Picked up" value={whole(pickedUp)} strong />
+              <TotalRow label="Not yet picked up" value={whole(notPicked)} gold />
+              {/* Every share is paid to the dollar, so the payouts rarely land
+                  exactly on the pool. Shown rather than hidden — the drawer has
+                  to balance and this is the line that explains it. */}
+              {payout(paidOut - pool) !== 0 && totalHours > 0 && (
+                <TotalRow
+                  label={paidOut > pool ? 'Rounded up — out of drawer' : 'Rounded down — back to drawer'}
+                  value={whole(Math.abs(paidOut - pool))}
+                />
+              )}
               <button
                 onClick={logShift}
                 disabled={cur.entries.length === 0 && cur.servers.length === 0}
@@ -283,7 +308,7 @@ export function Tipshare() {
             <span className="font-semibold text-ink">Tip-out Safe</span>
             <span className="text-xs text-muted">held until picked up · across all shifts</span>
             <span className={`ml-auto rounded-lg px-2.5 py-1 font-mono text-sm font-bold ${safeTotal > 0 ? 'bg-down/10 text-down' : 'bg-black/5 text-muted'}`}>
-              {money(safeTotal)}
+              {whole(safeTotal)}
             </span>
             <ChevronDown size={15} className={`text-muted transition-transform ${safeOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -296,7 +321,7 @@ export function Tipshare() {
                   <div key={`${r.shiftId}-${r.entryId}`} className="flex items-center gap-3 border-b border-black/5 px-4 py-2.5 last:border-0">
                     <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{r.name}</span>
                     <span className="text-xs text-muted">{r.when}</span>
-                    <span className="font-mono text-sm font-bold text-ink">{money(r.amount)}</span>
+                    <span className="font-mono text-sm font-bold text-ink">{whole(r.amount)}</span>
                     <button
                       onClick={() => pickup(r.shiftId, r.entryId)}
                       title="Manager-approved pickup"
@@ -455,7 +480,7 @@ function RoleCard({
                   : 'border-[#eec263]/40 bg-transparent text-white placeholder:text-[#eec263]/60'
               }`}
             />
-            <span className="text-right font-mono text-xs font-bold text-[#eec263]">{money(perHour * e.hours)}</span>
+            <span className="text-right font-mono text-xs font-bold text-[#eec263]">{whole(perHour * e.hours)}</span>
             <span className="flex items-center gap-1">
               {!e.pickedUp && (
                 <button
