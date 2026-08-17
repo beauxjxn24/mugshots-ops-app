@@ -231,15 +231,23 @@
      ]
     },
     {
+     "key": "procedure",
+     "label": "Process",
+     "lines": [
+      "Using a brined chicken breast, follow chicken tender breading process.",
+      "Fry for 6 minutes. Pull from fryer and allow grease to drain in Sav a Day."
+     ]
+    },
+    {
      "key": "meat",
      "label": "Meat",
      "lines": [
-      "1 Fried Chicken Breast",
+      "Fried Chicken Breast",
       "Tossed in Wing Sauce"
      ]
     },
     {
-     "key": "on-top",
+     "key": "top",
      "label": "On Top",
      "lines": [
       "Swiss Cheese"
