@@ -4,6 +4,7 @@ import { confirmDelete } from '../lib/confirm'
 import { requirePin, usePin } from '../lib/pin'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
+import { useShift } from '../lib/shift'
 import type { Person } from '../lib/staff'
 
 interface Entry {
@@ -98,9 +99,13 @@ export function Tipshare() {
   const [viewDate, setViewDate] = useState(t)
   const [safeOpen, setSafeOpen] = useState(false)
   const manager = usePin((s) => s.unlockedBy)
+  const { shift } = useShift()
 
-  // A new day starts fresh (yesterday's unlogged pool doesn't leak forward).
-  const rawCur: Live = live.date === t ? live : { ...EMPTY_LIVE, date: t, meal: 'AM' }
+  // A new day starts fresh (yesterday's unlogged pool doesn't leak forward), on
+  // whichever shift the app is actually on — opening this at seven in the
+  // evening and landing on lunch was one more thing to correct before starting.
+  // The lock below still applies: dinner doesn't open until lunch is signed off.
+  const rawCur: Live = live.date === t ? live : { ...EMPTY_LIVE, date: t, meal: shift }
   const cur: Live = {
     ...rawCur,
     entries: Array.isArray(rawCur.entries) ? rawCur.entries : [],

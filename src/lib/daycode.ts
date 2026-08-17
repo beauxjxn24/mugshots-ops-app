@@ -1,8 +1,13 @@
 // The daily staff code.
 //
-// Staff open the app, type today's code, and start working. It changes at
-// midnight, so someone who left last month can't still get in on a code a
-// friend gave them, and nobody has to remember to rotate anything.
+// Staff open the app, type today's code, and start working. It changes once a
+// day, so someone who left last month can't still get in on a code a friend
+// gave them, and nobody has to remember to rotate anything.
+//
+// It turns over at four in the morning, not at midnight: a closer who gets
+// signed out at 12:10 while finishing side work would otherwise be locked out
+// on a code nobody has handed out yet, in a building where the manager who
+// could read them the new one has gone home.
 //
 // Derived from the date and the store rather than stored, because this app
 // keeps its data in the browser: a code a manager typed on the office laptop
@@ -15,7 +20,7 @@
 // the thing that actually gates the manager experience.
 import { load, save } from './store'
 import { useScope } from './scope'
-import { today } from './store'
+import { businessDay } from './shift'
 
 /** Stable 32-bit hash — same input, same digits, on every device. */
 function hash(s: string): number {
@@ -28,7 +33,7 @@ function hash(s: string): number {
 }
 
 /** Today's four-digit code for the store currently in scope. */
-export function dayCode(date: string = today()): string {
+export function dayCode(date: string = businessDay()): string {
   const s = useScope.getState()
   // The store is part of the seed so two locations never share a code — a code
   // shouted across the Flowood kitchen shouldn't open the app in Pearl.
@@ -41,12 +46,12 @@ const UNLOCK_KEY = '__staffUnlockedOn'
 
 /** Has this device already been let in today? */
 export function unlockedToday(): boolean {
-  return load<string | null>(UNLOCK_KEY, null) === today()
+  return load<string | null>(UNLOCK_KEY, null) === businessDay()
 }
 
 /** Remember the unlock for the rest of the day — not forever. */
 export function rememberUnlock(): void {
-  save(UNLOCK_KEY, today())
+  save(UNLOCK_KEY, businessDay())
 }
 
 /** Send the device back to the code screen (end of shift, wrong hands). */
@@ -70,9 +75,9 @@ const PERSON_KEY = '__shiftPerson'
  */
 export function shiftPerson(): string {
   const rec = load<{ on: string; who: string } | null>(PERSON_KEY, null)
-  return rec && rec.on === today() ? rec.who : ''
+  return rec && rec.on === businessDay() ? rec.who : ''
 }
 
 export function setShiftPerson(who: string): void {
-  save(PERSON_KEY, { on: today(), who })
+  save(PERSON_KEY, { on: businessDay(), who })
 }

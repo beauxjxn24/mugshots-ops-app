@@ -15,6 +15,7 @@ import {
 } from '../lib/sidework'
 import { rolesOf, type Person } from '../lib/staff'
 import { useRole } from '../lib/role'
+import { useShift, phaseForShift } from '../lib/shift'
 import { shiftPerson } from '../lib/daycode'
 import { CutPlanner, type Duty } from '../components/CutPlanner'
 import {
@@ -42,7 +43,11 @@ export function Sidework() {
   const [data, setData] = usePersistentState<Data>('sidework:data', SIDEWORK)
   const [role, setRole] = useState<Role>('Server')
   const phases = phasesFor(role)
-  const [phase, setPhase] = useState<string>(phases[0])
+  // Open on the sheet that matches the shift being worked. Landing on "AM
+  // Opening" at nine at night meant the closer's first move on this screen was
+  // always to correct it.
+  const { shift } = useShift()
+  const [phase, setPhase] = useState<string>(() => phaseForShift(phases, shift))
   // Per-tile editing (owner request): the pencil lives on each section card.
   // Tracked by position, not by name: keying off the title meant renaming a tile
   // changed the very value being compared, so a tile stopped being "the one
@@ -81,7 +86,9 @@ export function Sidework() {
   }, [staff, role])
   const aKey = (si: number) => `${role}|${activePhase}|${si}`
 
-  const activePhase = phases.includes(phase) ? phase : phases[0]
+  // Switching role lands on that role's sheet for the shift being worked, not
+  // on whatever its first phase happens to be.
+  const activePhase = phases.includes(phase) ? phase : phaseForShift(phases, shift)
   const sections = data[role]?.[activePhase] ?? []
 
   // One-time: the bar's phases were Opening / Closing before the real laminated

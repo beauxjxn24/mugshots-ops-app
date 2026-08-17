@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { NAV, NAV_FLAT, STAFF_SECTIONS, SHIFT_ITEM, ROLLUP_SECTIONS, bottomItems, type NavSection } from '../lib/nav'
 import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
+import { ShiftBadge } from './ShiftBadge'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
 import { ConciergeBell, UtensilsCrossed, Search, ChevronDown } from 'lucide-react'
@@ -75,6 +76,7 @@ export function AppShell() {
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />
         <RoleToggle />
+        <ShiftBadge />
         {isAdmin ? (
           <div className="mb-3">
             <StoreSwitcher />
@@ -98,7 +100,10 @@ export function AppShell() {
           ☰
         </button>
         <span className="font-display font-semibold">The Pass</span>
-        <span className="ml-auto text-xs text-white/50">{current?.label}</span>
+        <span className="ml-auto flex items-center gap-2">
+          <ShiftBadge compact />
+          <span className="text-xs text-white/50">{current?.label}</span>
+        </span>
       </header>
 
       {/* ---- Mobile drawer ---- */}
@@ -111,6 +116,7 @@ export function AppShell() {
           <div className="absolute inset-y-0 left-0 w-[82%] max-w-[300px] overflow-y-auto overscroll-contain bg-navy px-3 py-4 text-white/70 shadow-2xl [padding-top:env(safe-area-inset-top)] animate-[slidein_.25s_ease]">
             <Brand />
             <RoleToggle />
+            <ShiftBadge />
             {isAdmin ? (
               <div className="mb-3">
                 <StoreSwitcher />
