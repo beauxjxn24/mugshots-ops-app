@@ -35,18 +35,34 @@ export function BuildReconcile() {
   }
 
   return (
-    <Card className="border-warn/30 bg-warn/[0.05] p-4">
-      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2.5 text-left">
-        <GitMerge size={15} className="shrink-0 text-warn" />
+    // Loud on purpose. At warn/5% with a text-link "Review" this read as a
+    // status banner rather than a job, and got scrolled past for weeks --
+    // "i dont see where the 7 items that need to be adressed are". Solid tint,
+    // a counted badge, and a real button, because it IS a job: until it's
+    // answered these sheets aren't attached to any card.
+    <Card className="border-warn/40 bg-warn/[0.12] p-4">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-3 text-left"
+      >
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-warn/20 text-warn">
+          <GitMerge size={17} />
+        </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-ink">
-            {pending.length} new build{pending.length === 1 ? '' : 's'} to place
+          <span className="block font-display text-[15px] font-bold text-ink">
+            {pending.length} new build{pending.length === 1 ? '' : 's'} need{pending.length === 1 ? 's' : ''} a home
           </span>
           <span className="block text-xs text-muted">
-            Each of these reads like a dish you already have. Update that one, or keep it separate?
+            Each reads like a dish you already have. Until you answer, its sheet isn’t on any card.
           </span>
         </span>
-        <span className="shrink-0 text-xs font-bold text-warn">{open ? 'Hide' : 'Review'}</span>
+        <span
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${
+            open ? 'bg-white/10 text-ink' : 'bg-warn text-navy'
+          }`}
+        >
+          {open ? 'Hide' : `Review ${pending.length}`}
+        </span>
       </button>
 
       {open && (
