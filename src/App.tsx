@@ -32,6 +32,7 @@ import { Forecast } from './routes/Forecast'
 import { Mix } from './routes/Mix'
 import { Period } from './routes/Period'
 import { Schedule } from './routes/Schedule'
+import { PermGate } from './components/PermGate'
 import { Posted } from './routes/Posted'
 import { Users } from './routes/Users'
 import { LineBuilds } from './routes/LineBuilds'
@@ -78,7 +79,17 @@ const router = createHashRouter([
       { path: 'forecast', element: <Forecast /> },
       { path: 'mix', element: <Mix /> },
       { path: 'period', element: <Period /> },
-      { path: 'schedule', element: <Schedule /> },
+      // Who's on next Saturday is a manager's business, and this runs on shared
+      // devices — so the schedule is behind the Schedule right, not just its
+      // edit buttons. Admin, Area Director and GM hold it by default.
+      {
+        path: 'schedule',
+        element: (
+          <PermGate perm="schedule" what="the manager schedule">
+            <Schedule />
+          </PermGate>
+        ),
+      },
       { path: 'posted', element: <Posted /> },
       { path: 'users', element: <Users /> },
       { path: 'builds', element: <LineBuilds /> },

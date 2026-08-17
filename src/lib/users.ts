@@ -62,11 +62,13 @@ const ROLE_DEFAULTS: Record<User['role'], Perm[]> = {
 export const permsOf = (u: Pick<User, 'role' | 'perms'>): Perm[] =>
   u.perms ?? ROLE_DEFAULTS[u.role] ?? []
 
-/** May this person clear that gate? The master key clears all of them. */
-export function can(u: Pick<User, 'role' | 'perms'>, perm: Perm): boolean {
-  const held = permsOf(u)
-  return held.includes(perm) || held.includes('unlock')
-}
+/** Does this set of grants cover that gate? The master key covers all of them. */
+export const holdsPerm = (held: Perm[], perm: Perm): boolean =>
+  held.includes(perm) || held.includes('unlock')
+
+/** May this person clear that gate? */
+export const can = (u: Pick<User, 'role' | 'perms'>, perm: Perm): boolean =>
+  holdsPerm(permsOf(u), perm)
 
 // The owner, per the handoff (default admin PIN 2424).
 export const DEFAULT_USERS: User[] = [{ id: 'owner', name: 'Beau Bartholomew', role: 'Admin', pin: '2424' }]

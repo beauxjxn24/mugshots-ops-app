@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { pinMatches, type Perm } from './users'
+import { holdsPerm, permsOf, pinMatches, type Perm } from './users'
 
 /**
  * PIN gate (handoff spec): gated actions ask for a manager PIN, and the PIN has
@@ -17,6 +17,15 @@ interface PinState {
   perm: Perm
   unlockedUntil: number
   unlockedBy: string
+  /**
+   * What the person who unlocked actually holds.
+   *
+   * The unlock used to be a single "is it open" flag, so clearing a tip pickup
+   * left every other gate open for twenty minutes too — an AGM given Tip-out
+   * alone could walk from there straight into store setup. The window is still
+   * shared; the rights inside it are the unlocker's own.
+   */
+  unlockedPerms: Perm[]
   _resolve?: (ok: boolean) => void
   ask: (action: string, perm?: Perm) => Promise<boolean>
   submit: (pin: string) => boolean
@@ -31,15 +40,22 @@ export const usePin = create<PinState>((set, get) => ({
   perm: 'unlock',
   unlockedUntil: 0,
   unlockedBy: '',
+  unlockedPerms: [],
   ask: (action, perm = 'unlock') => {
-    if (get().isUnlocked()) return Promise.resolve(true)
+    if (get().isUnlocked() && holdsPerm(get().unlockedPerms, perm)) return Promise.resolve(true)
     return new Promise<boolean>((resolve) => set({ open: true, action, perm, _resolve: resolve }))
   },
   submit: (pin) => {
     const user = pinMatches(pin, get().perm)
     if (!user) return false
     const r = get()._resolve
-    set({ open: false, _resolve: undefined, unlockedUntil: Date.now() + UNLOCK_MS, unlockedBy: user.name })
+    set({
+      open: false,
+      _resolve: undefined,
+      unlockedUntil: Date.now() + UNLOCK_MS,
+      unlockedBy: user.name,
+      unlockedPerms: permsOf(user),
+    })
     r?.(true)
     return true
   },
@@ -48,7 +64,7 @@ export const usePin = create<PinState>((set, get) => ({
     set({ open: false, _resolve: undefined })
     r?.(false)
   },
-  lock: () => set({ unlockedUntil: 0, unlockedBy: '' }),
+  lock: () => set({ unlockedUntil: 0, unlockedBy: '', unlockedPerms: [] }),
   isUnlocked: () => Date.now() < get().unlockedUntil,
 }))
 
