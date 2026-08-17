@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom'
 import { Card } from '../components/ui'
 import { useCurrentNames } from '../lib/scope'
 import { useShift, shiftLabel } from '../lib/shift'
-import { Sparkles, ListChecks, ChefHat, Banknote, BookOpen, ChevronRight } from 'lucide-react'
+import { usePersistentState, today } from '../lib/store'
+import { prepSendKey, type PrepSend } from '../lib/prepsend'
+import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
+import { Sparkles, ListChecks, ChefHat, Banknote, BookOpen, ChevronRight, Check } from 'lucide-react'
 
 const TILES = [
   { to: '/sidework', label: 'Sidework', desc: 'Your opening & closing duties', icon: Sparkles, color: '#2DD4BF' },
@@ -17,6 +20,13 @@ export function Shift() {
   const { shift } = useShift()
   const hour = new Date().getHours()
   const greet = hour < 11 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  // The prep list landing is the one thing on this screen worth interrupting
+  // for — otherwise a cook has to keep opening Prep to find out whether it's
+  // out yet.
+  const t = today()
+  const [sent] = usePersistentState<PrepSend | null>(prepSendKey(t), null)
+  const [done] = usePersistentState<Record<string, PrepCheck>>(prepDoneKey(t), {})
+  const left = sent ? sent.items.filter((i) => !done[i.name]).length : 0
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6">
@@ -34,6 +44,30 @@ export function Shift() {
           </span>
         </div>
       </div>
+
+      {sent && (
+        <Link
+          to="/prep"
+          className={`mb-4 flex items-center gap-3 rounded-2xl px-4 py-3.5 ${
+            left === 0 ? 'bg-up/12' : 'bg-brand/12'
+          }`}
+        >
+          <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${left === 0 ? 'bg-up/20 text-up' : 'bg-brand/20 text-brand-600'}`}>
+            {left === 0 ? <Check size={20} /> : <ChefHat size={20} />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={`block font-display text-base font-semibold ${left === 0 ? 'text-up' : 'text-ink'}`}>
+              {left === 0 ? 'Prep list complete' : 'Prep list is ready'}
+            </span>
+            <span className="block text-xs text-muted">
+              {left === 0
+                ? `All ${sent.items.length} done`
+                : `${left} left of ${sent.items.length} · sent ${new Date(sent.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+            </span>
+          </span>
+          <ChevronRight size={18} className="shrink-0 text-muted" />
+        </Link>
+      )}
 
       <div className="space-y-3">
         {TILES.map((t) => (

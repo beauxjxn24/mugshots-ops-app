@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, ChefHat } from 'lucide-react'
 import { usePersistentState, today } from '../lib/store'
 import { prepDoneKey, prepWho, setPrepWho, type PrepCheck } from '../lib/prepdone'
 import { shiftPerson } from '../lib/daycode'
@@ -25,7 +25,7 @@ export interface ChecklistItem {
  * A tick records initials and the time, so the sheet says who did it rather
  * than only that somebody did.
  */
-export function PrepChecklist({ items }: { items: ChecklistItem[] }) {
+export function PrepChecklist({ items, sentAt }: { items: ChecklistItem[]; sentAt?: string }) {
   const [done, setDone] = usePersistentState<Record<string, PrepCheck>>(prepDoneKey(today()), {})
   // Whoever signed in for this shift. Only falls back to asking when nobody
   // did -- a manager's own device, or a session that predates the sign-in step.
@@ -57,9 +57,42 @@ export function PrepChecklist({ items }: { items: ChecklistItem[] }) {
 
   const todo = items.filter((i) => !done[i.name])
   const complete = items.length - todo.length
+  const finished = items.length > 0 && todo.length === 0
+
+  // Arriving on a list that just went out, a cook shouldn't have to work out
+  // whether it's today's. It says so, with the time it landed.
+  const landed = sentAt
+    ? new Date(sentAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : ''
 
   return (
     <>
+      {/* Two moments worth calling out: the list arriving, and the list being
+          finished. Both were things you had to notice for yourself. */}
+      {finished ? (
+        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-up/12 px-4 py-3">
+          <Check size={18} className="shrink-0 text-up" />
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-up">Prep list complete</span>
+            <span className="block text-xs text-muted">
+              All {items.length} ticked off. The manager's sheet shows it as finished.
+            </span>
+          </span>
+        </div>
+      ) : (
+        landed && (
+          <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-brand/10 px-4 py-3">
+            <ChefHat size={18} className="shrink-0 text-brand-600" />
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-ink">Prep list is ready</span>
+              <span className="block text-xs text-muted">
+                {items.length} to make · sent {landed}
+              </span>
+            </span>
+          </div>
+        )
+      )}
+
       <div className="mb-3 flex items-center gap-2 rounded-xl bg-black/[0.03] px-4 py-3">
         <span className="text-sm font-bold text-ink">
           {complete}/{items.length} done

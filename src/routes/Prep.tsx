@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Printer, Pencil, Check, GripVertical, Archive } from 'lucide-react'
+import { Printer, Pencil, Check, GripVertical, Archive, Send, Undo2, ChefHat } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useRole } from '../lib/role'
 import { useCurrentNames } from '../lib/scope'
@@ -12,6 +12,8 @@ import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from '../components/SpecPeek'
 import { PrepChecklist, type ChecklistItem } from '../components/PrepChecklist'
 import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
+import { driftFrom, getSend, hasDrift, prepSendKey, sendPrep, unsendPrep, type PrepSend, type SentItem } from '../lib/prepsend'
+import { shiftPerson } from '../lib/daycode'
 import { entryColumn, entryField } from '../lib/nextfield'
 
 interface PrepItem {
@@ -169,6 +171,9 @@ export function Prep() {
   const [peek, setPeek] = useState<string | null>(null)
   // What the floor has ticked off today, and who ticked it.
   const [doneLog] = usePersistentState<Record<string, PrepCheck>>(prepDoneKey(t), {})
+  // What's been sent to the floor, if anything. Held in persistent state so the
+  // button reflects a send made on this device a moment ago.
+  const [sent, setSent] = usePersistentState<PrepSend | null>(prepSendKey(t), null)
 
   // One-time station migrations, per location:
   //  • v3: a store still on the first-pass default (Fry side / Grill side) is
@@ -272,6 +277,26 @@ export function Prep() {
   const active = items.filter((it) => !it.parked)
   const parked = items.filter((it) => it.parked)
   const inSection = (sec: string) => active.filter((it) => (it.section ?? 'Recipes') === sec && onStation(it))
+
+  // The list as the floor would receive it: everything still owed today. An
+  // item already at par isn't work, so it doesn't go out.
+  const outgoing: SentItem[] = SECTIONS.flatMap((sec) =>
+    inSection(sec)
+      .filter((it) => need(it) > 0)
+      .map((it) => ({ name: it.name, unit: it.unit, need: need(it), section: sec })),
+  )
+  const drift = driftFrom(sent, outgoing)
+  const stale = hasDrift(drift)
+
+  const doSend = () => {
+    setSent(sendPrep(outgoing, shiftPerson() || 'Manager', t))
+  }
+  const doUnsend = async () => {
+    if (!(await confirmDelete('Pull the prep list back?', "The floor stops seeing it. Ticks already made are kept.", 'Pull back')))
+      return
+    unsendPrep(t)
+    setSent(null)
+  }
 
   const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
 
@@ -458,6 +483,28 @@ export function Prep() {
       >
         <Printer size={13} /> {station ? `Print ${station} sheet` : stations.length > 0 ? 'Print all — a page per station' : 'Print prep sheet'}
       </button>
+      {/* The floor sees nothing until this is pressed. Counting a cooler takes
+          a while and a half-counted sheet is not a list — sending it is the
+          moment it becomes one. */}
+      {canEdit && mode === 'kitchen' && (
+        <button
+          onClick={doSend}
+          disabled={outgoing.length === 0}
+          title={
+            outgoing.length === 0
+              ? 'Nothing to send — everything is at par'
+              : sent
+                ? 'Send the updated list to the floor'
+                : 'Make this list visible to the floor'
+          }
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold text-white disabled:opacity-40 ${
+            stale || !sent ? 'bg-brand' : 'bg-up'
+          }`}
+        >
+          <Send size={13} />
+          {!sent ? `Send to the floor · ${outgoing.length}` : stale ? `Send update · ${outgoing.length}` : 'Sent ✓'}
+        </button>
+      )}
     </>
   )
 
@@ -700,14 +747,43 @@ export function Prep() {
   // sideways on a handset -- unusable one-handed on a line. Same items, same
   // day's numbers, different shape.
   if (!canEdit && mode === 'kitchen') {
-    const checklist: ChecklistItem[] = SECTIONS.flatMap((sec) =>
-      inSection(sec).map((it) => ({ name: it.name, unit: it.unit, need: need(it), section: sec })),
-    )
+    // The floor works from the list that was SENT, not from the live sheet.
+    // Mid-count numbers are not a list, and a cook who starts on one is working
+    // to a figure that is about to change.
+    if (!sent) {
+      return (
+        <>
+          <PageHeader title={`Prep list · ${fmtLong(t)}`} subtitle="Waiting on the manager" />
+          <div className="mx-auto max-w-2xl p-4 sm:p-6">
+            <Card className="p-6 text-center">
+              <span className="mx-auto mb-3 grid size-11 place-items-center rounded-xl bg-black/5 text-muted">
+                <ChefHat size={20} />
+              </span>
+              <div className="font-display text-lg font-semibold text-ink">Prep list isn't out yet</div>
+              <p className="mt-1 text-sm text-muted">
+                A manager is still counting. It'll show up here the moment it's sent — nothing to do
+                until then.
+              </p>
+            </Card>
+          </div>
+        </>
+      )
+    }
+    const checklist: ChecklistItem[] = sent.items.map((i) => ({
+      name: i.name,
+      unit: i.unit,
+      need: i.need,
+      section: i.section,
+    }))
+    const at = new Date(sent.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
     return (
       <>
-        <PageHeader title={`Prep list · ${fmtLong(t)}`} subtitle="Tick each one off as you finish it" />
+        <PageHeader
+          title={`Prep list · ${fmtLong(t)}`}
+          subtitle={`Sent ${at} by ${sent.by} — tick each one off as you finish it`}
+        />
         <div className="mx-auto max-w-2xl p-4 sm:p-6">
-          <PrepChecklist items={checklist} />
+          <PrepChecklist items={checklist} sentAt={sent.at} />
         </div>
       </>
     )
@@ -927,6 +1003,68 @@ export function Prep() {
             )}
           </Card>
         </div>
+
+        {/* Where the floor is with it. The manager's half of the loop: sent at
+            this time, this many done, and — the answer to "is prep finished?" —
+            who finished it and when, instead of walking the line to ask. */}
+        {canEdit && mode === 'kitchen' && (() => {
+          const list = sent?.items ?? []
+          const doneN = list.filter((i) => doneLog[i.name]).length
+          const finished = list.length > 0 && doneN === list.length
+          const last = Object.values(doneLog)
+            .map((c) => c.at)
+            .sort()
+            .reverse()[0]
+          const whoFinished = last
+            ? Object.values(doneLog).find((c) => c.at === last)?.by
+            : undefined
+          const clock = (iso: string) =>
+            new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+          return (
+            <Card
+              className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 p-3 ${
+                finished ? 'border-up/40 bg-up/[0.07]' : sent ? 'border-brand/25 bg-brand/[0.05]' : ''
+              }`}
+            >
+              {!sent ? (
+                <>
+                  <span className="text-sm font-bold text-ink">Not sent yet</span>
+                  <span className="text-xs text-muted">
+                    The floor can't see the prep list until you send it — finish counting, then press
+                    Send to the floor.
+                  </span>
+                </>
+              ) : finished ? (
+                <>
+                  <span className="text-sm font-bold text-up">Prep finished ✓</span>
+                  <span className="text-xs text-muted">
+                    All {list.length} done{whoFinished ? ` · last off by ${whoFinished}` : ''}
+                    {last ? ` at ${clock(last)}` : ''}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-bold text-ink">
+                    Sent {clock(sent.at)} · {doneN} of {list.length} done
+                  </span>
+                  {stale && (
+                    <span className="rounded-full bg-warn/20 px-2 py-0.5 text-[10px] font-extrabold uppercase text-warn">
+                      sheet changed since — send update
+                    </span>
+                  )}
+                </>
+              )}
+              {sent && (
+                <button
+                  onClick={doUnsend}
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[11px] font-bold text-muted hover:border-down/40 hover:text-down"
+                >
+                  <Undo2 size={12} /> Pull it back
+                </button>
+              )}
+            </Card>
+          )
+        })()}
 
         {/* Add row — above the sheet, so adding an item doesn't mean scrolling
             past every section to reach the box and back again to see the result. */}
