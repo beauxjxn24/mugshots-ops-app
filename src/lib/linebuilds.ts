@@ -1,6 +1,7 @@
 import { SPECS, ACTIVE_SPECS } from './specs'
 import { slugify } from './photos'
 import { getImported } from './buildsheet'
+import { prepItemNames, barPrepNames, getCatalog } from './catalog'
 
 /**
  * Line builds — the kitchen's plating sheets, as data.
@@ -324,6 +325,17 @@ export function usageIndex(prepNames: string[] = [], stockNames: string[] = []):
 /** Which builds use a given item — the single-item form of usageIndex. */
 export function usedIn(name: string, prepNames: string[] = [], stockNames: string[] = []): string[] {
   return usageIndex(prepNames, stockNames).get(name) ?? []
+}
+
+/**
+ * What one item goes into, with the name lists filled in for you.
+ *
+ * Every caller was assembling the same three lists — the prep sheet, the bar
+ * prep sheet, the stock catalog — before it could ask. The recipe card has no
+ * business knowing a prep sheet exists, so it asks this instead.
+ */
+export function goesInto(name: string): string[] {
+  return usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? []
 }
 
 export const buildPhoto = (b: LineBuild): string | undefined =>

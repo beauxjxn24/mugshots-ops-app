@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { X, ExternalLink } from 'lucide-react'
 import { SPECS } from '../lib/specs'
+import { goesInto } from '../lib/linebuilds'
 import { dishPhoto } from '../lib/photos'
 
 /**
@@ -22,6 +23,12 @@ export function SpecPeek({ name, onClose }: { name: string | null; onClose: () =
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [name, onClose])
+
+  // What this prep feeds. It used to sit on the prep sheet as a "3 dishes"
+  // pill, which is noise on a row you read while counting a cooler — the place
+  // it actually matters is here, where someone is reading the recipe and wants
+  // to know what they'd be changing.
+  const feeds = useMemo(() => (name ? goesInto(name) : []), [name])
 
   if (!name) return null
   const spec = SPECS.find((s) => s.name === name)
@@ -81,6 +88,25 @@ export function SpecPeek({ name, onClose }: { name: string | null; onClose: () =
                   <li key={i}>{st}</li>
                 ))}
               </ol>
+            </>
+          )}
+          {feeds.length > 0 && (
+            <>
+              <div className="mb-1.5 mt-4 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                Goes into · {feeds.length}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {feeds.map((dish) => (
+                  <Link
+                    key={dish}
+                    to={`/specs?open=${encodeURIComponent(dish)}`}
+                    onClick={onClose}
+                    className="rounded-full bg-signal/10 px-2.5 py-1 text-[11px] font-bold text-signal hover:bg-signal/20"
+                  >
+                    {dish}
+                  </Link>
+                ))}
+              </div>
             </>
           )}
         </div>

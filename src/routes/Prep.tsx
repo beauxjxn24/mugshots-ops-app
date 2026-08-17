@@ -7,12 +7,10 @@ import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { BarPrep } from '../components/BarPrep'
 import PREP_SEED from '../data/prep-items.json'
-import { usageIndex } from '../lib/linebuilds'
 import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from '../components/SpecPeek'
 import { PrepChecklist, type ChecklistItem } from '../components/PrepChecklist'
 import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
-import { prepItemNames, barPrepNames, getCatalog } from '../lib/catalog'
 
 interface PrepItem {
   name: string
@@ -383,9 +381,9 @@ export function Prep() {
           })()}
           <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className="truncate">{it.spec || it.unit}</span>
-            {/* What this prep feeds. Diced Tomatoes goes on half the menu, and
-                that count is the honest reason its par is what it is. */}
-            <DishCount name={it.name} />
+            {/* What this prep feeds is on the recipe card, not here. The sheet
+                is read standing in a cooler with a clipboard; the row wants the
+                item and its par and nothing else. */}
             {canEdit && stations.length > 0 &&
               (() => {
                 const hex = it.station ? stationHex(it.station) : undefined
@@ -936,23 +934,5 @@ export function Prep() {
   )
 }
 
-/**
- * How many dishes this prep item goes into, read straight off the line builds.
- * Hovering names them; tapping opens the full list on Specs & Recipes.
- */
-function DishCount({ name }: { name: string }) {
-  const dishes = useMemo(
-    () => usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? [],
-    [name],
-  )
-  if (dishes.length === 0) return null
-  return (
-    <Link
-      to={`/specs?open=${encodeURIComponent(dishes[0])}`}
-      title={`Used in: ${dishes.join(', ')}`}
-      className="shrink-0 rounded-full bg-signal/10 px-1.5 py-0.5 text-[10px] font-bold text-signal hover:bg-signal/20"
-    >
-      {dishes.length} dish{dishes.length === 1 ? '' : 'es'}
-    </Link>
-  )
-}
+// What a prep item goes into lives on the recipe card now — see goesInto() in
+// lib/linebuilds and the "Goes into" block on SpecPeek.
