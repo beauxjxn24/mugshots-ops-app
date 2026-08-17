@@ -59,7 +59,7 @@ export function Users() {
       />
       <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
         {/* Today's staff code. Managers read it off here and give it to the
-            floor; it changes on its own at midnight. */}
+            floor; it rolls over on its own at 4am, with the business day. */}
         <Card className="flex flex-wrap items-center gap-x-4 gap-y-2 border-brand/30 bg-navy p-4 text-white">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand">
             <KeyRound size={18} />
@@ -69,8 +69,9 @@ export function Users() {
               Today's staff code
             </span>
             <span className="block text-xs text-white/55">
-              Give this to the floor — it changes at midnight, and every device at this store shows
-              the same four digits.
+              Give this to the floor — it rolls over at 4am, not midnight, so a closer finishing at
+              half past twelve isn't locked out on a code nobody has handed out yet. Every device
+              at this store shows the same four digits.
             </span>
           </span>
           <span className="ml-auto font-mono text-3xl font-bold tracking-[0.2em] text-signal">
