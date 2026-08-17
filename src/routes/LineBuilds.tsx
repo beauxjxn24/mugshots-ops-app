@@ -64,7 +64,7 @@ export function LineBuilds() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-2">
           {cards.map((s) => {
             const photo = dishPhoto(s.name)
-            const tag = s.g === 'Line Builds' ? 'LTO' : s.g.replace(' Builds', '')
+            const tag = s.g.replace(' Builds', '')
             return (
               <article
                 key={`${s.g}-${s.name}`}

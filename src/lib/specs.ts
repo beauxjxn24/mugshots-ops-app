@@ -15,10 +15,16 @@ export const ACTIVE_SPECS = SPECS.filter((s) => !s.off)
 /** OG — off the menu, still cooked on request. */
 export const OG_SPECS = SPECS.filter((s) => s.og)
 
-/** Stable category order for the Specs screen. */
+/**
+ * Category order for the Specs screen — the order the menu reads in.
+ *
+ * The core menu first, then the limited-time items together (they used to sit
+ * eight categories apart, which is how the same LTO could be looked for twice),
+ * then drinks, then Prep last: prep is the component library behind all of it
+ * rather than something anyone orders.
+ */
 export const GROUP_ORDER = [
   'Burger Builds',
-  'Line Builds',
   'Sandwich & Wrap Builds',
   'Hot Dog Builds',
   'Salad & Bowl Builds',
@@ -26,6 +32,7 @@ export const GROUP_ORDER = [
   'Appetizer Builds',
   'Kids Builds',
   'Dessert Builds',
+  'LTO Builds',
   'Summer LTO',
   'Pairings',
   'Shakes',

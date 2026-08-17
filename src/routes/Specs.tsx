@@ -3,7 +3,7 @@ import { Archive, ArchiveRestore, UtensilsCrossed } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '../components/SearchInput'
-import { SPECS, OG_SPECS, slug } from '../lib/specs'
+import { SPECS, OG_SPECS, GROUP_ORDER, slug } from '../lib/specs'
 import { buildPhoto } from '../lib/linebuilds'
 import { buildForSpec } from '../lib/buildmatch'
 import { BuildReconcile } from '../components/BuildReconcile'
@@ -18,7 +18,32 @@ const OLDIES = 'Oldies'
 const OG = 'OG'
 // Food only — drinks live in the Signature Drinks section.
 const FOOD_SPECS = SPECS.filter(isFood)
-const foodGroups = ['All', ...[...new Set(FOOD_SPECS.map((s) => s.g))]]
+
+/**
+ * The categories, in menu order.
+ *
+ * They used to come out in whatever order specs.json happened to be written in,
+ * which is why Kids landed between Sandwiches and Pasta. GROUP_ORDER is the
+ * order the menu reads in; anything new that isn't on that list goes on the end
+ * rather than disappearing.
+ */
+const FOOD_GROUPS = (() => {
+  const present = new Set(FOOD_SPECS.map((s) => s.g))
+  const known = GROUP_ORDER.filter((g) => present.has(g))
+  const extras = [...present].filter((g) => !GROUP_ORDER.includes(g))
+  return [...known, ...extras]
+})()
+
+const groupAnchor = (g: string): string => `grp-${slug(g)}`
+
+/**
+ * Chip and jump-bar wording.
+ *
+ * Every category on this page is a build, so eleven chips all ending in
+ * "Builds" spend their width saying the same word. The section headings keep
+ * the full name; the chips say the part that differs.
+ */
+const shortGroup = (g: string): string => (g === 'Prep' ? 'Prep' : g.replace(/ Builds$/, ''))
 
 export function Specs() {
   const [q, setQ] = useState('')
@@ -27,7 +52,6 @@ export function Specs() {
   // Archived recipes (soft-deleted) live here by name, persisted to the device.
   const [archived, setArchived] = usePersistentState<string[]>('recipes:archived', [])
 
-  const gs = foodGroups
   // An item pulled in a rollout is archived for everyone, on every device --
   // that is the whole point of marking it in the data rather than tapping
   // Archive on each tablet. A card archived by hand still is too.
@@ -56,6 +80,36 @@ export function Specs() {
       return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
   }, [q, group, viewingOldies, viewingOG, archivedSet])
+
+  /**
+   * The results, cut into their categories.
+   *
+   * A hundred and twenty cards in one flat grid is the reason this page felt
+   * like scrolling with no direction: nothing on screen ever told you where you
+   * were or how much was left. Sectioned and headed, the same list reads as a
+   * menu — and the jump bar above turns "scroll until you see it" into one tap.
+   */
+  const sections = useMemo(() => {
+    const by = new Map<string, Spec[]>()
+    for (const s of filtered) {
+      const list = by.get(s.g)
+      if (list) list.push(s)
+      else by.set(s.g, [s])
+    }
+    const order = [...FOOD_GROUPS, ...[...by.keys()].filter((g) => !FOOD_GROUPS.includes(g))]
+    return order.filter((g) => by.has(g)).map((g) => ({ group: g, items: by.get(g)! }))
+  }, [filtered])
+
+  // Counts drive the chips, so a category that's empty under the current search
+  // says so instead of looking like a dead button.
+  const counts = useMemo(() => {
+    const c = new Map<string, number>()
+    for (const s of filtered) c.set(s.g, (c.get(s.g) ?? 0) + 1)
+    return c
+  }, [filtered])
+
+  const jumpTo = (g: string) =>
+    document.getElementById(groupAnchor(g))?.scrollIntoView({ block: 'start', behavior: 'smooth' })
 
   const archive = (name: string) => setArchived((a) => [...new Set([...a, name])])
   const restore = (name: string) => setArchived((a) => a.filter((n) => n !== name))
@@ -108,21 +162,39 @@ export function Specs() {
         <div className="mb-5">
           <BuildReconcile />
         </div>
-        {/* Category chips */}
-        <div className="mb-5 flex flex-wrap gap-2">
-          {gs.map((g) => (
-            <button
-              key={g}
-              onClick={() => setGroup(g)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                group === g
-                  ? 'border-brand bg-brand text-white'
-                  : 'border-black/10 bg-white text-muted hover:border-brand/40'
-              }`}
-            >
-              {g}
-            </button>
-          ))}
+        {/* Category chips — in menu order, each carrying its count so you can
+            see how big a category is before you open it. */}
+        <div className="mb-3 flex flex-wrap gap-2">
+          <button
+            onClick={() => setGroup('All')}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              group === 'All'
+                ? 'border-brand bg-brand text-white'
+                : 'border-black/10 bg-white text-muted hover:border-brand/40'
+            }`}
+          >
+            Everything
+          </button>
+          {FOOD_GROUPS.map((g) => {
+            const n = counts.get(g) ?? 0
+            return (
+              <button
+                key={g}
+                onClick={() => setGroup(g)}
+                disabled={n === 0 && group !== g}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  group === g
+                    ? 'border-brand bg-brand text-white'
+                    : n === 0
+                      ? 'border-black/5 bg-white text-muted/40'
+                      : 'border-black/10 bg-white text-muted hover:border-brand/40'
+                }`}
+              >
+                {shortGroup(g)}
+                <span className={group === g ? 'ml-1.5 text-white/60' : 'ml-1.5 text-muted/60'}>{n}</span>
+              </button>
+            )
+          })}
           <button
             onClick={() => setGroup(OG)}
             title="Off the menu, still made on request"
@@ -150,6 +222,26 @@ export function Specs() {
           </button>
         </div>
 
+        {/* Jump bar. The whole complaint about this page was scrolling without
+            direction; this is the direction. Only earns its space when there is
+            more than one section to jump between. */}
+        {sections.length > 1 && (
+          <div className="sticky top-0 z-20 -mx-4 mb-4 flex gap-1.5 overflow-x-auto border-b border-white/10 bg-cream/85 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <span className="shrink-0 self-center pr-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+              Jump
+            </span>
+            {sections.map(({ group: g, items }) => (
+              <button
+                key={g}
+                onClick={() => jumpTo(g)}
+                className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-muted hover:bg-brand/10 hover:text-brand-600"
+              >
+                {shortGroup(g)} <span className="text-muted/50">{items.length}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {filtered.length === 0 && (
           <p className="text-sm text-muted">
             {viewingOG
@@ -160,18 +252,28 @@ export function Specs() {
           </p>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((s) => (
-            <SpecCard
-              key={s.name}
-              anchor={`spec-${slug(s.name)}`}
-              spec={s}
-              archived={viewingOldies}
-              open={openName === s.name}
-              onToggle={() => setOpenName(openName === s.name ? null : s.name)}
-              onArchive={() => archive(s.name)}
-              onRestore={() => restore(s.name)}
-            />
+        <div className="space-y-7">
+          {sections.map(({ group: g, items }) => (
+            <section key={g} id={groupAnchor(g)} className="scroll-mt-16">
+              <h2 className="mb-2.5 flex items-baseline gap-2 border-b border-black/5 pb-1.5">
+                <span className="font-display text-sm font-semibold text-ink">{g}</span>
+                <span className="text-xs text-muted">{items.length}</span>
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {items.map((s) => (
+                  <SpecCard
+                    key={s.name}
+                    anchor={`spec-${slug(s.name)}`}
+                    spec={s}
+                    archived={viewingOldies}
+                    open={openName === s.name}
+                    onToggle={() => setOpenName(openName === s.name ? null : s.name)}
+                    onArchive={() => archive(s.name)}
+                    onRestore={() => restore(s.name)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </div>
@@ -200,8 +302,10 @@ function SpecCard({
   // A sheet may name a dish "Texan" where the app calls it "Texan Burger",
   // so the photo can be filed under the sheet's name rather than the spec's.
   const thumb = dishPhoto(spec.name) ?? (build ? buildPhoto(build) : undefined)
+  // scroll-mt keeps a card arrived at from a ?open= link clear of the sticky
+  // jump bar instead of landing underneath it.
   return (
-    <Card id={anchor} className={`overflow-hidden ${archived ? 'opacity-75' : ''}`}>
+    <Card id={anchor} className={`scroll-mt-28 overflow-hidden ${archived ? 'opacity-75' : ''}`}>
       <button onClick={onToggle} className="flex w-full items-start gap-3 p-4 text-left">
         {thumb && (
           <img
