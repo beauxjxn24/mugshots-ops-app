@@ -12,7 +12,7 @@ import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from '../components/SpecPeek'
 import { PrepChecklist, type ChecklistItem } from '../components/PrepChecklist'
 import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
-import { driftFrom, getSend, hasDrift, prepSendKey, sendPrep, unsendPrep, type PrepSend, type SentItem } from '../lib/prepsend'
+import { driftFrom, hasDrift, prepSendKey, sendPrep, unsendPrep, type PrepSend, type SentItem } from '../lib/prepsend'
 import { shiftPerson } from '../lib/daycode'
 import { entryColumn, entryField } from '../lib/nextfield'
 
@@ -278,8 +278,16 @@ export function Prep() {
   const parked = items.filter((it) => it.parked)
   const inSection = (sec: string) => active.filter((it) => (it.section ?? 'Recipes') === sec && onStation(it))
 
+  const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
+
   // The list as the floor would receive it: everything still owed today. An
   // item already at par isn't work, so it doesn't go out.
+  //
+  // Has to sit BELOW need() — it's a const arrow, and reading it from here at
+  // render time throws "cannot access before initialization". TypeScript won't
+  // catch that: the call is inside a closure, so it looks deferred to the
+  // compiler and only blows up when the closure actually runs, which is
+  // immediately.
   const outgoing: SentItem[] = SECTIONS.flatMap((sec) =>
     inSection(sec)
       .filter((it) => need(it) > 0)
@@ -297,8 +305,6 @@ export function Prep() {
     unsendPrep(t)
     setSent(null)
   }
-
-  const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
 
   // Drag by the grip — within a box or across boxes; order + box persist and
   // the printed sheet follows.
