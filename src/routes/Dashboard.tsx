@@ -8,7 +8,9 @@ import type { Booking } from '../lib/catering'
 import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X } from 'lucide-react'
+import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X, Pencil } from 'lucide-react'
+import { useRole } from '../lib/role'
+import { FocusPicker } from '../components/FocusPicker'
 import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
 import { ACTIVE_SPECS } from '../lib/specs'
 import { DashDrop } from '../components/DashDrop'
@@ -595,6 +597,11 @@ function LtoFocus() {
   const [paused, setPaused] = useState(false)
   const [rawDays] = usePersistentState<PmixDays>('pmix:days', {})
   const days = sanitizePmix(rawDays)
+  // What this store has chosen to push. Empty means "decide for me" — see below.
+  const [picked, setPicked] = usePersistentState<string[]>('dash:focus', [])
+  const [editing, setEditing] = useState(false)
+  const role = useRole((r) => r.role)
+  const canEdit = role !== 'staff'
   // Matched to what the LTO screen actually holds. Not the yield line — the
   // milkshakes carry "$3.99 LTO pricing" there, so they were being pushed as
   // the shift's LTO and linking to a screen they aren't on.
@@ -617,11 +624,17 @@ function LtoFocus() {
       .map((x) => x.spec)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [Object.keys(days).length])
-  const focus = [...allLtos, ...topBurgers.filter((b) => !allLtos.some((l) => l.name === b.name))]
+  const auto = [...allLtos, ...topBurgers.filter((b) => !allLtos.some((l) => l.name === b.name))]
+  // A hand-picked list wins outright, in the order it was picked. It is NOT
+  // filtered down to items with photos the way the automatic line-up is: if a
+  // manager says push this, it gets pushed, picture or no picture.
+  const chosen = picked
+    .map((n) => ACTIVE_SPECS.find((s) => s.name === n))
+    .filter((s): s is Spec => !!s)
   // Rotate through items that actually HAVE a photo, so the tile always shows a
   // real dish pic (falling back to everything only if no photos exist yet).
-  const withPhoto = focus.filter((s) => dishPhoto(s.name))
-  const ltos = withPhoto.length ? withPhoto : focus
+  const withPhoto = auto.filter((s) => dishPhoto(s.name))
+  const ltos = chosen.length ? chosen : withPhoto.length ? withPhoto : auto
 
   // Auto-scroll the food photos every few seconds (pause on hover/tap).
   useEffect(() => {
@@ -656,9 +669,19 @@ function LtoFocus() {
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-[#e0b23c]">
           <Flame size={14} /> Food focus ·{' '}
-          {allLtos.some((l) => l.name === s.name) ? 'LTO' : 'Top seller'}
+          {chosen.length ? 'Picked' : allLtos.some((l) => l.name === s.name) ? 'LTO' : 'Top seller'}
         </div>
         <div className="flex items-center gap-1 text-xs text-white/60">
+          {canEdit && (
+            <button
+              onClick={() => setEditing((v) => !v)}
+              aria-label="Choose what to push"
+              title="Choose what to push"
+              className="mr-1 grid size-6 place-items-center rounded-md border border-white/15 bg-white/10 text-white"
+            >
+              <Pencil size={12} />
+            </button>
+          )}
           <button onClick={() => setIdx((i) => i - 1)} aria-label="Previous" className="grid size-6 place-items-center rounded-md border border-white/15 bg-white/10 text-white">
             <ChevronLeft size={13} />
           </button>
@@ -668,6 +691,19 @@ function LtoFocus() {
           </button>
         </div>
       </div>
+
+      {editing && (
+        <div className="mb-3">
+          <FocusPicker
+            picked={picked}
+            onChange={(next) => {
+              setPicked(next)
+              setIdx(0) // land on the first pick, not wherever the rotation was
+            }}
+            onClose={() => setEditing(false)}
+          />
+        </div>
+      )}
       <div key={s.name} className="flex min-h-0 flex-1 items-stretch gap-4 animate-[ltoFade_.5s_ease]">
         <div className="flex min-w-0 flex-1 flex-col">
           {s.yields && (
