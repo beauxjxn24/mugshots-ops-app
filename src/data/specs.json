@@ -2858,30 +2858,30 @@
   "g": "Pasta & Plate Builds",
   "storage": "Lined Burger Basket",
   "shelf": "6 tenders + 6 oz fries",
-  "yields": "",
+  "yields": "3 to a Mombo",
   "ing": [
    [
     "Tenders",
-    "hand-breaded and fried"
+    "6 — knuckled, double battered, fried or grilled"
+   ],
+   [
+    "Fries",
+    "6 oz"
+   ],
+   [
+    "Dipping Sauce",
+    "2 oz on side — honey mustard or house-made ranch"
    ],
    [
     "Sauce",
-    "choose: honey mustard, or tossed in Wang sauce"
-   ],
-   [
-    "Beer-Battered Fries",
-    "side"
-   ],
-   [
-    "House-Made Ranch",
-    "served with"
+    "tossed, optional: Mild · Hot · BBQ · Teriyaki · Sesame Ginger · Lemon Pepper · Carolina Gold · Honey Hot · Sweet Chili · Mango Habanero · Garlic Parm"
    ]
   ],
   "steps": [
-   "Hand-breaded and fried chicken tenders.",
-   "Served with honey mustard, or have the tenders tossed in Wang sauce.",
-   "Served with house-made ranch and beer-battered fries.",
-   "Also available grilled or blackened."
+   "Knuckle the tenders, double batter and fry — or grill.",
+   "Toss in a wing sauce if the guest wants them tossed.",
+   "Lined burger basket with 6 oz fries; 2 oz dipping sauce on the side.",
+   "3 tenders to a Mombo. Also available blackened."
   ]
  },
  {
@@ -2973,37 +2973,6 @@
   "steps": [
    "Fry and toss in sauce.",
    "1 ranch + 2 celery per 5 wings."
-  ]
- },
- {
-  "name": "Chicken Basket",
-  "g": "Appetizer Builds",
-  "storage": "Lined Burger Basket",
-  "shelf": "6 tenders + fries",
-  "yields": "3 to a Mombo",
-  "ing": [
-   [
-    "Tenders",
-    "6 — knuckled, double battered, fried or grilled"
-   ],
-   [
-    "Fries",
-    "6 oz"
-   ],
-   [
-    "Dipping Sauce",
-    "2 oz, on side"
-   ],
-   [
-    "Sauce",
-    "Mild · Hot · BBQ · Teriyaki · Sesame Ginger · Lemon Pepper · Carolina Gold · Honey Hot · Sweet Chili · Mango Habanero · Garlic Parm"
-   ]
-  ],
-  "steps": [
-   "Knuckle the tenders, double batter and fry — or grill.",
-   "Toss in the chosen sauce.",
-   "Lined burger basket with 6 oz fries; 2 oz dipping sauce on the side.",
-   "3 tenders to a Mombo."
   ]
  },
  {

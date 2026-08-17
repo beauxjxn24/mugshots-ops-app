@@ -283,9 +283,35 @@ export function missingComponents(prepNames: string[] = [], stockNames: string[]
  */
 const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo|build|\d+)$/
 
+/**
+ * Sheets the kitchen files under a different name than the menu prints.
+ *
+ * The name rules deliberately refuse to guess across a real difference in
+ * wording — that's what keeps "Texan" and "Texan SmashBurger" apart. But some
+ * pairs genuinely are one dish under two names, and there's no rule that can
+ * know it: the menu says Katie's Kickin' Chicken, the line's sheet says
+ * Chicken Basket, and it's the same six knuckled tenders and six ounces of
+ * fries in the same lined basket.
+ *
+ * Recorded here rather than as a tapped answer because an answer lives in one
+ * browser's storage — the office laptop would know and the kitchen tablet
+ * would still be asking. Data ships to every device.
+ *
+ * menu item → sheet name
+ */
+const BUILD_ALIASES: Record<string, string> = {
+  "katie's kickin' chicken": 'Chicken Basket',
+}
+const ALIAS_BY_NORM = new Map(Object.entries(BUILD_ALIASES).map(([k, v]) => [norm(k), norm(v)]))
+
 /** The build for a menu item, matched on name. */
 export function buildFor(name: string): LineBuild | undefined {
   const n = norm(name)
+  const aliased = ALIAS_BY_NORM.get(n)
+  if (aliased) {
+    const hit = allBuilds().find((b) => norm(b.sheetName) === aliased)
+    if (hit) return hit
+  }
   const exact = allBuilds().find((b) => norm(b.sheetName) === n)
   if (exact) return exact
   return allBuilds().find((b) => {
