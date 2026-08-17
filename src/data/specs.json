@@ -1508,92 +1508,112 @@
   {
     "name": "Kentucky Buck",
     "g": "Pairings",
-    "storage": "Pairs w/ Southern Smash",
-    "shelf": "LTO Pairing",
-    "yields": "cocktail",
+    "storage": "16 oz Pint Glass",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
     "ing": [
       [
-        "Elijah Craig Small Batch Bourbon",
-        "build"
+        "Elijah Craig Small Batch",
+        "2 oz"
       ],
       [
         "Peach Schnapps",
-        "build"
+        ".5 oz"
       ],
       [
-        "Fresh Lemon",
-        "build"
+        "Lemon Wedges",
+        "2, squeezed"
       ],
       [
         "Ginger Beer",
-        "top"
+        "4 oz"
+      ],
+      [
+        "Lemon Wedge",
+        "garnish"
       ]
     ],
     "steps": [
-      "Build bourbon, schnapps, and fresh lemon; top with ginger beer.",
-      "Sweet, rich, all southern — offer with the Southern Smash."
-    ],
-    "lto": "LTO Pairings"
+      "Fill a 16 oz pint glass with ice; add the Elijah Craig and peach schnapps.",
+      "Squeeze the lemon wedges over the ice and drop them in.",
+      "Cap with a mixing tin and shake well.",
+      "Remove the tin, add the ginger beer, stir with a bar spoon.",
+      "Garnish with a lemon wedge. Pairs with the Southern Smash."
+    ]
   },
   {
     "name": "Strawberry Lemon Twist",
     "g": "Pairings",
-    "storage": "Pairs w/ Savell Smash",
-    "shelf": "LTO Pairing",
-    "yields": "cocktail",
+    "storage": "16 oz Pint Glass",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
     "ing": [
       [
         "Deep Eddy Lemon Vodka",
-        "build"
+        "1.25 oz"
       ],
       [
         "Strawberry Puree",
-        "build"
+        "1 oz"
       ],
       [
-        "Fresh Lemon Juice",
-        "build"
+        "Lemon Wedges",
+        "2, squeezed"
       ],
       [
         "Sprite",
-        "top"
+        "4 oz"
+      ],
+      [
+        "Lemon Twist",
+        "garnish"
       ]
     ],
     "steps": [
-      "Build vodka, strawberry puree, and lemon juice; top with Sprite.",
-      "Bright, crisp, refreshing — offer with the Savell Smash."
-    ],
-    "lto": "LTO Pairings"
+      "Fill a 16 oz pint glass with ice; add the vodka and strawberry puree.",
+      "Squeeze the 2 lemon wedges over the ice and drop them in.",
+      "Top with Sprite. DO NOT shake — stir with a bar spoon.",
+      "Garnish with a lemon twist. Pairs with the Savell Smash."
+    ]
   },
   {
     "name": "Texas Ranch Water",
     "g": "Pairings",
-    "storage": "Tajín-rimmed glass · pairs w/ Texan Smash",
-    "shelf": "LTO Pairing",
-    "yields": "cocktail",
+    "storage": "16 oz Pint Glass, Tajín Rim",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
     "ing": [
       [
-        "Lanazul Blanco Tequila",
-        "build"
+        "Lunazul Blanco Tequila",
+        "1.25 oz"
       ],
       [
-        "Fresh Lime Juice",
-        "build"
+        "Lime Wedge",
+        "1, squeezed"
       ],
       [
         "Topo Chico Mineral Water",
-        "top"
+        "6 oz"
+      ],
+      [
+        "Puree or Juice",
+        ".75 oz (optional)"
       ],
       [
         "Tajín Rim",
         "glass"
+      ],
+      [
+        "Lime Wedge",
+        "garnish"
       ]
     ],
     "steps": [
-      "Build tequila and lime over ice in a Tajín-rimmed glass.",
-      "Top with Topo Chico. Spicy, bold — offer with the Texan Smash."
-    ],
-    "lto": "LTO Pairings"
+      "Rim a 16 oz pint glass with Tajín and fill with ice.",
+      "Squeeze 1 lime wedge over the ice; add the Lunazul.",
+      "Top with 6 oz Topo Chico; add the optional mixer and stir with a bar spoon.",
+      "Garnish with a lime wedge. Pairs with the Texan Smash."
+    ]
   },
   {
     "name": "Middleberger",
@@ -5413,11 +5433,10 @@
     ]
   },
   {
-    "name": "Sweet Heat Mugarita",
+    "name": "Sweet Heat Margarita",
     "g": "Pairings",
-    "lto": "Fall 2025",
-    "storage": "10 oz Mug, Sugar Rim",
-    "shelf": "Fall 2025 LTO",
+    "storage": "16 oz Pint Glass, Sugar Rim",
+    "shelf": "Jan 2026 drink menu · began as a Fall 2025 special",
     "yields": "1 cocktail",
     "ing": [
       [
@@ -5426,33 +5445,30 @@
       ],
       [
         "Cointreau",
-        ".25 oz"
+        ".5 oz"
       ],
       [
         "Strawberry or Mango Puree",
-        ".25 oz"
+        ".5 oz"
       ],
       [
-        "Sweet n Sour",
-        "3 oz"
+        "Sweet 'n Sour Mix",
+        "5 oz"
       ],
       [
         "Sugar Rim",
-        "mug"
+        "glass"
       ],
       [
-        "Lime Wedge",
-        "garnish"
-      ],
-      [
-        "Sliced Jalapeños",
+        "Fresh Jalapeño Slice",
         "garnish"
       ]
     ],
     "steps": [
-      "Measure and combine in a mixing tin with ice; shake 30 seconds.",
-      "Strain into a 10 oz mug with a sugar rim; top with ice as needed.",
-      "Garnish with a lime wedge and sliced jalapeños."
+      "Add ice and the infused tequila, Cointreau, puree and sweet 'n sour.",
+      "Shake vigorously ~30 seconds.",
+      "Pour into a 16 oz pint glass with a sugar rim.",
+      "Garnish with sliced fresh jalapeños."
     ]
   },
   {
@@ -5508,6 +5524,344 @@
       "Pour the Lunazul into a cambro big enough for the batch; add the whole charred jalapeños.",
       "Cover, date, and infuse in the cooler for 72 hours.",
       "Strain the jalapeños out; funnel into store 'n pours. Label and keep refrigerated."
+    ]
+  },
+  {
+    "name": "'Mug'arita",
+    "g": "Pairings",
+    "storage": "22 oz Mug, Salted Rim",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Lunazul Blanco Tequila",
+        "1.25 oz"
+      ],
+      [
+        "Cointreau",
+        ".5 oz"
+      ],
+      [
+        "Sour Mix",
+        "7 oz"
+      ],
+      [
+        "Grand Marnier",
+        ".5 oz float"
+      ],
+      [
+        "Lime Wedge & Orange Slice",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "In a mixing tin combine 1.25 oz Lunazul Blanco, .5 oz Cointreau and 7 oz sour mix.",
+      "Shake and pour into a 22 oz mug with a salted rim; fill with ice.",
+      "Float .5 oz Grand Marnier. Garnish with a lime wedge and orange slice."
+    ]
+  },
+  {
+    "name": "Strawberry 'Mug'arita",
+    "g": "Pairings",
+    "storage": "22 oz Mug, Sugar Rim",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Lunazul Blanco Tequila",
+        "1.25 oz"
+      ],
+      [
+        "Cointreau",
+        ".5 oz"
+      ],
+      [
+        "Strawberry Daiquiri Mix",
+        "1.5 oz"
+      ],
+      [
+        "Sour Mix",
+        "5 oz"
+      ],
+      [
+        "Grand Marnier",
+        ".5 oz float"
+      ],
+      [
+        "Sliced Strawberries",
+        "2 oz float"
+      ],
+      [
+        "Lime Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "In a mixing tin combine 1.25 oz Lunazul Blanco, .5 oz Cointreau, 1.5 oz daiquiri mix and 5 oz sour mix.",
+      "Shake and pour into a 22 oz mug with a sugar rim; fill with ice.",
+      "Float 2 oz sliced strawberries and .5 oz Grand Marnier. Garnish with a lime wedge."
+    ]
+  },
+  {
+    "name": "Espresso Martini",
+    "g": "Pairings",
+    "storage": "Chilled Martini Glass",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "HooDoo Espresso",
+        "3 oz"
+      ],
+      [
+        "Bailey's Irish Cream",
+        ".75 oz (optional)"
+      ],
+      [
+        "DiSaronno Amaretto",
+        ".75 oz (optional)"
+      ],
+      [
+        "Coffee Beans",
+        "4, garnish"
+      ]
+    ],
+    "steps": [
+      "Scoop of ice into a mixing tin; add the HooDoo Espresso.",
+      "Add Bailey's or DiSaronno if requested.",
+      "Cap and shake vigorously ~30 seconds.",
+      "Strain into a chilled martini glass. Garnish with 4 coffee beans."
+    ]
+  },
+  {
+    "name": "Red Bull Tropical Cooler",
+    "g": "Pairings",
+    "storage": "16 oz Pint Glass",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Cathead Satsuma Mandarin Vodka",
+        "1.25 oz"
+      ],
+      [
+        "Red Bull Tropical",
+        "5 oz"
+      ],
+      [
+        "Orange Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Fill a 16 oz pint glass with ice; add the Cathead mandarin vodka.",
+      "Top with Red Bull Tropical. DO NOT shake.",
+      "Garnish with an orange wedge. Serve the rest of the Red Bull alongside."
+    ]
+  },
+  {
+    "name": "'Sippers Cherry Limeade",
+    "g": "Pairings",
+    "storage": "16 oz Pint Glass",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Cathead Honeysuckle Vodka",
+        "1.25 oz"
+      ],
+      [
+        "Cherry Juice",
+        ".5 oz (NOT grenadine)"
+      ],
+      [
+        "Lime Wedges",
+        "2, squeezed"
+      ],
+      [
+        "Sprite",
+        "5 oz"
+      ],
+      [
+        "Cherry & Lime Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Fill a 16 oz pint glass with ice; add the vodka and cherry juice.",
+      "Squeeze 2 lime wedges over the ice and drop them in.",
+      "Top with Sprite. DO NOT shake — stir with a bar spoon.",
+      "Garnish with a cherry and a lime wedge."
+    ]
+  },
+  {
+    "name": "Pama-Rita",
+    "g": "Pairings",
+    "storage": "16 oz Pint Glass, Sugar Rim",
+    "shelf": "Jan 2026 drink menu",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Lunazul Blanco Tequila",
+        "1.25 oz"
+      ],
+      [
+        "Cointreau",
+        ".5 oz"
+      ],
+      [
+        "Pama Liqueur",
+        ".75 oz"
+      ],
+      [
+        "Sweet 'n Sour Mix",
+        "5 oz"
+      ],
+      [
+        "Lime Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Add ice and the tequila, Cointreau, Pama and sweet 'n sour.",
+      "Shake vigorously ~30 seconds.",
+      "Pour into a 16 oz pint glass with a sugar rim. Garnish with a lime wedge."
+    ]
+  },
+  {
+    "name": "Mango-Lime Spritzer",
+    "g": "Pairings",
+    "storage": "16 oz Pint Glass",
+    "shelf": "Jan 2026 drink menu · no alcohol",
+    "yields": "1 drink",
+    "ing": [
+      [
+        "Mango Puree",
+        "1 oz"
+      ],
+      [
+        "Lime",
+        "juice of half"
+      ],
+      [
+        "Ginger Beer",
+        "5 oz"
+      ],
+      [
+        "Lime Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Fill a 16 oz pint glass with ice; squeeze half a lime over it.",
+      "Top with mango puree and ginger beer.",
+      "Stir with a bar spoon. DO NOT shake. Garnish with a lime wedge."
+    ]
+  },
+  {
+    "name": "Sparkling Cranberry Quincher",
+    "g": "Pairings",
+    "storage": "16 oz Pint Glass",
+    "shelf": "Jan 2026 drink menu · no alcohol",
+    "yields": "1 drink",
+    "ing": [
+      [
+        "Cranberry Juice",
+        "4 oz"
+      ],
+      [
+        "Agave Nectar",
+        "1 oz"
+      ],
+      [
+        "Topo Chico Mineral Water",
+        "4 oz"
+      ],
+      [
+        "Lime Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Fill a 16 oz pint glass with ice.",
+      "Add cranberry juice, agave nectar and Topo Chico.",
+      "Stir with a bar spoon. DO NOT shake. Garnish with a lime wedge."
+    ]
+  },
+  {
+    "name": "Mugshots Strawberry Lemonade",
+    "g": "Pairings",
+    "storage": "22 oz Mug",
+    "shelf": "Jan 2026 drink menu · no alcohol",
+    "yields": "1 drink",
+    "ing": [
+      [
+        "Strawberry Daiquiri Mix",
+        "1.5 oz"
+      ],
+      [
+        "Lemonade",
+        "8 oz"
+      ],
+      [
+        "Sliced Strawberries",
+        "2 oz float"
+      ],
+      [
+        "Lemon Wedge",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "In a mixing tin add 1.5 oz strawberry daiquiri mix and 8 oz lemonade.",
+      "Shake and pour into a 22 oz mug; fill with ice.",
+      "FROM BULK: shake the jug and pour into an ice-filled 22 oz mug.",
+      "Garnish with a float of 2 oz sliced strawberries and a lemon wedge."
+    ]
+  },
+  {
+    "name": "Mugs Strawberry Lemonade Bulk",
+    "g": "Prep",
+    "storage": "Gallon Jug, refrigerated",
+    "shelf": "3 days",
+    "yields": "1 gallon jug",
+    "ing": [
+      [
+        "Strawberry Daiquiri Mix",
+        "20 oz"
+      ],
+      [
+        "Lemonade",
+        "104 oz"
+      ]
+    ],
+    "steps": [
+      "Add both to a gallon jug.",
+      "Lid on; shake thoroughly until well mixed.",
+      "Store in the refrigerated cooler."
+    ]
+  },
+  {
+    "name": "Simple Syrup",
+    "g": "Prep",
+    "storage": "Covered Cambro",
+    "shelf": "7 days",
+    "yields": "~3 cups",
+    "ing": [
+      [
+        "Sugar",
+        "3 cups"
+      ],
+      [
+        "Hot Water",
+        "3 cups"
+      ]
+    ],
+    "steps": [
+      "Bring 3 cups water to a boil.",
+      "Reduce heat and add 3 cups sugar; stir continuously until fully dissolved.",
+      "Remove from heat and let cool.",
+      "Pour into a cambro and cover; store in the cooler."
     ]
   }
 ]
