@@ -15,6 +15,7 @@ import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
 import { driftFrom, hasDrift, prepSendKey, sendPrep, unsendPrep, type PrepSend, type SentItem } from '../lib/prepsend'
 import { shiftPerson } from '../lib/daycode'
 import { entryColumn, entryField } from '../lib/nextfield'
+import { PrintSheet } from '../components/PrintSheet'
 
 interface PrepItem {
   name: string
@@ -912,57 +913,24 @@ export function Prep() {
 
           return pages.map((page, pi) => (
             <div key={page.title} style={pi < pages.length - 1 ? { breakAfter: 'page' } : undefined}>
-              <div className="mb-2 pb-1" style={{ borderBottom: `3px solid ${stationHex(page.station) ?? '#000'}` }}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="flex items-center gap-2 text-[16px] font-bold">
-                    {stationHex(page.station) && (
-                      <span
-                        aria-hidden
-                        style={{ background: stationHex(page.station), WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-                        className="inline-block size-3.5 rounded-[3px]"
-                      />
-                    )}
-                    <span style={stationHex(page.station) ? { color: stationHex(page.station), WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } : undefined}>
-                      {page.title}
-                    </span>
-                  </span>
-                  <span className="text-[11px] font-semibold">{fmtLong(t)}</span>
-                </div>
-                <div className="text-[8.5px] text-black/60">
-                  par − on hand = prep · {concept} {location}
-                </div>
-              </div>
-              {/* Single full-width column — CSS multi-column prints unreliably
-                  (iOS/Safari balances into one half-width column and spills into
-                  dozens of near-blank pages). A plain list fills the whole sheet
-                  and paginates cleanly on every printer. */}
-              <div>
-                {page.secs.map(({ sec, rows }) => (
-                  <div key={sec}>
-                    <div className="mt-2 border-b border-black py-[2px] text-[10px] font-extrabold uppercase tracking-wider" style={{ breakInside: 'avoid', breakAfter: 'avoid' }}>
-                      {sec}
-                    </div>
-                    {rows.map((it) => (
-                      <div key={it.name} className="flex items-center gap-2 border-b border-black/25 py-[4px]" style={{ breakInside: 'avoid' }}>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[12px] font-bold leading-[14px]">{it.name}</span>
-                          <span className="block text-[9px] leading-[11px] text-black/60">{it.spec || it.unit}</span>
-                        </span>
-                        <span className="w-[104px] shrink-0 whitespace-nowrap text-right font-mono text-[12px] font-bold">
-                          {onHand[it.name] != null && need(it) > 0
-                            ? `${fmtQty(need(it))} ${unitFor(need(it), it.unit)}`
-                            : `${fmtQty(it.pars[di] ?? 0)} ${unitFor(it.pars[di] ?? 0, it.unit)}`}
-                        </span>
-                        <span className="h-[16px] w-10 shrink-0 rounded-[3px] border border-black/50" />
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-1.5 text-[8.5px] text-black/60">
-                Number shown = {Object.keys(onHand).length ? 'prep needed (on-hands already counted in the app)' : "today's par"} ·
-                box = done ✓ · items with nothing to prep don't print
-              </div>
+              <PrintSheet
+                title={page.title}
+                accent={stationHex(page.station)}
+                date={fmtLong(t)}
+                venue={`${concept} · ${location}`}
+                counted={Object.keys(onHand).length > 0}
+                sections={page.secs.map(({ sec, rows }) => ({
+                  name: sec,
+                  rows: rows.map((it) => ({
+                    name: it.name,
+                    sub: it.spec || it.unit,
+                    qty:
+                      onHand[it.name] != null && need(it) > 0
+                        ? `${fmtQty(need(it))} ${unitFor(need(it), it.unit)}`
+                        : `${fmtQty(it.pars[di] ?? 0)} ${unitFor(it.pars[di] ?? 0, it.unit)}`,
+                  })),
+                }))}
+              />
             </div>
           ))
         })()}
@@ -970,8 +938,12 @@ export function Prep() {
       </>
       )}
 
+      {/* NOT print:hidden — BarPrep's print sheet lives inside this wrapper, and
+          a hidden ancestor would swallow it (the bar tab printed blank pages).
+          BarPrep hides its own screen UI from print; the padding drops so the
+          sheet starts at the paper margin. */}
       {mode === 'bar' && (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 print:hidden">
+        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 print:p-0">
           <BarPrep />
         </div>
       )}

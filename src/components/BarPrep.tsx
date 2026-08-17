@@ -5,6 +5,7 @@ import { useRole } from '../lib/role'
 import { useCurrentNames } from '../lib/scope'
 import { confirmDelete } from '../lib/confirm'
 import { SpecPeek } from './SpecPeek'
+import { PrintSheet } from './PrintSheet'
 import { SPECS } from '../lib/specs'
 import { isDrink } from '../lib/categories'
 import { usePersistentState, today } from '../lib/store'
@@ -121,6 +122,11 @@ export function BarPrep() {
 
   return (
     <>
+    {/* `contents` so this wrapper doesn't change the screen layout; print:hidden
+        so only the sheet below reaches paper. The print sheet CANNOT live inside
+        this wrapper — a hidden ancestor swallows it, which is exactly how the
+        bar tab printed a blank page. */}
+    <div className="contents print:hidden">
     <Card className="overflow-x-auto">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <span className="font-display text-lg font-semibold text-ink">Bar prep · {dow}</span>
@@ -311,12 +317,15 @@ export function BarPrep() {
           someone counts bottles. */}
       <SpecPeek name={peek} onClose={() => setPeek(null)} />
     </Card>
+    </div>
 
     {/* The bar's own printable sheet.
         Printing from this tab used to produce the KITCHEN's sheet — the bar had
         no printable list at all, so the button handed a bartender the cooks'
-        prep. Same shape as the kitchen's, and only one .prep-print exists on the
-        page at a time, which is what the print CSS keys off. */}
+        prep. It renders through the SAME PrintSheet as the kitchen, so the two
+        sheets are one design and the bar can't drift behind. Only one
+        .prep-print exists on the page at a time, which is what the print CSS
+        keys off. */}
     <div className="prep-print hidden">
       {(() => {
         const rows = barItems.filter((it) => {
@@ -327,44 +336,27 @@ export function BarPrep() {
         if (rows.length === 0)
           return <p className="text-[12px]">Nothing to prep behind the bar — everything is at par for {dow}.</p>
         return (
-          <div>
-            <div className="mb-2 pb-1" style={{ borderBottom: '3px solid #000' }}>
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[16px] font-bold">Bar prep</span>
-                <span className="text-[11px] font-semibold">{dow}</span>
-              </div>
-              <div className="text-[8.5px] text-black/60">
-                par − on hand = prep · {concept} {location}
-              </div>
-            </div>
-            {rows.map((it) => {
-              const par = it.pars[di] ?? 0
-              const have = onHand[it.name]
-              const n = have == null ? par : Math.max(0, par - have)
-              return (
-                <div
-                  key={it.name}
-                  className="flex items-center gap-2 border-b border-black/25 py-[4px]"
-                  style={{ breakInside: 'avoid' }}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[12px] font-bold leading-[14px]">{it.name}</span>
-                    <span className="block text-[9px] leading-[11px] text-black/60">
-                      {it.storage} · {it.shelf}
-                    </span>
-                  </span>
-                  <span className="w-[104px] shrink-0 whitespace-nowrap text-right font-mono text-[12px] font-bold">
-                    {fmtQty(n)} {n === 1 && it.unit.endsWith('s') ? it.unit.slice(0, -1) : it.unit}
-                  </span>
-                  <span className="h-[16px] w-10 shrink-0 rounded-[3px] border border-black/50" />
-                </div>
-              )
-            })}
-            <div className="mt-1.5 text-[8.5px] text-black/60">
-              Number shown = {Object.keys(onHand).length ? 'prep needed' : "today's par"} · box = done ✓ ·
-              items with nothing to prep don't print
-            </div>
-          </div>
+          <PrintSheet
+            title="Bar prep"
+            date={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            venue={`${concept} · ${location}`}
+            counted={Object.keys(onHand).length > 0}
+            sections={[
+              {
+                name: 'Behind the bar',
+                rows: rows.map((it) => {
+                  const par = it.pars[di] ?? 0
+                  const have = onHand[it.name]
+                  const n = have == null ? par : Math.max(0, par - have)
+                  return {
+                    name: it.name,
+                    sub: `${it.storage} · ${it.shelf}`,
+                    qty: `${fmtQty(n)} ${n === 1 && it.unit.endsWith('s') ? it.unit.slice(0, -1) : it.unit}`,
+                  }
+                }),
+              },
+            ]}
+          />
         )
       })()}
     </div>

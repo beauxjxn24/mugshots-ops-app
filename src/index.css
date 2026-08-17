@@ -698,7 +698,12 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      every page look faded. The Mugsy launcher is fixed and outside main too. */
   #app-aurora, .mugsy-fab { display: none !important; }
   main { padding: 0 !important; }
-  body { background: #fff !important; }
+  /* Paper is light. The app runs color-scheme: dark, and with "print
+     backgrounds" ticked Chromium fills the paper around the page box with the
+     UA's dark canvas colour — that was the black frame around the sheet. The
+     white background alone doesn't fix it; the scheme itself has to flip. */
+  :root { color-scheme: light; }
+  html, body { background: #fff !important; }
   /* The app pins html/body/#root to height:100% for the on-screen scroll
      layout — in print that clips everything past the first page. Release the
      whole ancestor chain so long sheets flow onto as many pages as they need. */
@@ -726,7 +731,81 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      shell may paint on it, whether or not it remembered to opt out. */
   body:has(.prep-print) canvas,
   body:has(.prep-print) [class*="fixed"]:not(:has(.prep-print)) { display: none !important; }
+  /* And nothing outside the sheet may paint a background. The app's screen
+     theme is dark; with "print backgrounds" ticked, every dark wrapper became
+     a black frame around the sheet. The sheet's own inks (.pp) keep theirs. */
+  body:has(.prep-print) *:not(.pp):not(.pp *) { background: transparent !important; box-shadow: none !important; }
   @page { margin: 11mm; }
+
+  /* ---- The prep sheet itself (rendered by PrintSheet.tsx) ----------------
+     Print-only, so its styles live here with the rest of the paper rules.
+     Metrics are tuned so two columns of ~29 rows land on one US-Letter page;
+     .pp-compact / .pp-dense step the type down as the list grows, so a bigger
+     list tightens instead of spilling onto page two. */
+  /* The sheet owns the whole page: columns stretch and the footer sits at the
+     paper's bottom edge, not wherever the list happens to stop. 250mm =
+     US-Letter height minus the @page margins, with a little slack so the flex
+     stretch can never push a one-page sheet onto page two. */
+  .pp { color: #000; display: flex; flex-direction: column; min-height: 250mm; }
+  .pp-head {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 6mm;
+    border-bottom: 2.5px solid #000; padding-bottom: 5px;
+  }
+  .pp-kicker {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #555;
+  }
+  .pp-title {
+    font-size: 21px; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pp-chip {
+    width: 13px; height: 13px; border-radius: 3px; flex: none;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .pp-head-r { text-align: right; }
+  .pp-date { font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .pp-printed { font-size: 8px; color: #555; }
+  .pp-cols { display: flex; align-items: stretch; gap: 5mm; margin-top: 7px; flex: 1 1 auto; }
+  .pp-col { flex: 1 1 0; min-width: 0; }
+  /* The dividing line between the two halves of the page. */
+  .pp-col + .pp-col { border-left: 1px solid rgba(0, 0, 0, 0.4); padding-left: 5mm; }
+  /* Section bars: solid black, white type — reads on any grayscale laser. */
+  .pp-sec {
+    background: #000; color: #fff;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 2.5px 6px; border-radius: 2px; margin: 8px 0 2px;
+    break-inside: avoid; break-after: avoid;
+  }
+  .pp-col > .pp-sec:first-child { margin-top: 0; }
+  .pp-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3.5px 1px; border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+    break-inside: avoid;
+  }
+  .pp-box { width: 11px; height: 11px; flex: none; border: 1.3px solid #000; border-radius: 2px; }
+  .pp-item { flex: 1 1 auto; min-width: 0; }
+  .pp-name { display: block; font-size: 11.5px; font-weight: 700; line-height: 13px; }
+  .pp-spec { display: block; font-size: 8px; line-height: 9.5px; color: #555; }
+  .pp-qty {
+    flex: none; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .pp-foot {
+    display: flex; justify-content: space-between; gap: 6mm;
+    margin-top: 8px; padding-top: 4px; border-top: 1px solid rgba(0, 0, 0, 0.4);
+    font-size: 7.5px; color: #555;
+  }
+  /* Step-downs — same sheet, tighter metrics. */
+  .pp-compact .pp-row { padding: 2.5px 1px; }
+  .pp-compact .pp-name { font-size: 10.5px; line-height: 12px; }
+  .pp-compact .pp-spec { font-size: 7.5px; line-height: 9px; }
+  .pp-dense .pp-row { padding: 2px 1px; }
+  .pp-dense .pp-name { font-size: 10px; line-height: 12px; }
+  .pp-dense .pp-spec { display: none; }
+  .pp-dense .pp-qty { font-size: 10px; }
 }
 
 /* The Mugsy launcher sits above every overlay so it stays draggable anywhere.
