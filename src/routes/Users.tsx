@@ -25,9 +25,20 @@ export function Users() {
     setForm({ name: '', role: 'Manager', pin: '' })
   }
 
+  // There is no Save button on this screen — every control commits on its own.
+  // That's fine for a dropdown or a chip, where the change is its own feedback,
+  // but a PIN box you typed into and clicked away from gives you nothing back,
+  // so a row says so for a couple of seconds.
+  const [saved, setSaved] = useState<string | null>(null)
+  const flash = (id: string) => {
+    setSaved(id)
+    setTimeout(() => setSaved((s) => (s === id ? null : s)), 1800)
+  }
+
   const update = async (id: string, patch: Partial<User>) => {
     if (!(await requirePin('Edit users'))) return
     setUsers((u) => u.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+    flash(id)
   }
 
   // Handing a right out or taking it back. Deliberately gated on the master key
@@ -115,6 +126,10 @@ export function Users() {
           <p className="mt-2 text-xs text-muted">
             A PIN is 4 digits. What it clears is set by the rights on their row — a new AGM or
             Manager clears nothing until you tick something on.
+            <br />
+            There's no Save button below: a name or PIN saves when you press Enter or tap away,
+            and the role and rights save the moment you change them. The row says <b>Saved</b> when
+            it lands.
           </p>
         </Card>
 
@@ -129,8 +144,25 @@ export function Users() {
                     {initials(u.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-ink">{u.name}</div>
-                    <div className="text-xs text-muted">{u.role}</div>
+                    {/* A name couldn't be corrected once added — a typo meant
+                        removing the person and re-adding them, which takes
+                        their PIN and rights with it. */}
+                    <input
+                      key={`${u.id}-${u.name}`}
+                      defaultValue={u.name}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                      onBlur={(e) => {
+                        const v = e.target.value.trim()
+                        if (v && v !== u.name) update(u.id, { name: v })
+                        else e.target.value = u.name
+                      }}
+                      aria-label={`Name for ${u.name}`}
+                      className="w-full truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 font-medium text-ink outline-none hover:border-black/10 focus:border-brand"
+                    />
+                    <div className="flex items-center gap-2 px-1 text-xs text-muted">
+                      {u.role}
+                      {saved === u.id && <span className="font-bold text-up">Saved</span>}
+                    </div>
                   </div>
                   <select
                     value={u.role}
@@ -144,7 +176,9 @@ export function Users() {
                   <span className="inline-flex items-center gap-1 text-xs text-muted">
                     <KeyRound size={13} />
                     <input
+                      key={`${u.id}-${u.pin}`}
                       defaultValue={u.pin}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                       onBlur={(e) => {
                         const v = e.target.value.replace(/\D/g, '').slice(0, 4)
                         if (v !== u.pin) update(u.id, { pin: v })
