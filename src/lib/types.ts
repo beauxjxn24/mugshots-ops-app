@@ -45,6 +45,16 @@ export interface Spec {
    * merged with whatever the sheets themselves say.
    */
   usedIn?: string[]
+  /**
+   * Which limited-time run this build belongs to — "Fall 2024", "SmashBurger",
+   * "Colony Classic".
+   *
+   * The LTO screen was one flat list of everything with "LTO" written anywhere
+   * on it, so four separate runs sat shuffled together and the same item could
+   * be hunted for twice. Naming the run lets the screen show them as the sets
+   * the kitchen actually thinks in.
+   */
+  lto?: string
 }
 
 /** A source the app can sync from — file import today, live API later. */

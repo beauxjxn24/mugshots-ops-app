@@ -43,6 +43,8 @@ const PHOTO_ALIASES: Record<string, string> = {
   'chili-build': 'chili',
   // Portioning queso is a prep card, but it is the same product in the photo.
   'queso-portions': 'mugshots-queso-dip',
+  // The apostrophe splits the slug where the file name doesn't.
+  'don-t-be-jelly-double-stack': 'dont-be-jelly-double-stack',
 }
 
 export const dishPhoto = (name: string): string | undefined => {

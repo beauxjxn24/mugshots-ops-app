@@ -1086,7 +1086,8 @@
       "6 fried jalapeño slices on the cream cheese.",
       "Sprinkle 2 chopped bacon slices on top.",
       "Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "Summer 2026"
   },
   {
     "name": "Classic Dog",
@@ -1127,7 +1128,8 @@
       "Serve with 6 oz fries."
     ],
     "off": "OG — on request",
-    "og": true
+    "og": true,
+    "lto": "Summer 2026"
   },
   {
     "name": "Chicago-ish Freedom Dog",
@@ -1178,7 +1180,8 @@
       "Tuck pickle spear along the right of the dog.",
       "Sport peppers on top; sprinkle celery salt.",
       "Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "Summer 2026"
   },
   {
     "name": "Southern Dog",
@@ -1215,7 +1218,8 @@
       "Serve with 6 oz fries."
     ],
     "off": "OG — on request",
-    "og": true
+    "og": true,
+    "lto": "Summer 2026"
   },
   {
     "name": "Chili Dog",
@@ -1286,7 +1290,8 @@
     "steps": [
       "Guest picks one entrée from the list.",
       "Fried Chicken Salad: red onion, tomatoes, cheese, croutons, house-made ranch."
-    ]
+    ],
+    "lto": "Colony Classic"
   },
   {
     "name": "The Freedom Feast",
@@ -1312,7 +1317,8 @@
       "Any two single smashburgers.",
       "Two beer-battered fries.",
       "One Firecracker Bites appetizer — guest picks from the bites list."
-    ]
+    ],
+    "lto": "Summer 2026"
   },
   {
     "name": "Classic Smash",
@@ -1341,7 +1347,8 @@
     "steps": [
       "Double-stacked patties, beer-battered fries."
     ],
-    "off": "Summer 2026 LTO — ended; the live build is Single Classic Smash"
+    "off": "Summer 2026 LTO — ended; the live build is Single Classic Smash",
+    "lto": "Summer 2026"
   },
   {
     "name": "Firecracker Bites",
@@ -1374,7 +1381,8 @@
     "steps": [
       "Guest picks ONE Firecracker Bite — happy hour portion, $3 with any entrée purchase.",
       "Ring one per entrée; full builds live under SmashBurger LTO Builds (Firecracker Boneless Wangs, Firecracker Wedges)."
-    ]
+    ],
+    "lto": "Firecracker"
   },
   {
     "name": "Southern Key Lime Pie Rita",
@@ -1412,7 +1420,8 @@
       "Combine frozen rita, soft serve shake, and tequila in mixing tin; spindle mix 5 seconds.",
       "Pour into 16 oz pint glass rimmed with graham cracker crumbs.",
       "Top with whipped cream + 1 Tbsp graham crumbs; garnish lime wedge and cherry."
-    ]
+    ],
+    "lto": "Summer 2026"
   },
   {
     "name": "Rocket Pop Rita",
@@ -1454,7 +1463,8 @@
       "Combine frozen rita, shake, tequila, and blue curaçao in mixing tin; spindle mix 5 seconds.",
       "Pour into 16 oz pint glass rimmed with red/white/blue sugar.",
       "Top with strawberry puree + whipped cream; sprinkle sugars; garnish cherry."
-    ]
+    ],
+    "lto": "Summer 2026"
   },
   {
     "name": "Rocket Pop Shake",
@@ -1492,7 +1502,8 @@
       "Combine soft serve shake and blue curaçao in mixing tin; spindle mix 5 seconds.",
       "Pour into 10 oz mug rimmed with red/white/blue sugar.",
       "Top with strawberry puree + whipped cream; sprinkle sugars; garnish cherry."
-    ]
+    ],
+    "lto": "Summer 2026"
   },
   {
     "name": "Kentucky Buck",
@@ -1521,7 +1532,8 @@
     "steps": [
       "Build bourbon, schnapps, and fresh lemon; top with ginger beer.",
       "Sweet, rich, all southern — offer with the Southern Smash."
-    ]
+    ],
+    "lto": "LTO Pairings"
   },
   {
     "name": "Strawberry Lemon Twist",
@@ -1550,7 +1562,8 @@
     "steps": [
       "Build vodka, strawberry puree, and lemon juice; top with Sprite.",
       "Bright, crisp, refreshing — offer with the Savell Smash."
-    ]
+    ],
+    "lto": "LTO Pairings"
   },
   {
     "name": "Texas Ranch Water",
@@ -1579,7 +1592,8 @@
     "steps": [
       "Build tequila and lime over ice in a Tajín-rimmed glass.",
       "Top with Topo Chico. Spicy, bold — offer with the Texan Smash."
-    ]
+    ],
+    "lto": "LTO Pairings"
   },
   {
     "name": "Middleberger",
@@ -4362,7 +4376,8 @@
     "steps": [
       "Fry wings; serve naked or tossed in 2 oz mild or hot — other sauces also available.",
       "Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "Colony Classic"
   },
   {
     "name": "Firecracker Boneless Wangs",
@@ -4396,7 +4411,8 @@
       "Bread chicken chunks: breader, buttermilk, breader.",
       "Fry 3 minutes; pull and drain in Sav-a-Day.",
       "Serve naked or tossed in 2 oz sauce; ranch + celery on side."
-    ]
+    ],
+    "lto": "Firecracker"
   },
   {
     "name": "Firecracker Wedges",
@@ -4417,7 +4433,8 @@
     "steps": [
       "Fry wedges golden.",
       "Serve in small bowl with liner, 2 oz marinara on side."
-    ]
+    ],
+    "lto": "Firecracker"
   },
   {
     "name": "New Cajun Salad",
@@ -4459,7 +4476,8 @@
       "Base of salad mix; add onions, tomatoes, cheese.",
       "Top with fried boneless wangs and croutons.",
       "Serve with 2 oz ranch on the side."
-    ]
+    ],
+    "lto": "Colony Classic"
   },
   {
     "name": "Single Classic Smash",
@@ -4497,7 +4515,8 @@
       "Dress bottom bun: signature sauce, sautéed onions, pickles.",
       "Single smash patty topped with American cheese.",
       "Finish top bun with 1/2 Tbsp signature sauce. Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "Colony Classic"
   },
   {
     "name": "Savell SmashBurger",
@@ -4538,7 +4557,8 @@
       "Squirt a little water NEXT TO the patties and cover both with dome ~10–15 seconds.",
       "Remove from flat top and place on dressed bottom bun.",
       "Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "SmashBurger"
   },
   {
     "name": "McDowell SmashBurger",
@@ -4583,7 +4603,8 @@
       "Squirt a little water NEXT TO the patties and cover both with dome ~10–15 seconds.",
       "Remove from flat top and place on dressed bottom bun.",
       "Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "SmashBurger"
   },
   {
     "name": "Texan SmashBurger",
@@ -4624,7 +4645,8 @@
       "Squirt a little water NEXT TO the patties and cover both with dome ~10–15 seconds.",
       "Remove from flat top and place on dressed bottom bun.",
       "Top with fried onion strings + fried jalapeños. Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "SmashBurger"
   },
   {
     "name": "Southern SmashBurger",
@@ -4661,7 +4683,8 @@
       "Squirt a little water NEXT TO the patties and cover both with dome ~10–15 seconds.",
       "Remove from flat top and place on dressed bottom bun.",
       "Top with fried pickles. Serve with 6 oz fries."
-    ]
+    ],
+    "lto": "SmashBurger"
   },
   {
     "name": "Signature SmashBurger",
@@ -4706,6 +4729,785 @@
       "Squirt a little water NEXT TO the patties and cover both with dome ~8–10 seconds.",
       "Remove from flat top and place on dressed bottom bun.",
       "Finish with 1/2 tbsp Mugs Signature Sauce on top. Serve with 6 oz fries."
+    ],
+    "lto": "SmashBurger"
+  },
+  {
+    "name": "Cheeseburger Quesadilla",
+    "g": "LTO Builds",
+    "lto": "Fall 2024",
+    "storage": "Burger Basket with Liner",
+    "shelf": "Fall 2024 LTO",
+    "yields": "1 order · cut in quarters",
+    "ing": [
+      [
+        "12\" Flour Tortilla",
+        "1"
+      ],
+      [
+        "Shredded Mixed Cheese",
+        "1/2 cup, one half"
+      ],
+      [
+        "Quesadilla Meat",
+        "1 portion, heated"
+      ],
+      [
+        "Shredded Lettuce",
+        "1/3 cup, on bottom"
+      ],
+      [
+        "Sriracha Mayo",
+        "2 oz drizzled"
+      ],
+      [
+        "Pico de Gallo",
+        "1 oz"
+      ]
+    ],
+    "steps": [
+      "Heat 1 portion quesadilla meat on the flat top.",
+      "Place tortilla on the flat top; sprinkle 1/2 cup shredded mixed cheese on one half.",
+      "Place the heated meat on the cheese; fold the plain half over it.",
+      "Heat ~30 seconds, flip, heat 30 seconds, remove.",
+      "Cut in equal quarters. Lay 1/3 cup shredded lettuce on the lined basket and shingle the quarters at the point on top of it.",
+      "Drizzle 2 oz sriracha mayo side-to-side; sprinkle 1 oz pico de gallo on top."
+    ]
+  },
+  {
+    "name": "Sweet Tater Philly Nachos",
+    "g": "LTO Builds",
+    "lto": "Fall 2024",
+    "storage": "Small Salad Bowl",
+    "shelf": "Fall 2024 LTO",
+    "yields": "1 order",
+    "ing": [
+      [
+        "Waffle Sweet Fries",
+        "6 oz pre-cooked"
+      ],
+      [
+        "Philly Steak",
+        "1 puck"
+      ],
+      [
+        "Red Onions, diced",
+        "1 oz"
+      ],
+      [
+        "Bell Peppers, diced",
+        "1 oz"
+      ],
+      [
+        "Mugshots Queso Dip",
+        "2 oz"
+      ],
+      [
+        "Sriracha Mayo",
+        "2 oz drizzled"
+      ],
+      [
+        "Pico de Gallo",
+        "1 oz"
+      ]
+    ],
+    "steps": [
+      "Cook waffle sweet potato fries 2 1/2 minutes; drain and hold in a sav-a-day.",
+      "Cook 1 philly steak puck with 1 oz diced red onions and 1 oz diced bell peppers on the flat top.",
+      "Place the philly mixture on the cooked sweet potato fries.",
+      "Top with 2 oz Mugs queso, a side-to-side drizzle of 2 oz sriracha mayo, and 1 oz pico de gallo.",
+      "TO GO: large ToGo box, philly on the fries; queso, sriracha mayo and pico in covered ramekins alongside."
+    ]
+  },
+  {
+    "name": "Philly Steak Eggrolls",
+    "g": "LTO Builds",
+    "lto": "Fall 2024",
+    "storage": "Lined Burger Basket with Lined Wire Basket",
+    "shelf": "Fall 2024 LTO",
+    "yields": "3 rolls full · 2 rolls on Mombo",
+    "ing": [
+      [
+        "Philly Steak Eggrolls",
+        "3 (2 per portion on Mombo)"
+      ],
+      [
+        "Comeback Sauce",
+        "2 oz"
+      ]
+    ],
+    "steps": [
+      "Cook 4 minutes; drain on a Sav-A-Day.",
+      "Cut on the bias and place cut side facing up.",
+      "2 oz comeback sauce on the side.",
+      "TO GO: do not cut the eggrolls unless the guest asks."
+    ]
+  },
+  {
+    "name": "Sweet Potato Cheesecake",
+    "g": "LTO Builds",
+    "lto": "Fall 2024",
+    "storage": "Black Pow Pow Plate",
+    "shelf": "Fall 2024 LTO",
+    "yields": "1 slice",
+    "ing": [
+      [
+        "Cheesecake",
+        "1 slice"
+      ],
+      [
+        "Caramel",
+        "drizzle"
+      ]
+    ],
+    "steps": [
+      "Plate one slice of cheesecake on a black pow pow plate.",
+      "Caramel drizzle over the top.",
+      "TO GO: lined black ToGo box; 2 oz caramel in a covered ramekin alongside."
+    ]
+  },
+  {
+    "name": "Cheesecake",
+    "g": "Prep",
+    "storage": "Sheet Pan",
+    "shelf": "5 days from frozen",
+    "yields": "A/N",
+    "ing": [
+      [
+        "Cheesecake",
+        "each"
+      ]
+    ],
+    "steps": [
+      "Place one slice of cheesecake on a black pow pow plate.",
+      "Place one pick at each end of the slice.",
+      "Wrap the plated slice in plastic wrap; date and hold on a sheet pan in the cooler."
+    ]
+  },
+  {
+    "name": "Wangs - New Flavors",
+    "g": "LTO Builds",
+    "lto": "Summer 2025",
+    "storage": "Lined Wire Basket on Lined Burger Basket",
+    "shelf": "Summer 2025 LTO",
+    "yields": "per 5 wangs",
+    "ing": [
+      [
+        "Wangs",
+        "1 portion"
+      ],
+      [
+        "Pepper Jelly Wang Sauce",
+        "2 oz (toss)"
+      ],
+      [
+        "Honey Peach Glaze",
+        "current wing recipe"
+      ],
+      [
+        "Spicy Lemon Dry Rub",
+        "1 TBSP (toss)"
+      ],
+      [
+        "Celery",
+        "2 pcs per 5 wangs"
+      ],
+      [
+        "Ranch Dressing",
+        "1 ramekin per 5 wangs"
+      ]
+    ],
+    "steps": [
+      "Portion wangs.",
+      "Sauce, based on 5 wangs — Pepper Jelly: toss in 2 oz pepper jelly wang sauce. Honey Peach Glaze: same as the current wing recipe. Spicy Lemon Dry Rub: toss in 1 TBSP.",
+      "2 pieces celery and 1 ramekin ranch per 5 wangs."
+    ]
+  },
+  {
+    "name": "Honey Peach Fried Chicken Salad",
+    "g": "LTO Builds",
+    "lto": "Summer 2025",
+    "storage": "Large Salad Bowl",
+    "shelf": "Summer 2025 LTO",
+    "yields": "1 salad",
+    "ing": [
+      [
+        "Salad Mix",
+        "6 oz"
+      ],
+      [
+        "Chicken Tenders, fried",
+        "3, tossed in Sweet Baby Rays Honey Peach"
+      ],
+      [
+        "Shredded Mozzarella",
+        "to top"
+      ],
+      [
+        "Pineapple Salsa",
+        "to top"
+      ],
+      [
+        "Spicy Peach Salad Dressing",
+        "2 x 2 oz ramekins"
+      ]
+    ],
+    "steps": [
+      "Place 6 oz salad mix in the bowl.",
+      "Top with shredded mozzarella and pineapple salsa.",
+      "Toss 3 fried tenders in Sweet Baby Rays honey peach wing sauce, chop, and add.",
+      "2 x 2 oz ramekins of spicy peach salad dressing on the side."
+    ]
+  },
+  {
+    "name": "Summer Double Stack",
+    "g": "LTO Builds",
+    "lto": "Summer 2025",
+    "storage": "Lined Burger Basket",
+    "shelf": "Summer 2025 LTO — carried to Fall 2025 as Classic Double Stack",
+    "yields": "1 order",
+    "ing": [
+      [
+        "Kid Bun, toasted",
+        "1"
+      ],
+      [
+        "Kid Burgers, grilled",
+        "2"
+      ],
+      [
+        "Ranch Dressing",
+        "1 TBSP"
+      ],
+      [
+        "Sauteed Onions",
+        "1 TBSP"
+      ],
+      [
+        "American Cheese",
+        "2 slices"
+      ],
+      [
+        "Bacon",
+        "2 slices"
+      ],
+      [
+        "Fried Jals",
+        "1/4 cup"
+      ],
+      [
+        "French Fries",
+        "6 oz"
+      ]
+    ],
+    "steps": [
+      "Bottom bun: 1 TBSP ranch dressing and 1 TBSP sauteed onions.",
+      "Kid burger topped with a slice of American cheese.",
+      "Second kid burger topped with 2 slices bacon and a slice of American cheese.",
+      "1/4 cup fried jals, then the top bun.",
+      "6 oz french fries."
+    ]
+  },
+  {
+    "name": "Sweet McB",
+    "g": "LTO Builds",
+    "lto": "Summer 2025",
+    "storage": "Burger Basket with Liner",
+    "shelf": "Summer 2025 LTO",
+    "yields": "1 burger",
+    "ing": [
+      [
+        "Mugshots Bun, fried & cinnamon-sugared",
+        "1"
+      ],
+      [
+        "Mugs Burger, grilled",
+        "1"
+      ],
+      [
+        "Bacon",
+        "2 slices"
+      ],
+      [
+        "American Cheese",
+        "1 slice"
+      ],
+      [
+        "Powdered Sugar",
+        "sprinkle"
+      ],
+      [
+        "Sweet Potato Waffle Fries",
+        "6 oz"
+      ],
+      [
+        "Maple Syrup",
+        "2 oz"
+      ]
+    ],
+    "steps": [
+      "FRIED BUN: coat all sides of a Mugshots bun with liquid egg or egg wash. Put the fryer basket in the fryer BEFORE the bun.",
+      "Fry sliced-side up 20 seconds; turn with tongs, press with the basket press, fry 1 minute.",
+      "Remove and dust both sides with cinnamon sugar; pass to grill setup.",
+      "Build: bottom bun, grilled Mugs burger, 2 slices bacon, American cheese, top bun.",
+      "Sprinkle powdered sugar. 6 oz sweet potato waffle fries and 2 oz maple syrup."
+    ]
+  },
+  {
+    "name": "Mahi Tacos",
+    "g": "LTO Builds",
+    "lto": "Summer 2025",
+    "storage": "Burger Basket with Liner",
+    "shelf": "Summer 2025 LTO",
+    "yields": "2 tacos",
+    "ing": [
+      [
+        "Flour Tortillas",
+        "2"
+      ],
+      [
+        "Mahi Mahi, blackened",
+        "4 oz chunks"
+      ],
+      [
+        "Liquid Butter",
+        "1 oz"
+      ],
+      [
+        "Blackening Spice",
+        "2 TBSP"
+      ],
+      [
+        "Asian Slaw",
+        "1/4 cup each"
+      ],
+      [
+        "Pineapple Salsa",
+        "1/4 cup"
+      ],
+      [
+        "Sriracha Mayo",
+        "1 oz each"
+      ],
+      [
+        "Salsa",
+        "3 oz ramekin"
+      ],
+      [
+        "Tortilla Chips",
+        "2 oz"
+      ]
+    ],
+    "steps": [
+      "Cook the mahi on the flat top in a slurry of 1 oz liquid butter and 2 TBSP blackening spice, tossing to coat.",
+      "Warm 2 flour tortillas on the flat top 20 seconds; remove.",
+      "1/4 cup asian slaw in each tortilla; divide the mahi between them.",
+      "Top with 1/4 cup pineapple salsa; drizzle 1 oz sriracha mayo on each.",
+      "Taco stand on a lined basket. 3 oz ramekin salsa and 2 oz tortilla chips."
+    ]
+  },
+  {
+    "name": "Smokey Bourbon Maple Stack",
+    "g": "LTO Builds",
+    "lto": "Fall 2025",
+    "storage": "Lined Burger Basket",
+    "shelf": "Fall 2025 LTO",
+    "yields": "1 order",
+    "ing": [
+      [
+        "Kid Bun, toasted",
+        "1"
+      ],
+      [
+        "Kid Burgers, grilled",
+        "2"
+      ],
+      [
+        "Garlic Aioli",
+        "1 TBSP"
+      ],
+      [
+        "Spring Mix",
+        "1/4 cup"
+      ],
+      [
+        "Cheddar",
+        "2 slices, melted"
+      ],
+      [
+        "Smokey Bourbon Sauce",
+        "1 oz"
+      ],
+      [
+        "Bacon",
+        "2 slices"
+      ],
+      [
+        "Sauteed Red Onions",
+        "2 oz"
+      ],
+      [
+        "French Fries",
+        "6 oz"
+      ]
+    ],
+    "steps": [
+      "Bottom bun: 1 TBSP garlic aioli and 1/4 cup spring mix.",
+      "Kid burger topped with a slice of cheddar, melted.",
+      "Second kid burger topped with 1 oz smokey maple bourbon sauce, 2 slices bacon and a slice of cheddar, melted.",
+      "2 oz sauteed red onions, then the top bun.",
+      "6 oz french fries."
+    ]
+  },
+  {
+    "name": "Pretzel Basket",
+    "g": "LTO Builds",
+    "lto": "Fall 2025",
+    "storage": "Lined Wire Basket",
+    "shelf": "Fall 2025 LTO",
+    "yields": "4 sticks",
+    "ing": [
+      [
+        "Pretzel Sticks",
+        "4"
+      ],
+      [
+        "Liquid Butter",
+        "brushed"
+      ],
+      [
+        "Kosher Salt",
+        "shaken"
+      ],
+      [
+        "Rotel Cheese Sauce",
+        "5 oz"
+      ]
+    ],
+    "steps": [
+      "Fry the pretzel sticks 60–90 seconds; drain in a Sav-A-Day.",
+      "Brush each pretzel evenly with liquid butter (butter alternative) using a pastry brush.",
+      "Coat each stick evenly with kosher salt from a shaker.",
+      "Lined wire basket with 5 oz rotel in a Mugs squat cup."
+    ]
+  },
+  {
+    "name": "Chili Trio",
+    "g": "LTO Builds",
+    "lto": "Fall 2025",
+    "storage": "Lined Burger Basket",
+    "shelf": "Fall 2025 LTO",
+    "yields": "1 order",
+    "ing": [
+      [
+        "Chili",
+        "1 cup"
+      ],
+      [
+        "Shredded Cheese",
+        "1 oz"
+      ],
+      [
+        "Red Onion, diced",
+        "1 tbsp"
+      ],
+      [
+        "Guest's choice",
+        "Bishop Burger, 5 wangs, or 3 tenders"
+      ],
+      [
+        "Dipping Sauce",
+        "2 oz, with wangs or tenders"
+      ],
+      [
+        "Fries",
+        "4 oz"
+      ]
+    ],
+    "steps": [
+      "Cup of chili topped with 1 oz shredded cheese and 1 tbsp diced red onion.",
+      "Guest chooses ONE: Bishop Burger (middle — others available for an upcharge); (5) wangs tossed in a choice of sauce; or (3) chicken tenders tossed in a choice of sauce, fried or grilled on request.",
+      "If wangs or tenders are chosen, add 2 oz dipping sauce.",
+      "4 oz fries on the side."
+    ]
+  },
+  {
+    "name": "Nashville Hot Tacos",
+    "g": "LTO Builds",
+    "lto": "Fall 2025",
+    "storage": "Lined Burger Basket",
+    "shelf": "Fall 2025 LTO",
+    "yields": "3 tacos",
+    "ing": [
+      [
+        "Flour Tortillas",
+        "3"
+      ],
+      [
+        "Chicken Tenders",
+        "3, tossed in Nashville Hot"
+      ],
+      [
+        "Shredded Lettuce",
+        "1/4 cup each"
+      ],
+      [
+        "Dill Pickles, diced",
+        "1 Tbsp each"
+      ],
+      [
+        "Ranch Dressing",
+        "zig-zag each"
+      ],
+      [
+        "Salsa",
+        "2 oz ramekin"
+      ],
+      [
+        "Tortilla Chips",
+        "2 oz"
+      ]
+    ],
+    "steps": [
+      "Warm 3 flour tortillas on the flat top 15–20 seconds each side; place in a taco stand.",
+      "In each tortilla: 1/4 cup shredded lettuce, one tender tossed in Nashville Hot, 1 Tbsp diced dill pickles.",
+      "Drizzle each taco with a zig-zag of ranch dressing.",
+      "2 oz ramekin salsa and 2 oz tortilla chips."
+    ]
+  },
+  {
+    "name": "Don't Be Jelly Double Stack",
+    "g": "LTO Builds",
+    "lto": "Fall 2025",
+    "storage": "Lined Burger Basket",
+    "shelf": "Fall 2025 LTO — carried over from Summer 2025",
+    "yields": "1 order",
+    "ing": [
+      [
+        "Kid Bun, toasted",
+        "1"
+      ],
+      [
+        "Kid Burgers, grilled",
+        "2"
+      ],
+      [
+        "Pepper Jelly",
+        "1 TBSP"
+      ],
+      [
+        "Pimento Cheese",
+        "1 portion (1/2 on each)"
+      ],
+      [
+        "Bacon",
+        "2 slices"
+      ],
+      [
+        "Fried Pickles",
+        "1/4 cup"
+      ],
+      [
+        "French Fries",
+        "6 oz"
+      ]
+    ],
+    "steps": [
+      "Bottom bun: 1 TBSP pepper jelly.",
+      "Kid burger topped with 1/2 portion pimento cheese.",
+      "Second kid burger topped with 2 slices bacon and 1/2 portion pimento cheese.",
+      "1/4 cup fried pickles, then the top bun.",
+      "6 oz french fries."
+    ]
+  },
+  {
+    "name": "Classic Double Stack",
+    "g": "LTO Builds",
+    "lto": "Fall 2025",
+    "storage": "Lined Burger Basket",
+    "shelf": "Fall 2025 LTO — the Summer 2025 Summer Double Stack, renamed",
+    "yields": "1 order",
+    "ing": [
+      [
+        "Kid Bun, toasted",
+        "1"
+      ],
+      [
+        "Kid Burgers, grilled",
+        "2"
+      ],
+      [
+        "Ranch Dressing",
+        "1 TBSP"
+      ],
+      [
+        "Sauteed Onions",
+        "1 TBSP"
+      ],
+      [
+        "American Cheese",
+        "2 slices"
+      ],
+      [
+        "Bacon",
+        "2 slices"
+      ],
+      [
+        "Fried Jals",
+        "1/4 cup"
+      ],
+      [
+        "French Fries",
+        "6 oz"
+      ]
+    ],
+    "steps": [
+      "Bottom bun: 1 TBSP ranch dressing and 1 TBSP sauteed onions.",
+      "Kid burger topped with a slice of American cheese.",
+      "Second kid burger topped with 2 slices bacon and a slice of American cheese.",
+      "1/4 cup fried jals, then the top bun.",
+      "6 oz french fries."
+    ]
+  },
+  {
+    "name": "Bulleit Rye Old-Fashioned",
+    "g": "Pairings",
+    "lto": "Fall 2025",
+    "storage": "Rocks Glass",
+    "shelf": "Fall 2025 LTO",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Bulleit Rye",
+        "2 oz"
+      ],
+      [
+        "Angostura Bitters",
+        "2 dashes"
+      ],
+      [
+        "Orange Bitters",
+        "2 dashes"
+      ],
+      [
+        "Cherry Bitters",
+        "2 dashes"
+      ],
+      [
+        "Simple Syrup",
+        "2 bar spoons"
+      ],
+      [
+        "Cherry",
+        "garnish"
+      ],
+      [
+        "Orange Twist",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Add 2 bar spoons simple syrup, 2 dashes of each bitters and 2 oz Bulleit Rye to a rocks glass.",
+      "Add ice. Stir gently until the ice and the liquid equalize.",
+      "Zest an orange peel over the glass, then drop the peel in with a cherry."
+    ]
+  },
+  {
+    "name": "Sweet Heat Mugarita",
+    "g": "Pairings",
+    "lto": "Fall 2025",
+    "storage": "10 oz Mug, Sugar Rim",
+    "shelf": "Fall 2025 LTO",
+    "yields": "1 cocktail",
+    "ing": [
+      [
+        "Jalapeño Infused Tequila",
+        "1.25 oz (Lunazul Blanco)"
+      ],
+      [
+        "Cointreau",
+        ".25 oz"
+      ],
+      [
+        "Strawberry or Mango Puree",
+        ".25 oz"
+      ],
+      [
+        "Sweet n Sour",
+        "3 oz"
+      ],
+      [
+        "Sugar Rim",
+        "mug"
+      ],
+      [
+        "Lime Wedge",
+        "garnish"
+      ],
+      [
+        "Sliced Jalapeños",
+        "garnish"
+      ]
+    ],
+    "steps": [
+      "Measure and combine in a mixing tin with ice; shake 30 seconds.",
+      "Strain into a 10 oz mug with a sugar rim; top with ice as needed.",
+      "Garnish with a lime wedge and sliced jalapeños."
+    ]
+  },
+  {
+    "name": "Smokey Bourbon Sauce",
+    "g": "Prep",
+    "storage": "1/6 Pan / Squeeze Bottle",
+    "shelf": "—",
+    "yields": "—",
+    "ing": [
+      [
+        "Sweet Baby Rays Kickin' Bourbon",
+        "4 cups"
+      ],
+      [
+        "Liquid Smoke",
+        "1/4 cup"
+      ],
+      [
+        "Maple Syrup",
+        "1/2 cup"
+      ]
+    ],
+    "steps": [
+      "Place all ingredients in a stainless mixing bowl.",
+      "Whisk together until fully mixed.",
+      "Pour into a squeeze bottle for the line; label and date.",
+      "Excess into a 1/6 pan; label, date, cooler."
+    ]
+  },
+  {
+    "name": "Jalapeño Infused Tequila",
+    "g": "Prep",
+    "storage": "Store 'n Pour, refrigerated",
+    "shelf": "22 days",
+    "yields": "1 liter",
+    "ing": [
+      [
+        "Lunazul Blanco Tequila",
+        "1 liter"
+      ],
+      [
+        "Fresh Jalapeños",
+        "8–10 per bottle"
+      ],
+      [
+        "Non-stick Spray",
+        "as needed"
+      ]
+    ],
+    "steps": [
+      "Spray the charbroiler with non-stick spray.",
+      "Grill 8–10 fresh jalapeños per bottle for 8–10 minutes, until slightly charred all around.",
+      "Pour the Lunazul into a cambro big enough for the batch; add the whole charred jalapeños.",
+      "Cover, date, and infuse in the cooler for 72 hours.",
+      "Strain the jalapeños out; funnel into store 'n pours. Label and keep refrigerated."
     ]
   }
 ]
