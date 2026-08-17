@@ -31,9 +31,20 @@ export function cleanItemLine(raw: string): CleanedLine {
 
   let code: string | undefined
   let size: string | undefined
+
+  // Vendor codes at the END of the name, which the token pass below misses
+  // because it only looks near the front: "Onions Yellow Jumbo 6515,02435".
+  // Guides print one or several, comma-joined, and they belong in the code
+  // field rather than the name.
+  //
+  // Four digits minimum, so a real trailing number survives — "Wangs - 10" is
+  // a count, not a code, and stripping it would rename the product.
+  const trailing = flat.match(/\s+(\d{4,}(?:\s*,\s*\d{2,})*)\s*$/)
+  const body = trailing ? flat.slice(0, trailing.index).trim() : flat
+  if (trailing) code = trailing[1].replace(/\s+/g, '')
   const kept: string[] = []
   let dropped = 0
-  const tokens = flat.split(' ').filter(Boolean)
+  const tokens = body.split(' ').filter(Boolean)
   for (const w of tokens) {
     const bare = w.replace(/^[^A-Za-z0-9$']+|[^A-Za-z0-9%.')]+$/g, '')
     if (!bare) continue

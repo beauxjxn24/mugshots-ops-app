@@ -435,7 +435,22 @@ export function Sidework() {
             from -- edited when the duties themselves change, not nightly. */}
         <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
 
-        {/* Sections — each tile carries its own pencil */}
+        {/* The duty list the cuts are dealt from.
+            Folded away, because the cuts ARE the layout now -- how the duties
+            happen to be grouped in here is bookkeeping, and leaving those boxes
+            on screen beside the cuts showed the same work twice under two
+            different sets of names. Open it to edit what the duties are. */}
+        <details className="rounded-2xl border border-black/10 bg-white px-4 py-3">
+          <summary className="cursor-pointer text-sm font-bold text-ink">
+            Duty list
+            <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">
+              {duties.length}
+            </span>
+            <span className="ml-2 text-xs font-normal text-muted">
+              everything the cuts are dealt from — edit it here
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3">
         {sections.map((sec, si) => {
           const secKeys = sec.tasks.map((t) => key(sec.section, t))
           const secDone = secKeys.filter((k) => done[k]).length
@@ -584,6 +599,8 @@ export function Sidework() {
             </Card>
           )
         })}
+          </div>
+        </details>
 
         {/* The closer's sign-off on this role + phase, for today. */}
         {sections.length > 0 && (

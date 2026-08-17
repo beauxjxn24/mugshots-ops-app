@@ -133,7 +133,7 @@ export function registerItem(input: {
  * shouty names tidied. Old spellings become aliases so nothing re-duplicates.
  */
 export function cleanupCatalogNames(): void {
-  const FLAG = 'mugops:__catalogNamesCleaned2'
+  const FLAG = 'mugops:__catalogNamesCleaned3'
   if (localStorage.getItem(FLAG)) return
   const items = getCatalog()
   let changed = false
