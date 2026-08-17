@@ -37,6 +37,12 @@ const PHOTO_ALIASES: Record<string, string> = {
   '10-oz-mugshots-milkshake': '10-oz-milkshake',
   '22-oz-mugshots-milkshake': '22-oz-milkshake',
   'root-beer-float': '10-root-beer-float',
+  // The build sheets are titled "Shrooms" and "Chili"; the spec cards call the
+  // same two items "… Build". Same dish, same photo.
+  'shrooms-build': 'shrooms',
+  'chili-build': 'chili',
+  // Portioning queso is a prep card, but it is the same product in the photo.
+  'queso-portions': 'mugshots-queso-dip',
 }
 
 export const dishPhoto = (name: string): string | undefined => {
