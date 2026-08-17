@@ -786,6 +786,8 @@ export function Prep() {
           </div>
         }
       />
+      {mode !== 'bar' && (
+      <>
       {/* Print-only prep sheet (owner spec): zero items never print, sections
           keep their boxes, the list flows into TWO columns, and — when printing
           All — each station lands on ITS OWN PAGE so you print once and hand a
@@ -883,6 +885,8 @@ export function Prep() {
           ))
         })()}
       </div>
+      </>
+      )}
 
       {mode === 'bar' && (
         <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 print:hidden">
