@@ -1,268 +1,268 @@
 {
- "sheet": "Specialty Burger Line Builds",
- "source": "67859b80-Menu_Study_Guide_Specialty_Burgers.pdf",
- "dishes": [
-  {
-   "sheetName": "Southern",
-   "photo": "southern.jpg",
-   "sections": [
+  "sheet": "Specialty Burger Line Builds",
+  "source": "67859b80-Menu_Study_Guide_Specialty_Burgers.pdf",
+  "dishes": [
     {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Basket w/liner"
-     ]
+      "sheetName": "Southern",
+      "photo": "southern.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Basket w/liner"
+          ]
+        },
+        {
+          "key": "bread",
+          "label": "Bread",
+          "lines": [
+            "BUN"
+          ]
+        },
+        {
+          "key": "bun",
+          "label": "Bun",
+          "lines": [
+            "1/3 Cup of Lettuce",
+            "1 Slice of Tomato"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Beef Patty"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "2 Slices of Bacon",
+            "1/3 Cup Pimento Cheese Melted",
+            "1/3 Cup Fried Pickles"
+          ]
+        }
+      ]
     },
     {
-     "key": "bread",
-     "label": "Bread",
-     "lines": [
-      "BUN"
-     ]
+      "sheetName": "She-E-O",
+      "photo": "she-e-o.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Basket w/liner"
+          ]
+        },
+        {
+          "key": "bread",
+          "label": "Bread",
+          "lines": [
+            "BUN"
+          ]
+        },
+        {
+          "key": "bun",
+          "label": "Bun",
+          "lines": [
+            "1 Tbsp Mayo (bottom bun)",
+            "1/3 Cup of Lettuce"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Beef Patty"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "3 oz Waffle Fries",
+            "2 oz Cheese Sauce",
+            "1 oz Diced Tomatoes & Red Onions"
+          ]
+        }
+      ]
     },
     {
-     "key": "bun",
-     "label": "Bun",
-     "lines": [
-      "1/3 Cup of Lettuce",
-      "1 Slice of Tomato"
-     ]
+      "sheetName": "Guthrie's Godfather",
+      "photo": "guthrie-s-godfather.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Basket w/liner"
+          ]
+        },
+        {
+          "key": "bread",
+          "label": "Bread",
+          "lines": [
+            "BUN"
+          ]
+        },
+        {
+          "key": "bun",
+          "label": "Bun",
+          "lines": [
+            "1 tbsp Garlic Mayo (bottom bun)"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Beef Patty"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "2 Mozz Wedges",
+            "2 oz Marinara",
+            "1 oz Pesto on Bun"
+          ]
+        }
+      ]
     },
     {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Beef Patty"
-     ]
+      "sheetName": "Breakfast",
+      "photo": "breakfast.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Basket w/liner"
+          ]
+        },
+        {
+          "key": "bread",
+          "label": "Bread",
+          "lines": [
+            "BUN"
+          ]
+        },
+        {
+          "key": "bun",
+          "label": "Bun",
+          "lines": [
+            "1 Tbsp Mayo (bottom bun)",
+            "1/3 Cup of Lettuce",
+            "1 Slice of Tomato"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Beef Patty"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "2 slices of Bacon, Slice of American Cheese, Fried Egg"
+          ]
+        }
+      ]
     },
     {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "2 Slices of Bacon",
-      "1/3 Cup Pimento Cheese Melted",
-      "1/3 Cup Fried Pickles"
-     ]
+      "sheetName": "Texan",
+      "photo": "texan.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Basket w/liner"
+          ]
+        },
+        {
+          "key": "bread",
+          "label": "Bread",
+          "lines": [
+            "BUN"
+          ]
+        },
+        {
+          "key": "bun",
+          "label": "Bun",
+          "lines": [
+            "1 Tbsp Mayo (bottom bun)",
+            "1/3 Cup of Lettuce",
+            "1 Slice of Tomato"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Beef Patty"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "Slice Pepperjack Cheese",
+            "1/3 cup Fried O - Strings",
+            "1/4 cup Fried Jalapenos"
+          ]
+        }
+      ]
+    },
+    {
+      "sheetName": "Big Kahuna",
+      "photo": "big-kahuna.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Basket w/liner"
+          ]
+        },
+        {
+          "key": "bread",
+          "label": "Bread",
+          "lines": [
+            "BUN"
+          ]
+        },
+        {
+          "key": "bun",
+          "label": "Bun",
+          "lines": [
+            "1/3 Cup of Lettuce",
+            "1 Slice of Tomato"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Beef Patty"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "2 slices of Bacon",
+            "2 Slices Grilled Pineapple Teryiaki"
+          ]
+        }
+      ]
     }
-   ]
-  },
-  {
-   "sheetName": "She-E-O",
-   "photo": "she-e-o.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Basket w/liner"
-     ]
-    },
-    {
-     "key": "bread",
-     "label": "Bread",
-     "lines": [
-      "BUN"
-     ]
-    },
-    {
-     "key": "bun",
-     "label": "Bun",
-     "lines": [
-      "1 Tbsp Mayo (bottom bun)",
-      "1/3 Cup of Lettuce"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Beef Patty"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "3 oz Waffle Fries",
-      "2 oz Cheese Sauce",
-      "1 oz Pico de Gallo"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Guthrie's Godfather",
-   "photo": "guthrie-s-godfather.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Basket w/liner"
-     ]
-    },
-    {
-     "key": "bread",
-     "label": "Bread",
-     "lines": [
-      "BUN"
-     ]
-    },
-    {
-     "key": "bun",
-     "label": "Bun",
-     "lines": [
-      "1 tbsp Garlic Mayo (bottom bun)"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Beef Patty"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "2 Mozz Wedges",
-      "2 oz Marinara",
-      "1 oz Pesto on Bun"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Breakfast",
-   "photo": "breakfast.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Basket w/liner"
-     ]
-    },
-    {
-     "key": "bread",
-     "label": "Bread",
-     "lines": [
-      "BUN"
-     ]
-    },
-    {
-     "key": "bun",
-     "label": "Bun",
-     "lines": [
-      "1 Tbsp Mayo (bottom bun)",
-      "1/3 Cup of Lettuce",
-      "1 Slice of Tomato"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Beef Patty"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "2 slices of Bacon, Slice of American Cheese, Fried Egg"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Texan",
-   "photo": "texan.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Basket w/liner"
-     ]
-    },
-    {
-     "key": "bread",
-     "label": "Bread",
-     "lines": [
-      "BUN"
-     ]
-    },
-    {
-     "key": "bun",
-     "label": "Bun",
-     "lines": [
-      "1 Tbsp Mayo (bottom bun)",
-      "1/3 Cup of Lettuce",
-      "1 Slice of Tomato"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Beef Patty"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "Slice Pepperjack Cheese",
-      "1/3 cup Fried O - Strings",
-      "1/4 cup Fried Jalapenos"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Big Kahuna",
-   "photo": "big-kahuna.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Basket w/liner"
-     ]
-    },
-    {
-     "key": "bread",
-     "label": "Bread",
-     "lines": [
-      "BUN"
-     ]
-    },
-    {
-     "key": "bun",
-     "label": "Bun",
-     "lines": [
-      "1/3 Cup of Lettuce",
-      "1 Slice of Tomato"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Beef Patty"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "2 slices of Bacon",
-      "2 Slices Grilled Pineapple Teryiaki"
-     ]
-    }
-   ]
-  }
- ]
+  ]
 }

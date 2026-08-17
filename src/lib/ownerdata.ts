@@ -37,6 +37,33 @@ export function purgeOwnerBookings(): void {
   }
 }
 
+/**
+ * One-time: zero every sales and product-mix number, on every store.
+ *
+ * Owner's call — the numbers on the app were a mix of baked-in chat drops and
+ * old imports, and he wants a clean slate before the real reports go in.
+ * Clears the nightly sales log, the sales-category mix and the product mix.
+ *
+ * Deliberately narrow. Invoices, prices, tips, petty cash and the count sheets
+ * are records too, and none of them are sales or product mix — they stay. So do
+ * the recipes, roster, order guides and checklists.
+ *
+ * Guarded by a flag so it runs once per device and never eats a report imported
+ * afterwards. Same shape as purgeOwnerBookings above, which the owner asked for
+ * on the same grounds.
+ */
+export function purgeSalesAndMix(): void {
+  const FLAG = 'mugops:__salesZeroed'
+  const WIPE = /::(nightly:log|nightly:catmix|pmix:days)$/
+  try {
+    if (localStorage.getItem(FLAG)) return
+    for (const k of Object.keys(localStorage)) if (WIPE.test(k)) localStorage.removeItem(k)
+    localStorage.setItem(FLAG, '1')
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function applyOwnerDrops(): void {
   const data = ownerDrops as unknown as {
     version: number

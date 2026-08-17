@@ -1,251 +1,251 @@
 {
- "sheet": "Salad Line Builds",
- "source": "8c1228ad-New_Line_Builds_525_salads.pdf",
- "dishes": [
-  {
-   "sheetName": "Quesadilla",
-   "photo": "quesadilla.jpg",
-   "sections": [
+  "sheet": "Salad Line Builds",
+  "source": "8c1228ad-New_Line_Builds_525_salads.pdf",
+  "dishes": [
     {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Lined Burger Basket"
-     ]
+      "sheetName": "Quesadilla",
+      "photo": "quesadilla.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Lined Burger Basket"
+          ]
+        },
+        {
+          "key": "greens",
+          "label": "Greens",
+          "lines": [
+            "1/3 c SHREDDED LETTUCE"
+          ]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Vegetables / Build",
+          "lines": [
+            "12\" Flour Tortilla with 1/2 c Shredded Cheese on Half"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Portion Quesadilla Meat Heated on the Flat Top"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "2 oz Sriracha Mayo",
+            "1 oz Diced Tomatoes & Red Onions"
+          ]
+        }
+      ]
     },
     {
-     "key": "greens",
-     "label": "Greens",
-     "lines": [
-      "1/3 c SHREDDED LETTUCE"
-     ]
+      "sheetName": "Rajun Cajun Salad",
+      "photo": "rajun-cajun-salad.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Large Salad Bowl"
+          ]
+        },
+        {
+          "key": "greens",
+          "label": "Greens",
+          "lines": [
+            "6 OZ SALAD MIX"
+          ]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Vegetables / Build",
+          "lines": [
+            "1/2 Cup of Shredded Cheese",
+            "1/3 Cup Diced Tomatoes & Red Onions"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "Blackened Chicken Breast, thinly-sliced"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "Thinly Sliced Blackened Chicken Breast w/ Blackening Spice",
+            "Garnish with Tony's and Parsley"
+          ]
+        }
+      ]
     },
     {
-     "key": "vegetables-build",
-     "label": "Vegetables / Build",
-     "lines": [
-      "12\" Flour Tortilla with 1/2 c Shredded Cheese on Half"
-     ]
+      "sheetName": "Buffalo Bleu",
+      "photo": "buffalo-bleu.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Large Salad Bowl"
+          ]
+        },
+        {
+          "key": "greens",
+          "label": "Greens",
+          "lines": [
+            "6 OZ SALAD MIX"
+          ]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Vegetables / Build",
+          "lines": [
+            "1/3 Cup of Diced Onions",
+            "1/3 Cup of Tomatoes",
+            "1/3 Cup of Diced Bacon"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "3 Fried Chicken Strips, Tossed in Mild and cut into pieces"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "Tossed and cut (1/2 inch) Fried Chicken Strips",
+            "Bleu Cheese Crumbles, Garnish with Parsley"
+          ]
+        }
+      ]
     },
     {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Portion Quesadilla Meat Heated on the Flat Top"
-     ]
+      "sheetName": "Cheeseburger Bowl",
+      "photo": "cheeseburger-bowl.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Large Salad Bowl"
+          ]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Vegetables / Build",
+          "lines": [
+            "4 oz Salad Mix",
+            "1 oz Shredded Lettuce",
+            "Toss with 1 oz Comeback Sauce"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "7 oz Hamburger Patty, seasoned with Tony's and cooked on the flat top - use a spatula to chop into small pieces, like ground beef.",
+            "Drizzle 2 oz of the cheese sauce on the cooked ground beef and combine on the flat top"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "1 oz Diced Pickles",
+            "3 oz Waffle Fries",
+            "1 oz Shredded Cheese",
+            "1/8 cup Diced Tomatoes & Red Onions",
+            "1 Slice Cooked Bacon, Chopped"
+          ]
+        }
+      ]
     },
     {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "2 oz Sriracha Mayo",
-      "1 oz Pico de Gallo"
-     ]
+      "sheetName": "Teriyaki Bowl",
+      "photo": "teriyaki-bowl.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Large Salad Bowl"
+          ]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Vegetables / Build",
+          "lines": [
+            "4 oz Salad Mix",
+            "3 oz Asian Slaw"
+          ]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": [
+            "3 Chicken Tenders",
+            "Fried or Grilled, if requested",
+            "Cut tenders into bite-size pieces"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "1 oz Diced Red Onions",
+            "1 oz Diced Tomatoes",
+            "Drizzle 1 oz teriyaki sauce, zig zag across bowl."
+          ]
+        }
+      ]
+    },
+    {
+      "sheetName": "Side House",
+      "photo": "side-house.jpg",
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": [
+            "Small Salad Bowl"
+          ]
+        },
+        {
+          "key": "greens",
+          "label": "Greens",
+          "lines": [
+            "4 OZ SALAD MIX"
+          ]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Vegetables / Build",
+          "lines": [
+            "1/4 Cup Diced Onions",
+            "1/4 Cup Diced Tomatoes",
+            "1/3 Cup Shredded Cheese"
+          ]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top",
+          "lines": [
+            "Croutons"
+          ]
+        }
+      ]
     }
-   ]
-  },
-  {
-   "sheetName": "Rajun Cajun Salad",
-   "photo": "rajun-cajun-salad.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Large Salad Bowl"
-     ]
-    },
-    {
-     "key": "greens",
-     "label": "Greens",
-     "lines": [
-      "6 OZ SALAD MIX"
-     ]
-    },
-    {
-     "key": "vegetables-build",
-     "label": "Vegetables / Build",
-     "lines": [
-      "1/2 Cup of Shredded Cheese",
-      "1/3 Cup Pico de Gallo"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "Blackened Chicken Breast, thinly-sliced"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "Thinly Sliced Blackened Chicken Breast w/ Blackening Spice",
-      "Garnish with Tony's and Parsley"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Buffalo Bleu",
-   "photo": "buffalo-bleu.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Large Salad Bowl"
-     ]
-    },
-    {
-     "key": "greens",
-     "label": "Greens",
-     "lines": [
-      "6 OZ SALAD MIX"
-     ]
-    },
-    {
-     "key": "vegetables-build",
-     "label": "Vegetables / Build",
-     "lines": [
-      "1/3 Cup of Diced Onions",
-      "1/3 Cup of Tomatoes",
-      "1/3 Cup of Diced Bacon"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "3 Fried Chicken Strips, Tossed in Mild and cut into pieces"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "Tossed and cut (1/2 inch) Fried Chicken Strips",
-      "Bleu Cheese Crumbles, Garnish with Parsley"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Cheeseburger Bowl",
-   "photo": "cheeseburger-bowl.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Large Salad Bowl"
-     ]
-    },
-    {
-     "key": "vegetables-build",
-     "label": "Vegetables / Build",
-     "lines": [
-      "4 oz Salad Mix",
-      "1 oz Shredded Lettuce",
-      "Toss with 1 oz Comeback Sauce"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "7 oz Hamburger Patty, seasoned with Tony's and cooked on the flat top - use a spatula to chop into small pieces, like ground beef.",
-      "Drizzle 2 oz of the cheese sauce on the cooked ground beef and combine on the flat top"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "1 oz Diced Pickles",
-      "3 oz Waffle Fries",
-      "1 oz Shredded Cheese",
-      "1/8 cup Pico de Gallo",
-      "1 Slice Cooked Bacon, Chopped"
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Teriyaki Bowl",
-   "photo": "teriyaki-bowl.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Large Salad Bowl"
-     ]
-    },
-    {
-     "key": "vegetables-build",
-     "label": "Vegetables / Build",
-     "lines": [
-      "4 oz Salad Mix",
-      "3 oz Asian Slaw"
-     ]
-    },
-    {
-     "key": "meat",
-     "label": "Meat",
-     "lines": [
-      "3 Chicken Tenders",
-      "Fried or Grilled, if requested",
-      "Cut tenders into bite-size pieces"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "1 oz Diced Red Onions",
-      "1 oz Diced Tomatoes",
-      "Drizzle 1 oz teriyaki sauce, zig zag across bowl."
-     ]
-    }
-   ]
-  },
-  {
-   "sheetName": "Side House",
-   "photo": "side-house.jpg",
-   "sections": [
-    {
-     "key": "plateware",
-     "label": "Plateware",
-     "lines": [
-      "Small Salad Bowl"
-     ]
-    },
-    {
-     "key": "greens",
-     "label": "Greens",
-     "lines": [
-      "4 OZ SALAD MIX"
-     ]
-    },
-    {
-     "key": "vegetables-build",
-     "label": "Vegetables / Build",
-     "lines": [
-      "1/4 Cup Diced Onions",
-      "1/4 Cup Diced Tomatoes",
-      "1/3 Cup Shredded Cheese"
-     ]
-    },
-    {
-     "key": "on-top",
-     "label": "On Top",
-     "lines": [
-      "Croutons"
-     ]
-    }
-   ]
-  }
- ]
+  ]
 }

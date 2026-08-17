@@ -64,6 +64,16 @@ function PrepField({ label, hint, children }: { label: string; hint?: string; ch
 }
 const fmtQty = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
+/**
+ * Prep taken off the menu, which has to come off every device's stored sheet.
+ *
+ * Dropping it from the shipped list isn't enough: the sheet is seeded once per
+ * device and then belongs to that device, so a tablet that had already saved a
+ * copy kept prepping it. Add a name here when an item is pulled and bump the
+ * version below.
+ */
+const RETIRED_PREP = ['Pico De Gallo', 'Pico de Gallo']
+
 /** First-run classification (owner spec): brined chicken / queso meat /
  *  sliced jals were tests; LTO items get their own box; the originals are
  *  the recipes. */
@@ -176,16 +186,22 @@ export function Prep() {
    * pencil owns it, and this never runs again.
    */
   useEffect(() => {
-    if (specsVer >= 1) return
+    if (specsVer >= 2) return
     const seed = new Map((PREP_SEED as PrepItem[]).map((s) => [s.name, s]))
     setItems((is) =>
-      is.map((x) => {
-        const s = seed.get(x.name)
-        if (!s || (x.spec === s.spec && x.unit === s.unit)) return x
-        return { ...x, spec: s.spec, unit: s.unit }
-      }),
+      is
+        // Items pulled off the menu have to leave every device's sheet, or a
+        // cook keeps making something the kitchen no longer serves. Listed by
+        // name rather than diffed against the seed, because a name missing from
+        // the seed is usually one the store added on purpose.
+        .filter((x) => !RETIRED_PREP.some((r) => r.toLowerCase() === x.name.trim().toLowerCase()))
+        .map((x) => {
+          const s = seed.get(x.name)
+          if (!s || (x.spec === s.spec && x.unit === s.unit)) return x
+          return { ...x, spec: s.spec, unit: s.unit }
+        }),
     )
-    setSpecsVer(1)
+    setSpecsVer(2)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
