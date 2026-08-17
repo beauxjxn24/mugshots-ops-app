@@ -20,10 +20,21 @@ import { dishPhoto } from '../lib/photos'
 // sell tonight.
 const PUSHABLE = ACTIVE_SPECS.filter((s) => s.g !== 'Prep')
 
+// What an empty box offers: the LTOs first, since that's usually what's being
+// pushed, then the rest of the menu. It's a DROP DOWN -- clicking it has to
+// show something to grab. Offering nothing until you type is a search box
+// wearing a dropdown's name, and leaves you guessing whether it works at all.
+const STARTER = [
+  ...PUSHABLE.filter((s) => s.lto || s.g === 'Summer LTO' || /\bLTO\b/i.test(s.shelf)),
+  ...PUSHABLE.filter((s) => !(s.lto || s.g === 'Summer LTO' || /\bLTO\b/i.test(s.shelf))).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  ),
+]
+
 /** Substring first, so an exact-ish type-ahead beats a loose word match. */
 function rank(query: string, limit = 8) {
   const q = query.trim().toLowerCase()
-  if (!q) return []
+  if (!q) return STARTER
   const words = q.split(/\s+/)
   return PUSHABLE.map((s) => {
     const n = s.name.toLowerCase()
@@ -127,13 +138,19 @@ export function FocusPicker({
         />
       </div>
 
-      {q.trim() !== '' && (
-        <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-white/10">
-          {results.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-white/50">
-              Nothing on the menu matches “{q.trim()}”.
-            </p>
-          ) : (
+      <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-white/10">
+        {results.length === 0 ? (
+          <p className="px-3 py-3 text-xs text-white/50">
+            {q.trim() ? `Nothing on the menu matches “${q.trim()}”.` : 'Everything on the menu is already picked.'}
+          </p>
+        ) : (
+          <>
+            {q.trim() === '' && (
+              <div className="sticky top-0 border-b border-white/10 bg-navy/95 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white/40 backdrop-blur">
+                LTOs first · or type to search
+              </div>
+            )}
+            {
             results.map((s, i) => (
               <button
                 key={s.name}
@@ -144,7 +161,8 @@ export function FocusPicker({
                 }`}
               >
                 {dishPhoto(s.name) ? (
-                  <img src={dishPhoto(s.name)} alt="" className="size-8 shrink-0 rounded-lg object-cover" />
+                  // lazy: the empty-box list is the whole menu, not eight rows
+                  <img src={dishPhoto(s.name)} alt="" loading="lazy" className="size-8 shrink-0 rounded-lg object-cover" />
                 ) : (
                   <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-[9px] font-bold text-white/40">
                     no pic
@@ -156,10 +174,10 @@ export function FocusPicker({
                 </span>
                 <Plus size={14} className="shrink-0 text-white/40" />
               </button>
-            ))
-          )}
-        </div>
-      )}
+            ))}
+          </>
+        )}
+      </div>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-2.5">
         <span className="text-[11px] text-white/45">
