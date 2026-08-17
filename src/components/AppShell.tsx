@@ -4,6 +4,7 @@ import { NAV, NAV_FLAT, STAFF_SECTIONS, SHIFT_ITEM, ROLLUP_SECTIONS, bottomItems
 import { StoreSwitcher } from './StoreSwitcher'
 import { RoleToggle } from './RoleToggle'
 import { ShiftBadge } from './ShiftBadge'
+import { SyncBadge } from './SyncBadge'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
 import { ConciergeBell, UtensilsCrossed, Search, ChevronDown } from 'lucide-react'
@@ -77,6 +78,7 @@ export function AppShell() {
         <Brand />
         <RoleToggle />
         <ShiftBadge />
+        <SyncBadge />
         {isAdmin ? (
           <div className="mb-3">
             <StoreSwitcher />
@@ -101,6 +103,7 @@ export function AppShell() {
         </button>
         <span className="font-display font-semibold">The Pass</span>
         <span className="ml-auto flex items-center gap-2">
+          <SyncBadge compact />
           <ShiftBadge compact />
           <span className="text-xs text-white/50">{current?.label}</span>
         </span>
@@ -117,6 +120,7 @@ export function AppShell() {
             <Brand />
             <RoleToggle />
             <ShiftBadge />
+            <SyncBadge />
             {isAdmin ? (
               <div className="mb-3">
                 <StoreSwitcher />

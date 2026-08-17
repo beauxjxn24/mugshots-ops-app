@@ -29,6 +29,7 @@ import './index.css'
 import { App } from './App'
 import { seedFlowoodHistory } from './lib/nightly'
 import { applyOwnerDrops, purgeOwnerBookings, purgeSalesAndMix } from './lib/ownerdata'
+import { startSync } from './lib/outbox'
 import { repairStapledLabor } from './lib/laborRange'
 import { cleanupCatalogNames } from './lib/catalog'
 import { seedCountSheet } from './lib/countsheet'
@@ -51,6 +52,7 @@ safeBoot('repairStapledLabor', repairStapledLabor)
 safeBoot('applyOwnerDrops', applyOwnerDrops)
 safeBoot('cleanupCatalogNames', cleanupCatalogNames)
 safeBoot('seedCountSheet', seedCountSheet)
+safeBoot('startSync', startSync)
 
 // Keep installed copies fresh: grab new versions the moment they deploy,
 // and keep checking every 5 minutes while the app stays open.

@@ -12,6 +12,7 @@ import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from '../components/SpecPeek'
 import { PrepChecklist, type ChecklistItem } from '../components/PrepChecklist'
 import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
+import { entryColumn, entryField } from '../lib/nextfield'
 
 interface PrepItem {
   name: string
@@ -590,6 +591,7 @@ export function Prep() {
             const v = e.target.value
             setCount(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
           }}
+          {...entryField('onhand')}
           className="w-full justify-self-center rounded-lg border border-black/10 bg-white px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand"
         />
         {it.pars.map((p, i) =>
@@ -601,6 +603,7 @@ export function Prep() {
               step="0.5"
               value={p}
               onChange={(e) => setPar(it.name, i, Math.max(0, parseFloat(e.target.value) || 0))}
+              {...entryField(`par${i}`)}
               className={`w-full rounded-md border px-0.5 py-1 text-center font-mono text-xs outline-none focus:border-brand ${
                 i === di ? 'border-brand/50 bg-brand/10 font-bold' : 'border-black/10 bg-white'
               }`}
@@ -1001,7 +1004,9 @@ export function Prep() {
                   <span className="text-[10px] text-muted">{sec === 'LTO' ? 'limited-time builds' : 'trial recipes — park or promote'}</span>
                 )}
               </div>
-              <div className="min-w-[880px]">
+              {/* Counting a cooler is one pass down the column, so Enter goes to
+                  the same box on the next row rather than nowhere. */}
+              <div className="min-w-[880px]" {...entryColumn}>
                 <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
                   <span />
                   <span>Prep item</span>

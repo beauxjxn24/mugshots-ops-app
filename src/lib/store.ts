@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useScopeKey } from './scope'
+import { queue } from './outbox'
 
 /**
  * Safe, namespaced device storage. Every read is guarded (a corrupt or
@@ -22,7 +23,11 @@ export function load<T>(key: string, fallback: T): T {
 
 export function save<T>(key: string, value: T): void {
   try {
+    // The device is always written first. A count typed in the walk-in is safe
+    // the instant it's typed, whether or not there's a signal to send it on —
+    // the queue below carries it up when there is.
     localStorage.setItem(NS + key, JSON.stringify(value))
+    queue(key)
     // Same-tab live update: the browser's native `storage` event only fires in
     // OTHER tabs, so a component that writes here (an importer) would never
     // notify the Dashboard / Nightly pages mounted in the SAME tab — they'd sit
