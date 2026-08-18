@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Minus, Plus, Users } from 'lucide-react'
+import { Minus, Plus, ChevronDown } from 'lucide-react'
 import { Card } from './ui'
 import {
   dealEvenly,
@@ -45,6 +45,9 @@ export function CutPlanner({
   done: Record<string, boolean>
 }) {
   const [active, setActive] = useState(1)
+  // Cuts opened alongside the active one, for moving work across. The active
+  // cut is always open; this is the "and also show me that one" set.
+  const [opened, setOpened] = useState<Set<number>>(new Set())
   const ids = duties.map((d) => d.id)
   const pool = unassigned(plan, ids)
   const byId = new Map(duties.map((d) => [d.id, d]))
@@ -62,6 +65,9 @@ export function CutPlanner({
     })
 
   const cuts = Array.from({ length: plan.cuts }, (_, i) => i + 1)
+  // Load bars are relative to the busiest cut, so the comparison is between
+  // tonight's cuts rather than against some fixed idea of a full load.
+  const heaviest = Math.max(1, ...cuts.map((c) => dutiesForCut(plan, c, ids).length))
 
   return (
     <Card className="overflow-hidden">
@@ -107,60 +113,15 @@ export function CutPlanner({
         </span>
       </div>
 
-      {/* Which cut is being dealt to. */}
-      <div className="flex flex-wrap gap-1.5 border-b border-black/5 p-3">
-        {cuts.map((c) => {
-          const n = dutiesForCut(plan, c, ids).length
-          return (
-            <button
-              key={c}
-              onClick={() => setActive(c)}
-              className={`rounded-xl border px-3 py-2 text-left transition-colors ${
-                active === c
-                  ? 'border-brand bg-brand text-white'
-                  : 'border-black/10 bg-white text-ink hover:border-brand/40'
-              }`}
-            >
-              <span className="block text-xs font-bold">Cut {c}</span>
-              <span className={`block text-[10px] ${active === c ? 'text-white/70' : 'text-muted'}`}>
-                {plan.people[c] || 'no one yet'} · {n}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Who is on the cut being dealt to. */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-black/5 px-4 py-2.5">
-        <Users size={14} className="shrink-0 text-muted" />
-        <span className="text-xs font-semibold text-muted">Cut {active} is</span>
-        <select
-          value={plan.people[active] ?? ''}
-          onChange={(e) => {
-            const people = { ...plan.people }
-            if (e.target.value) people[active] = e.target.value
-            else delete people[active]
-            setPlan({ ...plan, people })
-          }}
-          className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm font-semibold outline-none focus:border-brand"
-        >
-          <option value="">— nobody yet —</option>
-          {crew.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-          {plan.people[active] && !crew.includes(plan.people[active]) && (
-            <option value={plan.people[active]}>{plan.people[active]}</option>
-          )}
-        </select>
-      </div>
-
-      {/* The whole deal, laid out. Seeing only the selected cut meant a closer
-          rebalancing the night had to click through five cuts to find out who
-          was carrying too much. Every cut is visible, and tapping any duty --
-          in the pool or on another cut -- moves it to the selected one. */}
-      <div className="p-3">
+      {/* One card per cut: who's on it, how much they're carrying, and their
+          duties when it's open.
+          Every cut used to sit open at once so a closer could see who was
+          overloaded -- but on a four-cut close that's thirty-odd lines of duty
+          text on screen together, and it read as a wall rather than a plan. The
+          load bar carries that same comparison in a glance, so only the cut
+          being dealt to needs its duties open. Any other can be opened
+          alongside it to move work across. */}
+      <div className="space-y-2 p-3">
         {pool.length > 0 && (
           <>
             <div className="mb-1.5 px-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
@@ -181,69 +142,138 @@ export function CutPlanner({
           </>
         )}
 
-        <div className="space-y-3">
-          {cuts.map((c) => {
-            const mine = dutiesForCut(plan, c, ids)
-            return (
-              <div key={c} className={`rounded-xl border p-2.5 ${c === active ? 'border-brand/50 bg-brand/[0.04]' : 'border-black/10'}`}>
-                <div className="mb-1.5 flex items-center gap-2 px-1">
-                  <button
-                    onClick={() => setActive(c)}
-                    className={`text-[10px] font-extrabold uppercase tracking-wider ${c === active ? 'text-brand-600' : 'text-muted hover:text-ink'}`}
-                  >
-                    Cut {c}
-                    {plan.people[c] ? ` · ${plan.people[c]}` : ''}
-                  </button>
-                  {/* Being dealt a list isn't being cut. Until this is pressed
-                      the server is still on section and sees nothing. */}
-                  {plan.people[c] &&
-                    (isReleased(plan, c) ? (
-                      <button
-                        onClick={() => setPlan(setCutReleased(plan, c, false, shiftPerson()))}
-                        title={`Cut by ${plan.cutAt?.[c]?.by} at ${new Date(plan.cutAt![c].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — tap to put them back on the floor`}
-                        className="rounded-full bg-up/15 px-2 py-0.5 text-[10px] font-extrabold uppercase text-up"
-                      >
-                        cut {new Date(plan.cutAt![c].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setPlan(setCutReleased(plan, c, true, shiftPerson()))}
-                        title={`Cut ${plan.people[c]} — releases their sidework to them`}
-                        className="rounded-full border border-brand/40 px-2 py-0.5 text-[10px] font-extrabold uppercase text-brand-600 hover:bg-brand/10"
-                      >
-                        cut them
-                      </button>
-                    ))}
-                  <span className="ml-auto text-[10px] font-bold text-muted">{mine.length}</span>
-                </div>
-                {mine.length === 0 ? (
-                  <p className="px-1 py-1 text-xs text-muted">
-                    {c === active ? 'Tap duties above to deal them here.' : 'Nothing yet.'}
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {mine.map((id) => (
-                      <button
-                        key={id}
-                        onClick={() => deal(id)}
-                        title={c === active ? 'Tap to put it back in the pool' : `Move to cut ${active}`}
-                        className={`rounded-lg border px-2.5 py-1.5 text-left text-[12.5px] ${
-                          done[id]
-                            ? 'border-up/40 bg-up/10 text-up line-through'
-                            : c === active
-                              ? 'border-brand/50 bg-brand/15 text-ink'
-                              : 'border-black/10 bg-white text-ink hover:border-brand/50'
-                        }`}
-                      >
-                        {byId.get(id)?.task}
-                      </button>
-                    ))}
-                  </div>
-                )}
+        {cuts.map((c) => {
+          const mine = dutiesForCut(plan, c, ids)
+          const open = c === active || opened.has(c)
+          const doneN = mine.filter((id) => done[id]).length
+          return (
+            <div
+              key={c}
+              className={`overflow-hidden rounded-xl border transition-colors ${
+                c === active ? 'border-brand/50 bg-brand/[0.04]' : 'border-black/10 bg-white'
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 p-2.5">
+                <button
+                  onClick={() => setActive(c)}
+                  title={c === active ? 'Duties you tap land here' : 'Deal to this cut'}
+                  className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider ${
+                    c === active ? 'bg-brand text-white' : 'bg-black/5 text-muted hover:text-ink'
+                  }`}
+                >
+                  Cut {c}
+                </button>
+
+                {/* Who's on it, set right here. It used to be one dropdown
+                    above the board that re-pointed as you switched cuts, so
+                    staffing four cuts was four round trips through the same
+                    control -- and which cut you were naming was off-screen. */}
+                <select
+                  value={plan.people[c] ?? ''}
+                  onChange={(e) => {
+                    const people = { ...plan.people }
+                    if (e.target.value) people[c] = e.target.value
+                    else delete people[c]
+                    setPlan({ ...plan, people })
+                  }}
+                  className={`min-w-0 flex-1 rounded-lg border px-2 py-1 text-sm font-semibold outline-none focus:border-brand ${
+                    plan.people[c] ? 'border-black/10 bg-white text-ink' : 'border-dashed border-black/25 bg-transparent text-muted'
+                  }`}
+                >
+                  <option value="">— nobody yet —</option>
+                  {crew.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                  {plan.people[c] && !crew.includes(plan.people[c]) && (
+                    <option value={plan.people[c]}>{plan.people[c]}</option>
+                  )}
+                </select>
+
+                {/* Load at a glance -- this is what replaces having every cut's
+                    duties on screen together. Widths are relative to the
+                    heaviest cut, so an uneven deal is obvious without counting. */}
+                <span className="flex shrink-0 items-center gap-1.5" title={`${mine.length} duties`}>
+                  <span className="h-1.5 w-16 overflow-hidden rounded-full bg-black/10">
+                    <span
+                      className={`block h-full rounded-full ${c === active ? 'bg-brand' : 'bg-ink/30'}`}
+                      style={{ width: `${heaviest ? (mine.length / heaviest) * 100 : 0}%` }}
+                    />
+                  </span>
+                  <span className="w-9 text-right text-[11px] font-bold text-muted">
+                    {doneN > 0 ? `${doneN}/${mine.length}` : mine.length}
+                  </span>
+                </span>
+
+                {/* Being dealt a list isn't being cut. Until this is pressed
+                    the server is still on section and sees nothing. */}
+                {plan.people[c] &&
+                  (isReleased(plan, c) ? (
+                    <button
+                      onClick={() => setPlan(setCutReleased(plan, c, false, shiftPerson()))}
+                      title={`Cut by ${plan.cutAt?.[c]?.by} at ${new Date(plan.cutAt![c].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — tap to put them back on the floor`}
+                      className="shrink-0 rounded-full bg-up/15 px-2 py-0.5 text-[10px] font-extrabold uppercase text-up"
+                    >
+                      cut {new Date(plan.cutAt![c].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setPlan(setCutReleased(plan, c, true, shiftPerson()))}
+                      title={`Cut ${plan.people[c]} — releases their sidework to them`}
+                      className="shrink-0 rounded-full border border-brand/40 px-2 py-0.5 text-[10px] font-extrabold uppercase text-brand-600 hover:bg-brand/10"
+                    >
+                      cut them
+                    </button>
+                  ))}
+
+                <button
+                  onClick={() =>
+                    setOpened((s) => {
+                      const n = new Set(s)
+                      n.has(c) ? n.delete(c) : n.add(c)
+                      return n
+                    })
+                  }
+                  aria-label={open ? `Hide cut ${c}'s duties` : `Show cut ${c}'s duties`}
+                  aria-expanded={open}
+                  className="grid size-7 shrink-0 place-items-center rounded-md text-muted hover:bg-black/5 hover:text-ink"
+                >
+                  <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
               </div>
-            )
-          })}
-        </div>
+
+              {open && (
+                <div className="border-t border-black/5 px-2.5 pb-2.5 pt-2">
+                  {mine.length === 0 ? (
+                    <p className="px-1 py-1 text-xs text-muted">
+                      {c === active ? 'Tap duties from the pool above to deal them here.' : 'Nothing yet.'}
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {mine.map((id) => (
+                        <button
+                          key={id}
+                          onClick={() => deal(id)}
+                          title={c === active ? 'Tap to put it back in the pool' : `Move to cut ${active}`}
+                          className={`rounded-lg border px-2.5 py-1.5 text-left text-[12.5px] ${
+                            done[id]
+                              ? 'border-up/40 bg-up/10 text-up line-through'
+                              : c === active
+                                ? 'border-brand/50 bg-brand/15 text-ink'
+                                : 'border-black/10 bg-white text-ink hover:border-brand/50'
+                          }`}
+                        >
+                          {byId.get(id)?.task}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </Card>
   )
