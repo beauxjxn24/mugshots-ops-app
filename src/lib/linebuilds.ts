@@ -364,11 +364,11 @@ export function goesInto(name: string): string[] {
   return usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? []
 }
 
-export const buildPhoto = (b: LineBuild): string | undefined =>
-  b.photo ? PHOTOS[b.photo.replace(/\.jpg$/, '')] : PHOTOS[slugify(b.sheetName)]
-
 const PHOTOS: Record<string, string> = Object.fromEntries(
   Object.entries(
     import.meta.glob('../assets/lto/*.jpg', { eager: true, query: '?url', import: 'default' }),
   ).map(([p, url]) => [p.split('/').pop()!.replace('.jpg', ''), url as string]),
 )
+
+export const buildPhoto = (b: LineBuild): string | undefined =>
+  b.photo ? PHOTOS[b.photo.replace(/\.jpg$/, '')] : PHOTOS[slugify(b.sheetName)]

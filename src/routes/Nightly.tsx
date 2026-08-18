@@ -446,7 +446,12 @@ function NetSalesCard({ n }: { n: Night }) {
 function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstCol: string; rows: BreakdownRow[]; empty: string }) {
   const [open, setOpen] = useState<Set<string>>(new Set())
   const toggle = (name: string) =>
-    setOpen((p) => { const s = new Set(p); s.has(name) ? s.delete(name) : s.add(name); return s })
+    setOpen((p) => {
+      const s = new Set(p)
+      if (s.has(name)) s.delete(name)
+      else s.add(name)
+      return s
+    })
   const tot = rows.reduce((a, r) => ({ qty: a.qty + r.qty, net: a.net + r.net, disc: a.disc + r.disc, gross: a.gross + r.gross, tax: a.tax + r.tax }), { qty: 0, net: 0, disc: 0, gross: 0, tax: 0 })
   return (
     <ReportCard title={title}>

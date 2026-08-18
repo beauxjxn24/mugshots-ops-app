@@ -41,6 +41,9 @@ function weekdayOf(iso: string): number {
   return (new Date(y, m - 1, d).getDay() + 6) % 7
 }
 
+const timeOf = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
 export function Sidework() {
   // Editable copy of the duty sheet, persisted to the device.
   const [data, setData] = usePersistentState<Data>('sidework:data', SIDEWORK)
@@ -88,12 +91,11 @@ export function Sidework() {
       .map((p) => p.name)
       .sort((a, b) => a.localeCompare(b))
   }, [staff, role])
-  const aKey = (si: number) => `${role}|${activePhase}|${si}`
-
   // Switching role lands on that role's sheet for the shift being worked, not
   // on whatever its first phase happens to be.
   const activePhase = phases.includes(phase) ? phase : phaseForShift(phases, shift)
   const sections = data[role]?.[activePhase] ?? []
+  const aKey = (si: number) => `${role}|${activePhase}|${si}`
 
   // The bar's phases have been renamed twice: Opening / Closing before the real
   // laminated sheet went in, then AM / PM, and now AM Opening / PM Closing to
@@ -180,6 +182,13 @@ export function Sidework() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ---- editing helpers (immutable updates on data[role][activePhase]) ----
+  const setSections = (updater: (secs: Section[]) => Section[]) =>
+    setData((d) => ({
+      ...d,
+      [role]: { ...d[role], [activePhase]: updater(d[role][activePhase] ?? []) },
+    }))
+
   // Section titles are editable (owner spec: some stores use names, not section
   // numbers — "Cut 1" rather than "Section 1").
   //
@@ -240,12 +249,6 @@ export function Sidework() {
   const vKey = `${role}|${activePhase}`
   const vRec = verified[vKey]
 
-  // ---- editing helpers (immutable updates on data[role][activePhase]) ----
-  const setSections = (updater: (secs: Section[]) => Section[]) =>
-    setData((d) => ({
-      ...d,
-      [role]: { ...d[role], [activePhase]: updater(d[role][activePhase] ?? []) },
-    }))
   const editTask = (si: number, ti: number, text: string) =>
     setSections((secs) =>
       secs.map((s, i) =>
@@ -790,5 +793,3 @@ export function Sidework() {
   )
 }
 
-const timeOf = (iso: string) =>
-  new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })

@@ -43,6 +43,7 @@ export function dayCode(date: string = businessDay()): string {
 }
 
 const UNLOCK_KEY = '__staffUnlockedOn'
+const PERSON_KEY = '__shiftPerson'
 
 /** Has this device already been let in today? */
 export function unlockedToday(): boolean {
@@ -59,8 +60,6 @@ export function forgetUnlock(): void {
   save(UNLOCK_KEY, null)
   save(PERSON_KEY, null)
 }
-
-const PERSON_KEY = '__shiftPerson'
 
 /**
  * Who is on this device for this shift.

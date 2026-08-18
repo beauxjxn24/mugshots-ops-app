@@ -55,6 +55,9 @@ export const getCatalog = (): CatalogItem[] => {
 export const setCatalog = (items: CatalogItem[]): void => save(conceptKey(), items)
 export const getFlags = (): Record<string, boolean> => load(storeKey('catalog:flags'), {})
 export const setFlags = (f: Record<string, boolean>): void => save(storeKey('catalog:flags'), f)
+export const getPriceLog = (): PriceChange[] =>
+  load(conceptKey().replace('catalog:items', 'catalog:priceLog'), [])
+
 export const getPars = (): Record<string, ParEntry> => load(storeKey('catalog:pars'), {})
 export const setPars = (p: Record<string, ParEntry>): void => save(storeKey('catalog:pars'), p)
 
@@ -368,9 +371,6 @@ export interface PriceChange {
   vendor: string
   date: string
 }
-export const getPriceLog = (): PriceChange[] =>
-  load(conceptKey().replace('catalog:items', 'catalog:priceLog'), [])
-
 /** Case-insensitive word-overlap match against catalog names + learned aliases. */
 export function fuzzyFind(name: string, items: CatalogItem[] = getCatalog()): CatalogItem | null {
   // Learned aliases and exact names win outright.

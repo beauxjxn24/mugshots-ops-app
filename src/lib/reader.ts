@@ -222,6 +222,7 @@ export async function readFile(
       // NUL characters in the layer ARE the hidden digits — some tickets
       // (ezCater) blank every digit to \u0000 while keeping enough stray
       // real digits elsewhere to sneak past a plain digit count.
+      // eslint-disable-next-line no-control-regex -- matching NUL is the point here
       const hiddenDigits = (text.match(/\u0000/g) || []).length
       if (text.length < 8 || digits < 10 || hiddenDigits > 3) {
         note =

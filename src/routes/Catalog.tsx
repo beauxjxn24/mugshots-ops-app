@@ -129,8 +129,11 @@ export function Catalog() {
   // Per-item destination toggle → writes straight into the target system.
   const toggleDest = (it: CatalogItem, d: Dest) => {
     if (d === 'guide') setOnGuide(it.id, !flags[it.id])
-    else if (d === 'prep') isInPrep(it.name) ? removeFromPrep(it.name) : addToPrep({ name: it.name, unit: it.unit })
-    else isInInventory(it.name) ? removeFromInventory(it.name) : addToInventory({ name: it.name, unit: it.unit, category: it.category })
+    else if (d === 'prep') {
+      if (isInPrep(it.name)) removeFromPrep(it.name)
+      else addToPrep({ name: it.name, unit: it.unit })
+    } else if (isInInventory(it.name)) removeFromInventory(it.name)
+    else addToInventory({ name: it.name, unit: it.unit, category: it.category })
     refresh()
   }
   const hasDest = (it: CatalogItem, d: Dest) =>
@@ -204,7 +207,14 @@ export function Catalog() {
               return (
                 <button
                   key={d.key}
-                  onClick={() => setDest((s) => { const n = new Set(s); n.has(d.key) ? n.delete(d.key) : n.add(d.key); return n })}
+                  onClick={() =>
+                    setDest((s) => {
+                      const n = new Set(s)
+                      if (n.has(d.key)) n.delete(d.key)
+                      else n.add(d.key)
+                      return n
+                    })
+                  }
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
                     on ? 'border-signal bg-signal/15 text-signal' : 'border-white/15 bg-white/[0.03] text-muted hover:text-ink'
                   }`}
