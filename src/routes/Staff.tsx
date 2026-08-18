@@ -73,6 +73,27 @@ export function Staff() {
     setForm({ name: '', role: 'Server', phone: '' })
   }
 
+  /**
+   * Add or drop one job code.
+   *
+   * `role` stays in step with the first code held, because a person imported
+   * before `roles` existed is read through it, and the tip log still groups on
+   * it. Writing both keeps the two readings from disagreeing about the same
+   * person.
+   */
+  const toggleRole = (id: string, role: string) =>
+    setStaff((s) =>
+      s.map((p) => {
+        if (p.id !== id) return p
+        const cur = rolesOf(p)
+        const next = cur.includes(role) ? cur.filter((r) => r !== role) : [...cur, role]
+        // Keep them in the roster's own order, so the chips and the groups on
+        // the left read the same way round.
+        const ordered = ROLES.filter((r) => next.includes(r))
+        return { ...p, roles: ordered, role: ordered[0] ?? '' }
+      }),
+    )
+
   // Goes through addPeople so a paste and a dropped export behave identically —
   // new people added, existing people's job codes refreshed. The write fires a
   // same-tab save event, which is what pulls the list above back into sync.
@@ -298,8 +319,43 @@ export function Staff() {
               <>
                 <div className="mb-3 flex items-baseline justify-between gap-2">
                   <span className="font-display text-xl font-semibold text-ink">{sel.name}</span>
-                  <span className="text-xs text-muted">{sel.role}</span>
+                  <span className="text-xs text-muted">{rolesOf(sel).join(' · ') || 'no job code'}</span>
                 </div>
+
+                {/* Every job code they hold, not just the one they were added
+                    under. Somebody who serves, bartends, carries keys and leads
+                    a shift is four different answers to "who can work tonight",
+                    and the roster could only record one — so the other three
+                    were invisible. Tap to toggle; they list under every group
+                    they hold. */}
+                <div className="mb-4 rounded-xl border border-black/10 bg-black/[0.015] p-3">
+                  <div className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                    Job codes · everything they work
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ROLES.map((r) => {
+                      const on = rolesOf(sel).includes(r)
+                      return (
+                        <button
+                          key={r}
+                          onClick={() => toggleRole(sel.id, r)}
+                          aria-pressed={on}
+                          className={`rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                            on ? 'bg-brand text-white' : 'border border-black/10 bg-white text-muted hover:text-ink'
+                          }`}
+                        >
+                          {r}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {rolesOf(sel).length === 0 && (
+                    <p className="mt-2 text-[11px] text-warn">
+                      No job code — they won't appear in any group on the left.
+                    </p>
+                  )}
+                </div>
+
                 {history.length === 0 ? (
                   <p className="text-sm text-muted">
                     No tip-outs on record yet — they'll appear here as shifts are logged on{' '}

@@ -4,13 +4,14 @@ import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { SettingsCard } from '../components/SettingsCard'
 import { useScope, useCurrentNames } from '../lib/scope'
-import { usePersistentState } from '../lib/store'
+import { usePersistentState, today } from '../lib/store'
 import { requirePin } from '../lib/pin'
 import { getSettingsAudit, logSettingChange, stampLabel } from '../lib/settings'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { DOW, type OrderSchedule } from '../lib/orderDays'
+import { DOW, CADENCES, type OrderSchedule, type Cadence } from '../lib/orderDays'
 import { vendors } from '../lib/ordering'
 import { getPmixDays } from '../lib/pmix'
+import { ACTIVE_SPECS } from '../lib/specs'
 import { clearImportedNumbers, fullResetStore } from '../lib/reset'
 
 /**
@@ -122,6 +123,18 @@ function OrderDays() {
           )
         const setCutoff = (vendor: string, cutoff: string) =>
           setDraft((rs) => rs.map((r) => (r.vendor === vendor ? { ...r, cutoff } : r)))
+        const setCadence = (vendor: string, cadence: Cadence) =>
+          setDraft((rs) =>
+            rs.map((r) =>
+              r.vendor === vendor
+                ? // Switching TO biweekly with no anchor defaults to this week,
+                  // so it alternates from something real instead of 1970.
+                  { ...r, cadence, anchor: cadence === 'biweekly' ? (r.anchor ?? today()) : r.anchor }
+                : r,
+            ),
+          )
+        const setAnchor = (vendor: string, anchor: string) =>
+          setDraft((rs) => rs.map((r) => (r.vendor === vendor ? { ...r, anchor } : r)))
         const remove = async (vendor: string) => {
           if (await confirmDelete(`Remove ${vendor} from the delivery calendar?`, 'Their order guide and history stay — only the day schedule goes.', 'Remove'))
             setDraft((rs) => rs.filter((r) => r.vendor !== vendor))
@@ -200,6 +213,50 @@ function OrderDays() {
                   <div className="space-y-2">
                     <DayRow r={r} field="days" label="Place" tone="place" />
                     <DayRow r={r} field="deliveryDays" label="Arrives" tone="receive" />
+                    {/* How often the pattern repeats. Without this every vendor
+                        was weekly, so an every-other-week truck had to be
+                        entered as weekly and the dashboard called for it on the
+                        wrong week. */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="w-20 shrink-0 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                        How often
+                      </span>
+                      {CADENCES.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setCadence(r.vendor, c.id)}
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                            (r.cadence ?? 'weekly') === c.id
+                              ? 'bg-brand text-white'
+                              : 'border border-black/10 bg-white text-muted enabled:hover:text-ink'
+                          }`}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                      {(r.cadence ?? 'weekly') === 'biweekly' && (
+                        <label className="ml-1 flex items-center gap-1.5 text-[11px] text-muted">
+                          starting
+                          <input
+                            type="date"
+                            value={r.anchor ?? ''}
+                            onChange={(e) => setAnchor(r.vendor, e.target.value)}
+                            title="A date in a week this order DOES happen — the weeks alternate from here"
+                            className="rounded-lg border border-black/10 bg-white px-2 py-1 text-[11px] text-ink outline-none focus:border-brand disabled:bg-transparent disabled:opacity-60"
+                          />
+                        </label>
+                      )}
+                    </div>
+                    {(r.cadence ?? 'weekly') === 'biweekly' && !r.anchor && (
+                      <p className="pl-20 text-[11px] text-warn">
+                        Pick a starting week, or the app can’t tell which Thursday is the “on” one.
+                      </p>
+                    )}
+                    {(r.cadence ?? 'weekly') === 'monthly' && (
+                      <p className="pl-20 text-[11px] text-muted">
+                        Lands on the first matching day of each month.
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -251,6 +308,17 @@ function TrackedItems() {
     for (const d of Object.values(days)) for (const it of d.items) if (it.name.trim()) set.add(it.name.trim())
     return [...set].sort((a, b) => a.localeCompare(b))
   }, [])
+  // With no PMIX on file the box had NOTHING to offer — no suggestions, no
+  // list, nothing to grab — so the control read as broken. The menu is the
+  // honest fallback: pick the dish now, and its tile fills in the first time a
+  // PMIX naming it lands. Prep cards are left out; you don't track a bag of
+  // portioned shrimp on the dashboard, you track what sells.
+  const menuNames = useMemo(
+    () => ACTIVE_SPECS.filter((s) => s.g !== 'Prep').map((s) => s.name).sort((a, b) => a.localeCompare(b)),
+    [],
+  )
+  const pool = pmixNames.length ? pmixNames : menuNames
+  const fromMenu = pmixNames.length === 0
   return (
     <SettingsCard
       area="Tracked items"
@@ -268,20 +336,18 @@ function TrackedItems() {
     >
       {(draft, setDraft, unlocked) => {
         const q = adding.trim().toLowerCase()
-        const suggestions =
-          q.length < 2
-            ? []
-            : pmixNames
-                .filter((n) => n.toLowerCase().includes(q) && !draft.some((t) => t.toLowerCase() === n.toLowerCase()))
-                .slice(0, 8)
-        const exactPmix = pmixNames.find((n) => n.toLowerCase() === q)
+        // Show the list on an empty box too — it's a dropdown, clicking it has
+        // to offer something to grab rather than waiting to be typed at.
+        const unpicked = pool.filter((n) => !draft.some((t) => t.toLowerCase() === n.toLowerCase()))
+        const suggestions = (q ? unpicked.filter((n) => n.toLowerCase().includes(q)) : unpicked).slice(0, 10)
+        const exact = pool.find((n) => n.toLowerCase() === q)
 
         const add = (name?: string) => {
           const pick = (name ?? adding).trim()
           if (!pick) return
-          // With PMIX on file, only real PMIX names go up — anything else
-          // would never get tracked.
-          if (pmixNames.length > 0 && !pmixNames.some((n) => n.toLowerCase() === pick.toLowerCase())) return
+          // Only names from the pool go up — a typo'd name would sit on the
+          // dashboard forever with nothing to fill it.
+          if (!pool.some((n) => n.toLowerCase() === pick.toLowerCase())) return
           setDraft((ts) => [...new Set([...ts, pick])])
           setAdding('')
         }
@@ -323,16 +389,16 @@ function TrackedItems() {
                     if (e.key === 'Escape') setAdding('')
                   }}
                   placeholder={
-                    pmixNames.length
-                      ? 'Start typing — matches your real PMIX items…'
-                      : 'Add an item to track (drop a PMIX on Imports to get suggestions)…'
+                    fromMenu
+                      ? 'Pick a menu item to track — or start typing…'
+                      : 'Start typing — matches your real PMIX items…'
                   }
                   className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand disabled:bg-black/[0.03]"
                 />
                 <button
                   onClick={() => add()}
-                  disabled={pmixNames.length > 0 && !exactPmix}
-                  title={pmixNames.length > 0 && !exactPmix ? 'Pick a real PMIX item from the suggestions' : undefined}
+                  disabled={!exact}
+                  title={!exact ? 'Pick one from the list' : undefined}
                   className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
                 >
                   Add
@@ -351,17 +417,17 @@ function TrackedItems() {
                   ))}
                 </div>
               )}
-              {q.length >= 2 &&
-                pmixNames.length > 0 &&
-                suggestions.length === 0 &&
-                !exactPmix &&
-                (pmixNames.some((n) => n.toLowerCase().includes(q)) ? (
-                  <p className="mt-1 text-[11px] text-muted">Already on the board — every PMIX match is tracked.</p>
-                ) : (
-                  <p className="mt-1 text-[11px] text-warn">
-                    No PMIX item matches “{adding.trim()}” — it wouldn't get tracked.
-                  </p>
-                ))}
+              {q.length >= 2 && suggestions.length === 0 && !exact && (
+                <p className="mt-1 text-[11px] text-warn">
+                  Nothing {fromMenu ? 'on the menu' : 'in your PMIX'} matches “{adding.trim()}”.
+                </p>
+              )}
+              {fromMenu && (
+                <p className="mt-1.5 text-[11px] text-muted">
+                  No product mix on file yet, so these are menu items — each tile fills in the first
+                  time a PMIX naming it lands on Imports.
+                </p>
+              )}
             </div>
           </>
         )

@@ -72,7 +72,24 @@ export function isRosterDoc(text: string): boolean {
 // Front of house first, then the line, then who runs the place — the order the
 // roster groups read in. ToGo and Corporate are their own codes in Toast and are
 // their own groups here.
-export const ROLES = ['Server', 'Bartender', 'Host', 'ToGo', 'Expo', 'Cook', 'Dish', 'Manager', 'Corporate']
+//
+// Key and Shift Lead are hourly responsibilities rather than salaried
+// management, so they sit between the floor codes and Manager: the people who
+// hold them almost always hold a floor code too, which is the whole reason a
+// person needs more than one.
+export const ROLES = [
+  'Server',
+  'Bartender',
+  'Host',
+  'ToGo',
+  'Expo',
+  'Cook',
+  'Dish',
+  'Key',
+  'Shift Lead',
+  'Manager',
+  'Corporate',
+]
 
 export function newId(): string {
   return `p${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`
@@ -200,7 +217,11 @@ function mapRole(raw?: string): string | '' {
   // Before the manager test: office staff carry a "Corporate" code and belong
   // on the roster labelled as such, not mixed in with the store's team.
   if (/corporate|corp\b/.test(s)) return 'Corporate'
-  if (/gm|general manager|manager|mgr|owner|kitchen manager|shift lead/.test(s)) return 'Manager'
+  // Before the manager test: these are hourly codes of their own, and folding
+  // them into Manager hid who actually carries keys or leads a shift.
+  if (/shift lead|shift.?leader|lead\b/.test(s)) return 'Shift Lead'
+  if (/\bkey\b|keyholder|key holder/.test(s)) return 'Key'
+  if (/gm|general manager|manager|mgr|owner|kitchen manager/.test(s)) return 'Manager'
   if (/bartender|bar\b/.test(s)) return 'Bartender'
   // Before the host test: ToGo is its own job code in Toast, and folding it into
   // Host hid who can actually run the to-go station.
