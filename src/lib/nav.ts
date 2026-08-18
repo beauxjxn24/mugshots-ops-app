@@ -112,7 +112,6 @@ export const NAV: NavSection[] = [
       { to: '/mix', label: 'Product Mix', icon: PieChart, color: '#FB923C', anim: PieSpinIcon },
       { to: '/lto', label: 'LTO', icon: Flame, color: '#F87171', anim: FlameIcon },
       { to: '/specs', label: 'Specs & Recipes', icon: BookOpen, color: '#E4B84C', anim: BookIcon, staff: true },
-      { to: '/builds', label: 'Line Builds', icon: ChefHat, color: '#FB7185', anim: GridIcon, staff: true },
       { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: MartiniIcon },
     ],
   },
@@ -182,11 +181,7 @@ export const STAFF_SECTIONS: NavSection[] = [
  *  invoice → inventory → ordering flow; hourly staff get My Shift + tasks. */
 export const bottomItems = (role: 'admin' | 'manager' | 'staff'): NavItem[] =>
   role === 'staff'
-    ? // Line Builds is left off the phone bar on purpose: it's the same cards
-      // as Specs & Recipes in a board layout, and the bar truncates labels to
-      // one word, so it read as "Specs" next to "Line" — two tabs, one set of
-      // recipes. It's still in My Tasks in the menu.
-      [SHIFT_ITEM, ...STAFF_ITEMS.filter((i) => i.to !== '/builds')].slice(0, 5)
+    ? [SHIFT_ITEM, ...STAFF_ITEMS].slice(0, 5)
     : [
         NAV_FLAT[0],
         NAV_FLAT.find((i) => i.to === '/imports')!,

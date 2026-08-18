@@ -860,7 +860,7 @@ export function Prep() {
                     })}
                   </div>
                 )}
-                <Link to="/builds" className="text-xs font-bold text-brand">
+                <Link to="/specs?view=board" className="text-xs font-bold text-brand">
                   Line builds →
                 </Link>
                 {actionButtons}

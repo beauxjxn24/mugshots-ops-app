@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, ArchiveRestore, UtensilsCrossed } from 'lucide-react'
+import { Archive, ArchiveRestore, UtensilsCrossed, LayoutGrid, Rows3, Printer } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '../components/SearchInput'
@@ -12,6 +12,8 @@ import { UsedIn } from '../components/UsedIn'
 import { dishPhoto } from '../lib/photos'
 import { isFood } from '../lib/categories'
 import { useArchived } from '../lib/archived'
+import { usePersistentState } from '../lib/store'
+import { BoardCard } from '../components/BoardCard'
 import type { Spec } from '../lib/types'
 
 const OLDIES = 'Oldies'
@@ -56,6 +58,19 @@ export function Specs() {
   const viewingOldies = group === OLDIES
   const viewingOG = group === OG
 
+  // Which reading of the cards is on. Remembered per device, because whichever
+  // one you work from you work from every day — a cook lives on the board, a
+  // manager writing specs lives on the cards.
+  const [view, setView] = usePersistentState<'cards' | 'board'>('specs:view', 'cards')
+  // Prep cards have no build to put on a board — they're a recipe and a shelf
+  // life, not a plate — so Board shows the build groups only.
+  const board = view === 'board'
+  // Declared ABOVE filtered on purpose: that useMemo reads `board`, and its
+  // callback runs during render, so a const declared below it throws "cannot
+  // access before initialization". TypeScript passes it — the read is inside a
+  // closure, which looks deferred to the compiler.
+
+
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
     const base = viewingOG
@@ -64,6 +79,10 @@ export function Specs() {
         ? FOOD_SPECS.filter((s) => archivedSet.has(s.name) && !s.og)
         : FOOD_SPECS.filter((s) => !archivedSet.has(s.name))
     return base.filter((s) => {
+      // The board is the line's plating reference, so prep cards are out: a
+      // shelf life and a yield aren't a build, and they'd print as cards with
+      // one ingredient on them.
+      if (board && !s.g.endsWith('Builds')) return false
       if (!viewingOldies && !viewingOG && group !== 'All' && s.g !== group) return false
       if (!query) return true
       if (s.name.toLowerCase().includes(query)) return true
@@ -73,7 +92,7 @@ export function Specs() {
       const b = buildForSpec(s.name)
       return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
-  }, [q, group, viewingOldies, viewingOG, archivedSet])
+  }, [q, group, viewingOldies, viewingOG, archivedSet, board])
 
   /**
    * The results, cut into their categories.
@@ -114,6 +133,15 @@ export function Specs() {
   // Clear the group filter too, or a card outside the current tab stays hidden.
   const [params, setParams] = useSearchParams()
   const wanted = params.get('open')
+  // /builds redirects here as ?view=board, so links and bookmarks to the old
+  // page still land on the board rather than the cards.
+  const wantedView = params.get('view')
+  useEffect(() => {
+    if (wantedView !== 'board' && wantedView !== 'cards') return
+    setView(wantedView)
+    setParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedView])
   useEffect(() => {
     if (!wanted) return
     const hit = FOOD_SPECS.find((s) => s.name.toLowerCase() === wanted.toLowerCase())
@@ -141,12 +169,45 @@ export function Specs() {
             : `${FOOD_SPECS.length - archivedSet.size} active builds & prep cards`
         }
         right={
-          <SearchInput
-            value={q}
-            onChange={setQ}
-            placeholder="Search builds or ingredients…"
-            className="w-full max-w-xs"
-          />
+          <div className="flex w-full items-center gap-2">
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Search builds or ingredients…"
+              className="w-full max-w-xs"
+            />
+            {/* Cards ⇄ Board. Board used to be its own page over the same
+                cards; it's a way of looking at this list, not a second list. */}
+            <div className="flex shrink-0 items-center rounded-lg border border-black/10 bg-white p-0.5">
+              {([
+                ['cards', 'Cards', LayoutGrid],
+                ['board', 'Board', Rows3],
+              ] as const).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  aria-pressed={view === id}
+                  title={id === 'board' ? 'Printable line board — builds only' : 'Full cards with prep and method'}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                    view === id ? 'bg-brand text-white' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              ))}
+            </div>
+            {board && (
+              <button
+                onClick={() => window.print()}
+                aria-label="Print the board"
+                title="Print the board"
+                className="grid size-9 shrink-0 place-items-center rounded-lg border border-black/10 bg-white text-ink"
+              >
+                <Printer size={15} />
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -249,23 +310,43 @@ export function Specs() {
         <div className="space-y-7">
           {sections.map(({ group: g, items }) => (
             <section key={g} id={groupAnchor(g)} className="scroll-mt-16">
-              <h2 className="mb-2.5 flex items-baseline gap-2 border-b border-black/5 pb-1.5">
+              <h2 className="mb-2.5 flex items-baseline gap-2 border-b border-black/5 pb-1.5 print:border-black/30">
                 <span className="font-display text-sm font-semibold text-ink">{g}</span>
                 <span className="text-xs text-muted">{items.length}</span>
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {items.map((s) => (
-                  <SpecCard
-                    key={s.name}
-                    anchor={`spec-${slug(s.name)}`}
-                    spec={s}
-                    archived={viewingOldies}
-                    open={openName === s.name}
-                    onToggle={() => setOpenName(openName === s.name ? null : s.name)}
-                    onArchive={() => archive(s.name)}
-                    onRestore={() => restore(s.name)}
-                  />
-                ))}
+              {/* Two readings of the same cards. Cards is the one you study —
+                  prep, method, what it's used in, archiving. Board is the one
+                  that goes up by the window: photo, name, ingredients in build
+                  order, printable three to a row. These were separate pages
+                  over the same specs.json until now, which is how a pulled item
+                  could vanish from one and keep printing on the other. */}
+              <div
+                className={
+                  board
+                    ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-2'
+                    : 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3'
+                }
+              >
+                {items.map((s) =>
+                  board ? (
+                    <BoardCard
+                      key={s.name}
+                      spec={s}
+                      onPark={viewingOldies ? undefined : () => archive(s.name)}
+                    />
+                  ) : (
+                    <SpecCard
+                      key={s.name}
+                      anchor={`spec-${slug(s.name)}`}
+                      spec={s}
+                      archived={viewingOldies}
+                      open={openName === s.name}
+                      onToggle={() => setOpenName(openName === s.name ? null : s.name)}
+                      onArchive={() => archive(s.name)}
+                      onRestore={() => restore(s.name)}
+                    />
+                  ),
+                )}
               </div>
             </section>
           ))}

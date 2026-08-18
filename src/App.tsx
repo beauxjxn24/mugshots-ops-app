@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { createHashRouter, RouterProvider } from 'react-router-dom'
+import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { AppShell } from './components/AppShell'
 import { DayGate } from './components/DayGate'
@@ -34,7 +34,6 @@ import { Period } from './routes/Period'
 import { Schedule } from './routes/Schedule'
 import { Posted } from './routes/Posted'
 import { Users } from './routes/Users'
-import { LineBuilds } from './routes/LineBuilds'
 import { Printables } from './routes/Printables'
 import { PinDialog } from './components/PinDialog'
 import { Mugsy } from './components/Mugsy'
@@ -85,7 +84,10 @@ const router = createHashRouter([
       { path: 'schedule', element: <Schedule /> },
       { path: 'posted', element: <Posted /> },
       { path: 'users', element: <Users /> },
-      { path: 'builds', element: <LineBuilds /> },
+      // The line board is a VIEW of Specs & Recipes now, not its own page --
+      // it was always the same specs.json read a second way. Kept as a redirect
+      // so old links, bookmarks and the "Line builds →" chips still land right.
+      { path: 'builds', element: <Navigate to="/specs?view=board" replace /> },
       { path: 'printables', element: <Printables /> },
       { path: '*', element: <Placeholder /> },
     ],

@@ -1,4 +1,5 @@
-import { Sun, Moon } from 'lucide-react'
+import { useState } from 'react'
+import { Sun, Moon, ChevronDown, RotateCcw } from 'lucide-react'
 import { useShift, shiftLabel, type Shift } from '../lib/shift'
 
 /**
@@ -29,33 +30,75 @@ export function ShiftBadge({ compact = false }: { compact?: boolean }) {
     )
   }
 
+  return <ShiftReadout />
+}
+
+/**
+ * The shift, stated once — with the switch behind a tap.
+ *
+ * It was a two-button toggle sitting permanently in the rail, which read as a
+ * setting waiting to be chosen. It isn't one: the clock is right nearly every
+ * day, and the override exists for the afternoon a manager sets up the close
+ * early. So the normal state is a label that says what the app is on, and the
+ * switch appears only when someone goes looking for it.
+ */
+function ShiftReadout() {
+  const { shift, auto, overridden, setShift } = useShift()
+  const [open, setOpen] = useState(false)
+  const other: Shift = shift === 'AM' ? 'PM' : 'AM'
+  const Icon = shift === 'AM' ? Sun : Moon
+  const OtherIcon = other === 'AM' ? Sun : Moon
+
   return (
-    <div className="mb-3 rounded-xl bg-white/[0.07] p-1">
-      <div className="grid grid-cols-2 gap-1">
-        {(['AM', 'PM'] as Shift[]).map((s) => {
-          const on = s === shift
-          const SIcon = s === 'AM' ? Sun : Moon
-          return (
+    <div className="mb-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        title={overridden ? 'Set by hand — clears overnight' : 'Following the clock'}
+        className="flex w-full items-center gap-2 rounded-xl bg-white/[0.07] px-2.5 py-2 text-left hover:bg-white/10"
+      >
+        <Icon size={14} className="shrink-0 text-brand" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-bold text-white/90">{shiftLabel(shift)} shift</span>
+          <span className="block text-[10px] leading-tight text-white/40">
+            {overridden ? 'Set by hand · clears overnight' : 'On the clock'}
+          </span>
+        </span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-white/35 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div className="mt-1 space-y-1 rounded-xl bg-white/[0.05] p-1">
+          <button
+            // Choosing the shift the clock already wants clears the pin rather
+            // than setting a redundant one, so it goes back to keeping itself
+            // right at the next changeover.
+            onClick={() => {
+              setShift(other === auto ? null : other)
+              setOpen(false)
+            }}
+            className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <OtherIcon size={13} />
+            Switch to {shiftLabel(other).toLowerCase()}
+          </button>
+          {overridden && (
             <button
-              key={s}
-              // Choosing the shift the clock already wants clears the pin rather
-              // than setting a redundant one, so the badge goes back to keeping
-              // itself right at the next changeover.
-              onClick={() => setShift(s === auto ? null : s)}
-              aria-pressed={on}
-              className={`inline-flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-colors ${
-                on ? 'bg-brand text-white' : 'text-white/55 hover:text-white'
-              }`}
+              onClick={() => {
+                setShift(null)
+                setOpen(false)
+              }}
+              className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-white/45 hover:bg-white/10 hover:text-white"
             >
-              <SIcon size={13} />
-              {shiftLabel(s)}
+              <RotateCcw size={12} />
+              Back to the clock ({shiftLabel(auto).toLowerCase()})
             </button>
-          )
-        })}
-      </div>
-      <div className="px-1.5 pb-0.5 pt-1 text-center text-[10px] text-white/40">
-        {overridden ? 'Set by hand · clears overnight' : 'On the clock'}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
