@@ -211,9 +211,14 @@ export function Dashboard() {
                 {/* The order day, split in two — placing and receiving are
                     different jobs, often different people. Both read the
                     store's delivery calendar (Stores & Concepts). */}
+                {/* One vendor due → land on that vendor's items already
+                    filtered. Several → land on the guide with all of them
+                    named at the top. Either way the screen opens on the job
+                    that was clicked, instead of on whatever shelf was last
+                    open with nothing saying which order was due. */}
                 <KpiTile
                   compact
-                  to="/ordering"
+                  to={dueToday.length === 1 ? `/ordering?vendor=${encodeURIComponent(dueToday[0].vendor)}` : '/ordering'}
                   icon={<PackageOpen size={15} />}
                   value={String(dueToday.length)}
                   label={dueToday.length === 1 ? 'Order to place' : 'Orders to place'}
@@ -382,7 +387,7 @@ export function Dashboard() {
               sub={cater.sub}
             />
             <KpiTile
-              to="/ordering"
+              to={dueToday.length === 1 ? `/ordering?vendor=${encodeURIComponent(dueToday[0].vendor)}` : '/ordering'}
               icon={<PackageOpen size={18} />}
               value={String(dueToday.length)}
               label={dueToday.length === 1 ? 'Order to place' : 'Orders to place'}

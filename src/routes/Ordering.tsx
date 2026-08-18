@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Printer, Check, GripVertical, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Printer, Check, GripVertical, Plus, PackageOpen } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { entryColumn, entryField } from '../lib/nextfield'
@@ -20,6 +20,7 @@ import { usePersistentState, today } from '../lib/store'
 import { useIsPhone } from '../lib/useIsPhone'
 import type { Night } from '../lib/nightly'
 import { periodWeek, periodStart } from '../lib/forecast'
+import { ordersDueOn, type OrderSchedule } from '../lib/orderDays'
 
 const money2 = (n: number) => `$${(n ?? 0).toFixed(2)}`
 const money0 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -78,6 +79,63 @@ export function Ordering() {
   const allRows: Row[] = sections.flatMap((s) => s.ids.map((id) => byId.get(id)).filter((r): r is Row => !!r))
   const needed = allRows.filter((r) => suggested(r) > 0)
 
+  // Which vendor's order is being counted, if any. Landing here from the
+  // dashboard's "orders to place" tile pre-selects it, so the screen opens on
+  // the job you clicked rather than on the whole catalogue.
+  const [params, setParams] = useSearchParams()
+  const dueToday = useMemo<OrderSchedule[]>(() => ordersDueOn(today()), [])
+  const [vendorFilter, setVendorFilter] = useState('')
+  const askedVendor = params.get('vendor')
+  useEffect(() => {
+    if (!askedVendor) return
+    // Only honour a vendor that's actually due — a stale link shouldn't hide
+    // the whole guide behind a filter nothing explains.
+    if (dueToday.some((s) => s.vendor === askedVendor)) setVendorFilter(askedVendor)
+    setParams({}, { replace: true })
+    // Keyed to the param, NOT to mount: this is a hash router, so arriving here
+    // from a link while already on the page changes the query without
+    // remounting, and a mount-only effect would quietly ignore it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askedVendor])
+
+
+  /**
+   * The guide as it should render right now.
+   *
+   * With a vendor selected the rows narrow to that vendor and empty sections
+   * drop out — but the section's REAL index travels with it, because drag-drop
+   * writes by index and a filtered list would otherwise reorder the wrong row.
+   * Reordering is disabled outright while filtered, for the same reason: the
+   * row index inside a section shifts too.
+   */
+  const shownSections = useMemo(() => {
+    const withIdx = sections.map((sec, si) => ({ sec, si }))
+    if (!vendorFilter) return withIdx
+    return withIdx
+      .map(({ sec, si }) => ({
+        sec: { ...sec, ids: sec.ids.filter((id) => (byId.get(id)?.vendor ?? '') === vendorFilter) },
+        si,
+      }))
+      .filter((x) => x.sec.ids.length > 0)
+  }, [sections, vendorFilter, byId])
+
+
+  /** Which shelves carry a vendor's guide items — for the "wrong shelf" hint. */
+  const shelvesFor = (vendor: string): GuideShelf[] =>
+    tabs.filter((sh) =>
+      getGuideSections(sh).some((sec) =>
+        sec.ids.some((id) => (byId.get(id)?.vendor ?? '') === vendor),
+      ),
+    )
+
+
+  // What's on screen right now — the header count and Copy button read this, so
+  // a filtered guide doesn't claim 79 items while showing four.
+  const shownRows: Row[] = shownSections.flatMap(({ sec }) =>
+    sec.ids.map((id) => byId.get(id)).filter((r): r is Row => !!r),
+  )
+  const shownNeeded = shownRows.filter((r) => suggested(r) > 0)
+
   // ── drag state (grip → row, within or across sections) ──
   const [drag, setDrag] = useState<{ sec: number; idx: number } | null>(null)
   const [over, setOver] = useState<{ sec: number; idx: number } | null>(null)
@@ -125,16 +183,20 @@ export function Ordering() {
   // each distributor gets its own list to copy + send.
   const orderVendors = useMemo(() => {
     const groups = new Map<string, Row[]>()
-    for (const r of needed) {
+    // shownNeeded: while a vendor is selected, offering "Copy Unassigned (73)"
+    // beside it contradicts the filter the screen is showing.
+    for (const r of shownNeeded) {
       const v = (r.vendor || '').trim() || 'Unassigned'
       ;(groups.get(v) ?? groups.set(v, []).get(v)!).push(r)
     }
     return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  }, [needed])
+  }, [shownNeeded])
   const [copiedVendor, setCopiedVendor] = useState<string | null>(null)
 
   const copyOrder = async (vendor?: string) => {
-    const rows = vendor ? needed.filter((r) => ((r.vendor || '').trim() || 'Unassigned') === vendor) : needed
+    // shownNeeded, not needed: copying while a vendor is selected should copy
+    // what's on screen, not the whole shelf.
+    const rows = vendor ? needed.filter((r) => ((r.vendor || '').trim() || 'Unassigned') === vendor) : shownNeeded
     const lines = rows.map((r) => `${suggested(r)} ${r.unit} — ${r.name}`)
     const head = vendor && vendor !== 'Unassigned' ? `${shelf} order · ${vendor}` : `${shelf} order`
     const text = `${head} — ${today()}\n${lines.join('\n')}`
@@ -157,8 +219,8 @@ export function Ordering() {
         : 'rounded-lg px-3 py-2 text-xs font-bold disabled:opacity-40'
     if (orderVendors.length <= 1)
       return (
-        <button onClick={() => copyOrder()} disabled={needed.length === 0} className={`${base} bg-brand text-white`}>
-          {copied ? '✓ Copied' : `Copy order (${needed.length})`}
+        <button onClick={() => copyOrder()} disabled={shownNeeded.length === 0} className={`${base} bg-brand text-white`}>
+          {copied ? '✓ Copied' : `Copy order (${shownNeeded.length})`}
         </button>
       )
     return (
@@ -212,6 +274,89 @@ export function Ordering() {
         }
       />
       <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6 lg:p-8">
+        {/* What's actually due today.
+            The dashboard's "orders to place" tile used to drop you here on
+            whatever shelf happened to be open, with nothing saying WHICH order
+            was due or when it had to go — you had to remember what the tile
+            said and then go find it. This is the tile's other half: the vendors
+            due, their cutoff, and one tap to count just that vendor. */}
+        {dueToday.length > 0 && view === 'guide' && (
+          <Card className="border-brand/30 bg-brand/[0.07] p-3 print:hidden">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-brand/20 text-brand-600">
+                <PackageOpen size={15} />
+              </span>
+              <span className="font-display text-sm font-bold text-ink">Due today</span>
+              {vendorFilter && (
+                <button
+                  onClick={() => setVendorFilter('')}
+                  className="ml-auto rounded-lg px-2 py-1 text-[11px] font-bold text-muted hover:text-ink"
+                >
+                  Show everything
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {dueToday.map((s) => {
+                const on = vendorFilter === s.vendor
+                const owed = allRows.filter(
+                  (r) => (r.vendor ?? '') === s.vendor && suggested(r) > 0,
+                ).length
+                return (
+                  <button
+                    key={s.vendor}
+                    onClick={() => setVendorFilter(on ? '' : s.vendor)}
+                    aria-pressed={on}
+                    className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                      on ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white hover:border-brand/50'
+                    }`}
+                  >
+                    <span className="block text-sm font-bold">{s.vendor}</span>
+                    <span className={`block text-[11px] ${on ? 'text-white/75' : 'text-muted'}`}>
+                      {s.cutoff ? `by ${s.cutoff}` : 'no cutoff set'}
+                      {owed > 0 && ` · ${owed} to order on this shelf`}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            {/* A vendor's items are not necessarily on the shelf you happen
+                to be looking at — a beer distributor's list is empty under
+                Liquor, and an empty table with no explanation is exactly the
+                dead end this strip exists to stop. So when the current shelf
+                has none of theirs, say which shelf does and go there in a tap. */}
+            {vendorFilter && shownSections.length === 0 ? (
+              <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-warn">
+                No {shelf.toLowerCase()} items are assigned to {vendorFilter}.
+                {shelvesFor(vendorFilter).length > 0 ? (
+                  <>
+                    <span className="text-muted">Theirs are on:</span>
+                    {shelvesFor(vendorFilter).map((sh) => (
+                      <button
+                        key={sh}
+                        onClick={() => setShelf(sh)}
+                        className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white"
+                      >
+                        {sh}
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <span className="text-muted">
+                    Set their vendor on the items in the Item Catalog and they'll appear here.
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="mt-2 text-[11px] text-muted">
+                {vendorFilter
+                  ? `${vendorFilter} only — count on-hand and the order fills itself in.`
+                  : 'Tap a vendor to count just their items.'}
+              </p>
+            )}
+          </Card>
+        )}
+
         {/* Price ticker — real changes from price-sheet/invoice imports */}
         {priceLog.length > 0 && (
           <div className="flex items-center overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm print:hidden">
@@ -269,7 +414,7 @@ export function Ordering() {
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between gap-2 px-4 py-3">
               <span className="font-display text-base font-semibold text-ink">
-                {shelf} order <span className="text-sm font-normal text-muted">{allRows.length}</span>
+                {shelf} order <span className="text-sm font-normal text-muted">{shownRows.length}</span>
               </span>
               <CopyButtons size="sm" />
             </div>
@@ -278,7 +423,7 @@ export function Ordering() {
             )}
             <div {...entryColumn}>
             {/* Enter in a count box drops to the same box on the next line. */}
-            {sections.map((sec, si) => (
+            {shownSections.map(({ sec, si }) => (
               <div key={sec.title + si}>
                 <div className="border-b border-brand/20 bg-brand/[0.07] px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-brand-600">
                   {sec.title}
@@ -326,7 +471,7 @@ export function Ordering() {
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
               <span className="font-display text-lg font-semibold text-ink">
-                {shelf} order guide <span className="ml-1 text-sm font-normal text-muted">{allRows.length} items</span>
+                {shelf} order guide <span className="ml-1 text-sm font-normal text-muted">{shownRows.length} items</span>
               </span>
               <CopyButtons size="lg" />
             </div>
@@ -348,7 +493,7 @@ export function Ordering() {
 
             <div {...entryColumn}>
             {/* Enter in a count box drops to the same box on the next line. */}
-            {sections.map((sec, si) => (
+            {shownSections.map(({ sec, si }) => (
               <div key={sec.title + si}>
                 {/* Section header — the paper sheet's VODKA / RUM / WHISKEY bands */}
                 <div
@@ -439,6 +584,7 @@ export function Ordering() {
                             setOver(null)
                           }}
                           title="Drag to reorder — across sections too"
+                          hidden={!!vendorFilter}
                           className="cursor-grab text-muted/40 hover:text-ink active:cursor-grabbing print:hidden"
                         >
                           <GripVertical size={14} />
