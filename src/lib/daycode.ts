@@ -44,20 +44,51 @@ export function dayCode(date: string = businessDay()): string {
 
 const UNLOCK_KEY = '__staffUnlockedOn'
 const PERSON_KEY = '__shiftPerson'
+const SEEN_KEY = '__lastSeen'
 
-/** Has this device already been let in today? */
+/**
+ * How long the app stays open with nobody touching it.
+ *
+ * It used to hold the unlock for the whole business day, in localStorage — so
+ * once anyone typed the code, that browser was open until four in the morning.
+ * Closing the tab didn't end it. Quitting the browser didn't end it. Restarting
+ * the machine didn't end it. Typing the address again just walked straight in,
+ * which is what the owner hit: no login, sitting on the admin dashboard.
+ *
+ * Long enough that a shift doesn't get nagged, short enough that a tablet left
+ * on the pass, or a laptop the owner walks away from, closes itself.
+ */
+export const IDLE_LOCK_MINUTES = 15
+
+/** Has this device been let in, and is that still current? */
 export function unlockedToday(): boolean {
-  return load<string | null>(UNLOCK_KEY, null) === businessDay()
+  if (load<string | null>(UNLOCK_KEY, null) !== businessDay()) return false
+  const seen = load<number | null>(SEEN_KEY, null)
+  if (typeof seen !== 'number') return false
+  return Date.now() - seen < IDLE_LOCK_MINUTES * 60_000
 }
 
-/** Remember the unlock for the rest of the day — not forever. */
+/** Remember the unlock — until the business day turns over, or it goes idle. */
 export function rememberUnlock(): void {
   save(UNLOCK_KEY, businessDay())
+  touchUnlock()
+}
+
+/**
+ * "Someone is still here."
+ *
+ * Called on real interaction, not on a timer — a tab sitting open on a counter
+ * is exactly the case this is meant to close, so time passing must never count
+ * as someone being present.
+ */
+export function touchUnlock(): void {
+  save(SEEN_KEY, Date.now())
 }
 
 /** Send the device back to the code screen (end of shift, wrong hands). */
 export function forgetUnlock(): void {
   save(UNLOCK_KEY, null)
+  save(SEEN_KEY, null)
   save(PERSON_KEY, null)
 }
 

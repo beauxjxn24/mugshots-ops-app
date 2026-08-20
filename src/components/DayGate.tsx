@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Delete, Search, UtensilsCrossed } from 'lucide-react'
 import { useRole } from '../lib/role'
-import { dayCode, rememberUnlock, unlockedToday, setShiftPerson } from '../lib/daycode'
+import { dayCode, rememberUnlock, unlockedToday, touchUnlock, setShiftPerson } from '../lib/daycode'
 import { getUsers } from '../lib/users'
 import { getStaff } from '../lib/staff'
 
@@ -34,6 +34,37 @@ export function DayGate({ children }: { children: React.ReactNode }) {
   const setRole = useRole((s) => s.setRole)
   const navigate = useNavigate()
   const [open, setOpen] = useState(() => !unlockedToday())
+
+  /**
+   * Keep the unlock alive while someone is actually using the app, and close it
+   * when they aren't.
+   *
+   * Two halves, and both are needed. Real interaction stamps "still here", so a
+   * working shift is never interrupted. Coming back to the tab re-checks the
+   * clock, which is the moment the owner hit — typing the address, landing on
+   * the admin dashboard, never asked for anything.
+   */
+  useEffect(() => {
+    if (open) return
+    const touch = () => touchUnlock()
+    const events = ['pointerdown', 'keydown', 'focus'] as const
+    for (const e of events) window.addEventListener(e, touch)
+
+    // The check that actually locks: on return to the tab, and on a slow tick
+    // for a tab that's simply been left open and staring at someone.
+    const check = () => {
+      if (!unlockedToday()) setOpen(true)
+    }
+    const onVisible = () => (document.visibilityState === 'visible' ? check() : undefined)
+    document.addEventListener('visibilitychange', onVisible)
+    const id = setInterval(check, 30_000)
+
+    return () => {
+      for (const e of events) window.removeEventListener(e, touch)
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(id)
+    }
+  }, [open])
   const [step, setStep] = useState<'code' | 'who'>('code')
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
