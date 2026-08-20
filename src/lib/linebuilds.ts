@@ -307,9 +307,27 @@ const BUILD_ALIASES: Record<string, string> = {
 }
 const ALIAS_BY_NORM = new Map(Object.entries(BUILD_ALIASES).map(([k, v]) => [norm(k), norm(v)]))
 
+/**
+ * Sheets whose NAME doesn't identify their dish.
+ *
+ * The Apps study guide has a page headed "Seans Nachos" whose build matches
+ * none of Sean's card — chips/fries/tots where Sean's is chips, chili as
+ * standard where Sean's picks a protein at order, pickled jalapenos where
+ * Sean's are fresh. Three nachos exist (Sean's, BBQ, and the one from this
+ * rollout), so the likeliest reading is that the page is the new one and the
+ * guide's heading hasn't caught up.
+ *
+ * Left attached, it printed the new build above Sean's own method on the same
+ * card — a cook would follow whichever half they read first. So it claims no
+ * card by name until someone says which dish it is; it surfaces in "builds
+ * need a home" instead, which is exactly what it needs.
+ */
+const DETACHED_SHEETS = new Set([norm('Seans Nachos')])
+
 /** The build for a menu item, matched on name. */
 export function buildFor(name: string): LineBuild | undefined {
   const n = norm(name)
+  if (DETACHED_SHEETS.has(n)) return undefined
   const aliased = ALIAS_BY_NORM.get(n)
   if (aliased) {
     const hit = allBuilds().find((b) => norm(b.sheetName) === aliased)
