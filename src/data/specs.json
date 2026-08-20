@@ -1658,7 +1658,7 @@
   "g": "Burger Builds",
   "storage": "Basket w/ liner",
   "shelf": "Bun",
-  "yields": "mayo & mustard",
+  "yields": "cheddar & swiss",
   "ing": [
    [
     "Mayo & Mustard",
@@ -1683,11 +1683,20 @@
    [
     "Beef Patty",
     "1"
+   ],
+   [
+    "Cheddar",
+    "1 slice, on top"
+   ],
+   [
+    "Swiss",
+    "1 slice, on top"
    ]
   ],
   "steps": [
    "Mayo & mustard on the bottom bun.",
-   "Red onion, pickles, lettuce, tomato, then the patty."
+   "Red onion, pickles, lettuce, tomato, then the patty.",
+   "Cheddar and swiss on top."
   ]
  },
  {
@@ -2765,11 +2774,9 @@
   ]
  },
  {
-  "name": "Seans Nachos",
+  "name": "New Nachos",
   "g": "Appetizer Builds",
-  "og": true,
-  "off": "OG — on request",
-  "storage": "Basket w/ Liner",
+  "storage": "Basket w/ liner",
   "shelf": "6 oz chips",
   "yields": "",
   "ing": [
@@ -2783,7 +2790,7 @@
    ],
    [
     "Protein",
-    "choose: no meat, chopped sirloin (philly puck), diced blackened chicken portion (heated), or 4 oz chili"
+    "choose: no meat, chopped sirloin steak (philly puck), diced blackened chicken portion (heated), or 4 oz chili"
    ],
    [
     "Diced Tomatoes",
@@ -2795,19 +2802,60 @@
    ],
    [
     "Sour Cream",
-    "#40 scoop"
+    "#40 scoop, on top"
    ],
    [
-    "Fresh Jalapenos",
-    "8 slices"
+    "Fresh Jalapeños",
+    "8 slices, on top"
    ]
   ],
   "steps": [
    "6 oz chips in a lined basket; 6 oz rotel.",
-   "Protein is chosen at order - no meat, chopped sirloin, diced blackened chicken, or 4 oz chili.",
+   "Protein is chosen at order — no meat, chopped sirloin steak (philly puck), diced blackened chicken portion (heated), or 4 oz chili.",
    "If chili is chosen, the rotel goes ON TOP of the chili.",
    "Add 1/4 cup diced tomatoes and 1/4 cup diced onions.",
-   "Finish with a #40 scoop of sour cream and 8 slices of fresh jalapenos."
+   "Finish with a #40 scoop of sour cream and 8 slices of fresh jalapeños."
+  ]
+ },
+ {
+  "name": "Seans Nachos",
+  "g": "Appetizer Builds",
+  "og": true,
+  "off": "OG — on request",
+  "storage": "Lined burger basket",
+  "shelf": "Chips, fries or tots",
+  "yields": "",
+  "ing": [
+   [
+    "Chips, Fries or Tots",
+    "basket — guest’s choice"
+   ],
+   [
+    "Chili",
+    "4 oz"
+   ],
+   [
+    "Rotel",
+    "4 oz"
+   ],
+   [
+    "Diced Tomatoes & Red Onions",
+    "1/3 cup"
+   ],
+   [
+    "Pickled Jalapeños",
+    "1/4 cup"
+   ],
+   [
+    "Sour Cream",
+    "#40 scoop"
+   ]
+  ],
+  "steps": [
+   "Basket of chips, fries or tots — guest’s choice.",
+   "Top with 4 oz chili and 4 oz rotel.",
+   "1/3 cup diced tomatoes & red onions, 1/4 cup pickled jalapeños.",
+   "Finish with a #40 scoop of sour cream."
   ]
  },
  {
