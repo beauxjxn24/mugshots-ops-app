@@ -301,6 +301,9 @@ const GENERIC_TAIL = /^(salad|bowl|burger|wrap|plate|basket|dog|sandwich|combo|b
  */
 const BUILD_ALIASES: Record<string, string> = {
   "katie's kickin' chicken": 'Chicken Basket',
+  // The sheet writes "10 Root Beer Float"; the card says 10 oz, like its 22 oz
+  // twin and like both milkshakes.
+  '10 oz root beer float': '10 Root Beer Float',
 }
 const ALIAS_BY_NORM = new Map(Object.entries(BUILD_ALIASES).map(([k, v]) => [norm(k), norm(v)]))
 

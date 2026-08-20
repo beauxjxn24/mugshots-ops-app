@@ -55,7 +55,7 @@ function matchesDrink(item: string, drinkNames: string[]): boolean {
 const SECTIONS: { title: string; groups: string[]; also?: string[] }[] = [
   { title: 'Cocktails', groups: ['Pairings'] },
   { title: 'Frozen', groups: ['Frozen Drinks'] },
-  { title: 'Shakes & floats', groups: ['Shakes'], also: ['Root Beer Float'] },
+  { title: 'Shakes & floats', groups: ['Shakes'], also: ['10 oz Root Beer Float', '22 oz Root Beer Float'] },
   { title: 'Specials', groups: ['Summer LTO'] },
 ]
 

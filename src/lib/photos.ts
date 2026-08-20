@@ -49,6 +49,9 @@ const PHOTO_ALIASES: Record<string, string> = {
   // Basket. Same six tenders, same six ounces of fries, same photo — which had
   // been sitting in the folder unused because the two names never met.
   'katie-s-kickin-chicken': 'chicken-basket',
+  // The sheet drops the "oz" from the 10 oz float and the photo is filed under
+  // that name; the card reads properly, so the two meet here.
+  '10-oz-root-beer-float': '10-root-beer-float',
 }
 
 export const dishPhoto = (name: string): string | undefined => {
