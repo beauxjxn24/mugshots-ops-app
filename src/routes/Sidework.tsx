@@ -18,6 +18,8 @@ import { useRole } from '../lib/role'
 import { useShift, phaseForShift } from '../lib/shift'
 import { shiftPerson } from '../lib/daycode'
 import { CutPlanner, type Duty } from '../components/CutPlanner'
+import { Closers } from '../components/Closers'
+import { getClosers, setCloser, type Side } from '../lib/closers'
 import {
   cutFor,
   dealEvenly,
@@ -95,6 +97,23 @@ export function Sidework() {
   // on whatever its first phase happens to be.
   const activePhase = phases.includes(phase) ? phase : phaseForShift(phases, shift)
   const sections = data[role]?.[activePhase] ?? []
+
+  // Who's shutting the building down. Per phase rather than per role: the
+  // person closing the front is the same whether you're on the Server sheet or
+  // the Host one.
+  const [closerTick, setCloserTick] = useState(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const closers = useMemo(() => getClosers(today())[activePhase] ?? {}, [activePhase, closerTick])
+  const assignCloser = (side: Side, who: string) => {
+    setCloser(today(), activePhase, side, who)
+    setCloserTick((t) => t + 1)
+  }
+  // Anyone on the roster can close — it isn't limited to the role tab you're on.
+  const everyone = useMemo(
+    () => staff.map((p) => p.name).filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [staff],
+  )
+
   const aKey = (si: number) => `${role}|${activePhase}|${si}`
 
   // The bar's phases have been renamed twice: Opening / Closing before the real
@@ -556,6 +575,18 @@ export function Sidework() {
 
         {/* Dealing tonight's work. The sheet below is the library it deals
             from -- edited when the duties themselves change, not nightly. */}
+        {/* Decided before the cuts, and a different question: the cuts are who
+            goes home and in what order, this is who stays to shut it down. */}
+        <Closers
+          phase={activePhase}
+          roster={everyone}
+          closers={closers}
+          onSetCloser={assignCloser}
+          done={done}
+          onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
+          canEdit={isCloser}
+        />
+
         <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
 
         {/* The duty list the cuts are dealt from.
