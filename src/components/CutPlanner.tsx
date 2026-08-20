@@ -89,7 +89,14 @@ export function CutPlanner({
    */
   const onCut = cuts.map((c) => plan.people[c]).filter(Boolean)
   const togglePerson = (name: string) => {
-    const at = cuts.find((c) => plan.people[c] === name)
+    // EVERY cut they're on, not the first.
+    //
+    // The dropdowns this replaced let the same person be put on two cuts, and
+    // plenty of saved plans have that in them. Removing only the first left the
+    // chip still lit — it reads as a button that won't turn off — and quietly
+    // dropped a cut on every tap, which is what made the last rows behave
+    // strangely. One tap takes them off the close entirely.
+    const mine = cuts.filter((c) => plan.people[c] === name)
 
     // ---- naming someone ---------------------------------------------------
     // The sheet opens with cuts already dealt and nobody on them. Naming
@@ -97,7 +104,7 @@ export function CutPlanner({
     // they're all taken does a new cut get added. Setting the count to "how
     // many are named" instead collapsed the whole thing to one cut on the
     // first tap and dumped three quarters of the duties back in the pool.
-    if (!at) {
+    if (mine.length === 0) {
       const empty = cuts.find((c) => !plan.people[c])
       const to = empty ?? plan.cuts + 1
       setPlan({ ...plan, cuts: Math.max(plan.cuts, to), people: { ...plan.people, [to]: name } })
@@ -106,26 +113,28 @@ export function CutPlanner({
     }
 
     // ---- taking someone off ------------------------------------------------
-    // Everyone behind them moves up a cut and keeps the duties they were given;
-    // only the leaver's work goes back to the pool.
+    // Everyone behind them moves up and keeps the duties they were given; only
+    // the leaver's work goes back to the pool.
+    const kept = cuts.filter((c) => !mine.includes(c))
+    const renumbered = new Map(kept.map((c, i) => [c, i + 1]))
+
     const people: Record<number, string> = {}
-    for (const c of cuts) {
-      if (c === at) continue
+    for (const c of kept) {
       const who = plan.people[c]
-      if (who) people[c > at ? c - 1 : c] = who
+      const to = renumbered.get(c)
+      if (who && to) people[to] = who
     }
     const assign: Record<string, number> = {}
     for (const [id, c] of Object.entries(plan.assign)) {
-      if (c === at) continue // back to the pool
-      assign[id] = c > at ? c - 1 : c
+      const to = renumbered.get(c)
+      if (to) assign[id] = to // no new home = back to the pool
     }
     const cutAt: Record<number, { at: string; by: string }> = {}
     for (const [c, rec] of Object.entries(plan.cutAt ?? {})) {
-      const n = Number(c)
-      if (n === at) continue
-      cutAt[n > at ? n - 1 : n] = rec
+      const to = renumbered.get(Number(c))
+      if (to) cutAt[to] = rec
     }
-    const count = Math.max(1, plan.cuts - 1)
+    const count = Math.max(1, kept.length)
     setPlan({ cuts: count, people, assign, cutAt })
     setActive((a) => Math.min(a, count))
   }
@@ -291,11 +300,16 @@ export function CutPlanner({
                   }`}
                 >
                   <option value="">— nobody yet —</option>
-                  {crew.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
+                  {/* Somebody already on another cut isn't offered here. This
+                      dropdown is how plans ended up with one person on two
+                      cuts, which then read as a chip that wouldn't turn off. */}
+                  {crew
+                    .filter((n) => n === plan.people[c] || !onCut.includes(n))
+                    .map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
                   {plan.people[c] && !crew.includes(plan.people[c]) && (
                     <option value={plan.people[c]}>{plan.people[c]}</option>
                   )}
