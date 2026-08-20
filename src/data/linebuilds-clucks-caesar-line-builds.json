@@ -1,0 +1,94 @@
+{
+  "sheet": "Clucks & Caesar Line Builds",
+  "source": "0e33412e-Chucks_Clucks_Line_Build.pdf + b4a1e771-Caesar_Line_Builds.pdf",
+  "dishes": [
+    {
+      "sheetName": "Chuck's Clucks",
+      "photo": null,
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": ["Lined Small Bowl"]
+        },
+        {
+          "key": "portion-size-prep",
+          "label": "Portion Size & Prep",
+          "lines": [
+            "6 oz Chicken Chunks, Double-Battered and Fried.",
+            "3 oz on Mombo or Happy Hour"
+          ]
+        },
+        {
+          "key": "on-side",
+          "label": "On Side",
+          "lines": ["2 oz Ranch", "2 Celery Pieces"]
+        },
+        {
+          "key": "on-top",
+          "label": "On Top / Tossed",
+          "lines": [
+            "Mild, Hot, Nashville Hot, Honey Hot, BBQ, Teriyaki, Sweet Chili, Carolina Gold, Garlic Parmesean, Lemon Pepper, Lemon Blackout"
+          ]
+        }
+      ]
+    },
+    {
+      "sheetName": "Caesar Salad",
+      "photo": null,
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": ["Large Salad Bowl"]
+        },
+        {
+          "key": "greens",
+          "label": "Greens",
+          "lines": ["5 oz Chopped Romaine"]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Build",
+          "lines": ["Toss Romaine with 4 oz of Caesar Dressing and 1/2 cup Croutons"]
+        },
+        {
+          "key": "meat",
+          "label": "Meat",
+          "lines": ["10 Blackened Shrimp, or 5 oz Blackened Chicken Tender Portion (Heated)"]
+        },
+        {
+          "key": "garnish",
+          "label": "Garnish",
+          "lines": ["1 oz Parmesan Cheese"]
+        }
+      ]
+    },
+    {
+      "sheetName": "Side Caesar Salad",
+      "photo": null,
+      "sections": [
+        {
+          "key": "plateware",
+          "label": "Plateware",
+          "lines": ["Small Salad Bowl"]
+        },
+        {
+          "key": "greens",
+          "label": "Greens",
+          "lines": ["3 oz Chopped Romaine"]
+        },
+        {
+          "key": "vegetables-build",
+          "label": "Build",
+          "lines": ["Toss Romaine with 2 oz of Caesar Dressing and 1/4 cup Croutons"]
+        },
+        {
+          "key": "garnish",
+          "label": "Garnish",
+          "lines": ["1 oz Parmesan Cheese"]
+        }
+      ]
+    }
+  ]
+}

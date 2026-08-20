@@ -142,20 +142,39 @@ export function Specs() {
     setParams({}, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wantedView])
+  /**
+   * The card a ?open= link asked for.
+   *
+   * DERIVED from the URL rather than copied into state by an effect. The
+   * effect version opened the card and cleared the param in the same pass,
+   * which meant the first link followed after a cold load opened for about
+   * half a second and then closed itself: this page mounts twice on boot, and
+   * the second mount started from fresh state with the param already gone.
+   *
+   * Held this way the URL stays the answer until the reader does something,
+   * so it survives any number of mounts. Closing the card is what clears it.
+   */
+  const wantedHit = useMemo(
+    () => (wanted ? FOOD_SPECS.find((s) => s.name.toLowerCase() === wanted.toLowerCase()) : undefined),
+    [wanted],
+  )
+  const openCard = openName ?? wantedHit?.name ?? null
+  const toggleCard = (name: string) => {
+    setOpenName(openCard === name ? null : name)
+    // Once the reader has taken over, the link has done its job — drop it so a
+    // refresh doesn't reopen what they just closed.
+    if (wanted) setParams({}, { replace: true })
+  }
+  // A card outside the current tab would stay hidden, so a link resets the
+  // filters. Only when one is actually being asked for.
   useEffect(() => {
-    if (!wanted) return
-    const hit = FOOD_SPECS.find((s) => s.name.toLowerCase() === wanted.toLowerCase())
-    if (!hit) return
+    if (!wantedHit) return
     setGroup('All')
     setQ('')
-    setOpenName(hit.name)
-    // Drop the param so a refresh doesn't re-open it after you close it.
-    setParams({}, { replace: true })
-    // Let the list render before scrolling to the card.
     requestAnimationFrame(() =>
-      document.getElementById(`spec-${slug(hit.name)}`)?.scrollIntoView({ block: 'center' }),
+      document.getElementById(`spec-${slug(wantedHit.name)}`)?.scrollIntoView({ block: 'center' }),
     )
-  }, [wanted, setParams])
+  }, [wantedHit])
 
   return (
     <>
@@ -340,8 +359,8 @@ export function Specs() {
                       anchor={`spec-${slug(s.name)}`}
                       spec={s}
                       archived={viewingOldies}
-                      open={openName === s.name}
-                      onToggle={() => setOpenName(openName === s.name ? null : s.name)}
+                      open={openCard === s.name}
+                      onToggle={() => toggleCard(s.name)}
                       onArchive={() => archive(s.name)}
                       onRestore={() => restore(s.name)}
                     />
