@@ -9,7 +9,7 @@ import type { IntegrationSource } from './types'
  *  mode 'file' → handled today by the drop-box reader
  */
 export interface Provider extends IntegrationSource {
-  category: 'POS' | 'Broadline' | 'Produce' | 'Catering' | 'Delivery' | 'Payroll' | 'Accounting'
+  category: 'POS' | 'Broadline' | 'Produce' | 'Catering' | 'Delivery' | 'Scheduling' | 'Accounting'
   automation: string[]
   apiAvailable: boolean
   inUse: boolean
@@ -50,9 +50,19 @@ export const PROVIDERS: Provider[] = [
   { id: 'ubereats', kind: 'pos', provider: 'ubereats', label: 'Uber Eats', category: 'Delivery', mode: 'api', apiAvailable: true, connected: false, inUse: false,
     automation: ['Pull delivery sales into the mix'] },
 
+  // ---- Scheduling & labor ----
+  // apiAvailable is UNCONFIRMED for Floor Logic — it's listed because it's in
+  // the stack, not because a live sync is known to be possible. Whether they
+  // expose an API to their own customers is a question for them, and it's the
+  // one that decides whether this is a connection or a file drop.
+  { id: 'floor-logic', kind: 'vendor', provider: 'floor-logic', label: 'Floor Logic', category: 'Scheduling', mode: 'api', apiAvailable: false, connected: false, inUse: true,
+    automation: ['Pull the posted schedule into the app', 'Match punches to the tip log', 'Fill the roster and its job codes'] },
+  { id: 'sevenshifts', kind: 'vendor', provider: '7shifts', label: '7shifts', category: 'Scheduling', mode: 'api', apiAvailable: true, connected: false, inUse: false,
+    automation: ['Schedule & punch sync'] },
+
   // ---- Back office ----
   { id: 'quickbooks', kind: 'vendor', provider: 'quickbooks', label: 'QuickBooks', category: 'Accounting', mode: 'api', apiAvailable: true, connected: false, inUse: false,
     automation: ['Export invoices & sales to accounting'] },
 ]
 
-export const CATEGORIES = ['POS', 'Broadline', 'Produce', 'Catering', 'Delivery', 'Accounting'] as const
+export const CATEGORIES = ['POS', 'Broadline', 'Produce', 'Catering', 'Delivery', 'Scheduling', 'Accounting'] as const

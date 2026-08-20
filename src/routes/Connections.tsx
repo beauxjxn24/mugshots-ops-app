@@ -3,10 +3,30 @@ import { Zap } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { PROVIDERS, CATEGORIES } from '../lib/providers'
+import { getConnections, setConnection, connectReadiness, STATUS_LABEL } from '../lib/connections'
+import { toast } from '../lib/toast'
 
 export function Connections() {
   const [q, setQ] = useState('')
   const [cat, setCat] = useState<string>('All')
+  const [tick, setTick] = useState(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const conn = useMemo(() => getConnections(), [tick])
+  const { ready, why } = connectReadiness()
+
+  /**
+   * Start the permission handshake.
+   *
+   * Marks the connection pending and hands off to the server, which is what
+   * actually sends you to the provider and keeps the token that comes back.
+   * Until that server exists the button above is disabled, so this only ever
+   * runs against a real backend.
+   */
+  const grant = (id: string) => {
+    setConnection(id, { status: 'pending' })
+    setTick((t) => t + 1)
+    toast('Opening the provider to grant access…', 'success')
+  }
 
   const list = useMemo(() => {
     const query = q.trim().toLowerCase()
@@ -68,12 +88,29 @@ export function Connections() {
                       YOUR STACK
                     </span>
                   )}
+                  {/* What THIS store has actually granted, not what the catalog
+                      ships as. A provider being capable of a live sync and
+                      being connected to are different facts and used to read
+                      as one. */}
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      p.mode === 'api' ? 'bg-up/10 text-up' : 'bg-black/5 text-muted'
+                      conn[p.id]?.status === 'on'
+                        ? 'bg-up/15 text-up'
+                        : conn[p.id]?.status === 'broken'
+                          ? 'bg-down/15 text-down'
+                          : conn[p.id]?.status === 'pending'
+                            ? 'bg-warn/15 text-warn'
+                            : 'bg-black/5 text-muted'
                     }`}
                   >
-                    {p.mode === 'api' ? 'Live API' : 'Drop-box'}
+                    {STATUS_LABEL[conn[p.id]?.status ?? 'off']}
+                  </span>
+                  <span className="text-[10px] font-semibold text-muted/70">
+                    {p.mode === 'api' && p.apiAvailable
+                      ? 'live API'
+                      : p.mode === 'api'
+                        ? 'API unconfirmed'
+                        : 'drop-box'}
                   </span>
                 </div>
               </div>
@@ -87,13 +124,33 @@ export function Connections() {
                 ))}
               </ul>
 
+              {/* Granting permission is the whole mechanism, so the button
+                  says what it's waiting on rather than opening a window that
+                  goes nowhere. The token lands on the server, never here —
+                  see lib/connections.ts. */}
               <button
-                disabled
-                className="mt-4 w-full rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-white/90 opacity-70"
-                title="Live connect ships with the backend phase; drop-box works today on the Imports screen"
+                disabled={!ready}
+                onClick={() => ready && grant(p.id)}
+                className={`mt-4 w-full rounded-lg px-3 py-2 text-sm font-semibold ${
+                  ready ? 'bg-navy text-white' : 'bg-navy text-white/90 opacity-70'
+                }`}
+                title={ready ? undefined : why}
               >
-                {p.apiAvailable ? 'Connect' : 'Use drop-box'}
+                {conn[p.id]?.status === 'on'
+                  ? 'Connected'
+                  : p.apiAvailable
+                    ? 'Grant access'
+                    : 'Use drop-box'}
               </button>
+              {!ready && (
+                <p className="mt-1.5 text-[11px] leading-tight text-muted">{why}</p>
+              )}
+              {p.mode === 'api' && !p.apiAvailable && (
+                <p className="mt-1.5 text-[11px] leading-tight text-warn">
+                  Ask {p.label} whether they offer an API to their customers — that answer decides
+                  whether this is a connection or a file drop.
+                </p>
+              )}
             </Card>
           ))}
         </div>
