@@ -11,6 +11,7 @@ import {
   type ShiftPlan,
 } from '../lib/shiftcuts'
 import { shiftPerson } from '../lib/daycode'
+import { NamePicker } from './NamePicker'
 
 export interface Duty {
   id: string
@@ -287,33 +288,18 @@ export function CutPlanner({
                     above the board that re-pointed as you switched cuts, so
                     staffing four cuts was four round trips through the same
                     control -- and which cut you were naming was off-screen. */}
-                <select
+                <NamePicker
                   value={plan.people[c] ?? ''}
-                  onChange={(e) => {
+                  options={crew}
+                  taken={onCut}
+                  placeholder={`Who's on cut ${c}?`}
+                  onChange={(name) => {
                     const people = { ...plan.people }
-                    if (e.target.value) people[c] = e.target.value
+                    if (name) people[c] = name
                     else delete people[c]
                     setPlan({ ...plan, people })
                   }}
-                  className={`min-w-0 flex-1 rounded-lg border px-2 py-1 text-sm font-semibold outline-none focus:border-brand ${
-                    plan.people[c] ? 'border-black/10 bg-white text-ink' : 'border-dashed border-black/25 bg-transparent text-muted'
-                  }`}
-                >
-                  <option value="">— nobody yet —</option>
-                  {/* Somebody already on another cut isn't offered here. This
-                      dropdown is how plans ended up with one person on two
-                      cuts, which then read as a chip that wouldn't turn off. */}
-                  {crew
-                    .filter((n) => n === plan.people[c] || !onCut.includes(n))
-                    .map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  {plan.people[c] && !crew.includes(plan.people[c]) && (
-                    <option value={plan.people[c]}>{plan.people[c]}</option>
-                  )}
-                </select>
+                />
 
                 {/* Load at a glance -- this is what replaces having every cut's
                     duties on screen together. Widths are relative to the

@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { Lock, Pencil, Check, X, Plus } from 'lucide-react'
 import { Card } from './ui'
+import { NamePicker } from './NamePicker'
 import {
   SIDES,
   SIDE_LABEL,
@@ -65,22 +66,16 @@ export function Closers({
                 <span className="rounded-lg bg-black/5 px-2 py-1 text-[11px] font-extrabold uppercase tracking-wider text-muted">
                   {side}
                 </span>
-                <select
+                {/* Type the name. This was a native select styled
+                    dashed-and-grey when empty, which read as disabled rather
+                    than as "nobody yet" -- and picking anyone meant scrolling
+                    the roster on a tablet. */}
+                <NamePicker
                   value={who}
-                  onChange={(e) => onSetCloser(side, e.target.value)}
-                  aria-label={`${SIDE_LABEL[side]} closer`}
-                  className={`min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm font-semibold outline-none focus:border-brand ${
-                    who ? 'border-black/10 bg-white text-ink' : 'border-dashed border-black/25 bg-transparent text-muted'
-                  }`}
-                >
-                  <option value="">— nobody yet —</option>
-                  {roster.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                  {who && !roster.includes(who) && <option value={who}>{who}</option>}
-                </select>
+                  options={roster}
+                  placeholder={`Who's closing ${SIDE_LABEL[side].toLowerCase()}?`}
+                  onChange={(name) => onSetCloser(side, name)}
+                />
                 {who && (
                   <span className="shrink-0 text-[11px] font-bold text-muted">
                     {doneN}/{tasks.length}

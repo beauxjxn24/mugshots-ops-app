@@ -18,6 +18,7 @@ import { useRole } from '../lib/role'
 import { useShift, phaseForShift } from '../lib/shift'
 import { shiftPerson } from '../lib/daycode'
 import { CutPlanner, type Duty } from '../components/CutPlanner'
+import { NamePicker } from '../components/NamePicker'
 import { Closers } from '../components/Closers'
 import { getClosers, setCloser, type Side } from '../lib/closers'
 import {
@@ -647,35 +648,24 @@ export function Sidework() {
                       {/* Who has this tile tonight. Names come from the roster,
                           filtered to the role on screen, so it stays a pick
                           rather than a spelling. */}
-                      <select
-                        value={assigned[aKey(si)] ?? ''}
-                        onChange={(e) =>
-                          setAssigned((a) => {
-                            const next = { ...a }
-                            if (e.target.value) next[aKey(si)] = e.target.value
-                            else delete next[aKey(si)]
-                            return next
-                          })
-                        }
-                        aria-label={`Assign ${sec.section}`}
-                        className={`max-w-[8.5rem] truncate rounded-lg border px-2 py-1 text-[11.5px] font-semibold outline-none focus:border-brand ${
-                          assigned[aKey(si)]
-                            ? 'border-brand/40 bg-brand/10 text-brand-600'
-                            : 'border-black/10 bg-white text-muted'
-                        }`}
-                      >
-                        <option value="">Unassigned</option>
-                        {crew.map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                        {/* Keeps a name visible after they're taken off the
-                            roster mid-shift, instead of silently clearing. */}
-                        {assigned[aKey(si)] && !crew.includes(assigned[aKey(si)]) && (
-                          <option value={assigned[aKey(si)]}>{assigned[aKey(si)]}</option>
-                        )}
-                      </select>
+                      {/* Type a name; the roster for this role suggests as you
+                          go. A select meant scrolling fifteen servers on a
+                          tablet, and an empty one read as disabled. */}
+                      <div className="w-[9.5rem]">
+                        <NamePicker
+                          value={assigned[aKey(si)] ?? ''}
+                          options={crew}
+                          placeholder="Unassigned"
+                          onChange={(name) =>
+                            setAssigned((a) => {
+                              const next = { ...a }
+                              if (name) next[aKey(si)] = name
+                              else delete next[aKey(si)]
+                              return next
+                            })
+                          }
+                        />
+                      </div>
                       <span className="text-xs text-muted">
                         {secDone}/{sec.tasks.length}
                       </span>
