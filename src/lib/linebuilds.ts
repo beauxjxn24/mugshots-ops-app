@@ -304,6 +304,15 @@ const BUILD_ALIASES: Record<string, string> = {
   // The sheet writes "10 Root Beer Float"; the card says 10 oz, like its 22 oz
   // twin and like both milkshakes.
   '10 oz root beer float': '10 Root Beer Float',
+  // The rest of the same thing: the sheets drop the brand word, put the
+  // qualifier on the other end, or spell the drink differently. Every one of
+  // these cards already existed under the menu's own name — the sheets simply
+  // never met them, so they sat in "builds need a home" looking like decisions
+  // when there was nothing to decide.
+  '10 oz mugshots milkshake': '10 oz Milkshake',
+  '22 oz mugshots milkshake': '22 oz Milkshake',
+  'davis’ dill pickles': 'Dill Pickles',
+  'southern key lime pie rita': 'Key Lime Pie Southern ‘Rita',
 }
 const ALIAS_BY_NORM = new Map(Object.entries(BUILD_ALIASES).map(([k, v]) => [norm(k), norm(v)]))
 
