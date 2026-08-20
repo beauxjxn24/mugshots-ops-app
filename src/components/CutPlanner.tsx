@@ -65,6 +65,71 @@ export function CutPlanner({
     })
 
   const cuts = Array.from({ length: plan.cuts }, (_, i) => i + 1)
+  /**
+   * Who's closing, picked by name.
+   *
+   * The old way was a cut COUNT on a stepper and then one dropdown per cut --
+   * six fiddly interactions with identical native selects, on a tablet, usually
+   * standing up. And every dropdown offered the whole roster including people
+   * already on a cut, so double-assigning someone was a slip away.
+   *
+   * A closer doesn't think "I need five cuts". They think "Dana, Marcus, Vic,
+   * Sam and Tasha are closing". So that's the control: tap the names. Tap order
+   * IS cut order, because the first one you name is the first one you cut.
+   *
+   * Once anyone is named, the number of cuts IS the number of people named --
+   * naming five and getting nine cuts (four empty ones left over from the
+   * default, plus five) is not what anybody meant.
+   *
+   * Work follows the PERSON, not the cut number. Take someone out of the middle
+   * and everyone behind them moves up a cut, but each of them keeps the duties
+   * they were given; only the person leaving hands theirs back to the pool.
+   * Renumbering by position instead would silently shuffle four people's work
+   * because a fifth went home.
+   */
+  const onCut = cuts.map((c) => plan.people[c]).filter(Boolean)
+  const togglePerson = (name: string) => {
+    const at = cuts.find((c) => plan.people[c] === name)
+
+    // ---- naming someone ---------------------------------------------------
+    // The sheet opens with cuts already dealt and nobody on them. Naming
+    // someone fills the first of those, so the even deal survives; only once
+    // they're all taken does a new cut get added. Setting the count to "how
+    // many are named" instead collapsed the whole thing to one cut on the
+    // first tap and dumped three quarters of the duties back in the pool.
+    if (!at) {
+      const empty = cuts.find((c) => !plan.people[c])
+      const to = empty ?? plan.cuts + 1
+      setPlan({ ...plan, cuts: Math.max(plan.cuts, to), people: { ...plan.people, [to]: name } })
+      setActive(to)
+      return
+    }
+
+    // ---- taking someone off ------------------------------------------------
+    // Everyone behind them moves up a cut and keeps the duties they were given;
+    // only the leaver's work goes back to the pool.
+    const people: Record<number, string> = {}
+    for (const c of cuts) {
+      if (c === at) continue
+      const who = plan.people[c]
+      if (who) people[c > at ? c - 1 : c] = who
+    }
+    const assign: Record<string, number> = {}
+    for (const [id, c] of Object.entries(plan.assign)) {
+      if (c === at) continue // back to the pool
+      assign[id] = c > at ? c - 1 : c
+    }
+    const cutAt: Record<number, { at: string; by: string }> = {}
+    for (const [c, rec] of Object.entries(plan.cutAt ?? {})) {
+      const n = Number(c)
+      if (n === at) continue
+      cutAt[n > at ? n - 1 : n] = rec
+    }
+    const count = Math.max(1, plan.cuts - 1)
+    setPlan({ cuts: count, people, assign, cutAt })
+    setActive((a) => Math.min(a, count))
+  }
+
   // Load bars are relative to the busiest cut, so the comparison is between
   // tonight's cuts rather than against some fixed idea of a full load.
   const heaviest = Math.max(1, ...cuts.map((c) => dutiesForCut(plan, c, ids).length))
@@ -96,22 +161,67 @@ export function CutPlanner({
           <button
             onClick={() => setPlan(setCutCount(plan, plan.cuts - 1))}
             aria-label="One fewer cut"
+            title="Add or remove a cut without naming anyone"
             className="grid size-7 place-items-center rounded-md text-muted hover:bg-black/5 hover:text-ink"
           >
             <Minus size={13} />
           </button>
           <span className="min-w-[3.5rem] text-center text-xs font-bold text-ink">
-            {plan.cuts} cuts
+            {plan.cuts} {plan.cuts === 1 ? 'cut' : 'cuts'}
           </span>
           <button
             onClick={() => setPlan(setCutCount(plan, plan.cuts + 1))}
             aria-label="One more cut"
+            title="Add or remove a cut without naming anyone"
             className="grid size-7 place-items-center rounded-md text-muted hover:bg-black/5 hover:text-ink"
           >
             <Plus size={13} />
           </button>
         </span>
       </div>
+
+      {/* Staffing the close: tap the names. */}
+      {crew.length > 0 && (
+        <div className="border-b border-black/5 px-4 py-3">
+          <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted">
+              Who&rsquo;s closing?
+            </span>
+            <span className="text-[11px] text-muted/70">
+              {onCut.length === 0
+                ? 'tap a name — first one tapped is cut 1'
+                : `${onCut.join(' → ')}`}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {crew.map((name) => {
+              const at = cuts.find((c) => plan.people[c] === name)
+              return (
+                <button
+                  key={name}
+                  onClick={() => togglePerson(name)}
+                  aria-pressed={!!at}
+                  title={at ? `On cut ${at} — tap to take them off` : 'Tap to put them on the next cut'}
+                  // Sized for a thumb on a tablet, because that is what this is
+                  // used on and the dropdowns it replaces were not.
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-colors ${
+                    at
+                      ? 'bg-brand text-white'
+                      : 'border border-black/10 bg-white text-muted hover:border-brand/50 hover:text-ink'
+                  }`}
+                >
+                  {at && (
+                    <span className="grid size-4 place-items-center rounded-full bg-white/25 text-[10px] font-extrabold">
+                      {at}
+                    </span>
+                  )}
+                  {name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* One card per cut: who's on it, how much they're carrying, and their
           duties when it's open.
@@ -247,8 +357,24 @@ export function CutPlanner({
               {open && (
                 <div className="border-t border-black/5 px-2.5 pb-2.5 pt-2">
                   {mine.length === 0 ? (
-                    <p className="px-1 py-1 text-xs text-muted">
-                      {c === active ? 'Tap duties from the pool above to deal them here.' : 'Nothing yet.'}
+                    // Naming a fifth person after the sheet was dealt four ways
+                    // leaves them empty with nothing in the pool to take -- so
+                    // don't point at a pool that isn't there, offer the re-deal.
+                    <p className="flex flex-wrap items-center gap-1.5 px-1 py-1 text-xs text-muted">
+                      {pool.length > 0 ? (
+                        'Tap duties from the pool above to deal them here.'
+                      ) : (
+                        <>
+                          Nothing dealt to {plan.people[c] || `cut ${c}`} yet — everything is on the other cuts.
+                          <button
+                            onClick={() => setPlan(dealEvenly(plan, ids))}
+                            className="rounded-lg bg-brand px-2.5 py-1 text-[11px] font-bold text-white"
+                          >
+                            Re-deal evenly
+                          </button>
+                          <span>or take some from another cut.</span>
+                        </>
+                      )}
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
