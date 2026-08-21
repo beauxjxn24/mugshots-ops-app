@@ -47,14 +47,16 @@ export function Closers({
   // says "break down dining room drink station" -- and that's the BOH closer's.
   // Two people on one job is how a tool stops getting used, so it's named here
   // rather than left for someone to notice at midnight.
+  // Read against the store's OWN lists, so moving a job from one side to the
+  // other moves the warning with it, and taking it off both silences it.
   const clashes = useMemo(() => {
     const out: { side: Side; section: string; task: string }[] = []
     for (const d of sheet) {
-      const owned = closerOwns(d.task)
+      const owned = closerOwns(d.task, duties)
       if (owned) out.push({ side: owned.side, section: d.section, task: d.task })
     }
     return out
-  }, [sheet])
+  }, [sheet, duties])
 
   const save = (side: Side, tasks: string[]) => {
     setCloserDuties(side, tasks)
@@ -69,6 +71,15 @@ export function Closers({
         <span className="text-xs text-muted">
           they stay after the cuts — this work isn’t on the sidework sheet
         </span>
+        {/* Said out loud, because these lists are a starting point and every
+            store splits the close differently — two drink stations here, four
+            somewhere else. The pencil was the only clue and it reads as
+            decoration. */}
+        {canEdit && (
+          <span className="ml-auto hidden text-xs text-muted sm:inline">
+            edit either list to match your store
+          </span>
+        )}
       </div>
 
       <div className="grid gap-px bg-black/5 sm:grid-cols-2">

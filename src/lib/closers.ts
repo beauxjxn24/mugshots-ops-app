@@ -79,8 +79,10 @@ export const DEFAULT_CLOSER_DUTIES: Record<Side, string[]> = {
   ],
   BOH: [
     // The server-facing half — the BOH closer's, not the FOH closer's.
+    // Deliberately uncounted: Flowood has two drink stations, other stores have
+    // more, and a store that wants them broken out one per line adds the rows.
     'Break down the server side of the passout',
-    'Break down both drink stations',
+    'Break down the drink stations',
     'Empty, wash and refill the tea urns',
     // The kitchen itself.
     'Shut down the line — flat top, fryers, hood',
@@ -98,17 +100,23 @@ export const DEFAULT_CLOSER_DUTIES: Record<Side, string[]> = {
  *
  * The clipboard sheet predates the app having any idea of a closer, so the
  * server sheet still hands "break down dining room drink station" to Section 3
- * and "break down bar drink station" to Section 5 — both of which are the BOH
- * closer's. Deal them to a cut AND leave them on the closer's list and two
- * people do one job, which is how a tool stops getting used.
+ * and "break down bar drink station" to Section 5. Deal one to a cut AND leave
+ * it on the closer's list and two people do one job, which is how a tool stops
+ * getting used.
  *
  * Flagged, not deleted. The sheet is the store's, and quietly dropping rows out
  * of it isn't the app's call.
+ *
+ * Note what is NOT here: which side owns each subject. That is read off the
+ * store's own closer list at match time, because stores split this differently
+ * — Flowood's BOH closer has the drink stations, somewhere else it's the FOH
+ * closer, and a store with four stations writes four rows. Baking the side in
+ * here would mean the warning contradicting a list a manager had just edited.
  */
-export const CLOSER_OWNED: { side: Side; subject: string; re: RegExp }[] = [
-  { side: 'BOH', subject: 'the passout', re: /\bpass[\s-]?out\b/i },
-  { side: 'BOH', subject: 'the drink stations', re: /\bdrink station/i },
-  { side: 'BOH', subject: 'the tea urns', re: /\btea urn/i },
+export const CLOSER_SUBJECTS: { subject: string; re: RegExp }[] = [
+  { subject: 'the passout', re: /\bpass[\s-]?out\b/i },
+  { subject: 'the drink stations', re: /\bdrink station/i },
+  { subject: 'the tea urns', re: /\btea urn/i },
 ]
 
 /**
@@ -125,11 +133,25 @@ export const CLOSER_OWNED: { side: Side; subject: string; re: RegExp }[] = [
  */
 const BREAKING_DOWN = /\b(break(?:ing)?[\s-]?down|breakdown|shut(?:ting)?[\s-]?down|shutdown|empty(?:ing)?|wash(?:ing)?)\b/i
 
-/** Does a closer own this sheet duty? */
-export function closerOwns(task: string): { side: Side; subject: string } | null {
+/**
+ * Does a closer own this sheet duty, and which one?
+ *
+ * Answered from `duties` — the store's own editable lists — not from a rule in
+ * this file. Move the drink stations to the FOH closer and the warning follows
+ * you; take them off both lists entirely and it goes quiet, because then the
+ * sheet really is where that job lives.
+ */
+export function closerOwns(
+  task: string,
+  duties: Record<Side, string[]>,
+): { side: Side; subject: string } | null {
   if (!BREAKING_DOWN.test(task)) return null
-  const hit = CLOSER_OWNED.find((o) => o.re.test(task))
-  return hit ? { side: hit.side, subject: hit.subject } : null
+  const hit = CLOSER_SUBJECTS.find((o) => o.re.test(task))
+  if (!hit) return null
+  const side = SIDES.find((s) =>
+    (duties[s] ?? []).some((t) => BREAKING_DOWN.test(t) && hit.re.test(t)),
+  )
+  return side ? { side, subject: hit.subject } : null
 }
 
 const dutiesKey = (): string => {
@@ -140,38 +162,51 @@ const dutiesKey = (): string => {
 /**
  * Rows the app itself put on the FOH list before it knew better.
  *
- * A device that opened the editor once has these saved, so new defaults alone
- * won't reach it. Matched EXACTLY and only moved if the BOH list doesn't
- * already cover the same subject — a manager who typed their own version of
- * "drink stations" onto FOH on purpose wrote different words, so it won't
- * match and won't be moved out from under them.
+ * A device that opened the duty editor once has these saved, so changing the
+ * defaults alone won't reach it. Matched EXACTLY, so a manager who typed their
+ * own wording onto FOH on purpose keeps it.
  */
 const MISFILED_ON_FOH = ['Break down both drink stations', 'Empty, wash and refill tea urns']
 
-export function getCloserDuties(): Record<Side, string[]> {
+/**
+ * ONCE. Not a standing rule.
+ *
+ * This started life inside getCloserDuties() with no flag, which made it a rule
+ * that re-ran on every read: a manager at a store that puts the drink stations
+ * on their FOH closer would move the row across, and the app would drag it back
+ * to BOH on the next render. Forever. A fix that overrules the person using it
+ * isn't a fix.
+ *
+ * So it corrects the app's own old default exactly once per store, and after
+ * that the list is entirely theirs.
+ */
+function migrateOnce(): void {
+  const flag = `${dutiesKey()}:foh2boh`
+  if (load<boolean>(flag, false)) return
+  save(flag, true)
+
   const r = load<Partial<Record<Side, string[]>>>(dutiesKey(), {})
   const savedFOH = Array.isArray(r?.FOH) ? r.FOH : null
-  const savedBOH = Array.isArray(r?.BOH) ? r.BOH : null
-
-  // Nothing saved on FOH means nothing to move — the defaults are already right.
-  if (!savedFOH) {
-    return { FOH: DEFAULT_CLOSER_DUTIES.FOH, BOH: savedBOH ?? DEFAULT_CLOSER_DUTIES.BOH }
-  }
+  if (!savedFOH) return // Never edited — the new defaults already read right.
 
   const moving = savedFOH.filter((t) => MISFILED_ON_FOH.includes(t))
-  if (moving.length === 0) {
-    return { FOH: savedFOH, BOH: savedBOH ?? DEFAULT_CLOSER_DUTIES.BOH }
+  if (moving.length === 0) return
+
+  // Off FOH always. Onto BOH only where BOH isn't already covering that subject.
+  const boh = Array.isArray(r?.BOH) ? r.BOH : DEFAULT_CLOSER_DUTIES.BOH
+  const subjectOf = (t: string) => CLOSER_SUBJECTS.find((o) => o.re.test(t))?.subject
+  const add = moving.filter((t) => !boh.some((b) => subjectOf(b) === subjectOf(t)))
+
+  save(dutiesKey(), { FOH: savedFOH.filter((t) => !moving.includes(t)), BOH: [...add, ...boh] })
+}
+
+export function getCloserDuties(): Record<Side, string[]> {
+  migrateOnce()
+  const r = load<Partial<Record<Side, string[]>>>(dutiesKey(), {})
+  return {
+    FOH: Array.isArray(r?.FOH) ? r.FOH : DEFAULT_CLOSER_DUTIES.FOH,
+    BOH: Array.isArray(r?.BOH) ? r.BOH : DEFAULT_CLOSER_DUTIES.BOH,
   }
-
-  // Off FOH always. Onto BOH only where BOH isn't already covering that subject
-  // -- the new BOH defaults name all three, so this is usually a straight drop.
-  const boh = savedBOH ?? DEFAULT_CLOSER_DUTIES.BOH
-  const subject = (t: string) => closerOwns(t)?.subject
-  const add = moving.filter((t) => !boh.some((b) => subject(b) === subject(t)))
-
-  const next = { FOH: savedFOH.filter((t) => !moving.includes(t)), BOH: [...add, ...boh] }
-  save(dutiesKey(), next)
-  return next
 }
 
 export function setCloserDuties(side: Side, tasks: string[]): void {
