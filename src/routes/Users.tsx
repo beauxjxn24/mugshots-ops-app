@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { KeyRound, ShieldCheck } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { requirePin } from '../lib/pin'
@@ -52,12 +52,11 @@ export function Users() {
   }
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Users & privileges"
         subtitle={`${users.length} manager${users.length === 1 ? '' : 's'} · PINs unlock schedule, publish & store setup`}
-      />
-      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+        width="narrow"
+      >
         {/* Today's staff code. Managers read it off here and give it to the
             floor; it rolls over on its own at 4am, with the business day. */}
         <Card className="flex flex-wrap items-center gap-x-4 gap-y-2 border-brand/30 bg-navy p-4 text-white">
@@ -236,8 +235,7 @@ export function Users() {
             )
           })}
         </Card>
-      </div>
-    </>
+            </Page>
   )
 }
 

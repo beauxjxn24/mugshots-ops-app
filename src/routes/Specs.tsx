@@ -179,6 +179,7 @@ export function Specs() {
   return (
     <>
       <PageHeader
+        width="full"
         title="Specs & Recipes"
         subtitle={
           viewingOG

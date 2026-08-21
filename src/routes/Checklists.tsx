@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Check, Printer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { load, usePersistentState, today } from '../lib/store'
 import { useScopeKey } from '../lib/scope'
 import { periodWeek } from '../lib/forecast'
@@ -97,8 +97,7 @@ export function Checklists() {
   const sections = Array.isArray(data?.[phase]) ? data[phase] : DEFAULTS[phase]
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Checklists"
         subtitle={`${phase} · ${CADENCE[phase]} · ${today()}`}
         right={
@@ -120,8 +119,8 @@ export function Checklists() {
             </button>
           </div>
         }
-      />
-      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+        width="narrow"
+      >
         {/* Phase toggle */}
         <div className="grid grid-cols-4 gap-1 rounded-xl bg-black/5 p-1 print:hidden">
           {PHASES.map((ph) => (
@@ -145,8 +144,7 @@ export function Checklists() {
             page so it gets chased.
           </p>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

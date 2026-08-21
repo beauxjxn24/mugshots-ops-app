@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Copy, Printer, Lock, LockOpen, CheckCircle2, CalendarClock, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
@@ -235,8 +235,7 @@ export function Schedule() {
   const anyScheduled = balance.some((b) => b.closes > 0 || b.weekendOff > 0)
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={`Manager schedule · Period ${period}`}
         subtitle={`${fmtMD(pStart)} – ${fmtMD(shiftDays(pStart, 27))} · ${CODE_HELP}${unlocked ? '' : ' · locked — GM PIN to edit'}`}
         right={
@@ -295,9 +294,7 @@ export function Schedule() {
             </button>
           </div>
         }
-      />
-      <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
-        {/* Pending time-off — the GM sees requests before building the week */}
+      >        {/* Pending time-off — the GM sees requests before building the week */}
         {pending.length > 0 && (
           <Card className="border-down/25 bg-down/[0.04] p-4 print:hidden">
             <div className="mb-2 flex items-center gap-2">
@@ -573,8 +570,7 @@ export function Schedule() {
             )}
           </Card>
         </div>
-      </div>
-    </>
+      </Page>
   )
 }
 

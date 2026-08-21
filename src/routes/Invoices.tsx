@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { confirmDelete } from '../lib/confirm'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { getPriceLog } from '../lib/catalog'
 import type { Night } from '../lib/nightly'
@@ -64,8 +64,7 @@ export function Invoices() {
   const togglePaid = (id: string) => setRows((r) => r.map((x) => (x.id === id ? { ...x, paid: !x.paid } : x)))
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Invoices & receiving"
         subtitle="Check the delivery against the order — shorts, credits & price creep feed Costs automatically"
         right={
@@ -76,8 +75,8 @@ export function Invoices() {
             <ScanLine size={13} className="text-brand" /> Drop invoice here — PDF or photo
           </Link>
         }
-      />
-      <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        flush
+      >
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,1.7fr)]">
           <div className="space-y-4">
             {/* Log an invoice */}
@@ -293,7 +292,6 @@ export function Invoices() {
             </Card>
           </div>
         </div>
-      </div>
-    </>
+            </Page>
   )
 }

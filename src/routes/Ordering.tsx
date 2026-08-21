@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Printer, Check, GripVertical, Plus, PackageOpen } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { entryColumn, entryField } from '../lib/nextfield'
 import { suggested, setParEntry, getReceiptLog, getParEdits, vendors } from '../lib/ordering'
 import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog } from '../lib/catalog'
@@ -241,7 +241,7 @@ export function Ordering() {
           <option key={v} value={v} />
         ))}
       </datalist>
-      <PageHeader
+      <Page
         title="Orders"
         subtitle={
           isPhone
@@ -272,8 +272,9 @@ export function Ordering() {
             </button>
           </div>
         }
-      />
-      <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6 lg:p-8">
+        flush
+        className="space-y-4"
+      >
         {/* What's actually due today.
             The dashboard's "orders to place" tile used to drop you here on
             whatever shelf happened to be open, with nothing saying WHICH order
@@ -682,7 +683,7 @@ export function Ordering() {
           Guides are stored per store; items live once in the Item Catalog. Direct vendor-API ordering plugs in on the
           Connections page when your reps support it.
         </p>
-      </div>
+      </Page>
     </>
   )
 }

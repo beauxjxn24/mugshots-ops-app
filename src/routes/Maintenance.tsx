@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { Wrench, Check } from 'lucide-react'
 
@@ -59,9 +59,7 @@ export function Maintenance() {
   }
 
   return (
-    <>
-      <PageHeader title="Maintenance" subtitle={`Equipment repair log · ${open.length} open · ${resolved.length} resolved`} />
-      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+      <Page title="Maintenance" subtitle={`Equipment repair log · ${open.length} open · ${resolved.length} resolved`} width="narrow">
         <Card className="p-4">
           <div className="grid gap-2 sm:grid-cols-2">
             <input
@@ -125,8 +123,7 @@ export function Maintenance() {
             )}
           </>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

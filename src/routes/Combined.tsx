@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { useScope, useRollupLevel } from '../lib/scope'
 import { today } from '../lib/store'
 import {
@@ -64,8 +64,7 @@ export function Combined() {
   const empty = sales.anchor === '' && pmix.length === 0 && catering.length === 0
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={title}
         subtitle={`${refs.length} store${refs.length === 1 ? '' : 's'} combined · read-only reporting`}
         right={
@@ -83,9 +82,9 @@ export function Combined() {
             ))}
           </div>
         }
-      />
-
-      <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+        flush
+        className="space-y-6"
+      >
         {empty ? (
           <Card className="p-8 text-center">
             <div className="text-sm font-semibold text-ink">No numbers logged yet in these stores</div>
@@ -272,8 +271,7 @@ export function Combined() {
             </p>
           </>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

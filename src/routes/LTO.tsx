@@ -64,6 +64,7 @@ export function LTO() {
   return (
     <>
       <PageHeader
+        width="full"
         title="LTO"
         subtitle={`${lto.length} limited-time builds across ${runs.length} run${runs.length === 1 ? '' : 's'}`}
       />

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Printer, Plus, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useIsPhone } from '../lib/useIsPhone'
 import { confirmDelete } from '../lib/confirm'
@@ -97,8 +97,7 @@ export function Inventory() {
   }, [shown, locations, loc, adding])
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Inventory"
         subtitle={
           items.length === 0
@@ -143,9 +142,7 @@ export function Inventory() {
             )}
           </div>
         }
-      />
-
-      <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         {items.length === 0 && (
           <Card className="p-8 text-center">
             <div className="text-sm font-semibold text-ink">No count sheet loaded yet</div>
@@ -288,8 +285,7 @@ export function Inventory() {
             }
           />
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

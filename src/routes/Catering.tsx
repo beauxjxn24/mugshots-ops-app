@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Check, Undo2, Plus, Pencil, Printer, ExternalLink } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { getDoc } from '../lib/docs'
@@ -79,8 +79,7 @@ export function Catering() {
     )
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Catering & Reservations"
         subtitle="Tagged nights stay out of same-day comps — a banquet Thursday won't inflate next year's Thursday forecast"
         right={
@@ -100,8 +99,8 @@ export function Catering() {
             </button>
           </div>
         }
-      />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        width="wide"
+      >
         {showForm && <BookingForm onSave={(b) => { setBookings((bs) => [...bs, b]); setShowForm(false) }} />}
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -270,8 +269,7 @@ export function Catering() {
             )}
           </div>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

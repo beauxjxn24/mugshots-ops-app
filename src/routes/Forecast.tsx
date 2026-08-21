@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Megaphone } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import type { Booking } from '../lib/catering'
 import type { Night } from '../lib/nightly'
@@ -147,12 +147,11 @@ export function Forecast() {
   const range = `${fmtShort(days[0]?.date ?? t)} – ${fmtShort(days[6]?.date ?? t)}`
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={`Week at a glance · ${range}`}
         subtitle="Your last 4 same-weekdays × outlook — refreshes with every close. Caterings sit on top, never inside the comp."
-      />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        width="wide"
+      >
         {!hasHistory ? (
           <Card className="p-8 text-center">
             <p className="mx-auto max-w-md text-sm text-muted text-pretty">
@@ -334,7 +333,6 @@ export function Forecast() {
             </div>
           </>
         )}
-      </div>
-    </>
+            </Page>
   )
 }

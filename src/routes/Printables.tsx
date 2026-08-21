@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Printer, Paperclip, Link2, ExternalLink, FileText, X, Plus } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
@@ -33,8 +33,7 @@ export function Printables() {
   const [sidework] = usePersistentState<SidworkData>('sidework:data', SIDEWORK)
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Printables"
         subtitle="Print-ready sheets from your live data"
         right={
@@ -45,8 +44,10 @@ export function Printables() {
             <Printer size={15} /> Print
           </button>
         }
-      />
-      <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6 lg:p-8">
+        width="narrow"
+        flush
+        className="space-y-4"
+      >
         {/* Your real Mugshots documents — link or attach the actual files */}
         <Documents />
 
@@ -99,8 +100,7 @@ export function Printables() {
           {sheet === 'Sidework' && <SideworkSheet role={role} data={sidework} />}
           {sheet === 'Inventory count' && <InventorySheet />}
         </Card>
-      </div>
-    </>
+            </Page>
   )
 }
 

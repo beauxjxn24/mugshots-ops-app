@@ -372,6 +372,7 @@ export function Sidework() {
     return (
       <>
         <PageHeader
+          width="narrow"
           title="Your sidework"
           subtitle={
             !myCut
@@ -381,7 +382,8 @@ export function Sidework() {
                 : `Cut ${myCut} · not cut yet`
           }
         />
-        <div className="mx-auto max-w-2xl space-y-3 p-4 sm:p-6">
+        <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-3xl space-y-3">
           {viewAs && (
             <div className="flex items-center gap-2 rounded-xl bg-brand/10 px-3 py-2 text-xs">
               <span className="font-semibold text-ink">Showing {viewAs}'s sidework</span>
@@ -476,6 +478,7 @@ export function Sidework() {
               ))}
             </Card>
           )}
+          </div>
         </div>
       </>
     )
@@ -484,6 +487,7 @@ export function Sidework() {
   return (
     <>
       <PageHeader
+        width="narrow"
         title="Sidework"
         subtitle={`${role} · ${activePhase} · ${doneCount}/${allTasks.length} · ${today()}`}
         right={
@@ -497,7 +501,8 @@ export function Sidework() {
           )
         }
       />
-      <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6 lg:p-8">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="mx-auto w-full max-w-3xl space-y-4">
         {/* Role tabs */}
         <div className="flex gap-2">
           {ROLES.map((r) => (
@@ -811,6 +816,7 @@ export function Sidework() {
             )}
           </Card>
         )}
+        </div>
       </div>
     </>
   )

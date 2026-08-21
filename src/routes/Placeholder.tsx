@@ -1,4 +1,4 @@
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { NAV_FLAT } from '../lib/nav'
 import { useLocation } from 'react-router-dom'
 
@@ -6,9 +6,7 @@ export function Placeholder() {
   const loc = useLocation()
   const item = NAV_FLAT.find((i) => i.to === loc.pathname)
   return (
-    <>
-      <PageHeader title={item?.label ?? 'Section'} subtitle="Being rebuilt in the new app" />
-      <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
+      <Page title={item?.label ?? 'Section'} subtitle="Being rebuilt in the new app" width="narrow" flush>
         <Card className="p-8 text-center">
           <div className="mx-auto mb-3 grid size-14 place-items-center rounded-2xl bg-brand/10 text-brand">
             {item?.icon ? <item.icon size={26} /> : null}
@@ -20,7 +18,6 @@ export function Placeholder() {
             live — this section is next in the queue.
           </p>
         </Card>
-      </div>
-    </>
+            </Page>
   )
 }

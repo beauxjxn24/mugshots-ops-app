@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
 import { Upload, Users } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
 import { type Person, ROLES, newId, importPeople, addPeople, rolesOf } from '../lib/staff'
 
@@ -161,8 +161,7 @@ export function Staff() {
   }, [sel, shifts])
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Staff"
         subtitle="Your roster of tipped & support staff — the source of truth Tipshare pulls names from"
         right={
@@ -180,8 +179,8 @@ export function Staff() {
             </Link>
           </div>
         }
-      />
-      <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        flush
+      >
         {showImport && (
           <div className="mb-5">
             <ImportPanel onImport={bulkAdd} />
@@ -410,8 +409,7 @@ export function Staff() {
             )}
           </Card>
         </div>
-      </div>
-    </>
+            </Page>
   )
 }
 

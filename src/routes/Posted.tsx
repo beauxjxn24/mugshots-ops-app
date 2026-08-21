@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Printer, ChevronLeft, ChevronRight, CalendarCheck2, PencilLine } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useRole } from '../lib/role'
 import { DEFAULT_USERS, type User } from '../lib/users'
@@ -42,8 +42,7 @@ export function Posted() {
   const thisWeekStart = mondayOf(t)
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={`Posted schedule · Period ${period}`}
         subtitle={`${fmtMD(pStart)} – ${fmtMD(shiftDays(pStart, 27))} · the weeks your GM has published`}
         right={
@@ -87,8 +86,7 @@ export function Posted() {
             </button>
           </div>
         }
-      />
-      <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-1.5">
           {PICK_CODES.map((c) => (
@@ -188,7 +186,6 @@ export function Posted() {
             )
           })
         )}
-      </div>
-    </>
+            </Page>
   )
 }

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { getPriceLog } from '../lib/catalog'
 import type { Night } from '../lib/nightly'
@@ -107,9 +107,7 @@ export function Costs() {
   }, [mix.rows, plate])
 
   return (
-    <>
-      <PageHeader title="Costs" subtitle="Margins × mix · purchases vs sales — fed by Invoices, Nightly Numbers & PMIX" />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+      <Page title="Costs" subtitle="Margins × mix · purchases vs sales — fed by Invoices, Nightly Numbers & PMIX" width="wide">
         {/* Stat tiles */}
         <div className="grid gap-4 sm:grid-cols-3">
           <Card className="p-4">
@@ -284,7 +282,6 @@ export function Costs() {
             )}
           </div>
         </div>
-      </div>
-    </>
+            </Page>
   )
 }

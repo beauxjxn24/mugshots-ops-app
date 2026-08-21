@@ -1,7 +1,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Camera, CloudUpload, FileCheck2, CircleAlert, Loader2, ReceiptText } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { today, usePersistentState } from '../lib/store'
 import { readFile, type ReadResult, type LineItem } from '../lib/reader'
 import { getOrdering, proposeReceipts, applyReceipts, setParEntry, vendors, type Receipt } from '../lib/ordering'
@@ -298,11 +298,10 @@ export function Imports() {
           <style>{`@keyframes fadein{from{opacity:0}to{opacity:1}}`}</style>
         </div>
       )}
-      <PageHeader
+      <Page
         title="Imports"
         subtitle="Drop an invoice, order guide, price sheet, or ezCater order — PDF or a photo"
-      />
-      <div className="mx-auto max-w-4xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         {/* Phone hero: snapping an invoice is the phone app's main job */}
         {isPhone && (
           <div className="space-y-3">
@@ -576,7 +575,7 @@ export function Imports() {
         ))}
 
         <ImportHistory />
-      </div>
+      </Page>
     </>
   )
 }

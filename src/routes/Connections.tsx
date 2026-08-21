@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Zap } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { PROVIDERS, CATEGORIES } from '../lib/providers'
 import { getConnections, setConnection, connectReadiness, STATUS_LABEL } from '../lib/connections'
@@ -40,15 +40,13 @@ export function Connections() {
   const mine = PROVIDERS.filter((p) => p.inUse)
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Connections"
         subtitle="Connect your POS, distributors, and marketplaces — or read anything via drop-box"
         right={
           <SearchInput value={q} onChange={setQ} placeholder="Search integrations…" className="w-full max-w-xs" />
         }
-      />
-      <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         <Card className="border-brand/20 bg-brand/5 p-4 text-sm text-ink/80">
           <b>Your stack:</b> {mine.map((p) => p.label).join(' · ')}. Don’t see a vendor? Any
           distributor works through the <b>drop-box reader</b> — drop their invoice or order guide
@@ -154,7 +152,6 @@ export function Connections() {
             </Card>
           ))}
         </div>
-      </div>
-    </>
+            </Page>
   )
 }

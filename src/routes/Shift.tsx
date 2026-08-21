@@ -30,7 +30,8 @@ export function Shift() {
   const left = sent ? sent.items.filter((i) => !done[i.name]).length : 0
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+      <div className="mx-auto w-full max-w-3xl">
       <div className="mb-5 mt-2">
         <div className="font-display text-2xl font-semibold text-ink">{greet} 👋</div>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
@@ -89,6 +90,7 @@ export function Shift() {
           </Link>
         ))}
       </div>
+    </div>
     </div>
   )
 }

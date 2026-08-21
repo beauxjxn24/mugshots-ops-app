@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ScanLine } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
 import { type MixItem, type PmixDays, sanitizePmix } from '../lib/pmix'
@@ -117,8 +117,7 @@ export function Mix() {
     .slice(0, 6)
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={latest ? `Product Mix · ${scopeLabel}` : 'Product Mix'}
         subtitle={
           latest
@@ -142,8 +141,8 @@ export function Mix() {
             </div>
           )
         }
-      />
-      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
+        width="wide"
+      >
         {/* Product mix is read-only here — all drops go through the Imports page,
             which files each PMIX by day and tracks it on the daily-reports board. */}
         {latest && (
@@ -323,7 +322,6 @@ export function Mix() {
             })}
           </Card>
         )}
-      </div>
-    </>
+            </Page>
   )
 }

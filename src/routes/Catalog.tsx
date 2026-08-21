@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { confirmDelete } from '../lib/confirm'
-import { PageHeader } from '../components/ui'
+import { Page } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { useCurrentNames } from '../lib/scope'
 import {
@@ -158,13 +158,13 @@ export function Catalog() {
   }, [items])
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Item Catalog"
         subtitle={`${items.length} items · ${concept} — ${location} · ${onGuideCount} on the order guide`}
         right={<SearchInput value={q} onChange={setQ} placeholder="Search items…" className="w-full max-w-xs" />}
-      />
-      <div className="mx-auto max-w-5xl space-y-4 p-3 sm:p-5 lg:p-6">
+        flush
+        className="space-y-4"
+      >
         {/* ---- Add panel ---- */}
         <div className="rounded-2xl border border-signal/20 bg-gradient-to-b from-signal/[0.06] to-transparent p-4">
           <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-signal">
@@ -440,7 +440,6 @@ export function Catalog() {
             ))}
           </div>
         )}
-      </div>
-    </>
+            </Page>
   )
 }

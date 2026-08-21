@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { useCurrentNames } from '../lib/scope'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
@@ -183,12 +183,12 @@ export function Dashboard() {
   const pw = periodWeek(t)
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Dashboard"
         subtitle={`${concept} · ${location} · ${todayLong()} · Period ${pw.period}, Week ${pw.week}`}
-      />
-      <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+        flush
+        className="space-y-6"
+      >
         {hasReal ? (
           <>
             {/* Row 1 — catering tiles by the nav (they blink & shake when a
@@ -402,8 +402,7 @@ export function Dashboard() {
             />
           </div>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

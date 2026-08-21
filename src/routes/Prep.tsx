@@ -760,8 +760,13 @@ export function Prep() {
     if (!sent) {
       return (
         <>
-          <PageHeader title={`Prep list · ${fmtLong(t)}`} subtitle="Waiting on the manager" />
-          <div className="mx-auto max-w-2xl p-4 sm:p-6">
+          <PageHeader
+            width="narrow"
+            title={`Prep list · ${fmtLong(t)}`}
+            subtitle="Waiting on the manager"
+          />
+          <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="mx-auto w-full max-w-3xl">
             <Card className="p-6 text-center">
               <span className="mx-auto mb-3 grid size-11 place-items-center rounded-xl bg-black/5 text-muted">
                 <ChefHat size={20} />
@@ -772,6 +777,7 @@ export function Prep() {
                 until then.
               </p>
             </Card>
+            </div>
           </div>
         </>
       )
@@ -786,11 +792,14 @@ export function Prep() {
     return (
       <>
         <PageHeader
+          width="narrow"
           title={`Prep list · ${fmtLong(t)}`}
           subtitle={`Sent ${at} by ${sent.by} — tick each one off as you finish it`}
         />
-        <div className="mx-auto max-w-2xl p-4 sm:p-6">
-          <PrepChecklist items={checklist} sentAt={sent.at} />
+        <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-3xl">
+            <PrepChecklist items={checklist} sentAt={sent.at} />
+          </div>
         </div>
       </>
     )
@@ -799,6 +808,7 @@ export function Prep() {
   return (
     <>
       <PageHeader
+        width="wide"
         title={mode === 'bar' ? `Bar prep · ${fmtLong(t)}` : `Prep list · ${fmtLong(t)}`}
         subtitle={
           mode === 'bar'
@@ -943,12 +953,17 @@ export function Prep() {
           BarPrep hides its own screen UI from print; the padding drops so the
           sheet starts at the paper margin. */}
       {mode === 'bar' && (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 print:p-0">
-          <BarPrep />
+        <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 print:p-0">
+          <div className="mx-auto w-full max-w-7xl">
+            <BarPrep />
+          </div>
         </div>
       )}
 
-      <div className={`mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8 print:hidden ${mode === 'bar' ? 'hidden' : ''}`}>
+      <div
+        className={`px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 print:hidden ${mode === 'bar' ? 'hidden' : ''}`}
+      >
+        <div className="mx-auto w-full max-w-7xl space-y-5">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
           <Card className="border-brand/25 bg-brand/[0.06] p-4">
             <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">How pars work here</div>
@@ -1274,6 +1289,7 @@ export function Prep() {
 
         {/* Bottom action bar — same buttons as the top, so there's no scroll-back */}
         <div className="flex flex-wrap items-center justify-end gap-2">{actionButtons}</div>
+        </div>
       </div>
       <SpecPeek name={peek} onClose={() => setPeek(null)} />
     </>

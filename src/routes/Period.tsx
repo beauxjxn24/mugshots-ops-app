@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Printer, Mail } from 'lucide-react'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { confirmDelete } from '../lib/confirm'
@@ -196,8 +196,7 @@ export function Period() {
   }
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={`Period ${pw.period} review · ${fmtLong(pStart)} – ${fmtLong(pEnd)}`}
         subtitle={`Owner one-pager · builds itself from the nightly closes${inPeriod.length ? ` · through ${fmtLong(inPeriod[inPeriod.length - 1].date)}` : ''}`}
         right={
@@ -216,8 +215,7 @@ export function Period() {
             </button>
           </div>
         }
-      />
-      <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         {inPeriod.length === 0 ? (
           <Card className="p-8 text-center">
             <p className="mx-auto max-w-md text-sm text-muted text-pretty">
@@ -375,8 +373,7 @@ export function Period() {
 
           </>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

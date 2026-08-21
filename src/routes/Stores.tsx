@@ -1,7 +1,17 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download, Upload, ClipboardPaste, Pencil, Check, History } from 'lucide-react'
+import {
+  Download,
+  Upload,
+  ClipboardPaste,
+  Pencil,
+  Check,
+  History,
+  ChevronDown,
+  Plus,
+  TriangleAlert,
+} from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { SettingsCard } from '../components/SettingsCard'
 import { useScope, useCurrentNames } from '../lib/scope'
 import { usePersistentState, today } from '../lib/store'
@@ -299,6 +309,7 @@ function TrackedItems() {
   const [rawTracked, setTracked] = usePersistentState<string[]>('tracked:items', [])
   const tracked = Array.isArray(rawTracked) ? rawTracked : []
   const [adding, setAdding] = useState('')
+  const [focused, setFocused] = useState(false)
 
   // Predictive text tied to REAL PMIX items — you can only track something
   // that actually shows up in your product mix, so every tile fills in.
@@ -384,9 +395,16 @@ function TrackedItems() {
                 <input
                   value={adding}
                   onChange={(e) => setAdding(e.target.value)}
+                  onFocus={() => setFocused(true)}
+                  // A blur straight to a suggestion would close the list before
+                  // the click landed, so it waits a beat.
+                  onBlur={() => window.setTimeout(() => setFocused(false), 120)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') add(suggestions.length === 1 ? suggestions[0] : undefined)
-                    if (e.key === 'Escape') setAdding('')
+                    if (e.key === 'Escape') {
+                      setAdding('')
+                      setFocused(false)
+                    }
                   }}
                   placeholder={
                     fromMenu
@@ -404,8 +422,18 @@ function TrackedItems() {
                   Add
                 </button>
               </div>
-              {suggestions.length > 0 && (
-                <div className="absolute left-0 right-16 top-full z-10 mt-1 overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg">
+              {/* Only while you're in the box.
+                  It used to render whenever it had anything to offer — which,
+                  with an empty query, is always — so a LOCKED card sat there
+                  with a dropdown hanging open behind its own footer, clipped
+                  off by the card's overflow-hidden. That reads as the page
+                  being broken, which is roughly what it was.
+
+                  And it opens INLINE rather than floating over the footer: a
+                  settings card has room to grow, and a list that can't leave
+                  the card can't be cut off by it. */}
+              {focused && suggestions.length > 0 && (
+                <div className="mt-1.5 max-h-56 overflow-y-auto rounded-xl border border-black/10 bg-white shadow-sm">
                   {suggestions.map((n) => (
                     <button
                       key={n}
@@ -589,7 +617,9 @@ export function Stores() {
 
   return (
     <>
-      <PageHeader
+      <Page
+        flush
+        className="grid gap-5 lg:grid-cols-[minmax(17rem,22rem)_1fr]"
         title="Stores & Concepts"
         subtitle={`${concepts.length} concept${concepts.length === 1 ? '' : 's'} · ${totalLocs} location${totalLocs === 1 ? '' : 's'} · GM & above`}
         right={
@@ -626,10 +656,27 @@ export function Stores() {
             />
           </div>
         }
-      />
-      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
+      {/*
+        Two panes, not one scroll.
+        ─────────────────────────────────────────────────────────────────────
+        This was a single 768px column about nine cards tall, and the order of
+        it was backwards: three of those cards are titled "· FLOWOOD, MS" and
+        you had to scroll PAST them to reach the list that decides which store
+        Flowood is. Settings for a thing sitting above the thing they belong to.
+
+        So: the store tree on the left is the subject, the selected store's
+        settings on the right are the detail. Picking a store on the left is the
+        same switch as the store menu in the nav, and the right-hand pane says
+        whose settings you're looking at.
+
+        It also stops throwing away half a 1280px screen — the old column left
+        ~500px of empty gutter and made the page twice as tall to pay for it.
+        Stacks back to one column under lg, because this gets opened on a tablet.
+      */}
+
         {showPaste && (
-          <Card className="border-brand/30 bg-white p-4">
+          <Card className="border-brand/30 bg-white p-4 lg:col-span-2">
             <div className="mb-1 text-sm font-bold text-ink">Move a device over — paste its backup</div>
             <p className="mb-2 text-xs text-muted text-pretty">
               On the other device, tap <b>Export backup</b>, open the saved file, select all and copy. Then paste it
@@ -659,22 +706,14 @@ export function Stores() {
             </div>
           </Card>
         )}
-        <Card className="border-brand/20 bg-brand/5 p-4 text-sm text-ink/80">
-          Each location keeps its own prep, inventory, tips, checklists, and numbers. Switch between
-          them anytime from the store menu at the top of the nav. Add as many concepts and locations
-          as you need.
-        </Card>
-
-        <WeeklyTargets />
-        <OrderDays />
-
-        <TrackedItems />
-
+        {/* ── LEFT: the tree. Sticky, because it's the thing you navigate BY;
+              scrolling the settings shouldn't take the store list away. */}
+        <div className="space-y-3 lg:sticky lg:top-4 lg:self-start">
         {concepts.map((c) => {
           const namesOpen = editingNames === c.id
           return (
             <Card key={c.id} className={`overflow-hidden ${namesOpen ? 'ring-1 ring-brand/40' : ''}`}>
-              <div className="flex items-center gap-2 border-b border-black/5 bg-black/[0.02] px-4 py-3">
+              <div className="flex items-center gap-1.5 border-b border-black/5 bg-black/[0.02] px-3 py-2.5">
                 {/* Names are read-only until you unlock them — a stray tap on a
                     store name used to rename the store on blur. */}
                 <input
@@ -682,43 +721,39 @@ export function Stores() {
                   defaultValue={c.name}
                   disabled={!namesOpen}
                   onBlur={(e) => renameChecked(e.target.value, c.name, () => renameConcept(c.id, e.target.value.trim()), 'Concept')}
-                  className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-1 font-display text-lg font-semibold text-ink outline-none hover:enabled:border-black/10 focus:border-brand disabled:cursor-default"
+                  className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-display text-[15px] font-semibold text-ink outline-none hover:enabled:border-black/10 focus:border-brand disabled:cursor-default"
                 />
-                <span className="text-xs text-muted">{c.locations.length} loc.</span>
+                <span className="shrink-0 text-[11px] text-muted">{c.locations.length}</span>
                 <button
                   onClick={() => (namesOpen ? setEditingNames(null) : openNames(c.id))}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${
-                    namesOpen ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
+                  aria-label={namesOpen ? 'Done renaming' : `Rename ${c.name} and its locations`}
+                  title={namesOpen ? 'Done' : 'Rename'}
+                  className={`grid size-7 shrink-0 place-items-center rounded-lg ${
+                    namesOpen ? 'bg-brand text-white' : 'text-muted hover:bg-black/5 hover:text-ink'
                   }`}
                 >
-                  {namesOpen ? <><Check size={12} /> Done</> : <><Pencil size={12} /> Edit names</>}
+                  {namesOpen ? <Check size={13} /> : <Pencil size={12} />}
                 </button>
               </div>
 
               {c.locations.map((l) => {
                 const active = c.id === currentConcept && l.id === currentLocation
-                return (
-                  <div key={l.id} className="flex items-center gap-2 border-b border-black/5 px-4 py-2.5 last:border-0">
-                    <button
-                      onClick={() => setCurrent(c.id, l.id)}
-                      aria-label="Set active"
-                      className={`size-3 shrink-0 rounded-full ${active ? 'bg-brand' : 'bg-black/15 hover:bg-brand/40'}`}
-                    />
-                    <input
-                      key={`${l.id}-${namesOpen}`}
-                      defaultValue={l.name}
-                      disabled={!namesOpen}
-                      onBlur={(e) =>
-                        renameChecked(e.target.value, l.name, () => renameLocation(c.id, l.id, e.target.value.trim()), 'Location')
-                      }
-                      className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-1 text-sm text-ink outline-none hover:enabled:border-black/10 focus:border-brand disabled:cursor-default"
-                    />
-                    {active && (
-                      <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand">
-                        ACTIVE
-                      </span>
-                    )}
-                    {namesOpen && (
+                // Renaming and picking are different jobs, and the row can't be
+                // both a text field and a button. Locked, the WHOLE row switches
+                // stores -- it used to be a 12px dot, which is not a tap target
+                // on a tablet. Unlocked, it's a field and nothing switches.
+                if (namesOpen)
+                  return (
+                    <div key={l.id} className="flex items-center gap-2 border-b border-black/5 px-3 py-2 last:border-0">
+                      <span className={`size-2 shrink-0 rounded-full ${active ? 'bg-brand' : 'bg-black/15'}`} />
+                      <input
+                        key={`${l.id}-${namesOpen}`}
+                        defaultValue={l.name}
+                        onBlur={(e) =>
+                          renameChecked(e.target.value, l.name, () => renameLocation(c.id, l.id, e.target.value.trim()), 'Location')
+                        }
+                        className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1 text-sm text-ink outline-none focus:border-brand"
+                      />
                       <button
                         onClick={async () => {
                           if (c.locations.length <= 1) {
@@ -730,27 +765,53 @@ export function Stores() {
                             logSettingChange('Stores & locations', `removed location ${l.name}`)
                           }
                         }}
-                        aria-label="Remove location"
-                        className="text-muted hover:text-down"
+                        aria-label={`Remove ${l.name}`}
+                        className="shrink-0 text-muted hover:text-down"
                       >
                         ✕
                       </button>
+                    </div>
+                  )
+
+                return (
+                  <button
+                    key={l.id}
+                    onClick={() => setCurrent(c.id, l.id)}
+                    aria-current={active ? 'true' : undefined}
+                    className={`flex w-full items-center gap-2.5 border-b border-black/5 px-3 py-2.5 text-left last:border-0 ${
+                      active ? 'bg-brand/[0.07]' : 'hover:bg-black/[0.03]'
+                    }`}
+                  >
+                    <span
+                      className={`grid size-4 shrink-0 place-items-center rounded-full border-2 ${
+                        active ? 'border-brand' : 'border-black/20'
+                      }`}
+                    >
+                      {active && <span className="size-1.5 rounded-full bg-brand" />}
+                    </span>
+                    <span className={`min-w-0 flex-1 truncate text-sm ${active ? 'font-semibold text-ink' : 'text-ink/80'}`}>
+                      {l.name}
+                    </span>
+                    {active && (
+                      <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand">
+                        ACTIVE
+                      </span>
                     )}
-                  </div>
+                  </button>
                 )
               })}
 
-              <div className="flex gap-2 p-3">
+              <div className="flex gap-1.5 p-2.5">
                 <input
                   value={newLoc[c.id] ?? ''}
                   onChange={(e) => setNewLoc((m) => ({ ...m, [c.id]: e.target.value }))}
                   onKeyDown={(e) => e.key === 'Enter' && gatedAddLocation(c.id)}
                   placeholder="Add a location…"
-                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand"
                 />
                 <button
                   onClick={() => gatedAddLocation(c.id)}
-                  className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white"
+                  className="shrink-0 rounded-lg bg-navy px-3 py-1.5 text-sm font-semibold text-white"
                 >
                   Add
                 </button>
@@ -759,63 +820,97 @@ export function Stores() {
           )
         })}
 
-        {/* Add concept */}
-        <Card className="p-4">
-          <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted">
-            New concept
-          </div>
-          <div className="flex gap-2">
-            <input
-              value={newConcept}
-              onChange={(e) => setNewConcept(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && gatedAddConcept()}
-              placeholder="e.g. second restaurant brand"
-              className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-            />
-            <button
-              onClick={gatedAddConcept}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
-            >
-              Add concept
-            </button>
-          </div>
-        </Card>
+          {/* Adding a brand is rare next to switching stores, so it doesn't get
+              a card of its own any more — it opens out of a single line. */}
+          <details className="group rounded-2xl border border-dashed border-black/15 px-3 py-2.5">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-bold text-muted hover:text-ink">
+              <Plus size={13} className="shrink-0" />
+              New concept
+            </summary>
+            <div className="mt-2.5 flex gap-2">
+              <input
+                value={newConcept}
+                onChange={(e) => setNewConcept(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && gatedAddConcept()}
+                placeholder="e.g. second restaurant brand"
+                className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+              <button
+                onClick={gatedAddConcept}
+                className="shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white"
+              >
+                Add
+              </button>
+            </div>
+          </details>
 
-        <ChangeLog />
-
-        {/* Start fresh — validate the import pipeline from a clean slate. */}
-        <Card className="border-down/25 p-4">
-          <div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-down">Start fresh · {storeName}</div>
-          <p className="mb-3 text-xs text-muted text-pretty">
-            Zero the numbers so you can drop reports and watch each one import. Both actions ask for the
-            GM PIN and a confirm — <b>export a backup first</b> (button up top) so you can roll back.
+          <p className="px-1 text-[11px] leading-snug text-muted text-pretty">
+            Each location keeps its own prep, inventory, tips, checklists and numbers. Picking one
+            here is the same switch as the store menu at the top of the nav.
           </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={clearNumbers}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-down/40 bg-white px-3.5 py-2 text-xs font-bold text-down hover:bg-down/5"
-            >
-              Clear imported numbers
-            </button>
-            <button
-              onClick={fullReset}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-down px-3.5 py-2 text-xs font-bold text-white hover:brightness-95"
-            >
-              Full reset — everything
-            </button>
+        </div>
+
+        {/* ── RIGHT: everything that belongs to the store selected on the left.
+              Named, because "Weekly targets" alone never said whose. */}
+        <div className="min-w-0 space-y-4">
+          <div className="flex items-baseline gap-2 px-1">
+            <h2 className="font-display text-lg font-semibold text-ink">{storeName}</h2>
+            <span className="text-xs text-muted">settings for the selected store</span>
           </div>
-          <ul className="mt-3 space-y-1 text-[11px] text-muted">
-            <li>
-              <b className="text-ink/70">Clear imported numbers</b> — sales, product mix, category mix, invoices, prices,
-              received/usage, import history. Keeps count sheets, guides, roster, recipes, checklists, targets.
-            </li>
-            <li>
-              <b className="text-ink/70">Full reset</b> — wipes this store completely; the count sheet &amp; order guide re-seed
-              empty. Use only to rebuild from scratch.
-            </li>
-          </ul>
-        </Card>
-      </div>
+
+          <WeeklyTargets />
+          <OrderDays />
+          <TrackedItems />
+
+          <ChangeLog />
+
+          {/* Start fresh — validate the import pipeline from a clean slate.
+              Folded away: two buttons that erase a store shouldn't sit open at
+              the bottom of a settings page waiting to be mis-tapped. */}
+          <details className="group overflow-hidden rounded-2xl border border-down/25">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-down">
+              <TriangleAlert size={13} className="shrink-0" />
+              Start fresh · {storeName}
+              <ChevronDown
+                size={14}
+                className="ml-auto transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <div className="border-t border-down/15 p-4">
+              <p className="mb-3 text-xs text-muted text-pretty">
+                Zero the numbers so you can drop reports and watch each one import. Both actions ask
+                for the GM PIN and a confirm — <b>export a backup first</b> (button up top) so you
+                can roll back.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={clearNumbers}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-down/40 bg-white px-3.5 py-2 text-xs font-bold text-down hover:bg-down/5"
+                >
+                  Clear imported numbers
+                </button>
+                <button
+                  onClick={fullReset}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-down px-3.5 py-2 text-xs font-bold text-white hover:brightness-95"
+                >
+                  Full reset — everything
+                </button>
+              </div>
+              <ul className="mt-3 space-y-1 text-[11px] text-muted">
+                <li>
+                  <b className="text-ink/70">Clear imported numbers</b> — sales, product mix,
+                  category mix, invoices, prices, received/usage, import history. Keeps count sheets,
+                  guides, roster, recipes, checklists, targets.
+                </li>
+                <li>
+                  <b className="text-ink/70">Full reset</b> — wipes this store completely; the count
+                  sheet &amp; order guide re-seed empty. Use only to rebuild from scratch.
+                </li>
+              </ul>
+            </div>
+          </details>
+        </div>
+      </Page>
     </>
   )
 }

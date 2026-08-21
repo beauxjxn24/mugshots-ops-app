@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Mail, Check, FileDown } from 'lucide-react'
 import { periodWeek } from '../lib/forecast'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { catMixSplit, type Night, type BreakdownRow } from '../lib/nightly'
@@ -124,8 +124,7 @@ export function Nightly() {
   }, [sorted, lookup, showAll, focusDate])
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Nightly Numbers"
         subtitle={`Period ${pw.period} · Week ${pw.week} · last 7 nights ${money(weekTotal)} net`}
         right={
@@ -141,9 +140,9 @@ export function Nightly() {
             </Link>
           </div>
         }
-      />
-
-      <div className="mx-auto max-w-6xl space-y-2.5 p-3 sm:p-4 lg:p-5">
+        flush
+        className="space-y-2.5"
+      >
         {/* Date selector — which night's reports are on screen */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -368,8 +367,7 @@ export function Nightly() {
             })}
           </Card>
         )}
-      </div>
-    </>
+            </Page>
   )
 }
 

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { confirmDelete } from '../lib/confirm'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { ArrowDownLeft, ArrowUpRight, RotateCcw } from 'lucide-react'
 
@@ -142,12 +142,10 @@ export function PettyCash() {
   }
 
   return (
-    <>
-      <PageHeader
+      <Page
         title="Petty Cash"
         subtitle="Counted three times a day — open · mid · close — each count initialed"
-      />
-      <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         <Card className="overflow-x-auto p-5">
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <span className="text-sm font-bold text-ink">Petty cash count</span>
@@ -272,8 +270,7 @@ export function PettyCash() {
 
         <VarianceStrip counts={counts} />
         <InOutLog />
-      </div>
-    </>
+            </Page>
   )
 }
 

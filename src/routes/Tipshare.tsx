@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Lock, Undo2, ChevronDown, HandCoins } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { requirePin, usePin } from '../lib/pin'
-import { PageHeader, Card } from '../components/ui'
+import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useShift } from '../lib/shift'
 import { entryColumn, entryField } from '../lib/nextfield'
@@ -174,8 +174,7 @@ export function Tipshare() {
   const titleDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
   return (
-    <>
-      <PageHeader
+      <Page
         title={`Tipshare · ${titleDate}`}
         subtitle="Logged & corrected with manager sign-off — pick a past date to review or correct a closed shift"
         right={
@@ -207,8 +206,7 @@ export function Tipshare() {
             />
           </div>
         }
-      />
-      <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6 lg:p-8">
+      >
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
           {/* Left: recipient role cards */}
           <div className="space-y-5">
@@ -363,8 +361,7 @@ export function Tipshare() {
           <p className="py-4 text-center text-xs text-muted">No closed shifts on {viewDate}.</p>
         )}
         {manager && <p className="text-center text-[11px] text-muted">Manager unlocked: {manager}</p>}
-      </div>
-    </>
+            </Page>
   )
 }
 

@@ -154,6 +154,7 @@ export function Drinks() {
   return (
     <>
       <PageHeader
+        width="full"
         title="Signature drinks"
         subtitle={`${total} build${total === 1 ? '' : 's'} — tap any drink for the full card`}
         right={
