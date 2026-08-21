@@ -586,6 +586,8 @@ export function Sidework() {
           done={done}
           onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
           canEdit={isCloser}
+          // So the card can name the rows on THIS sheet a closer already owns.
+          sheet={duties}
         />
 
         <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />

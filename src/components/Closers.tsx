@@ -3,14 +3,15 @@
 // Sits above the cuts because it's decided first and it's a different question:
 // the cuts are "who's going home and in what order", this is "who's staying to
 // shut it down". Both sides on one card, since a manager names them together.
-import { useState } from 'react'
-import { Lock, Pencil, Check, X, Plus } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Lock, Pencil, Check, X, Plus, AlertTriangle } from 'lucide-react'
 import { Card } from './ui'
 import { NamePicker } from './NamePicker'
 import {
   SIDES,
   SIDE_LABEL,
   closerDutyId,
+  closerOwns,
   getCloserDuties,
   setCloserDuties,
   type Side,
@@ -24,6 +25,7 @@ export function Closers({
   done,
   onToggle,
   canEdit,
+  sheet = [],
 }: {
   phase: string
   /** Everyone on the roster — a closer isn't limited to the role tab you're on. */
@@ -33,10 +35,26 @@ export function Closers({
   done: Record<string, boolean>
   onToggle: (id: string) => void
   canEdit: boolean
+  /** The role's own sheet, so overlaps with a closer's list can be named. */
+  sheet?: { task: string; section: string }[]
 }) {
   const [duties, setDuties] = useState(getCloserDuties)
   const [editing, setEditing] = useState<Side | null>(null)
   const [adding, setAdding] = useState('')
+
+  // Rows still on the role's sheet that a closer owns. The clipboard sheet was
+  // written before closers existed in the app, so the servers' Section 3 still
+  // says "break down dining room drink station" -- and that's the BOH closer's.
+  // Two people on one job is how a tool stops getting used, so it's named here
+  // rather than left for someone to notice at midnight.
+  const clashes = useMemo(() => {
+    const out: { side: Side; section: string; task: string }[] = []
+    for (const d of sheet) {
+      const owned = closerOwns(d.task)
+      if (owned) out.push({ side: owned.side, section: d.section, task: d.task })
+    }
+    return out
+  }, [sheet])
 
   const save = (side: Side, tasks: string[]) => {
     setCloserDuties(side, tasks)
@@ -168,6 +186,30 @@ export function Closers({
           )
         })}
       </div>
+
+      {clashes.length > 0 && (
+        <div className="flex items-start gap-2.5 border-t border-black/5 bg-warn/[0.06] px-4 py-3">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0 text-warn" />
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-ink">
+              {clashes.length === 1 ? 'One duty is' : `${clashes.length} duties are`} on this sheet
+              and on a closer’s list
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {clashes.map((c) => (
+                <li key={c.task} className="text-[12px] leading-snug text-muted">
+                  <span className="font-semibold text-ink/70">{c.section}</span> — “{c.task}” is the{' '}
+                  {c.side} closer’s
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-[12px] leading-snug text-muted">
+              Dealt to a cut as well, two people do it. Take it off the duty list below, or leave it
+              unassigned.
+            </p>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }
