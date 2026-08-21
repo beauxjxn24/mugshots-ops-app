@@ -292,7 +292,7 @@ export function Staff() {
                           }
                         }}
                         aria-label={`Remove ${p.name}`}
-                        className="cursor-pointer text-muted opacity-0 transition-opacity hover:text-down group-hover:opacity-100"
+                        className="-my-1 cursor-pointer rounded-md px-1.5 py-1 text-muted transition-opacity hover:text-down can-hover:opacity-0 can-hover:group-hover:opacity-100"
                       >
                         ✕
                       </span>

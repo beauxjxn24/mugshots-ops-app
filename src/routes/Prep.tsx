@@ -604,23 +604,26 @@ export function Prep() {
                 onClick={() => (editing === it.name ? setEditing(null) : startEdit(it))}
                 title="Edit this item — name, pan and portion spec, unit"
                 aria-label={`Edit ${it.name}`}
-                className={`shrink-0 transition-opacity ${
+                className={`-my-1 shrink-0 rounded-md px-1.5 py-1 transition-opacity ${
                   editing === it.name
                     ? 'text-brand-600 opacity-100'
-                    : 'text-muted opacity-0 hover:text-brand-600 group-hover:opacity-100'
+                    : 'text-muted hover:text-brand-600 can-hover:opacity-0 can-hover:group-hover:opacity-100'
                 }`}
               >
-                <Pencil size={11} />
+                <Pencil size={12} />
               </button>
             )}
             {canEdit && (
-            <button
-              onClick={() => park(it.name, true)}
-              title="Park it — off the list and the print, kept in the Parked box below"
-              className="shrink-0 text-muted opacity-0 transition-opacity hover:text-brand-600 group-hover:opacity-100"
-            >
-              park
-            </button>
+              <button
+                onClick={() => park(it.name, true)}
+                title="Park it — off the list and the print, kept in the Parked box below"
+                aria-label={`Park ${it.name}`}
+                // Visible on touch, quiet on a mouse. And a real target: this
+                // was 21×15 of bare text, which is not something a thumb hits.
+                className="-my-1 shrink-0 rounded-md px-2 py-1 text-muted transition-opacity hover:text-brand-600 can-hover:opacity-0 can-hover:group-hover:opacity-100"
+              >
+                park
+              </button>
             )}
             {editingPars && (
               <button
@@ -628,7 +631,7 @@ export function Prep() {
                   if (await confirmDelete(`Remove ${it.name} from the prep list?`, 'Gone for good — Park keeps it instead.'))
                     setItems((is) => is.filter((x) => x.name !== it.name))
                 }}
-                className="shrink-0 text-down opacity-0 transition-opacity group-hover:opacity-100"
+                className="-my-1 shrink-0 rounded-md px-2 py-1 text-down transition-opacity can-hover:opacity-0 can-hover:group-hover:opacity-100"
               >
                 remove
               </button>

@@ -1,6 +1,26 @@
 @import 'tailwindcss';
 
 /* ============================================================
+   can-hover: — only where hovering is a thing that happens.
+   ------------------------------------------------------------
+   A control written `opacity-0 group-hover:opacity-100` reveals itself when
+   the pointer arrives. On a touchscreen the pointer never arrives, so the
+   control is invisible — present and tappable and worth nothing, because you
+   can't tap what you can't see. That's how "park" went missing on the tablet:
+   rendered at opacity 0 on every prep row, waiting for a hover an iPad is
+   never going to send.
+
+   `pointer: fine` is in the test on purpose. `hover: hover` alone is true on
+   some touch devices that fake a sticky hover on first tap, which turns one
+   tap into two and still hides the control until you've already tapped near
+   where it is.
+
+   Write these as `can-hover:opacity-0 can-hover:group-hover:opacity-100` —
+   touch keeps them visible, a mouse still gets the quiet row.
+   ============================================================ */
+@custom-variant can-hover (@media (hover: hover) and (pointer: fine));
+
+/* ============================================================
    Geist — Vercel's typeface (self-hosted, variable, offline-safe).
    Sans for everything, Mono for the numbers → the modern "command
    deck" tech look. One variable file per family covers all weights.
