@@ -364,21 +364,40 @@ export function Specs() {
           </button>
         </div>
 
-        {/* Jump bar. The whole complaint about this page was scrolling without
-            direction; this is the direction. Only earns its space when there is
-            more than one section to jump between. */}
-        {sections.length > 1 && (
+        {/* The go-to bar. Sticky, so it's there wherever you've scrolled to.
+            ─────────────────────────────────────────────────────────────────
+            It used to be built from the SECTIONS ON SCREEN and hidden unless
+            there was more than one. Pick a category and there's exactly one
+            section, so the entire bar vanished — a whole row of navigation
+            disappearing at the moment you most want to move sideways, which is
+            what "you can't get out of that section" is describing.
+
+            It now lists every category the pool holds, in both states. On
+            Everything it scrolls to the section; with a category picked it
+            switches to that category. Either way the answer to "take me to
+            Prep" is the same tap in the same place. */}
+        {!viewingOldies && !viewingOG && FOOD_GROUPS.some((g) => (counts.get(g) ?? 0) > 0) && (
           <div className="sticky top-0 z-20 -mx-4 mb-4 flex gap-1.5 overflow-x-auto border-b border-white/10 bg-cream/85 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
             <span className="shrink-0 self-center pr-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-              Jump
+              Go to
             </span>
-            {sections.map(({ group: g, items }) => (
+            {group !== 'All' && (
+              <button
+                onClick={() => setGroup('All')}
+                className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-brand-600 hover:bg-brand/10"
+              >
+                All
+              </button>
+            )}
+            {FOOD_GROUPS.filter((g) => (counts.get(g) ?? 0) > 0).map((g) => (
               <button
                 key={g}
-                onClick={() => jumpTo(g)}
-                className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-muted hover:bg-brand/10 hover:text-brand-600"
+                onClick={() => (group === 'All' ? jumpTo(g) : setGroup(g))}
+                className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold hover:bg-brand/10 hover:text-brand-600 ${
+                  group === g ? 'bg-brand/10 text-brand-600' : 'text-muted'
+                }`}
               >
-                {shortGroup(g)} <span className="text-muted/50">{items.length}</span>
+                {shortGroup(g)} <span className="text-muted/50">{counts.get(g)}</span>
               </button>
             ))}
           </div>
