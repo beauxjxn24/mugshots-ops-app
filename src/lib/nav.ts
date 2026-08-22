@@ -112,7 +112,11 @@ export const NAV: NavSection[] = [
       { to: '/mix', label: 'Product Mix', icon: PieChart, color: '#FB923C', anim: PieSpinIcon },
       { to: '/lto', label: 'LTO', icon: Flame, color: '#F87171', anim: FlameIcon },
       { to: '/specs', label: 'Specs & Recipes', icon: BookOpen, color: '#E4B84C', anim: BookIcon, staff: true },
-      { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: MartiniIcon },
+      // staff: a bartender is hourly. Locking the drink builds to managers made
+      // the one person who builds these all night the one person who couldn't
+      // look one up. Same reasoning as Specs & Recipes above — it's reference,
+      // not a control.
+      { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: MartiniIcon, staff: true },
     ],
   },
   {

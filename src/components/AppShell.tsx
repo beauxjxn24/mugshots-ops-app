@@ -321,7 +321,9 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
         className="mb-2 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2 text-[12px] text-white/45 hover:border-signal/40 hover:text-white/70"
       >
         <Search size={13} className="shrink-0" />
-        Jump to…
+        {/* It finds dishes now, not just screens, and nobody taps a box to go
+            looking for a burger build if the box says "jump to". */}
+        Search dishes & screens
         <kbd className="ml-auto rounded border border-white/15 px-1 py-px font-mono text-[9px]">⌘K</kbd>
       </button>
 

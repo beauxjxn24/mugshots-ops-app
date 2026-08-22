@@ -48,14 +48,15 @@ function matchesDrink(item: string, drinkNames: string[]): boolean {
  * SmashBurger LTO and they are the house cocktail list now, so the section is
  * just Cocktails.
  *
- * `also` picks up cards filed elsewhere: the root beer float is a dessert build
- * on the food side, which is right, but a bartender making one comes looking
- * here and the section is called floats.
+ * `also` picks up cards filed under a food group that belong on the bar menu.
+ * The floats used to be here that way AND on the food side at once, which is
+ * why the same card appeared twice under two headings; isDrink() now counts a
+ * float as a drink, so they arrive here on their own and live in one place.
  */
 const SECTIONS: { title: string; groups: string[]; also?: string[] }[] = [
   { title: 'Cocktails', groups: ['Pairings'] },
   { title: 'Frozen', groups: ['Frozen Drinks'] },
-  { title: 'Shakes & floats', groups: ['Shakes'], also: ['10 oz Root Beer Float', '22 oz Root Beer Float'] },
+  { title: 'Shakes & floats', groups: ['Shakes', 'Dessert Builds'] },
   { title: 'Specials', groups: ['Summer LTO'] },
 ]
 
@@ -98,11 +99,15 @@ export function Drinks() {
   )
   const total = shown.reduce((n, s) => n + s.items.length, 0)
 
-  // Deep link from Bar prep: /drinks?spec=<name> opens that card and scrolls
-  // to it. Clears the section filter first, or a card outside the chosen
-  // section stays hidden.
+  // Deep link to a card: opens it and scrolls to it. Clears the section filter
+  // first, or a card outside the chosen section stays hidden.
+  //
+  // `open` is the spelling the rest of the app uses — Specs takes it too — so a
+  // link to a card reads the same whichever page it lands on. `spec` still
+  // works: Bar prep has linked that way since before there was a second name
+  // for it, and those links are out on devices.
   const [params] = useSearchParams()
-  const want = params.get('spec')
+  const want = params.get('open') ?? params.get('spec')
   const [open, setOpen] = useState<string | undefined>(undefined)
   useEffect(() => {
     if (!want) return
