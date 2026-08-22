@@ -79,10 +79,16 @@ export function Specs() {
         ? FOOD_SPECS.filter((s) => archivedSet.has(s.name) && !s.og)
         : FOOD_SPECS.filter((s) => !archivedSet.has(s.name))
     return base.filter((s) => {
-      // The board is the line's plating reference, so prep cards are out: a
-      // shelf life and a yield aren't a build, and they'd print as cards with
-      // one ingredient on them.
-      if (board && !s.g.endsWith('Builds')) return false
+      // The board is the line's plating reference, so a card only belongs on it
+      // if it HAS a build sheet — the photographed page off the study guide.
+      //
+      // This used to test `s.g.endsWith('Builds')`, i.e. whether the group's
+      // NAME ended in the word Builds, which is not the same question and got
+      // it wrong both ways: it dropped the two Mugshots milkshakes, three
+      // Summer LTO drinks, and Chili / Pow Pow Shrimp / Shrooms — all of which
+      // have a photographed sheet — while a group could sail through on its
+      // name alone.
+      if (board && !buildForSpec(s.name)) return false
       if (!viewingOldies && !viewingOG && group !== 'All' && s.g !== group) return false
       if (!query) return true
       if (s.name.toLowerCase().includes(query)) return true
@@ -93,6 +99,26 @@ export function Specs() {
       return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
   }, [q, group, viewingOldies, viewingOG, archivedSet, board])
+
+  /**
+   * What the Board is holding back, counted rather than implied.
+   *
+   * Board hides every card with no build sheet — 51 prep recipes among them —
+   * and said nothing about it. The view is remembered per device, so one tap on
+   * Board and the prep recipes were gone on that tablet from then on, with the
+   * subtitle still counting them and the only explanation sitting in a hover
+   * tooltip, which a tablet cannot show. That reads as losing your data.
+   */
+  const offBoard = useMemo(() => {
+    if (!board || viewingOldies || viewingOG) return { prep: 0, other: 0 }
+    const off = FOOD_SPECS.filter((s) => !archivedSet.has(s.name) && !buildForSpec(s.name))
+    // Counted apart, because they aren't all prep and saying they are is how
+    // you get someone hunting the Prep section for a card that isn't in it.
+    return {
+      prep: off.filter((s) => s.g === 'Prep').length,
+      other: off.filter((s) => s.g !== 'Prep').length,
+    }
+  }, [board, viewingOldies, viewingOG, archivedSet])
 
   /**
    * The results, cut into their categories.
@@ -186,7 +212,10 @@ export function Specs() {
             ? `${OG_SPECS.length} OG builds — off the menu, still made on request`
             : viewingOldies
             ? `${archivedSet.size - OG_SPECS.length} retired — off the menu and not coming back`
-            : `${FOOD_SPECS.length - archivedSet.size} active builds & prep cards`
+            : board
+              ? // Don't say "& prep cards" on a view that shows none of them.
+                `${filtered.length} line builds — the cards with a plating photo`
+              : `${FOOD_SPECS.length - archivedSet.size} active builds & prep cards`
         }
         right={
           <div className="flex w-full items-center gap-2">
@@ -207,7 +236,11 @@ export function Specs() {
                   key={id}
                   onClick={() => setView(id)}
                   aria-pressed={view === id}
-                  title={id === 'board' ? 'Printable line board — builds only' : 'Full cards with prep and method'}
+                  title={
+                    id === 'board'
+                      ? 'Printable line board — line builds only, no prep recipes'
+                      : 'Everything: line builds and prep recipes, with method and shelf life'
+                  }
                   className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors ${
                     view === id ? 'bg-brand text-white' : 'text-muted hover:text-ink'
                   }`}
@@ -252,21 +285,36 @@ export function Specs() {
           </button>
           {FOOD_GROUPS.map((g) => {
             const n = counts.get(g) ?? 0
+            // A category with nothing on the BOARD still has cards — it just
+            // has no platings. Tapping it should take you to them, not sit
+            // there greyed at zero, which is the dead end that had the prep
+            // recipes looking deleted.
+            const onlyOnCards = board && n === 0
             return (
               <button
                 key={g}
-                onClick={() => setGroup(g)}
-                disabled={n === 0 && group !== g}
+                onClick={() => {
+                  if (onlyOnCards) setView('cards')
+                  setGroup(g)
+                }}
+                title={onlyOnCards ? `${g} has no platings — opens on Cards` : undefined}
+                disabled={n === 0 && group !== g && !onlyOnCards}
                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                   group === g
                     ? 'border-brand bg-brand text-white'
-                    : n === 0
-                      ? 'border-black/5 bg-white text-muted/40'
-                      : 'border-black/10 bg-white text-muted hover:border-brand/40'
+                    : onlyOnCards
+                      ? 'border-dashed border-black/20 bg-white text-muted hover:border-brand/40'
+                      : n === 0
+                        ? 'border-black/5 bg-white text-muted/40'
+                        : 'border-black/10 bg-white text-muted hover:border-brand/40'
                 }`}
               >
                 {shortGroup(g)}
-                <span className={group === g ? 'ml-1.5 text-white/60' : 'ml-1.5 text-muted/60'}>{n}</span>
+                <span className={group === g ? 'ml-1.5 text-white/60' : 'ml-1.5 text-muted/60'}>
+                  {/* "0" on the board is a lie about the data — the cards exist,
+                      this view just doesn't show platings for them. */}
+                  {onlyOnCards ? 'on Cards' : n}
+                </span>
               </button>
             )
           })}
@@ -314,6 +362,26 @@ export function Specs() {
                 {shortGroup(g)} <span className="text-muted/50">{items.length}</span>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Board holds cards back. It says so, and hands you the way out —
+            nothing is hidden on this page without a line naming it. */}
+        {offBoard.prep + offBoard.other > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-black/10 bg-black/[0.02] px-3.5 py-2.5 text-sm">
+            <span className="text-ink/80">
+              <b className="font-semibold">
+                {offBoard.prep} prep recipes
+                {offBoard.other > 0 && ` and ${offBoard.other} other cards`}
+              </b>{' '}
+              aren’t on the board — a recipe and a shelf life isn’t a plating. They’re all on Cards.
+            </span>
+            <button
+              onClick={() => setView('cards')}
+              className="rounded-lg bg-navy px-2.5 py-1 text-xs font-bold text-white"
+            >
+              Show them
+            </button>
           </div>
         )}
 
