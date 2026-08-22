@@ -15,21 +15,45 @@
 //   with the reason, so nobody reads a silent line as a finished one.
 import { useState } from 'react'
 import { Minus, Plus, TriangleAlert } from 'lucide-react'
-import { scaleAmount, BATCHES } from '../lib/scale'
+import { scaleAmount, worthScaling, BATCHES } from '../lib/scale'
 
 export function BatchScaler({
+  group,
   ing,
   yields,
   className = '',
 }: {
+  /** The card's category — batches are a prep idea, a build is one plate. */
+  group: string
   ing: [string, string][]
   yields?: string
   className?: string
 }) {
   const [by, setBy] = useState(1)
-  const rows = ing.map(([n, qty]) => ({ n, ...scaleAmount(qty, by) }))
+  const show = worthScaling({ g: group, ing })
+  const rows = ing.map(([n, qty]) => ({ n, ...scaleAmount(qty, show ? by : 1) }))
   const flagged = rows.filter((r) => !r.ok || r.note)
   const batch = yields ? scaleAmount(yields, by) : null
+
+  // Nothing here to multiply — a plate build, or a card that reads "as needed"
+  // end to end. Just the list, with no control offering to do maths that isn't
+  // there to do.
+  if (!show)
+    return (
+      <div className={className}>
+        <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+          Ingredients
+        </div>
+        <ul className="space-y-1">
+          {ing.map(([n, qty], i) => (
+            <li key={i} className="flex justify-between gap-3 text-sm">
+              <span className="min-w-0 text-ink">{n}</span>
+              <span className="shrink-0 font-mono text-xs text-muted">{qty}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
 
   return (
     <div className={className}>

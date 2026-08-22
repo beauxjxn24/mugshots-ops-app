@@ -65,7 +65,7 @@ export function SpecPeek({ name, onClose }: { name: string | null; onClose: () =
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
           {spec.ing.length > 0 && (
-            <BatchScaler ing={spec.ing} yields={spec.yields} className="mb-4" />
+            <BatchScaler group={spec.g} ing={spec.ing} yields={spec.yields} className="mb-4" />
           )}
           {spec.steps.length > 0 && (
             <>

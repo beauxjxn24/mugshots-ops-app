@@ -597,7 +597,7 @@ function SpecCard({
               <LineBuildCard build={build} compact />
             </div>
           ) : spec.ing.length > 0 ? (
-            <BatchScaler ing={spec.ing} yields={spec.yields} className="mb-3" />
+            <BatchScaler group={spec.g} ing={spec.ing} yields={spec.yields} className="mb-3" />
           ) : null}
           {spec.steps.length > 0 && (
             <>

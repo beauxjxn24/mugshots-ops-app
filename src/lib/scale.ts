@@ -190,3 +190,32 @@ function plural(rest: string, q: Frac): string {
 
 /** The batch sizes worth one tap. Anything else is typed. */
 export const BATCHES = [1, 2, 3, 4] as const
+
+/**
+ * Does this card deserve a batch multiplier at all?
+ *
+ * A control that does nothing, or that answers a question nobody asked, is
+ * worse than no control — it makes people wonder what they got wrong. Two
+ * tests, and a card has to pass both.
+ *
+ * IT HAS TO BE A BATCH. Prep is made in batches; a build is one plate. The
+ * Middleberger's card says "Mayo & Mustard — 1 Tbsp, bottom bun", and doubling
+ * that is not a thing anybody does, it's just a way to mislead someone into
+ * putting two tablespoons on one bun.
+ *
+ * IT HAS TO HAVE SOMETHING TO MULTIPLY. Half the veg cards read "as needed" or
+ * "A/N" end to end — Celery, Sliced Tomatoes, Bell Peppers, Diced Onions. You
+ * cut what you need. Pressing 2× on those changed nothing on screen, which
+ * looks like the button is broken. A bare count with no measure ("Monster
+ * Cookie — 1") is the same story: doubling 1 to 2 tells nobody anything.
+ */
+export function worthScaling(spec: { g: string; ing: [string, string][] }): boolean {
+  if (spec.g !== 'Prep') return false
+  return spec.ing.some(([, amount]) => {
+    if (!scaleAmount(amount, 2).ok) return false
+    const lead = readLead(amount.trim().replace(/^~\s*/, ''))
+    // A measure or a countable noun after the number — "2 cups", "3 heads",
+    // "1 case". Nothing after it is a bare count.
+    return !!lead && /[A-Za-z]/.test(amount.trim().replace(/^~\s*/, '').slice(lead.len))
+  })
+}

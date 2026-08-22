@@ -90,7 +90,7 @@ function SpecCard({
         {open && (
           <div className="border-t border-black/5 p-4 pt-3">
             {spec.ing.length > 0 && (
-              <BatchScaler ing={spec.ing} yields={spec.yields} className="mb-3" />
+              <BatchScaler group={spec.g} ing={spec.ing} yields={spec.yields} className="mb-3" />
             )}
             {spec.steps.length > 0 && (
               <>
