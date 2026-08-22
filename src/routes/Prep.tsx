@@ -11,6 +11,7 @@ import PREP_SEED from '../data/prep-items.json'
 import { prepSpecName } from '../lib/specs'
 import { SpecPeek } from '../components/SpecPeek'
 import { PrepChecklist, type ChecklistItem } from '../components/PrepChecklist'
+import { RecipeLookup } from '../components/RecipeLookup'
 import { prepDoneKey, type PrepCheck } from '../lib/prepdone'
 import { driftFrom, hasDrift, prepSendKey, sendPrep, unsendPrep, type PrepSend, type SentItem } from '../lib/prepsend'
 import { shiftPerson } from '../lib/daycode'
@@ -776,10 +777,16 @@ export function Prep() {
               </span>
               <div className="font-display text-lg font-semibold text-ink">Prep list isn't out yet</div>
               <p className="mt-1 text-sm text-muted">
-                A manager is still counting. It'll show up here the moment it's sent — nothing to do
-                until then.
+                A manager is still counting. It'll show up here the moment it's sent.
               </p>
             </Card>
+            {/* Not a dead end.
+                This screen used to finish on "nothing to do until then", which
+                is true about the LIST and wrong about the night: you run out of
+                Pow Pow sauce at eight o'clock and you need that recipe now,
+                whether or not a list was ever sent. The recipes were one tab
+                over the whole time and nothing here said so. */}
+            <RecipeLookup className="mt-3" />
             </div>
           </div>
         </>
@@ -802,6 +809,9 @@ export function Prep() {
         <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-3xl">
             <PrepChecklist items={checklist} sentAt={sent.at} />
+            {/* Also here when a list IS out — what you've run out of is rarely
+                what's on tonight's sheet. */}
+            <RecipeLookup className="mt-3" />
           </div>
         </div>
       </>
