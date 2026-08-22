@@ -19,6 +19,7 @@ export function NamePicker({
   onChange,
   placeholder = 'Add a name…',
   taken = [],
+  allowNew = false,
 }: {
   value: string
   options: string[]
@@ -26,6 +27,14 @@ export function NamePicker({
   placeholder?: string
   /** Already on another cut — still offered, but marked, so nobody is put on two. */
   taken?: string[]
+  /**
+   * Offer whatever was typed as a name in its own right.
+   *
+   * For the places where the person genuinely might not be on the roster yet —
+   * a trainee on their first day is the obvious one, and a picker that can only
+   * offer people who are already staff is no use on exactly that day.
+   */
+  allowNew?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -160,9 +169,11 @@ export function NamePicker({
             } else if (e.key === 'ArrowUp') {
               e.preventDefault()
               setSel((i) => Math.max(i - 1, 0))
-            } else if (e.key === 'Enter' && hits[sel]) {
+            } else if (e.key === 'Enter' && (hits[sel] || (allowNew && q.trim()))) {
               e.preventDefault()
-              pick(hits[sel])
+              // A typed name only wins when nothing matched — otherwise Enter
+              // on a highlighted person would quietly create a duplicate of them.
+              pick(hits[sel] ?? q.trim())
             } else if (e.key === 'Escape') {
               setOpen(false)
               setQ('')
@@ -190,7 +201,18 @@ export function NamePicker({
             }}
             className="z-50 overflow-y-auto overscroll-contain rounded-xl border border-black/10 bg-white shadow-lg"
           >
-            {hits.length === 0 ? (
+            {allowNew && q.trim() && !hits.some((n) => n.toLowerCase() === q.trim().toLowerCase()) && (
+              <button
+                onClick={() => pick(q.trim())}
+                className="flex w-full items-center gap-2 border-b border-black/5 px-3 py-2 text-left text-sm"
+              >
+                <span className="min-w-0 flex-1 truncate font-semibold text-ink">
+                  Use “{q.trim()}”
+                </span>
+                <span className="shrink-0 text-[10px] font-bold uppercase text-muted">new</span>
+              </button>
+            )}
+            {hits.length === 0 && !allowNew ? (
               <p className="px-3 py-2.5 text-xs text-muted">
                 {options.length === 0
                   ? // An empty roster is a different problem from a bad search,
