@@ -24,6 +24,8 @@ import { getPmixDays } from '../lib/pmix'
 import { ACTIVE_SPECS } from '../lib/specs'
 import { clearImportedNumbers, fullResetStore } from '../lib/reset'
 import { LOCK_CHOICES, LOCK_LABEL, idleLockMinutes, setIdleLockMinutes } from '../lib/daycode'
+import { useArchived } from '../lib/archived'
+import { SPECS } from '../lib/specs'
 
 /**
  * When the code screen comes back.
@@ -369,9 +371,17 @@ function TrackedItems() {
   // honest fallback: pick the dish now, and its tile fills in the first time a
   // PMIX naming it lands. Prep cards are left out; you don't track a bag of
   // portioned shrimp on the dashboard, you track what sells.
+  // Parked cards are out too. ACTIVE_SPECS only drops what the SHIPPED data
+  // marks off the menu; it knows nothing about what THIS store has parked, so
+  // an LTO that finished kept turning up here to be picked no matter how many
+  // times it was parked in Specs & Recipes. Park it once, it stops circulating.
+  const { archivedSet } = useArchived()
   const menuNames = useMemo(
-    () => ACTIVE_SPECS.filter((s) => s.g !== 'Prep').map((s) => s.name).sort((a, b) => a.localeCompare(b)),
-    [],
+    () =>
+      ACTIVE_SPECS.filter((s) => s.g !== 'Prep' && !archivedSet.has(s.name))
+        .map((s) => s.name)
+        .sort((a, b) => a.localeCompare(b)),
+    [archivedSet],
   )
   const pool = pmixNames.length ? pmixNames : menuNames
   const fromMenu = pmixNames.length === 0
@@ -416,10 +426,20 @@ function TrackedItems() {
                   {unlocked ? 'Add the items you watch.' : 'Nothing tracked yet — tap Edit to add the items you watch.'}
                 </span>
               )}
-              {draft.map((name) => (
+              {draft.map((name) => {
+                // Something tracked before it came off the menu — an ended LTO,
+                // or a card parked since. It keeps a tile on the dashboard that
+                // nothing will ever fill, so it says so rather than sitting
+                // there looking live.
+                const spec = SPECS.find((s) => s.name.toLowerCase() === name.toLowerCase())
+                const gone = !!spec && (!!spec.off || archivedSet.has(spec.name))
+                return (
                 <span
                   key={name}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-ink"
+                  title={gone ? `${name} is off the menu — its tile won't fill` : undefined}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    gone ? 'bg-warn/15 text-ink/70 line-through decoration-warn/60' : 'bg-brand/10 text-ink'
+                  }`}
                 >
                   {name}
                   <button
@@ -433,7 +453,8 @@ function TrackedItems() {
                     ✕
                   </button>
                 </span>
-              ))}
+                )
+              })}
             </div>
             <div className="relative">
               <div className="flex gap-2">
