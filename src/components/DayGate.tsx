@@ -36,28 +36,44 @@ export function DayGate({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(() => !unlockedToday())
 
   /**
-   * Keep the unlock alive while someone is actually using the app, and close it
-   * when they aren't.
+   * Keep the unlock alive while someone is there, and end it when they aren't.
    *
-   * Two halves, and both are needed. Real interaction stamps "still here", so a
-   * working shift is never interrupted. Coming back to the tab re-checks the
-   * clock, which is the moment the owner hit — typing the address, landing on
-   * the admin dashboard, never asked for anything.
+   * "There" is the word that was wrong the first time. This counted taps, so a
+   * quarter of an hour spent reading a recipe or working a count off the screen
+   * looked identical to an abandoned tablet, and threw people out mid-shift.
    */
   useEffect(() => {
     if (open) return
     const touch = () => touchUnlock()
-    const events = ['pointerdown', 'keydown', 'focus'] as const
-    for (const e of events) window.addEventListener(e, touch)
+    // Scrolling and touching are being present too, not just tapping a control.
+    const events = [
+      'pointerdown',
+      'pointermove',
+      'touchstart',
+      'keydown',
+      'wheel',
+      'scroll',
+      'focus',
+    ] as const
+    for (const e of events) window.addEventListener(e, touch, { passive: true })
 
-    // The check that actually locks: on return to the tab, and on a slow tick
-    // for a tab that's simply been left open and staring at someone.
-    const check = () => {
+    /**
+     * The tick does two jobs, and the first one is the fix.
+     *
+     * A tab that is visible AND focused has somebody in front of it, so it
+     * stamps presence — which means the idle clock only ever runs while you are
+     * AWAY: screen asleep, tab in the background, app behind something else.
+     * Then it checks, which still locks a device you walked away from and still
+     * meets you at the door when you come back to the address later. That was
+     * the actual complaint; the mid-shift lockouts never were.
+     */
+    const tick = () => {
+      if (document.visibilityState === 'visible' && document.hasFocus()) touchUnlock()
       if (!unlockedToday()) setOpen(true)
     }
-    const onVisible = () => (document.visibilityState === 'visible' ? check() : undefined)
+    const onVisible = () => (document.visibilityState === 'visible' ? tick() : undefined)
     document.addEventListener('visibilitychange', onVisible)
-    const id = setInterval(check, 30_000)
+    const id = setInterval(tick, 30_000)
 
     return () => {
       for (const e of events) window.removeEventListener(e, touch)
@@ -201,17 +217,26 @@ export function DayGate({ children }: { children: React.ReactNode }) {
               Tap your name — it goes on the work you check off today.
             </p>
 
-            {roster.length > 8 && (
-              <div className="relative mt-5">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Find your name…"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.06] py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-brand"
-                />
-              </div>
-            )}
+            {/* Always here now, not just past eight names.
+                This box IS the way in when the roster is empty, and an empty
+                roster is the default on a device nobody has imported staff to.
+                Without it, typing the right code led to a screen whose only
+                button was Back — code, no names, Back, code, forever. Someone
+                mid-shift could not get into the app at all. */}
+            <div className="relative mt-5">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return
+                  const typed = q.trim()
+                  if (typed) start(shown[0] ?? typed)
+                }}
+                placeholder={roster.length ? 'Find or type your name…' : 'Type your name…'}
+                className="w-full rounded-xl border border-white/10 bg-white/[0.06] py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-brand"
+              />
+            </div>
 
             <div className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pb-1">
               {shown.map((n) => (
@@ -230,13 +255,30 @@ export function DayGate({ children }: { children: React.ReactNode }) {
                   <span className="truncate text-[15px] font-semibold text-white">{n}</span>
                 </button>
               ))}
-              {roster.length === 0 && (
+              {/* Whatever you typed is offered as a name in its own right, so
+                  there is always something to press. The name only stamps the
+                  work you tick off — it was never an identity check, and it
+                  must not be the thing that keeps you out of the app. */}
+              {q.trim() && !shown.some((n) => n.toLowerCase() === q.trim().toLowerCase()) && (
+                <button
+                  onClick={() => start(q.trim())}
+                  className="flex w-full items-center gap-3 rounded-xl border border-dashed border-white/20 px-3.5 py-3 text-left transition-colors active:bg-brand/30"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-[11px] font-extrabold uppercase text-white">
+                    {q.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('')}
+                  </span>
+                  <span className="truncate text-[15px] font-semibold text-white">
+                    Start as “{q.trim()}”
+                  </span>
+                </button>
+              )}
+              {roster.length === 0 && !q.trim() && (
                 <p className="rounded-xl bg-white/[0.06] px-4 py-6 text-center text-sm text-white/50">
-                  No one on the roster yet — a manager can drop the Toast employee export on the
-                  Imports screen.
+                  No roster on this device yet — type your name above to start. A manager can drop
+                  the Toast employee export on the Imports screen to fill it in.
                 </p>
               )}
-              {roster.length > 0 && shown.length === 0 && (
+              {roster.length > 0 && shown.length === 0 && !q.trim() && (
                 <p className="px-4 py-6 text-center text-sm text-white/45">No one matches "{q}".</p>
               )}
             </div>

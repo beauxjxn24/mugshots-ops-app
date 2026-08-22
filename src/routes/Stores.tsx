@@ -23,6 +23,51 @@ import { vendors } from '../lib/ordering'
 import { getPmixDays } from '../lib/pmix'
 import { ACTIVE_SPECS } from '../lib/specs'
 import { clearImportedNumbers, fullResetStore } from '../lib/reset'
+import { LOCK_CHOICES, LOCK_LABEL, idleLockMinutes, setIdleLockMinutes } from '../lib/daycode'
+
+/**
+ * When the code screen comes back.
+ *
+ * A number I picked, not a policy, and it was wrong: fifteen minutes was short
+ * enough to interrupt a shift. It's a call about your building — how long a
+ * tablet sits unwatched on the pass, whether the office laptop is somewhere a
+ * guest could reach — so it belongs to whoever runs the store, not to me.
+ *
+ * The clock only runs while the screen is asleep or the app is in the
+ * background, so this is "how long can I be away", not "how long can I go
+ * without tapping".
+ */
+function ScreenLock() {
+  const { location } = useCurrentNames()
+  return (
+    <SettingsCard
+      area="Screen lock"
+      title={`Screen lock · ${location}`}
+      hint="How long the app can sit unwatched before it asks for the day code again. Time only counts while the screen is off or the app is behind something else — reading a page never locks it."
+      value={idleLockMinutes()}
+      onSave={(m) => setIdleLockMinutes(m)}
+      summarize={(d, s) => (d === s ? undefined : `${LOCK_LABEL[s]} → ${LOCK_LABEL[d]}`)}
+    >
+      {(draft, setDraft) => (
+        <div className="flex flex-wrap gap-2">
+          {LOCK_CHOICES.map((m) => (
+            <button
+              key={m}
+              onClick={() => setDraft(m)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                draft === m
+                  ? 'border-brand bg-brand text-white'
+                  : 'border-black/10 bg-white text-muted hover:border-brand/40'
+              }`}
+            >
+              {LOCK_LABEL[m]}
+            </button>
+          ))}
+        </div>
+      )}
+    </SettingsCard>
+  )
+}
 
 /**
  * Weekly targets — Admin-set per store (handoff spec). Labor ≤ % flags the
@@ -859,6 +904,7 @@ export function Stores() {
           </div>
 
           <WeeklyTargets />
+          <ScreenLock />
           <OrderDays />
           <TrackedItems />
 

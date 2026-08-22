@@ -47,7 +47,7 @@ const PERSON_KEY = '__shiftPerson'
 const SEEN_KEY = '__lastSeen'
 
 /**
- * How long the app stays open with nobody touching it.
+ * How long the app stays open once you've stopped being there.
  *
  * It used to hold the unlock for the whole business day, in localStorage — so
  * once anyone typed the code, that browser was open until four in the morning.
@@ -55,17 +55,50 @@ const SEEN_KEY = '__lastSeen'
  * the machine didn't end it. Typing the address again just walked straight in,
  * which is what the owner hit: no login, sitting on the admin dashboard.
  *
- * Long enough that a shift doesn't get nagged, short enough that a tablet left
- * on the pass, or a laptop the owner walks away from, closes itself.
+ * The first fix for that locked after fifteen minutes with no TAPS, which is a
+ * different thing from fifteen minutes with nobody there. Reading a recipe,
+ * working a count off the screen, following a prep list with your hands full —
+ * all of that is being present, and none of it is a tap. So it threw people out
+ * mid-shift.
+ *
+ * Now the clock only runs while you're AWAY: screen off, tab in the background,
+ * app behind something else. A screen you're actually looking at never locks.
+ * That's also the case the owner originally reported — coming back to the
+ * address later and walking straight in — rather than the case it was
+ * punishing.
  */
-export const IDLE_LOCK_MINUTES = 15
+export const LOCK_CHOICES = [15, 60, 240, 0] as const
+export const LOCK_LABEL: Record<number, string> = {
+  15: '15 minutes',
+  60: '1 hour',
+  240: '4 hours',
+  0: 'Only at 4am',
+}
+const DEFAULT_LOCK = 60
+
+const lockKey = (): string => {
+  const s = useScope.getState()
+  return `${s.currentConcept}|${s.currentLocation}::security:idleLock`
+}
+/** Minutes away before the code screen comes back. 0 = only the 4am rollover. */
+export function idleLockMinutes(): number {
+  const n = load<number>(lockKey(), DEFAULT_LOCK)
+  return typeof n === 'number' && (LOCK_CHOICES as readonly number[]).includes(n) ? n : DEFAULT_LOCK
+}
+export function setIdleLockMinutes(n: number): void {
+  save(lockKey(), n)
+}
 
 /** Has this device been let in, and is that still current? */
 export function unlockedToday(): boolean {
   if (load<string | null>(UNLOCK_KEY, null) !== businessDay()) return false
+  const mins = idleLockMinutes()
+  // 0 = the business day is the only thing that ends it, and the line above has
+  // already answered that.
+  if (mins === 0) return true
   const seen = load<number | null>(SEEN_KEY, null)
   if (typeof seen !== 'number') return false
-  return Date.now() - seen < IDLE_LOCK_MINUTES * 60_000
+  return Date.now() - seen < mins * 60_000
 }
 
 /** Remember the unlock — until the business day turns over, or it goes idle. */
