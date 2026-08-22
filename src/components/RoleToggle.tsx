@@ -13,7 +13,18 @@ export function RoleToggle() {
 
   // Stepping UP needs a PIN. Without this the day code is decoration: a cook
   // who is in as staff could tap 'admin' and read every store's numbers.
-  // Dropping to staff is free -- that is a manager handing the tablet over.
+  //
+  // Stepping DOWN is free and, importantly, does NOT sign you out. It used to
+  // call forgetUnlock(), on the reasoning that dropping to staff meant handing
+  // the tablet over — so tapping "Staff" wiped the unlock, the presence stamp
+  // and your name, and threw you straight back to the passcode screen.
+  // Instantly, every time, on every device. That is what "it keeps timing out"
+  // actually was; the clock had nothing to do with it.
+  //
+  // This control says "Viewing as". It's a manager looking at the staff screen,
+  // which is a preview, not a handover. Handing the device over is a real thing
+  // people do, so it kept its own button below — said out loud instead of
+  // hiding inside a view switch.
   const pick = (r: Role) => {
     if (r !== 'staff' && role === 'staff') {
       const pin = window.prompt('Manager PIN to leave the staff view:')
@@ -22,9 +33,17 @@ export function RoleToggle() {
         return
       }
     }
-    if (r === 'staff') forgetUnlock()
     setRole(r)
     navigate(r === 'staff' ? '/shift' : '/')
+  }
+
+  /** Actually give the device to someone else: lock it and ask who they are. */
+  const handOff = () => {
+    if (!window.confirm('Lock this device and ask for the day code?')) return
+    forgetUnlock()
+    setRole('staff')
+    navigate('/shift')
+    location.reload()
   }
 
   return (
@@ -45,6 +64,12 @@ export function RoleToggle() {
           </button>
         ))}
       </div>
+      <button
+        onClick={handOff}
+        className="mt-1 w-full rounded-lg px-1.5 py-1.5 text-[10px] font-semibold text-white/40 hover:bg-white/10 hover:text-white/70"
+      >
+        Hand the device over
+      </button>
     </div>
   )
 }
