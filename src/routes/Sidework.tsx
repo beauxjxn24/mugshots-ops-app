@@ -175,6 +175,34 @@ export function Sidework() {
   }, [])
 
   /**
+   * A station that shipped under a shorter name than the store uses.
+   *
+   * "Grill" went out before the store's own training packet turned up calling
+   * it "Grill - Middle Station". Without this, a device that already pulled the
+   * first version would end up carrying both tabs — the old one holding
+   * whatever had been typed into it.
+   *
+   * Runs before the add-what's-missing pass below, or that would helpfully put
+   * the new empty sheet back alongside the old one.
+   */
+  useEffect(() => {
+    const RENAMED: [string, string][] = [['Grill', 'Grill - Middle']]
+    setData((d) => {
+      const mine = d ?? ({} as Data)
+      if (!RENAMED.some(([from]) => mine[from])) return d
+      const next = { ...mine }
+      for (const [from, to] of RENAMED) {
+        if (!next[from]) continue
+        // Anything already under the new name wins — never overwrite real work.
+        if (!next[to]) next[to] = next[from]
+        delete next[from]
+      }
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
    * A sheet the app ships that this device hasn't got yet.
    *
    * The duty sheet is seeded once per device and then belongs to that device,

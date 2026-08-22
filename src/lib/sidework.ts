@@ -329,16 +329,29 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
       },
     ],
   },
-  Grill: {
+  // "Grill - Middle Station" in the store's own training packet, and the first
+  // four lines are that packet's wording — cleaning the grill and the hood
+  // vents are the two it names as station-specific. The rest is still a guess.
+  'Grill - Middle': {
     'PM Closing': [
       {
         section: 'Grill',
         tasks: [
+          'Break down the station',
+          'Clean the grill — shift specific',
+          'Clean the hood vents',
+          'Make sure all necessary supplies are available for the morning',
           'Burn off and brush the grates',
           'Empty the grease drawer',
-          'Wipe the hood lip and the side shelves',
           'Break down and wash the tongs and spatulas',
+        ],
+      },
+      {
+        section: 'Middle',
+        tasks: [
           'Wrap, date and put away the setup pans',
+          'Steam wells emptied, washed and dried',
+          'Wipe the reach-in handles and the low-boy gaskets',
           'Sweep and squeegee the station',
         ],
       },
