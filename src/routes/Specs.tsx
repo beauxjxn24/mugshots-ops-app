@@ -50,13 +50,33 @@ const shortGroup = (g: string): string => (g === 'Prep' ? 'Prep' : g.replace(/ B
 export function Specs() {
   const [q, setQ] = useState('')
   const [group, setGroup] = useState<string>('All')
+  /**
+   * Which shelf of the library you're reading — and it is NOT a category.
+   *
+   * OG and Oldies used to be stored in `group`, right alongside Burger and
+   * Prep, so they looked like two more categories sitting at the end of the
+   * same row. They aren't: a category narrows the active menu, while OG and
+   * Oldies swap the whole set of cards for a different one — eight items, or
+   * nine. So tapping OG re-counted every category chip against those eight and
+   * they all fell to 0 and greyed out. Two controls on one axis, one of them
+   * quietly replacing the data the other was counting.
+   *
+   * Separate state, separate row, and the categories don't apply on the other
+   * two shelves at all — nine retired cards do not need sorting into eleven
+   * boxes.
+   */
+  const [shelf, setShelf] = useState<'active' | 'og' | 'oldies'>('active')
+  const showShelf = (s: 'active' | 'og' | 'oldies') => {
+    setShelf(s)
+    setGroup('All') // a category from the last shelf means nothing on this one
+  }
   const [openName, setOpenName] = useState<string | null>(null)
   // Archived recipes (soft-deleted). Shared with Line Builds now — that screen
   // renders these same specs, so a card pulled here has to leave the line's
   // board too, not just this list.
   const { archived, setArchived, archivedSet } = useArchived()
-  const viewingOldies = group === OLDIES
-  const viewingOG = group === OG
+  const viewingOldies = shelf === 'oldies'
+  const viewingOG = shelf === 'og'
 
   // Which reading of the cards is on. Remembered per device, because whichever
   // one you work from you work from every day — a cook lives on the board, a
@@ -210,15 +230,19 @@ export function Specs() {
     // refresh doesn't reopen what they just closed.
     if (wanted) setParams({}, { replace: true })
   }
-  // A card outside the current tab would stay hidden, so a link resets the
-  // filters. Only when one is actually being asked for.
+  // A card outside the current view would stay hidden, so a link clears the
+  // filters AND moves to the shelf the card is actually on — a link to a live
+  // build arriving while you're reading the OG list would otherwise land on a
+  // page that doesn't contain it. Only when one is actually being asked for.
   useEffect(() => {
     if (!wantedHit) return
+    setShelf(wantedHit.og ? 'og' : archivedSet.has(wantedHit.name) ? 'oldies' : 'active')
     setGroup('All')
     setQ('')
     requestAnimationFrame(() =>
       document.getElementById(`spec-${slug(wantedHit.name)}`)?.scrollIntoView({ block: 'center' }),
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wantedHit])
 
   return (
@@ -289,8 +313,44 @@ export function Specs() {
         <div className="mb-5">
           <BuildReconcile />
         </div>
+        {/* Which shelf. Its own row, above the categories and looking nothing
+            like them, because it does a different job: these swap the whole set
+            of cards, the chips below narrow whichever set is showing. */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center rounded-lg border border-black/10 bg-white p-0.5">
+            {(
+              [
+                ['active', 'On the menu', null],
+                ['og', OG, OG_SPECS.length],
+                ['oldies', OLDIES, archivedSet.size - OG_SPECS.length],
+              ] as const
+            ).map(([id, text, n]) => (
+              <button
+                key={id}
+                onClick={() => showShelf(id)}
+                aria-pressed={shelf === id}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                  shelf === id ? 'bg-navy text-white' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {id === 'og' && <UtensilsCrossed size={12} />}
+                {id === 'oldies' && <Archive size={12} />}
+                {text}
+                {n ? <span className={shelf === id ? 'text-white/60' : 'text-muted/60'}>{n}</span> : null}
+              </button>
+            ))}
+          </div>
+          {viewingOG && (
+            <span className="text-xs text-muted">off the menu, still made on request</span>
+          )}
+          {viewingOldies && <span className="text-xs text-muted">retired — not coming back</span>}
+        </div>
+
         {/* Category chips — in menu order, each carrying its count so you can
-            see how big a category is before you open it. */}
+            see how big a category is before you open it. Only on the active
+            menu: eight OG cards don't need sorting into eleven boxes, and
+            counting them into it is what made every chip read 0. */}
+        {shelf === 'active' && (
         <div className="mb-3 flex flex-wrap gap-2">
           <button
             onClick={() => setGroup('All')}
@@ -337,32 +397,8 @@ export function Specs() {
               </button>
             )
           })}
-          <button
-            onClick={() => setGroup(OG)}
-            title="Off the menu, still made on request"
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-              viewingOG
-                ? 'border-brand bg-brand text-white'
-                : 'border-dashed border-brand/40 bg-white text-brand-600 hover:border-brand'
-            }`}
-          >
-            <UtensilsCrossed size={13} />
-            {OG}
-            {OG_SPECS.length > 0 && ` · ${OG_SPECS.length}`}
-          </button>
-          <button
-            onClick={() => setGroup(OLDIES)}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-              viewingOldies
-                ? 'border-navy bg-navy text-white'
-                : 'border-dashed border-black/25 bg-white text-muted hover:border-navy/40'
-            }`}
-          >
-            <Archive size={13} />
-            {OLDIES}
-            {archivedSet.size - OG_SPECS.length > 0 && ` · ${archivedSet.size - OG_SPECS.length}`}
-          </button>
         </div>
+        )}
 
         {/* The go-to bar. Sticky, so it's there wherever you've scrolled to.
             ─────────────────────────────────────────────────────────────────
