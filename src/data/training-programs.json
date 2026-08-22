@@ -1,0 +1,260 @@
+{
+  "server": {
+    "title": "Server",
+    "group": "Front of house",
+    "what": "Five days, hip-to-hip through to a mock wait and certification.",
+    "days": [
+      {
+        "day": "Day One",
+        "test": "No test today",
+        "focus": "Starters",
+        "items": [
+          "POS introduction — clock in/out",
+          "New hire paperwork: R365, Toast, ADP, GroupMe. Phone number of the restaurant",
+          "Training book, study guide, training schedule, uniforms",
+          "Restaurant tour / floor plan / table numbers",
+          "Management and team member introductions",
+          "Practice checks with modifiers. Suggestive selling and upselling. How to split checks and items, open food/drink buttons, process payments. Intro to restaurant lingo",
+          "Shadow trainer, hip to hip. Discuss proper greet (table, phone, front door). Suggestive selling and upselling. We are a team and believe in teamwork — full hands in/out",
+          "Discuss alcohol awareness and service responsibility",
+          "Introduction to chemicals and chemical safety. Safe sanitation practices. Station organization and restaurant cleanliness. Prebus and sidework. Marking and resetting tables",
+          "Discuss prebussing and bussing tables. Marking and resetting tables",
+          "Safe food handling and storage",
+          "Introduction to proper ticket handling (bar and kitchen) / KDS, drink and plate presentation",
+          "How to handle To-Go orders. How to handle allergies",
+          "Discuss steps of service and the secret shopper program",
+          "Proper cash handling. Discuss having a cash bank as part of your uniform and what that bank should be. Discuss procedures for cash and credit card tips and tip-out",
+          "Review Day One training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Two",
+        "test": "Starters",
+        "focus": "Burgers",
+        "items": [
+          "Clock in/out",
+          "Review anything carried over from Day One",
+          "Review floor plan and table numbers",
+          "Mugshots Grill and Bar story",
+          "Management and team member introductions",
+          "Practice checks with modifiers. Review split checks and items, suggestive selling and upselling, open food/drink buttons, process payments, restaurant lingo",
+          "Shadow trainer, hip to hip. Review proper greets for different occasions, suggestive selling and upselling. Practice teamwork — full hands in/out",
+          "Discuss happy hour and bar bites. Learn about local beer offerings and signature cocktails",
+          "Review chemicals and chemical safety. Practices sanitation properly. Station organization and restaurant cleanliness. Prebus and sidework. Marking and resetting tables",
+          "Discuss opening and closing procedures",
+          "How to handle ringing in large orders / To-Go. Discuss large party gratuity",
+          "Review proper ticket handling (bar and kitchen) / KDS, drink and plate presentation",
+          "Review schedule, requests, call-off",
+          "Review steps of service and the secret shopper program",
+          "Learn how to make milkshakes and root beer floats",
+          "Review Day Two training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Three",
+        "test": "Burgers",
+        "focus": "Hot dogs, sandwiches, salads",
+        "items": [
+          "Clock in/out",
+          "Review anything carried over from Day Two",
+          "Table number quiz",
+          "Discuss retail sales including gift cards",
+          "Continue management and team member introductions",
+          "Practice checks. Discuss how to modify an item after a guest orders, versus once the order is sent to the kitchen",
+          "Greets and waits on tables with assistance from trainer. Actively practices proper greets, suggestive selling and upselling. Practices teamwork — full hands in/out",
+          "When is happy hour? What is offered? What are our signature cocktails? What local beers do we offer?",
+          "Safely uses chemicals. Practices sanitation properly. Station organization and restaurant cleanliness. Prebus and sidework. Marking and resetting tables",
+          "Discuss how to change table numbers. Discuss how to change server. Discuss how to combine tables",
+          "Review how to handle ringing in large orders and gratuity / To-Go",
+          "Review proper ticket handling / KDS, drink and plate presentation",
+          "Review schedule, requests, call-off",
+          "Understands steps of service and the secret shopper program",
+          "Review Day Three training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Four",
+        "test": "Hot dogs, sandwiches, salads",
+        "focus": "Wraps, plates, pastas, Mini Mugs, milkshakes, root beer float",
+        "items": [
+          "Clock in/out",
+          "Review anything carried over from Day Three",
+          "Do we offer free WiFi? Is there a password?",
+          "Discuss kid service and what it means",
+          "Review team member and manager names",
+          "Practice checks. Discuss policy on walkouts and shortages",
+          "Greets and waits on tables with assistance from trainer. Actively practices proper greets, suggestive selling and upselling. Practices teamwork — full hands in/out",
+          "Alcohol quiz",
+          "Safely uses chemicals. Practices sanitation properly. Station organization and restaurant cleanliness. Prebus and sidework. Marking and resetting tables",
+          "How to anticipate and handle a guest complaint",
+          "Can demonstrate how to ring in large orders / To-Go",
+          "Demonstrates proper drink and plate presentation along with ticket handling",
+          "Review schedule, requests, call-off",
+          "Displays knowledge of steps of service and the secret shopper program",
+          "Review Day Four training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Five",
+        "test": "Wraps, plates, pastas, Mini Mugs, milkshakes, root beer float",
+        "focus": "Full menu",
+        "items": [
+          "Clock in/out",
+          "Training recap, Days 1–4",
+          "Discuss the difference between a void and a discount",
+          "Knows team member and manager names",
+          "Discuss what to do if a guest would like a channel changed on one of the TVs — we only watch sports on TVs",
+          "Runs station with little to no assistance from trainer. Hip to hip. Actively practices proper greets, suggestive selling and upselling. Practices teamwork — full hands in/out",
+          "Demonstrates thorough knowledge of Toast / KDS",
+          "Safely uses chemicals. Practices sanitation properly. Station organization and restaurant cleanliness. Prebus and sidework. Marking and resetting tables",
+          "Pass mock wait — include all of the steps of service items",
+          "Practices proper large orders / To-Go procedures",
+          "Actively practices selling tickets, drink and plate presentation to spec",
+          "Knows the next scheduled shift as well as any future schedule",
+          "Clear understanding of steps of service and the secret shopper program",
+          "Complete any tests",
+          "Review Day Five training materials",
+          "Final meeting with trainer and manager. Discuss if Day 6 is needed and what is expected"
+        ]
+      }
+    ]
+  },
+  "host-togo": {
+    "title": "Host & To-Go",
+    "group": "Front of house",
+    "what": "Five days — two on the host stand, three on the To-Go station.",
+    "days": [
+      {
+        "day": "Day One",
+        "covers": "Host",
+        "focus": "Starters",
+        "items": [
+          "POS introduction — clock in/out",
+          "New hire paperwork: R365, Toast, ADP, GroupMe. Phone number of the restaurant",
+          "Training book, study guide, training schedule, uniforms",
+          "Restaurant tour / floor plan / table numbers",
+          "Management and team member introductions",
+          "Discuss rotation, seating and open menu counts. Discuss kid service and what it means",
+          "Area of focus — smile, seat, menu counts",
+          "Discuss host greet; how to seat; parting comment at the table; parting comments as the guest is leaving",
+          "Discuss anticipating the guests' needs; how to handle large parties and requests",
+          "Introduction to chemicals and chemical safety along with sanitation. Cleanliness of the host stand and sidework",
+          "Discuss restaurant awareness and cleanliness. Make sure to clean and sanitize menus as they are returned",
+          "Discuss the secret shopper program and steps of service",
+          "Discuss marking and resetting tables. Updating the floor chart",
+          "Mugshots Grill and Bar story",
+          "Discuss prebussing, proper table marking and reset",
+          "Review safety",
+          "Review Day One training materials",
+          "Review host knowledge",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Two",
+        "covers": "Host",
+        "test": "Host knowledge & table numbers",
+        "focus": "Burgers",
+        "items": [
+          "Clock in/out",
+          "Review anything carried over from Day One",
+          "Discuss retail sales. Discuss what to do if there isn't any rolled silverware at the host stand",
+          "What is the address and phone number of the restaurant?",
+          "Continue management and team member introductions",
+          "Discuss when to begin and how to manage a wait; managing the front door and what to do if the quoted wait time is exceeded",
+          "Area of focus — smile, seat, lead/seat, menu counts",
+          "Discuss what to do if a guest would like a channel changed on one of the TVs — we only watch sports on TVs",
+          "Discuss bathroom checks — how often? Is it clean? Are there adequate supplies? Where to find supplies",
+          "Safely uses chemicals. Practices sanitation properly",
+          "Organization and cleanliness of the host stand. Practice restaurant cleanliness. Discuss what it means to do a parking lot sweep, and how often",
+          "Review and demonstrate understanding of steps of service and the secret shopper program",
+          "How to anticipate and handle a guest complaint",
+          "Review schedule, requests, call-outs. Knows the next scheduled shift",
+          "Discuss how to handle special occasions",
+          "Review Day Two training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Three",
+        "covers": "To-Go",
+        "test": "Burgers",
+        "focus": "Hot dogs, sandwiches, salads",
+        "items": [
+          "Clock in/out",
+          "Review anything carried over from Day Two",
+          "Introduction to phone greet. Large party phone calls. Reservations, call-aheads, wait list",
+          "Review store information: store address and phone number, hours of operation, happy hour, calls for managers, employee call-ins",
+          "Continue management and team member introductions",
+          "Shadow trainer. Phone, order entry, order accuracy, packaging, heat lamp with supplies needed",
+          "Discuss what to do in case of guest allergies",
+          "Discuss DoorDash / WaitR / ezCater. Offer curbside with carry-out orders — necessary information to request from a call-in",
+          "Discuss proper cash handling procedures. Cash and credit card tips. Discuss the difference between a void and a discount",
+          "Discuss safe food handling and storage. Safe chemical usage and proper sanitation practices. Cleanliness and organization of the To-Go station along with sidework",
+          "Practice checks with modifiers. Suggestive selling and upselling. How to split checks and items, open food button, process payments. Intro to restaurant lingo",
+          "Review and demonstrate understanding of steps of service and the secret shopper program",
+          "Intro to reading and pulling tickets / KDS / proper To-Go packaging",
+          "Review schedule, requests, call-off",
+          "Discuss how to ring in large To-Go orders and why",
+          "Learn how to make milkshakes and root beer floats",
+          "Review Day Three training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Four",
+        "covers": "To-Go",
+        "test": "Hot dogs, sandwiches, salads",
+        "focus": "Wraps, plates, pastas, Mini Mugs, milkshakes, root beer float",
+        "items": [
+          "Clock in/out",
+          "Review anything carried over from Day Three",
+          "Answers the phone within three rings with the proper phone greet",
+          "Knowledge of store information: store address and phone numbers, hours of operation, happy hour, calls for manager, employee call-ins",
+          "Review team member and manager names",
+          "Runs station with assistance from trainer. Uses proper phone greet. Offers curbside",
+          "Knows what to do in case of guest allergies",
+          "Review DoorDash / WaitR / ezCater. Offer curbside with carry-out orders — necessary information to request from a call-in",
+          "Review proper cash handling procedures. Cash and credit card tips. Review the difference between a void and a discount",
+          "Safely uses chemicals. Practices sanitation properly. Station organization and cleanliness. Sidework",
+          "Practice checks with modifiers. Review split checks and items, suggestive selling and upselling, open food, process payments, restaurant lingo",
+          "Displays knowledge of steps of service. Understands the secret shopper program",
+          "Demonstrates proper presentation along with ticket handling / KDS use",
+          "Review schedule, requests, call-off",
+          "Review how to handle ringing in large To-Go orders and why",
+          "Demonstrates how to make milkshakes and root beer floats",
+          "Review Day Four training materials",
+          "Discuss shift with MOD"
+        ]
+      },
+      {
+        "day": "Day Five",
+        "covers": "To-Go",
+        "test": "Wraps, plates, pastas, Mini Mugs, milkshakes, root beer float",
+        "focus": "Full menu",
+        "items": [
+          "Clock in/out",
+          "Training recap, Days 1–4",
+          "Displays knowledge of store address and phone numbers, hours of operation, happy hour, calls for manager, employee call-ins",
+          "Knows team member and manager names",
+          "Runs station with little to no assistance. Uses proper phone greet. Offers curbside",
+          "Handles DoorDash / WaitR / ezCater. Offers curbside with carry-out orders — necessary information to request from a call-in",
+          "Practices proper cash handling procedures. Cash and credit card tips. Knows the difference between a void and a discount",
+          "Safely uses chemicals. Practices sanitation properly. Station organization and cleanliness. Sidework",
+          "Practice checks with modifiers. Can split checks and items, process payments. Knows restaurant lingo",
+          "Clear understanding of steps of service and the secret shopper program",
+          "Actively practices selling tickets, presentation to spec / KDS use",
+          "Knows the next scheduled shift as well as any future schedule",
+          "Can demonstrate how to ring in large To-Go orders and understands why",
+          "Suggestively sells milkshakes and root beer floats",
+          "Review Day Five training materials",
+          "Final meeting with trainer and manager. Discuss if Day 6 is needed and what is expected"
+        ]
+      }
+    ]
+  }
+}
