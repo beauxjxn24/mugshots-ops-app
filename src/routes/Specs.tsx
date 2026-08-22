@@ -71,7 +71,20 @@ export function Specs() {
   // closure, which looks deferred to the compiler.
 
 
-  const filtered = useMemo(() => {
+  /**
+   * Everything the current view and search allow — but NOT narrowed to the
+   * chosen category.
+   *
+   * This split is the whole point. The chip counts used to be taken from the
+   * final, already-narrowed list, so the moment you picked Burger every other
+   * chip read 0, and a 0 chip is disabled: the only way out of a category was
+   * back through Everything. Two taps to move between categories, and a row of
+   * dead buttons telling you the rest of the menu was empty, which it wasn't.
+   *
+   * Counting from here, a chip always says how many that category holds under
+   * what you've typed, and stays live. Burger → Prep is one tap.
+   */
+  const pool = useMemo(() => {
     const query = q.trim().toLowerCase()
     const base = viewingOG
       ? FOOD_SPECS.filter((s) => s.og)
@@ -89,7 +102,6 @@ export function Specs() {
       // have a photographed sheet — while a group could sail through on its
       // name alone.
       if (board && !buildForSpec(s.name)) return false
-      if (!viewingOldies && !viewingOG && group !== 'All' && s.g !== group) return false
       if (!query) return true
       if (s.name.toLowerCase().includes(query)) return true
       if (s.ing.some(([n]) => n.toLowerCase().includes(query))) return true
@@ -98,7 +110,13 @@ export function Specs() {
       const b = buildForSpec(s.name)
       return !!b?.sections.some((sec) => sec.lines.some((l) => l.toLowerCase().includes(query)))
     })
-  }, [q, group, viewingOldies, viewingOG, archivedSet, board])
+  }, [q, viewingOldies, viewingOG, archivedSet, board])
+
+  /** The pool, narrowed to the chosen category. This is what gets rendered. */
+  const filtered = useMemo(() => {
+    if (viewingOldies || viewingOG || group === 'All') return pool
+    return pool.filter((s) => s.g === group)
+  }, [pool, group, viewingOldies, viewingOG])
 
   /**
    * What the Board is holding back, counted rather than implied.
@@ -139,13 +157,14 @@ export function Specs() {
     return order.filter((g) => by.has(g)).map((g) => ({ group: g, items: by.get(g)! }))
   }, [filtered])
 
-  // Counts drive the chips, so a category that's empty under the current search
-  // says so instead of looking like a dead button.
+  // From the POOL, not the filtered list — so every chip shows its real size no
+  // matter which one is currently picked, and stays tappable. A category that's
+  // genuinely empty under the current search still reads 0 and says so.
   const counts = useMemo(() => {
     const c = new Map<string, number>()
-    for (const s of filtered) c.set(s.g, (c.get(s.g) ?? 0) + 1)
+    for (const s of pool) c.set(s.g, (c.get(s.g) ?? 0) + 1)
     return c
-  }, [filtered])
+  }, [pool])
 
   const jumpTo = (g: string) =>
     document.getElementById(groupAnchor(g))?.scrollIntoView({ block: 'start', behavior: 'smooth' })
@@ -386,13 +405,28 @@ export function Specs() {
         )}
 
         {filtered.length === 0 && (
-          <p className="text-sm text-muted">
-            {viewingOG
-              ? 'Nothing on the OG list yet.'
-              : viewingOldies
-                ? 'Nothing retired yet.'
-                : `No builds match “${q}”.`}
-          </p>
+          <div className="text-sm text-muted">
+            {viewingOG ? (
+              'Nothing on the OG list yet.'
+            ) : viewingOldies ? (
+              'Nothing retired yet.'
+            ) : group !== 'All' && pool.length > 0 ? (
+              // You're in a category with no hits while the hits sit in other
+              // chips. Saying so beats an empty screen that reads as broken.
+              <span className="inline-flex flex-wrap items-center gap-2">
+                Nothing in <b className="font-semibold text-ink/80">{shortGroup(group)}</b> matches “
+                {q.trim()}” — {pool.length} elsewhere.
+                <button
+                  onClick={() => setGroup('All')}
+                  className="rounded-lg bg-navy px-2.5 py-1 text-xs font-bold text-white"
+                >
+                  Search everything
+                </button>
+              </span>
+            ) : (
+              `No builds match “${q}”.`
+            )}
+          </div>
         )}
 
         <div className="space-y-7">
