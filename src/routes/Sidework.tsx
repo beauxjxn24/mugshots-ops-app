@@ -5,6 +5,7 @@ import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import {
   SIDEWORK,
+  isStation,
   ROLES,
   phasesFor,
   BAR_WEEKLY,
@@ -52,6 +53,18 @@ export function Sidework() {
   const [data, setData] = usePersistentState<Data>('sidework:data', SIDEWORK)
   const [role, setRole] = useState<Role>('Server')
   const phases = phasesFor(role)
+  /**
+   * The tabs come from the STORE'S sheet, not the shipped one.
+   *
+   * ROLES is the constant this app was built with; `data` is what this store
+   * has actually got, including any station a manager has added. Reading the
+   * constant would show a station on one screen and hide it on the next.
+   */
+  const roles = useMemo(() => {
+    const mine = Object.keys(data ?? {})
+    return [...ROLES.filter((r) => mine.includes(r)), ...mine.filter((r) => !ROLES.includes(r))]
+  }, [data])
+
   // Open on the sheet that matches the shift being worked. Landing on "AM
   // Opening" at nine at night meant the closer's first move on this screen was
   // always to correct it.
@@ -62,6 +75,22 @@ export function Sidework() {
   // changed the very value being compared, so a tile stopped being "the one
   // being edited" halfway through typing its new name.
   const [editingSec, setEditingSec] = useState<number | null>(null)
+
+  /** Add a station this kitchen runs that the shipped list doesn't have. */
+  const addStation = () => {
+    const name = window.prompt('Station name — e.g. Expo, Pantry, Smoker')?.trim()
+    if (!name) return
+    if (roles.some((r) => r.toLowerCase() === name.toLowerCase())) {
+      window.alert(`There's already a ${name} sheet.`)
+      return
+    }
+    // Starts on PM Closing with one empty section, because closing is what
+    // stations are asked for — the pencil on the section adds the duties.
+    setData((d) => ({ ...d, [name]: { 'PM Closing': [{ section: name, tasks: [] }] } }) as Data)
+    setRole(name)
+    setPhase('PM Closing')
+    setEditingSec(0)
+  }
   const [done, setDone] = usePersistentState<Record<string, boolean>>(`sidework:done:${today()}`, {})
   const [adding, setAdding] = useState<Record<number, string>>({})
   // Closer sign-off, keyed by role|phase and dated like the checkmarks are.
@@ -141,6 +170,29 @@ export function Sidework() {
         delete next[from]
       }
       return { ...d, Bar: next } as Data
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * A sheet the app ships that this device hasn't got yet.
+   *
+   * The duty sheet is seeded once per device and then belongs to that device,
+   * so adding the kitchen stations to the shipped list reaches a fresh install
+   * and nothing else — every tablet already in the building would have carried
+   * on showing four tabs. Same trap the prep list has, for the same reason.
+   *
+   * Only ADDS what's missing. A store's own edits, and any station a manager
+   * added here, are never touched.
+   */
+  useEffect(() => {
+    setData((d) => {
+      const mine = d ?? ({} as Data)
+      const missing = Object.keys(SIDEWORK).filter((r) => !mine[r])
+      if (missing.length === 0) return d
+      const next = { ...mine }
+      for (const r of missing) next[r] = SIDEWORK[r]
+      return next
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -503,26 +555,52 @@ export function Sidework() {
       />
       <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-3xl space-y-4">
-        {/* Role tabs */}
-        <div className="flex gap-2">
-          {ROLES.map((r) => (
-            <button
-              key={r}
-              onClick={() => {
-                setRole(r)
-                setPhase(phasesFor(r)[0])
-                setEditingSec(null)
-              }}
-              className={`flex-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition-colors ${
-                role === r
-                  ? 'border-brand bg-brand text-white'
-                  : 'border-black/10 bg-white text-muted hover:border-brand/40'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
+        {/* Front of house, then the kitchen.
+            One row of nine tabs is unreadable on a phone, and the two halves
+            aren't the same kind of thing anyway: the front ones are jobs a
+            person is on, the kitchen ones are stations that get closed by
+            whoever is standing at them. */}
+        {(
+          [
+            ['Front of house', roles.filter((r) => !isStation(r))],
+            ['Kitchen', roles.filter(isStation)],
+          ] as const
+        ).map(([label, group]) => (
+          <div key={label}>
+            <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+              {label}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {group.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => {
+                    setRole(r)
+                    setPhase(phasesFor(r)[0])
+                    setEditingSec(null)
+                  }}
+                  className={`min-w-[5.5rem] flex-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition-colors ${
+                    role === r
+                      ? 'border-brand bg-brand text-white'
+                      : 'border-black/10 bg-white text-muted hover:border-brand/40'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+              {/* Every kitchen runs different stations and I can't know yours,
+                  so the list is yours to extend rather than mine to guess at. */}
+              {label === 'Kitchen' && isCloser && (
+                <button
+                  onClick={addStation}
+                  className="min-w-[5.5rem] flex-1 rounded-xl border border-dashed border-black/20 px-2 py-2.5 text-sm font-semibold text-muted hover:border-brand/40 hover:text-ink"
+                >
+                  + Station
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
 
         {/* Phase chips */}
         <div className="flex flex-wrap gap-2">

@@ -6,7 +6,21 @@ export interface Section {
   tasks: string[]
 }
 export type Phase = string
-export type Role = 'Server' | 'Host' | 'To-Go' | 'Bar'
+/**
+ * A duty sheet belongs to a job, or to a station.
+ *
+ * The four front-of-house ones came off the store's own laminated sheet. The
+ * kitchen ones are STATIONS, not jobs — the flat top gets closed by whoever is
+ * on it — and they're kept in their own group because nine tabs in one row is
+ * unreadable on a phone, and because a cook has no business scrolling the
+ * host's list to find the fryers.
+ *
+ * Deliberately not a fixed set any more. Every kitchen runs different stations,
+ * so this stays open and a manager can add their own; ROLES reads whatever the
+ * store's sheet actually holds.
+ */
+export type Role = string
+export const FOH_ROLES = ['Server', 'Host', 'To-Go', 'Bar']
 
 export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
   Server: {
@@ -258,10 +272,99 @@ export const SIDEWORK: Record<Role, Record<Phase, Section[]>> = {
       },
     ],
   },
+  /**
+   * ── Kitchen stations ────────────────────────────────────────────────────
+   *
+   * A STARTING POINT, not the store's list. Unlike everything above, this
+   * wasn't transcribed off a laminated sheet — there wasn't one to transcribe.
+   * The flat top and the fryers are the two that were named; the rest is what
+   * closing those stations normally involves, so nobody starts from a blank
+   * screen on the first night.
+   *
+   * Every line is editable in the app and saved per store, and a manager can
+   * add stations this doesn't have. Expect all of it to be rewritten, and treat
+   * the version on the tablet as the real one.
+   */
+  // Named the way the store's own training packet names it — "Flat Top - Salad
+  // Station" — rather than the "Flat" I'd picked. The first three lines are
+  // that packet's wording too; the rest is still a guess.
+  'Flat Top - Salad': {
+    'PM Closing': [
+      {
+        section: 'Flat top',
+        tasks: [
+          'Break down the station',
+          'Clean the flat top and the microwave',
+          'Make sure all necessary supplies are available for the morning',
+          'Scrape the flat down while it’s still hot',
+          'Empty and wash the grease trap',
+          'Wipe the splash guard and the front rail',
+          'Break down, wash and dry the spatulas and weights',
+        ],
+      },
+      {
+        section: 'Salad station',
+        tasks: [
+          'Wrap, date and put away the setup pans',
+          'Wipe the reach-in handles and the low-boy gaskets',
+          'Restock dressings and portion cups',
+          'Sweep and squeegee the station',
+        ],
+      },
+    ],
+  },
+  Fry: {
+    'PM Closing': [
+      {
+        section: 'Fryers',
+        tasks: [
+          'Filter the fryers',
+          'Skim and boil out on the schedule',
+          'Wipe the fryer cabinets and the surrounds',
+          'Wash the baskets and the shaker pans',
+          'Change the oil when it’s due — log it',
+          'Restock breading and shakers for the morning',
+          'Sweep and squeegee the station',
+        ],
+      },
+    ],
+  },
+  Grill: {
+    'PM Closing': [
+      {
+        section: 'Grill',
+        tasks: [
+          'Burn off and brush the grates',
+          'Empty the grease drawer',
+          'Wipe the hood lip and the side shelves',
+          'Break down and wash the tongs and spatulas',
+          'Wrap, date and put away the setup pans',
+          'Sweep and squeegee the station',
+        ],
+      },
+    ],
+  },
+  Dish: {
+    'PM Closing': [
+      {
+        section: 'Dish',
+        tasks: [
+          'Run the last racks and drain the machine',
+          'Delime and wipe the machine, screens out and rinsed',
+          'Empty, wash and refill the three-compartment sink',
+          'Break down the drain boards; scrub the floor mats',
+          'Trash and cardboard out',
+          'Sweep and mop the dish area',
+        ],
+      },
+    ],
+  },
 }
 
 export const ROLES = Object.keys(SIDEWORK) as Role[]
-export const phasesFor = (role: Role): Phase[] => Object.keys(SIDEWORK[role])
+export const phasesFor = (role: Role): Phase[] => Object.keys(SIDEWORK[role] ?? {})
+/** Kitchen stations are whatever isn't one of the four front-of-house jobs. */
+export const isStation = (r: Role): boolean => !FOH_ROLES.includes(r)
 
 
 /**
