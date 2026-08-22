@@ -13,6 +13,7 @@ import {
   PieChart,
   Flame,
   BookOpen,
+  GraduationCap,
   Martini,
   Boxes,
   DollarSign,
@@ -117,6 +118,14 @@ export const NAV: NavSection[] = [
       // look one up. Same reasoning as Specs & Recipes above — it's reference,
       // not a control.
       { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: MartiniIcon, staff: true },
+      // staff: the people being certified against these are the ones who need
+      // to read them. A study guide in a manager's folder trains nobody.
+      //
+      // LAST in this section on purpose. The phone's bottom bar takes the first
+      // five staff items, and a bartender needs the drink builds every shift
+      // while a certification packet gets read during onboarding — so Drinks
+      // keeps the tab and this lives in the menu.
+      { to: '/training', label: 'Training resources', icon: GraduationCap, color: '#38BDF8', staff: true },
     ],
   },
   {

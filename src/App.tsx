@@ -9,6 +9,7 @@ import { Shift } from './routes/Shift'
 import { useRole } from './lib/role'
 import { useRollupLevel } from './lib/scope'
 import { Specs } from './routes/Specs'
+import { Training } from './routes/Training'
 import { Imports } from './routes/Imports'
 import { Connections } from './routes/Connections'
 import { Tipshare } from './routes/Tipshare'
@@ -54,6 +55,7 @@ const router = createHashRouter([
       { path: 'combined', element: <Combined /> },
       { path: 'shift', element: <Shift /> },
       { path: 'specs', element: <Specs /> },
+      { path: 'training', element: <Training /> },
       { path: 'imports', element: <Imports /> },
       { path: 'connections', element: <Connections /> },
       // Sections still being rebuilt render a consistent placeholder.
