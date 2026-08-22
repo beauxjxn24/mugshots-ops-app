@@ -1,3 +1,4 @@
+import { BatchScaler } from './BatchScaler'
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { X, ExternalLink } from 'lucide-react'
@@ -64,19 +65,7 @@ export function SpecPeek({ name, onClose }: { name: string | null; onClose: () =
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
           {spec.ing.length > 0 && (
-            <>
-              <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                Ingredients
-              </div>
-              <ul className="mb-4 space-y-1">
-                {spec.ing.map(([n, qty], i) => (
-                  <li key={i} className="flex justify-between gap-3 text-sm">
-                    <span className="text-ink">{n}</span>
-                    <span className="shrink-0 font-mono text-xs text-muted">{qty}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <BatchScaler ing={spec.ing} yields={spec.yields} className="mb-4" />
           )}
           {spec.steps.length > 0 && (
             <>

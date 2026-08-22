@@ -1,3 +1,4 @@
+import { BatchScaler } from './BatchScaler'
 import { useEffect, useRef, useState } from 'react'
 import { Card } from './ui'
 import { dishPhoto } from '../lib/photos'
@@ -89,19 +90,7 @@ function SpecCard({
         {open && (
           <div className="border-t border-black/5 p-4 pt-3">
             {spec.ing.length > 0 && (
-              <>
-                <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                  Ingredients
-                </div>
-                <ul className="mb-3 space-y-1">
-                  {spec.ing.map(([n, qty], i) => (
-                    <li key={i} className="flex justify-between gap-3 text-sm">
-                      <span className="text-ink">{n}</span>
-                      <span className="font-mono text-xs text-muted">{qty}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
+              <BatchScaler ing={spec.ing} yields={spec.yields} className="mb-3" />
             )}
             {spec.steps.length > 0 && (
               <>

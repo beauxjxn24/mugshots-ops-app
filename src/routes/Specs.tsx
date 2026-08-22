@@ -14,6 +14,7 @@ import { isFood } from '../lib/categories'
 import { useArchived } from '../lib/archived'
 import { usePersistentState } from '../lib/store'
 import { BoardCard } from '../components/BoardCard'
+import { BatchScaler } from '../components/BatchScaler'
 import type { Spec } from '../lib/types'
 
 const OLDIES = 'Oldies'
@@ -596,19 +597,7 @@ function SpecCard({
               <LineBuildCard build={build} compact />
             </div>
           ) : spec.ing.length > 0 ? (
-            <>
-              <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                Ingredients
-              </div>
-              <ul className="mb-3 space-y-1">
-                {spec.ing.map(([n, qty], i) => (
-                  <li key={i} className="flex justify-between gap-3 text-sm">
-                    <span className="text-ink">{n}</span>
-                    <span className="font-mono text-xs text-muted">{qty}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <BatchScaler ing={spec.ing} yields={spec.yields} className="mb-3" />
           ) : null}
           {spec.steps.length > 0 && (
             <>
