@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pencil, Check } from 'lucide-react'
+import { Pencil, Check, AlertTriangle } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
@@ -513,6 +513,36 @@ export function Sidework() {
   /** The phase the clock says we're in — marked, not forced. */
   const nowPhase = useMemo(() => phaseForShift(phases, shift), [phases, shift])
 
+  /**
+   * What an earlier part of today never finished.
+   *
+   * The owner's question, and it's the one that settles how much the clock is
+   * allowed to do here: "if the hard time for lunch is 4, what happens if the
+   * dinner shift starts and lunch isn't closed out?"
+   *
+   * If four o'clock HID the lunch list, the answer would be that the work
+   * disappears and nobody finds out until they need the thing that never got
+   * restocked. A clipboard doesn't do that — it sits on the pass until someone
+   * deals with it. So the clock only ever promotes: it marks what's live and
+   * opens on it, and anything left behind is carried forward here instead.
+   *
+   * It lands on the closers by design. The owner's own split has shift-change
+   * duties as "the responsibility of the closers to ensure they are done", so
+   * a lunch that didn't close out is exactly their problem to pick up.
+   */
+  const RANK: Record<string, number> = { open: 0, handover: 1, close: 2 }
+  const carried = useMemo(() => {
+    const here = RANK[phaseKind(activePhase)] ?? 0
+    return phases
+      .filter((ph) => (RANK[phaseKind(ph)] ?? 0) < here)
+      .map((ph) => {
+        const st = phaseStates[ph] ?? { done: 0, total: 0 }
+        return { phase: ph, left: st.total - st.done, total: st.total }
+      })
+      .filter((x) => x.total > 0 && x.left > 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phases, activePhase, phaseStates])
+
   const sheetStates = useMemo(
     () =>
       roles.map((r) => {
@@ -836,6 +866,32 @@ export function Sidework() {
               )
             })}
           </div>
+        )}
+
+        {/* Left behind by an earlier part of the day. Never hidden by the
+            clock — see `carried` above for why. */}
+        {carried.length > 0 && (
+          <Card className="flex flex-wrap items-center gap-x-3 gap-y-2 border-warn/40 bg-warn/[0.08] px-4 py-2.5">
+            <AlertTriangle size={15} className="shrink-0 text-warn" />
+            <span className="text-sm font-bold text-ink">Still owed from earlier</span>
+            <span className="flex flex-wrap gap-1.5">
+              {carried.map((c) => (
+                <button
+                  key={c.phase}
+                  onClick={() => {
+                    setPhase(c.phase)
+                    setEditingSec(null)
+                  }}
+                  className="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-[11px] font-bold text-ink hover:border-warn"
+                >
+                  {PHASE_META[phaseKind(c.phase)].title} · {c.left} not done
+                </button>
+              ))}
+            </span>
+            <span className="ml-auto text-[11px] text-muted">
+              four o’clock doesn’t finish it — the closers pick it up
+            </span>
+          </Card>
         )}
 
         {/* What this part of the day actually is, in the owner's words. */}
