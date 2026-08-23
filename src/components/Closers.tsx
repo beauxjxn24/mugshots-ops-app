@@ -17,6 +17,11 @@ import {
   type Side,
 } from '../lib/closers'
 
+/** Card's shape without its chrome, for `bare`. */
+const Bare = ({ className, children }: { className?: string; children: React.ReactNode }) => (
+  <div className={className}>{children}</div>
+)
+
 export function Closers({
   phase,
   roster,
@@ -26,6 +31,7 @@ export function Closers({
   onToggle,
   canEdit,
   sheet = [],
+  bare = false,
 }: {
   phase: string
   /** Everyone on the roster — a closer isn't limited to the role tab you're on. */
@@ -37,6 +43,13 @@ export function Closers({
   canEdit: boolean
   /** The role's own sheet, so overlaps with a closer's list can be named. */
   sheet?: { task: string; section: string }[]
+  /**
+   * Drop the card and the header — the caller is already providing both.
+   *
+   * On Sidework this now unfolds out of a one-line summary strip, and a second
+   * "Closers" heading directly under the first one reads as a bug.
+   */
+  bare?: boolean
 }) {
   const [duties, setDuties] = useState(getCloserDuties)
   const [editing, setEditing] = useState<Side | null>(null)
@@ -63,8 +76,10 @@ export function Closers({
     setDuties((d) => ({ ...d, [side]: tasks }))
   }
 
+  const Shell = bare ? Bare : Card
   return (
-    <Card className="overflow-hidden">
+    <Shell className="overflow-hidden">
+      {!bare && (
       <div className="flex flex-wrap items-center gap-2 border-b border-black/5 bg-black/[0.02] px-4 py-2.5">
         <Lock size={14} className="shrink-0 text-muted" />
         <span className="font-display text-sm font-semibold text-ink">Closers</span>
@@ -81,6 +96,7 @@ export function Closers({
           </span>
         )}
       </div>
+      )}
 
       <div className="grid gap-px bg-black/5 sm:grid-cols-2">
         {SIDES.map((side) => {
@@ -221,6 +237,6 @@ export function Closers({
           </div>
         </div>
       )}
-    </Card>
+    </Shell>
   )
 }

@@ -15,6 +15,7 @@ import {
   type Section,
 } from '../lib/sidework'
 import { BohCleaning } from '../components/BohCleaning'
+import { SheetRail, ClosersStrip } from '../components/SheetRail'
 import { rolesOf, type Person } from '../lib/staff'
 import { useRole } from '../lib/role'
 import { useShift, phaseForShift } from '../lib/shift'
@@ -22,7 +23,7 @@ import { shiftPerson } from '../lib/daycode'
 import { CutPlanner, type Duty } from '../components/CutPlanner'
 import { NamePicker } from '../components/NamePicker'
 import { Closers } from '../components/Closers'
-import { getClosers, setCloser, type Side } from '../lib/closers'
+import { getClosers, setCloser, getCloserDuties, closerDutyId, SIDES, type Side } from '../lib/closers'
 import {
   cutFor,
   dealEvenly,
@@ -48,6 +49,16 @@ function weekdayOf(iso: string): number {
 
 const timeOf = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+/** "Sunday, Aug 23" — the header said 2026-08-23, which nobody reads as a day. */
+function fmtDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
 export function Sidework() {
   // Editable copy of the duty sheet, persisted to the device.
@@ -148,6 +159,18 @@ export function Sidework() {
     setCloser(today(), activePhase, side, who)
     setCloserTick((t) => t + 1)
   }
+  // Folded away by default. It's named once at the start of a night and read
+  // at the end of one, and it was taking half the screen in between.
+  const [closersOpen, setClosersOpen] = useState(false)
+  /** Closing duties still unticked, so the strip can say so without unfolding. */
+  const closerLeft = useMemo(() => {
+    const lists = getCloserDuties()
+    return SIDES.reduce(
+      (n, side) => n + (lists[side] ?? []).filter((t) => !done[closerDutyId(activePhase, side, t)]).length,
+      0,
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePhase, done, closerTick])
   // Anyone on the roster can close — it isn't limited to the role tab you're on.
   const everyone = useMemo(
     () => staff.map((p) => p.name).filter(Boolean).sort((a, b) => a.localeCompare(b)),
@@ -454,6 +477,35 @@ export function Sidework() {
 
   const byId = new Map(duties.map((d) => [d.id, d]))
 
+  /**
+   * Every sheet's state for tonight, for the rail.
+   *
+   * Computed across the store's whole sheet rather than the open one — the
+   * question a closer has is "which of these nine are finished", and the old
+   * page could only answer it about whichever tab was showing.
+   */
+  const sheetStates = useMemo(
+    () =>
+      roles.map((r) => {
+        // Each sheet against ITS OWN phase for this shift, not the one the open
+        // sheet happens to be on. Every role names its phases differently —
+        // Server has an AM Opening, Host doesn't — so measuring them all
+        // against the active phase marked most of the rail "empty" when the
+        // sheets were full.
+        const mine = Object.keys(data?.[r] ?? {})
+        const ph = mine.includes(activePhase) ? activePhase : phaseForShift(mine, shift)
+        const secs = (data?.[r]?.[ph] ?? []) as Section[]
+        const tasks = secs.flatMap((sec) => sec.tasks.map((t) => `${r}|${ph}|${sec.section}|${t}`))
+        return {
+          name: r,
+          total: tasks.length,
+          done: tasks.filter((k) => done[k]).length,
+          verifiedBy: verified[`${r}|${ph}`]?.init,
+        }
+      }),
+    [roles, data, activePhase, shift, done, verified],
+  )
+
   // A server sees the cut they were dealt, and nothing else. The full sheet is
   // the closer's tool -- handing a server forty duties to find their six in is
   // how the list stops being read.
@@ -577,9 +629,9 @@ export function Sidework() {
   return (
     <>
       <PageHeader
-        width="narrow"
+        width="wide"
         title="Sidework"
-        subtitle={`${role} · ${activePhase} · ${doneCount}/${allTasks.length} · ${today()}`}
+        subtitle={fmtDay(today())}
         right={
           doneCount > 0 && (
             <button
@@ -592,70 +644,39 @@ export function Sidework() {
         }
       />
       <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <div className="mx-auto w-full max-w-3xl space-y-4">
-        {/* Front of house, then the kitchen.
-            One row of nine tabs is unreadable on a phone, and the two halves
-            aren't the same kind of thing anyway: the front ones are jobs a
-            person is on, the kitchen ones are stations that get closed by
-            whoever is standing at them. */}
-        {(
-          [
-            ['Front of house', roles.filter((r) => !isStation(r))],
-            ['Kitchen', roles.filter(isStation)],
-          ] as const
-        ).map(([label, group]) => (
-          <div key={label}>
-            <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-              {label}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {group.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    setShowClean(false)
-                    setRole(r)
-                    setPhase(phasesFor(r)[0])
-                    setEditingSec(null)
-                  }}
-                  className={`min-w-[5.5rem] flex-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition-colors ${
-                    role === r
-                      ? 'border-brand bg-brand text-white'
-                      : 'border-black/10 bg-white text-muted hover:border-brand/40'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-              {/* The wall sheets: weekly every-shift cleaning, plus the
-                  numbered-Sunday monthly jobs. Kitchen-wide rather than per
-                  station, so it sits alongside the stations, not inside one. */}
-              {label === 'Kitchen' && (
-                <button
-                  onClick={() => setShowClean(true)}
-                  className={`min-w-[5.5rem] flex-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition-colors ${
-                    showClean
-                      ? 'border-brand bg-brand text-white'
-                      : 'border-black/10 bg-white text-muted hover:border-brand/40'
-                  }`}
-                >
-                  Deep clean
-                </button>
-              )}
-              {/* Every kitchen runs different stations and I can't know yours,
-                  so the list is yours to extend rather than mine to guess at. */}
-              {label === 'Kitchen' && isCloser && (
-                <button
-                  onClick={addStation}
-                  className="min-w-[5.5rem] flex-1 rounded-xl border border-dashed border-black/20 px-2 py-2.5 text-sm font-semibold text-muted hover:border-brand/40 hover:text-ink"
-                >
-                  + Station
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+        <div className="mx-auto w-full max-w-7xl">
+        {/* Sheets on the left, the work on the right.
+            This used to open with thirteen controls in three stacked rows —
+            four front-of-house tabs, six kitchen ones, three phase chips —
+            and then four cards of identical weight underneath. Nothing said
+            what to do first and nothing said how the close was going. */}
+        <div className="grid gap-5 lg:grid-cols-[minmax(16rem,19rem)_minmax(0,1fr)]">
+        {/* min-w-0: the phone's sheet row scrolls sideways INSIDE itself, and a
+            grid column defaults to min-width:auto — without this the row's full
+            width forces the column wide and the whole page scrolls with it. */}
+        <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+          <SheetRail
+            foh={sheetStates.filter((x) => !isStation(x.name))}
+            kitchen={sheetStates.filter((x) => isStation(x.name))}
+            active={role}
+            onPick={(r) => {
+              setShowClean(false)
+              setRole(r)
+              // Stay on the same phase where the new sheet has one — jumping a
+              // closer from PM Closing to AM Opening because they tapped Host
+              // is the thing the shift-aware default was meant to prevent.
+              const mine = Object.keys(data?.[r] ?? {})
+              setPhase(mine.includes(activePhase) ? activePhase : phaseForShift(mine, shift))
+              setEditingSec(null)
+            }}
+            onAddStation={addStation}
+            cleanActive={showClean}
+            onPickClean={() => setShowClean(true)}
+            canEdit={isCloser}
+          />
+        </div>
 
+        <div className="min-w-0 space-y-4">
         {showClean ? (
           <BohCleaning
             date={today()}
@@ -665,24 +686,29 @@ export function Sidework() {
           />
         ) : (
         <>
-        {/* Phase chips */}
-        <div className="flex flex-wrap gap-2">
-          {phases.map((ph) => (
-            <button
-              key={ph}
-              onClick={() => {
-                setPhase(ph)
-                setEditingSec(null)
-              }}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                activePhase === ph
-                  ? 'border-navy bg-navy text-white'
-                  : 'border-black/10 bg-white text-muted hover:border-navy/40'
-              }`}
-            >
-              {ph}
-            </button>
-          ))}
+        {/* Which sheet you're on and which phase of it — one line, at the top
+            of the work, instead of a row of chips floating above four cards. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="font-display text-lg font-semibold text-ink">{role}</span>
+          <div className="flex gap-1 rounded-xl bg-black/5 p-1">
+            {phases.map((ph) => (
+              <button
+                key={ph}
+                onClick={() => {
+                  setPhase(ph)
+                  setEditingSec(null)
+                }}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                  activePhase === ph ? 'bg-navy text-white shadow-sm' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {ph}
+              </button>
+            ))}
+          </div>
+          <span className="ml-auto font-mono text-xs font-bold text-muted">
+            {doneCount}/{allTasks.length}
+          </span>
         </div>
 
         {/* Today's weekly detail. Both bar daily lists end with "do weekly side
@@ -720,23 +746,35 @@ export function Sidework() {
           </Card>
         )}
 
-        {/* Dealing tonight's work. The sheet below is the library it deals
-            from -- edited when the duties themselves change, not nightly. */}
-        {/* Decided before the cuts, and a different question: the cuts are who
-            goes home and in what order, this is who stays to shut it down. */}
-        <Closers
-          phase={activePhase}
-          roster={everyone}
-          closers={closers}
-          onSetCloser={assignCloser}
-          done={done}
-          onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
-          canEdit={isCloser}
-          // So the card can name the rows on THIS sheet a closer already owns.
-          sheet={duties}
-        />
-
+        {/* The cuts are the work, so they lead. Who stays to shut the building
+            down is decided once and read at the end, so it sits under them as
+            one line that unfolds — it used to be the biggest thing on the page,
+            two columns of tick boxes with half of it empty. */}
         <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
+
+        <Card className="overflow-hidden">
+          <ClosersStrip
+            foh={closers.FOH}
+            boh={closers.BOH}
+            open={closersOpen}
+            onToggle={() => setClosersOpen((v) => !v)}
+            left={closerLeft}
+          />
+          {closersOpen && (
+            <Closers
+              phase={activePhase}
+              roster={everyone}
+              closers={closers}
+              onSetCloser={assignCloser}
+              done={done}
+              onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
+              canEdit={isCloser}
+              // So the card can name the rows on THIS sheet a closer already owns.
+              sheet={duties}
+              bare
+            />
+          )}
+        </Card>
 
         {/* The duty list the cuts are dealt from.
             Folded away, because the cuts ARE the layout now -- how the duties
@@ -959,6 +997,8 @@ export function Sidework() {
         )}
         </>
         )}
+        </div>
+        </div>
         </div>
       </div>
     </>
