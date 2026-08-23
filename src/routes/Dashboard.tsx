@@ -17,7 +17,7 @@ import { DashDrop } from '../components/DashDrop'
 import { dishPhoto } from '../lib/photos'
 import { isDrink } from '../lib/categories'
 import type { Spec } from '../lib/types'
-import { upcomingEvents, addEvent, removeEvent, type LocalEvent } from '../lib/events'
+import { upcomingEvents, addEvent, dismissEvent, type LocalEvent } from '../lib/events'
 import { ordersDueOn, deliveriesOn } from '../lib/orderDays'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -976,8 +976,9 @@ function EventsTicker() {
           className="group inline-flex shrink-0 items-center gap-1.5 rounded-full border border-signal/25 bg-signal/[0.07] py-1 pl-3 pr-1.5 text-xs font-semibold text-ink"
         >
           <span className="text-signal">{fmtEv(e.date)}</span> {e.name}
+          {e.where && <span className="font-normal text-muted">{e.where}</span>}
           <button
-            onClick={() => { removeEvent(e.id); setTick((x) => x + 1) }}
+            onClick={() => { dismissEvent(e.id); setTick((x) => x + 1) }}
             aria-label={`Remove ${e.name}`}
             className="rounded-full p-0.5 text-muted/50 hover:text-down"
           >
@@ -995,7 +996,14 @@ function EventsTicker() {
       </span>
       <div className="min-w-0 flex-1 overflow-hidden">
         {events.length === 0 ? (
-          <span className="text-xs text-muted">Nothing tracked — add games, concerts, festivals that could swing business.</span>
+          <span className="text-xs text-muted">
+            Nothing tracked — add games, concerts, festivals that could swing business.{' '}
+            {/* Where the automatic half is set up, so "nothing tracked" isn't a
+                dead end for anyone wondering why it's empty. */}
+            <Link to="/connections" className="font-semibold text-signal hover:underline">
+              Set up the sources →
+            </Link>
+          </span>
         ) : (
           <div className={`flex ${events.length > 3 ? 'animate-[tickerscroll_28s_linear_infinite] hover:[animation-play-state:paused]' : ''}`}>
             {row('a')}

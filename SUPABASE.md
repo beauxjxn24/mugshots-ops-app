@@ -55,3 +55,44 @@ The one-time migrations in `Prep.tsx` (`RETIRED_PREP`, `ADDED_PREP`,
 own copy of the shipped data. They have to run on a device **before** it syncs,
 or it will upload a stale list as the shared truth. Don't remove them until
 every device has opened the app at least once on this build.
+
+## The local-events fetcher
+
+The Dashboard ticker is a hand-typed list. The sources it should be fed from
+are settled in `src/lib/eventsources.ts` and configured per store on
+Connections; this is the server half that hasn't been built.
+
+**Shape.** A fetcher writes `LocalEvent` (`src/lib/events.ts`) with `from` set
+to the source id. `from` is what keeps a fed event apart from a typed one, and
+it decides what happens when a manager taps the ✕: a typed event is deleted, a
+fed one is only marked `hidden` — delete it outright and the next run puts it
+straight back, which is how a dismiss button becomes a thing nobody trusts.
+
+**Read them server-side.** These are public pages, not APIs, and several of
+them sit behind hosts an app egress proxy blocks. The fetcher runs on the
+server for that reason, not just for the schedule.
+
+**One adapter covers most of the chambers.** Flowood, Rankin County, Madison
+County, Greater Jackson and Clinton all run ChamberMaster/MicroNet portals on
+`business.*` / `members.*` subdomains with the same calendar structure. Write
+that reader once. Pearl (`pearlms.org`) and Ridgeland run their own sites and
+need their own.
+
+**Cadence is per source, not global.** A season schedule (Trustmark Park) and a
+school-year calendar publish once and are then static — read them monthly. A
+chamber calendar is worth a daily read. Weather is hourly and is the only one
+here with a real API (`api.weather.gov`, free, no key).
+
+**Dedupe across sources, not within one.** The same festival will come off a
+chamber calendar and a venue page under two slightly different names. Key on
+`date` plus a normalised name, and prefer the venue's version — it has the
+times.
+
+**Relevance is distance.** Every source carries rough `miles`. A sell-out eight
+miles away and one thirty miles away are not the same event, and a ticker that
+treats them alike gets ignored. Rank before truncating.
+
+**The inbox watcher is last, and separately.** It's the only source that
+touches private mail. It needs a granted scope and the same token rule as every
+other connection — the token stays on the server, never on the device (see
+`src/lib/connections.ts`).

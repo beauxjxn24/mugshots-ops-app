@@ -5,6 +5,7 @@ import { SearchInput } from '../components/SearchInput'
 import { PROVIDERS, CATEGORIES } from '../lib/providers'
 import { getConnections, setConnection, connectReadiness, STATUS_LABEL } from '../lib/connections'
 import { toast } from '../lib/toast'
+import { EventSources } from '../components/EventSources'
 
 export function Connections() {
   const [q, setQ] = useState('')
@@ -52,6 +53,12 @@ export function Connections() {
           distributor works through the <b>drop-box reader</b> — drop their invoice or order guide
           and the app reads it. New live integrations get added here as providers open their APIs.
         </Card>
+
+        {/* Not a vendor integration, but the same kind of thing: something this
+            store has told the app to go and read on a schedule. It sits above
+            the catalog because it's configured per store rather than shopped
+            for. */}
+        <EventSources />
 
         {/* Category filter */}
         <div className="flex flex-wrap gap-2">
