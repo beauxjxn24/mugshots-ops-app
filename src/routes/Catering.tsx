@@ -107,37 +107,42 @@ export function Catering() {
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           {/* Bookings log */}
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="font-display text-lg font-semibold text-ink">Bookings</span>
+            {/* ONE header bar, matching the Reservations card beside it.
+                This card used to carry a "Bookings" title row above its
+                coloured bar and the other didn't, so the two bars sat at
+                different heights — the first thing your eye catches on the
+                page, and it read as sloppy because it was. */}
+            <div className="flex min-h-[46px] items-center gap-2 border-l-4 border-brand bg-brand/[0.08] px-4 py-2">
+              <span className="text-sm font-bold text-ink">Catering</span>
+              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-muted">{active.length}</span>
               <button
                 onClick={() => setShowForm((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-2 text-xs font-bold text-white"
+                className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-1.5 text-xs font-bold text-white"
               >
                 <Plus size={13} /> New booking
               </button>
             </div>
-            <div className="flex items-center gap-2 border-l-4 border-brand bg-brand/[0.08] px-4 py-2">
-              <span className="text-sm font-bold text-ink">Catering</span>
-              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-muted">{active.length}</span>
-            </div>
 
-            {/* Column headers */}
+            <div className="overflow-x-auto">
+            <div className="min-w-[900px]">
+            {/* Column headers.
+                Fixed tracks add up to more than the pane at some widths, so
+                the labels were spilling out of their cells and printing over
+                each other — "EVGNESTS", "MEDEPOSIT". Same answer as the prep
+                sheet: give the table a floor and let it scroll inside the
+                card rather than squeezing columns to nothing. */}
             <div className="hidden grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_96px] gap-2 border-b border-black/5 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted lg:grid">
-              <span>When</span>
-              <span>Event & contact</span>
-              <span>Guests</span>
-              <span>Menu / notes</span>
-              <span>Deposit</span>
-              <span>Est.</span>
-              <span>Status</span>
+              <span className="truncate">When</span>
+              <span className="truncate">Event &amp; contact</span>
+              <span className="truncate">Guests</span>
+              <span className="truncate">Menu / notes</span>
+              <span className="truncate">Deposit</span>
+              <span className="truncate">Est.</span>
+              <span className="truncate">Status</span>
               <span />
             </div>
 
-            {active.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted">
-                No upcoming bookings — add one, or drop an ezCater order on Imports and it lands here.
-              </p>
-            ) : (
+            {active.length === 0 ? null : (
               active.map((b) => {
                 const st = STATUS_META[b.status ?? 'confirmed']
                 const focused = b.id === focusId
@@ -232,6 +237,13 @@ export function Catering() {
                   </div>
                 )
               })
+            )}
+            </div>
+            </div>
+            {active.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-muted">
+                No upcoming bookings — add one, or drop an ezCater order on Imports and it lands here.
+              </p>
             )}
           </Card>
 
@@ -388,7 +400,7 @@ function Reservations({
   }
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 border-l-4 border-navy bg-navy/[0.05] px-4 py-2.5">
+      <div className="flex min-h-[46px] items-center gap-2 border-l-4 border-navy bg-navy/[0.05] px-4 py-2">
         <span className="text-sm font-bold text-ink">Reservations</span>
         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-muted">{upcoming.length}</span>
       </div>
