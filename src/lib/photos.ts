@@ -30,6 +30,9 @@ const PHOTO_ALIASES: Record<string, string> = {
   'garlic-parm-burger': 'garlic-parm',
   'mac-cheese-burger': 'mac-cheese',
   middleberger: 'middle',
+  // Renamed when the data was spell-swept — the file on disk keeps the old
+  // slug, and the picture must not go missing over an apostrophe.
+  'sean-s-nachos': 'seans-nachos',
   'davis-dill-pickles': 'dill-pickles',
   'southwest-eggrolls-build': 'eggrolls',
   'mombo-combo-build': 'mombo-combo',

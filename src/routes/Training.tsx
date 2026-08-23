@@ -83,13 +83,13 @@ export function Training() {
     return (
       <Page
         title="Training resources"
-        subtitle={`${list.length} programme${list.length === 1 ? '' : 's'} — the days, the tests and the sign-off`}
+        subtitle={`${list.length} program${list.length === 1 ? '' : 's'} — the days, the tests and the sign-off`}
         width="narrow"
         right={
           canEdit ? (
             <button
               onClick={() => {
-                const title = window.prompt('New programme — what job or station?')?.trim()
+                const title = window.prompt('New program — what job or station?')?.trim()
                 if (!title) return
                 const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
                 if (!id || programs[id]) return
@@ -106,7 +106,7 @@ export function Training() {
               }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink"
             >
-              <Plus size={13} /> New programme
+              <Plus size={13} /> New program
             </button>
           ) : undefined
         }
@@ -150,7 +150,7 @@ export function Training() {
         <Card className="flex items-start gap-2.5 border-brand/20 bg-brand/[0.04] p-3.5">
           <BookOpen size={15} className="mt-0.5 shrink-0 text-brand" />
           <p className="text-xs leading-snug text-muted">
-            The day-by-day training programmes and the menu tests that go with them.{' '}
+            The day-by-day training programs and the menu tests that go with them.{' '}
             {canEdit
               ? 'Edit any day as standards and menus change — the pencil is on each one.'
               : 'Closing duties live on the Sidework screen.'}
@@ -177,7 +177,7 @@ export function Training() {
           }}
           className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink"
         >
-          <ArrowLeft size={13} /> All programmes
+          <ArrowLeft size={13} /> All programs
         </button>
       }
     >
@@ -390,7 +390,7 @@ export function Training() {
           <select
             value={open.group}
             onChange={(e) => save({ ...programs, [open.id]: { ...programs[open.id], group: e.target.value } })}
-            aria-label="Which group this programme is filed under"
+            aria-label="Which group this program is filed under"
             className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-bold text-muted"
           >
             {GROUPS.map((g) => (
@@ -407,7 +407,7 @@ export function Training() {
                 if (
                   !(await confirmDelete(
                     `Reset ${open.title} to the version the app ships?`,
-                    'Your edits to this programme are replaced. Sign-offs are kept.',
+                    'Your edits to this program are replaced. Sign-offs are kept.',
                     'Reset',
                   ))
                 )

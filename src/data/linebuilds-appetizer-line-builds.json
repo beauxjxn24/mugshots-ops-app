@@ -14,15 +14,15 @@
      ]
     },
     {
-     "key": "porion-size-prep",
-     "label": "Porion Size. & Prep",
+     "key": "portion-size-prep",
+     "label": "Portion Size & Prep",
      "lines": [
       "6 oz. Rotel, Queso, or Salsa"
      ]
     },
     {
      "key": "on-side",
-     "label": "On side",
+     "label": "On Side",
      "lines": [
       "Chips"
      ]
@@ -41,8 +41,8 @@
      ]
     },
     {
-     "key": "porion-size-prep",
-     "label": "Porion Size. & Prep",
+     "key": "portion-size-prep",
+     "label": "Portion Size & Prep",
      "lines": [
       "6 Mozz or Pepperjack.",
       "3 Each Mixed.",
@@ -51,7 +51,7 @@
     },
     {
      "key": "on-side",
-     "label": "On side",
+     "label": "On Side",
      "lines": [
       "Marinara"
      ]
@@ -70,15 +70,15 @@
      ]
     },
     {
-     "key": "porion-size-prep",
-     "label": "Porion Size. & Prep",
+     "key": "portion-size-prep",
+     "label": "Portion Size & Prep",
      "lines": [
       "3 Rolls Cut in Half Corner to Corner. 2 to a Mombo"
      ]
     },
     {
      "key": "on-side",
-     "label": "On side",
+     "label": "On Side",
      "lines": [
       "2 oz Sweet Chili (SW Eggrolls)"
      ]
@@ -105,8 +105,8 @@
      ]
     },
     {
-     "key": "porion-size-prep",
-     "label": "Porion Size. & Prep",
+     "key": "portion-size-prep",
+     "label": "Portion Size & Prep",
      "lines": [
       "5,10,15, 20, or 50.",
       "Fried and Tossed"
@@ -114,7 +114,7 @@
     },
     {
      "key": "on-side",
-     "label": "On side",
+     "label": "On Side",
      "lines": [
       "1 Ranch, 2 Celery per 5 Wings"
      ]
@@ -124,13 +124,13 @@
      "label": "Garnish",
      "lines": [
       "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
-      "Garlic Parmesean"
+      "Garlic Parmesan"
      ]
     }
    ]
   },
   {
-   "sheetName": "Seans Nachos",
+   "sheetName": "Sean's Nachos",
    "photo": "seans-nachos.jpg",
    "sections": [
     {
@@ -141,15 +141,15 @@
      ]
     },
     {
-     "key": "porion-size-prep",
-     "label": "Porion Size. & Prep",
+     "key": "portion-size-prep",
+     "label": "Portion Size & Prep",
      "lines": [
       "Basket of Chips, Fries or Tots"
      ]
     },
     {
      "key": "on-side",
-     "label": "On side",
+     "label": "On Side",
      "lines": [
       "N/A"
      ]
@@ -280,7 +280,7 @@
      "label": "On Top / Tossed",
      "lines": [
       "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero",
-      "Garlic Parmesean"
+      "Garlic Parmesan"
      ]
     }
    ]
