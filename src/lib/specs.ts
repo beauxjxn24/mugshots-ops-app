@@ -93,7 +93,7 @@ const PREP_SHORTHAND: Record<string, string> = {
   'Brined Tenders': 'Brined Chicken Tenders',
   'Brined Breast': 'Brined Chicken Breast',
   'Blackened Ckn Tenders': 'Blackened Chicken Tenders',
-  'Caitlyn Ckn Breasts': 'Blackened Chicken Breast',
+  'Caitlin Ckn Breasts': 'Blackened Chicken Breast',
   'Queso Meat': 'Mugshots Queso Dip',
   'Mac & Chz': 'Kid Mac',
   Mash: 'Mashed Potatoes',

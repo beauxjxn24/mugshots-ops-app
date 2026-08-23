@@ -20,6 +20,7 @@ import { createPortal } from 'react-dom'
 import { X, Printer, ExternalLink, FileText, ScrollText } from 'lucide-react'
 import { getDoc } from '../lib/docs'
 import { fmtDate, fmtTime, type Booking } from '../lib/catering'
+import { mapItems, unmapped } from '../lib/ezmap'
 import { useScope } from '../lib/scope'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
@@ -275,6 +276,36 @@ function OrderPaper({ b, where }: { b: Booking; where: string }) {
         </Fact>
         <Fact k="Estimate">{b.estimate != null ? money(b.estimate) : '—'}</Fact>
       </div>
+
+      {b.items && b.items.length > 0 && (
+        <>
+          <Head>What was ordered</Head>
+          <div className="overflow-hidden rounded-lg border border-ink/20">
+            {mapItems(b.items).map((it, i) => (
+              <div
+                key={i}
+                className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-ink/10 px-2.5 py-1.5 text-sm last:border-0"
+              >
+                <span className="font-mono font-bold text-ink">{it.qty}×</span>
+                <span className="min-w-0 flex-1 font-semibold text-ink">{it.name}</span>
+                {it.build && it.build !== it.name && (
+                  <span className="op-quiet text-[11px] text-muted">pack: {it.build}</span>
+                )}
+                {it.special && (
+                  <span className="w-full text-[11px] font-semibold text-brand-600">
+                    ⚑ {it.special}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          {unmapped(b.items).length > 0 && (
+            <p className="op-quiet mt-1 text-[11px] text-muted">
+              Not matched to a build card yet: {unmapped(b.items).map((i) => i.name).join(', ')}
+            </p>
+          )}
+        </>
+      )}
 
       {lines.length > 0 && (
         <>

@@ -22,6 +22,7 @@
 import { allBuilds, norm, readLine, usageIndex } from './linebuilds'
 import { prepItemNames, barPrepNames, getCatalog } from './catalog'
 import type { Booking } from './catering'
+import { dishesOrdered } from './ezmap'
 
 export interface OrderDish {
   dish: string
@@ -71,7 +72,19 @@ export function dishesIn(b: Booking): OrderDish[] {
  */
 export function prepHitsFor(bookings: Booking[]): Map<string, OrderDish[]> {
   const hits = new Map<string, OrderDish[]>()
-  const ordered = bookings.flatMap(dishesIn)
+  // Two ways in, because ezCater's listing names and the menu's dish names are
+  // different vocabularies. The mapped lines are the reliable half — a ticket
+  // saying "Savell Boxed Lunch" names no dish the build sheets have heard of,
+  // and only the mapping knows it's a Savell.
+  const ordered = bookings.flatMap((b) => [
+    ...dishesIn(b),
+    ...dishesOrdered(b.items).map((d) => ({
+      dish: d.dish,
+      qty: d.qty,
+      event: b.event,
+      date: b.date,
+    })),
+  ])
   if (ordered.length === 0) return hits
 
   // usageIndex is prep -> dishes; this question runs the other way. It knows
