@@ -3,6 +3,7 @@
 // data and asks Claude. The API key is the owner's own, pasted once and kept
 // only on this device.
 
+import { useEffect, useState } from 'react'
 import { load, save } from './store'
 import { useScope } from './scope'
 import { TARGETS_KEY, DEFAULT_TARGETS, type Targets } from './targets'
@@ -17,6 +18,56 @@ const KEY = '__aiKey' // global (not store-scoped) — one key per device
 
 export const getAiKey = (): string => load<string>(KEY, '')
 export const setAiKey = (k: string): void => save(KEY, k.trim())
+
+/**
+ * Whether Mugsy is awake on this device.
+ *
+ * Asleep by default, and the launcher isn't rendered at all when it is —
+ * because a switched-off assistant that still floats over every screen is
+ * worse than no assistant. Its only behaviour without a key is to ask each
+ * person who taps it to go and paste an API key, which is an instruction the
+ * floor can't act on and shouldn't be given.
+ *
+ * Device-global, like the key it gates. Nothing here syncs — there's no server
+ * — so switching it on is a per-device decision either way, and pairing it with
+ * the key keeps the two facts in one place.
+ *
+ * The default reads the key rather than being a flat `false`: a device that has
+ * already been set up deliberately keeps its assistant. Only the ones that
+ * never had one go quiet.
+ */
+const ON_KEY = '__mugsyOn'
+
+export const getMugsyOn = (): boolean => load<boolean>(ON_KEY, Boolean(getAiKey()))
+export const setMugsyOn = (v: boolean): void => save(ON_KEY, v)
+
+/** Live switch state, so flipping it in Connections takes effect immediately. */
+export function useMugsyOn(): [boolean, (v: boolean) => void] {
+  const [on, setOn] = useState(getMugsyOn)
+  useEffect(() => {
+    const refresh = (): void => setOn(getMugsyOn())
+    const onSave = (e: Event): void => {
+      // The key counts too: pasting one on a sleeping device is the clearest
+      // possible statement that it's wanted.
+      const k = (e as CustomEvent<string>).detail
+      if (k !== ON_KEY && k !== KEY) return
+      refresh()
+    }
+    window.addEventListener('mugops:save', onSave)
+    window.addEventListener('storage', refresh)
+    return () => {
+      window.removeEventListener('mugops:save', onSave)
+      window.removeEventListener('storage', refresh)
+    }
+  }, [])
+  return [
+    on,
+    (v: boolean) => {
+      setMugsyOn(v)
+      setOn(v)
+    },
+  ]
+}
 
 const scoped = (k: string) => {
   const s = useScope.getState()

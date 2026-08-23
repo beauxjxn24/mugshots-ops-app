@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Zap } from 'lucide-react'
+import { Zap, Sparkles } from 'lucide-react'
+import { useMugsyOn, getAiKey } from '../lib/mugsy'
 import { Page, Card } from '../components/ui'
 import { SearchInput } from '../components/SearchInput'
 import { PROVIDERS, CATEGORIES } from '../lib/providers'
@@ -53,6 +54,8 @@ export function Connections() {
           distributor works through the <b>drop-box reader</b> — drop their invoice or order guide
           and the app reads it. New live integrations get added here as providers open their APIs.
         </Card>
+
+        <MugsySwitch />
 
         {/* Not a vendor integration, but the same kind of thing: something this
             store has told the app to go and read on a schedule. It sits above
@@ -160,5 +163,68 @@ export function Connections() {
           ))}
         </div>
             </Page>
+  )
+}
+
+/**
+ * Mugsy's on/off switch.
+ *
+ * On this page because it's the same kind of decision as the rest of it — what
+ * this place is wired up to — and because it's the one integration whose key
+ * you buy rather than are granted.
+ *
+ * Asleep by default. Without a key Mugsy can't answer anything; all it does is
+ * tell whoever tapped it to go and paste one, and it does that from a button
+ * floating over every screen in the building. Off is the honest state until
+ * there's a key behind it.
+ */
+function MugsySwitch() {
+  const [on, setOn] = useMugsyOn()
+  const hasKey = Boolean(getAiKey())
+  return (
+    <Card className={`p-4 ${on ? 'border-brand/20 bg-brand/5' : ''}`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Sparkles size={16} className={`shrink-0 ${on ? 'text-brand-600' : 'text-muted'}`} />
+        <span className="font-display text-base font-semibold text-ink">Mugsy</span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            !on ? 'bg-black/5 text-muted' : hasKey ? 'bg-up/15 text-up' : 'bg-warn/15 text-warn'
+          }`}
+        >
+          {!on ? 'ASLEEP' : hasKey ? 'ON' : 'ON — NO KEY YET'}
+        </span>
+        <button
+          onClick={() => setOn(!on)}
+          role="switch"
+          aria-checked={on}
+          aria-label={on ? 'Put Mugsy to sleep' : 'Wake Mugsy up'}
+          className={`ml-auto h-7 w-12 shrink-0 rounded-full border transition-colors ${
+            on ? 'border-brand bg-brand' : 'border-black/15 bg-black/10'
+          }`}
+        >
+          {/* bg-ink, not bg-white: the dark theme remaps .bg-white to the
+              surface colour, which made the knob the same shade as the track
+              it slides on — a switch with no visible switch. */}
+          <span
+            className={`block size-5 rounded-full bg-ink transition-transform ${
+              on ? 'translate-x-[22px]' : 'translate-x-[3px]'
+            }`}
+          />
+        </button>
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-ink/80">
+        {on
+          ? 'The Ask Mugsy button is on every manager screen. It reads this store’s data — sales, labor, mix, order guide, invoices, tips, bookings, notes — and asks Claude about it. Advice only: it can’t change anything, place an order, or send anything.'
+          : 'Switched off, and the Ask Mugsy button isn’t on screen at all. Nothing is lost — flip this back on whenever you want it.'}
+      </p>
+      {/* The part that isn't obvious from a toggle: it's the one thing in here
+          that costs money per use, and it's billed to you, not to the app. */}
+      <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+        Needs a Claude API key from <b>console.anthropic.com</b>, pasted into the ⚙ on the Mugsy
+        panel. Billed to your own Anthropic account, roughly a few cents a question, and each
+        device needs its own — nothing here syncs. Every question sends a snapshot of this store’s
+        data to Anthropic.
+      </p>
+    </Card>
   )
 }

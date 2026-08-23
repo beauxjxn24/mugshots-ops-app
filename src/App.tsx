@@ -38,6 +38,7 @@ import { Users } from './routes/Users'
 import { Printables } from './routes/Printables'
 import { PinDialog } from './components/PinDialog'
 import { Mugsy } from './components/Mugsy'
+import { useMugsyOn } from './lib/mugsy'
 import { Placeholder } from './routes/Placeholder'
 
 const router = createHashRouter([
@@ -119,12 +120,18 @@ export function App() {
   // behind a floor code on a shared tablet, so the launcher isn't there at all
   // for staff rather than being there and refusing.
   const role = useRole((s) => s.role)
+  // And asleep unless this device has been switched on. An assistant that can
+  // answer nothing until somebody buys it a key has no business floating over
+  // every screen in the meantime — its only reply is to tell whoever tapped it
+  // to go and paste one, which is an instruction the floor can't act on. The
+  // switch is on the Connections page.
+  const [mugsyOn] = useMugsyOn()
   return (
     <>
       <RouterProvider router={router} />
       <ConfirmDialog />
       <PinDialog />
-      {role !== 'staff' && <Mugsy />}
+      {role !== 'staff' && mugsyOn && <Mugsy />}
     </>
   )
 }
