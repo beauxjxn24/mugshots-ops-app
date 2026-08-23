@@ -466,7 +466,9 @@ function RoleCard({
                   onClick={() => onPickup(e)}
                   title="Manager-approved pickup"
                   aria-label={`Pick up for ${e.name}`}
-                  className="grid size-6 place-items-center rounded-md bg-white/10 text-white/80 hover:bg-brand"
+                  // hover:text-navy, not left white: the hover fills this with
+                  // solid gold, and the icon would vanish into it.
+                  className="grid size-6 place-items-center rounded-md bg-white/10 text-white/80 hover:bg-brand hover:text-navy"
                 >
                   <HandCoins size={12} />
                 </button>

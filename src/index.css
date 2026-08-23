@@ -105,6 +105,32 @@ body {
 }
 [class*="border-black/"] { border-color: var(--line) !important; }
 [class*="bg-black/"] { background-color: rgba(255, 255, 255, 0.045) !important; }
+
+/* ---- White type on a solid accent: the one pairing here that can't be read.
+   The palette's accents are all LIGHT — gold #e4b84c, mint #43d59b, cyan
+   #4fe3c1 — so white on them lands at 1.6–2.7:1 where the readable floor is
+   4.5:1. It's legible enough on a clean desk monitor and it is not legible on
+   a kitchen tablet with grease on the screen and the lights up.
+
+   Navy on the same golds is 10:1. Fixed here rather than across the ninety-odd
+   buttons that do this, for the same reason the dark remap above exists.
+
+   Deliberately scoped to `.bg-x.text-white` — an element carrying BOTH. The
+   opacity variants (bg-brand/10 and friends) are a tint over the dark ground
+   with coloured text on top, which reads fine and is left alone. ---- */
+.bg-brand.text-white,
+.bg-brand-600.text-white,
+.bg-signal.text-white,
+.bg-up.text-white,
+.bg-down.text-white,
+.bg-warn.text-white,
+.hover\:bg-brand.hover\:text-white:hover,
+.hover\:bg-signal.hover\:text-white:hover,
+.hover\:bg-up.hover\:text-white:hover,
+.hover\:bg-down.hover\:text-white:hover,
+.hover\:bg-warn.hover\:text-white:hover {
+  color: var(--color-navy) !important;
+}
 /* hardcoded warm creams used on a few chips/tiles → dark surface */
 .\!bg-\[\#fbf3df\], .bg-\[\#fbf3df\] { background-color: var(--surface-2) !important; }
 /* Modern browsers no longer default <button> to a pointer cursor — restore it
