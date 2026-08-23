@@ -1,0 +1,740 @@
+[
+ {
+  "name": "Mombo Platter",
+  "packaging": [
+   {
+    "item": "16\" Black Plastic Platter",
+    "sku": "Quick Supply 130TRAY16"
+   },
+   {
+    "item": "16\" Clear Dome Lid",
+    "sku": "Quick Supply 130LID16"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "6 oz Squat Cup",
+    "sku": "US Foods 9642815"
+   },
+   {
+    "item": "6 oz Squat Cup Lid",
+    "sku": "US Foods 5169168"
+   },
+   {
+    "item": "9\" Disposable Plates",
+    "sku": "Quick Supply 37480900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   },
+   {
+    "item": "Black Serving Tongs",
+    "sku": "Quick Supply 130TONG6BLK"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Black tray should be lined with three Mugshots basket liners.",
+     "Fry 6 Southwest Eggrolls, 12 Katie's Kickin Chicken Tenders, and 15 Buffalo Jack Wangs according to fry times. Make sure all items have been properly drained of grease using a Sav A Day accordingly.",
+     "Toss wings in Mild Sauce and place in 1/4 of a lined 16\" black catering tray. Place 6 pieces of celery next to the wings. Place the Southwest Eggrolls and Katie's Kickin Chicken in 1/4 of the tray each.",
+     "Fill one each of a 6 oz squat with Ranch dressing, Honey Mustard, and Sweet Thai Chili Sauce and cover with 6 oz squat lids. Place sauces next to coordinating menu item (as shown) on on the tray.",
+     "Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   }
+  ],
+  "photos": [
+   "mombo-platter-0.jpg"
+  ]
+ },
+ {
+  "name": "Appetizer Platter",
+  "packaging": [
+   {
+    "item": "16\" Black Plastic Platter",
+    "sku": "Quick Supply 130TRAY16"
+   },
+   {
+    "item": "16\" Clear Dome Lid",
+    "sku": "Quick Supply 130LID16"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "6 oz Squat Cup",
+    "sku": "US Foods 9642815"
+   },
+   {
+    "item": "6 oz Squat Cup Lid",
+    "sku": "US Foods 5169168"
+   },
+   {
+    "item": "9\" Disposable Plates",
+    "sku": "Quick Supply 37480900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   },
+   {
+    "item": "Black Serving Tongs",
+    "sku": "Quick Supply 130TONG6BLK"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Each of the black trays should be lined with three Mugshots basket liners."
+    ]
+   },
+   {
+    "head": "50-Wing Platter",
+    "body": [
+     "Make sure all wings have been properly drained of grease using a Sav A Day accordingly. Fill two 6 oz squats with Ranch dressing and cover with 6 oz squat lids.",
+     "Stack sauces and place in center of lined 16\" catering platter. Toss wings in desired sauce and place around sauces on platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "50-Tender Platter",
+    "body": [
+     "Make sure all tenders have been properly drained of grease using a Sav A Day accordingly. Fill two 6 oz squats with Ranch dressing and cover with 6 oz squat lids.",
+     "Stack sauces and place in center of lined 16\" catering platter. Stack celery sticks around sauces. Place tenders around celery on platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "20-Southwest Eggroll Platter",
+    "body": [
+     "Make sure all eggrolls have been properly drained of grease using a Sav A Day accordingly. Fill two 6 oz squats with Sweet Thai Chili sauce and cover with 6 oz squat lids. Stack sauces and place in center of lined 16\" catering platter. Place eggrolls around sauces on platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   }
+  ],
+  "photos": [
+   "appetizer-platter-0.jpg",
+   "appetizer-platter-1.jpg"
+  ]
+ },
+ {
+  "name": "Burger or Sandwich Platter",
+  "packaging": [
+   {
+    "item": "16\" Black Plastic Platter Quick",
+    "sku": "Supply 130TRAY16"
+   },
+   {
+    "item": "12\" Black Plastic Platter Quick",
+    "sku": "Supply 130TRAY12"
+   },
+   {
+    "item": "16\" Clear Dome Lid Quick",
+    "sku": "Supply 130LID16"
+   },
+   {
+    "item": "12\" Clear Dome Lid Quick",
+    "sku": "Supply 130LID12"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "6 oz Squat Cup",
+    "sku": "US Foods 9642815"
+   },
+   {
+    "item": "6 oz Squat Cup Lid",
+    "sku": "US Foods 5169168"
+   },
+   {
+    "item": "9\" Disposable Plates Quick",
+    "sku": "Supply 37480900"
+   },
+   {
+    "item": "Cutlery Kits Quick",
+    "sku": "Supply 346BKFSM"
+   },
+   {
+    "item": "Black Serving Tongs Quick",
+    "sku": "Supply 130TONG6BLK"
+   },
+   {
+    "item": "Condiments",
+    "sku": ""
+   },
+   {
+    "item": "SS Ketchup Packets",
+    "sku": "US Foods 6002398"
+   },
+   {
+    "item": "SS Mustard Packets",
+    "sku": "US Foods 2008860"
+   },
+   {
+    "item": "SS Mayo Packets",
+    "sku": "US Foods 64857"
+   },
+   {
+    "item": "Lay's Potato Chips - 1oz",
+    "sku": "US Foods 9315128"
+   },
+   {
+    "item": "Grandma's Chocolate Chip Cookies 2.5 oz",
+    "sku": "US Foods 5734900"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Each of the black trays should be lined with three Mugshots basket liners."
+    ]
+   },
+   {
+    "head": "Burger/Sandwich Platter",
+    "body": [
+     "Cut burgers/sandwiches in half and place in a circle around the lined 16\" platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "Garnish Platter",
+    "body": [
+     "Place1/3 cup diced red onions and 18 dill pickle chips in separate 6 oz squats in center of lined 12\" tray. Secure product with 6 oz squat cup lids. Place 12 slices of tomatoes one side of platter.",
+     "Place 2 cups shredded burger lettuce on the remaining half of platter. Cover platter with 12\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "Chips/Cookie Platter",
+    "body": [
+     "On lined 12\" platter, place 6 bags of Lay's Plain Potato Chips on one half and place 6 packages of Grandma's Chocolate Chip Cookies on the other half. Cover platter with 12\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   }
+  ],
+  "photos": [
+   "burger-or-sandwich-platter-0.jpg",
+   "burger-or-sandwich-platter-1.jpg",
+   "burger-or-sandwich-platter-2.jpg"
+  ]
+ },
+ {
+  "name": "Burger and Tender Platter",
+  "packaging": [
+   {
+    "item": "16\" Black Plastic Platter Quick Supply",
+    "sku": "130TRAY16"
+   },
+   {
+    "item": "12\" Black Plastic Platter Quick Supply",
+    "sku": "130TRAY12"
+   },
+   {
+    "item": "16\" Clear Dome Lid Quick Supply",
+    "sku": "130LID16"
+   },
+   {
+    "item": "12\" Clear Dome Lid Quick Supply",
+    "sku": "130LID12"
+   },
+   {
+    "item": "Mugshots Basket Liners US Foods",
+    "sku": "3168891"
+   },
+   {
+    "item": "6 oz Squat Cup US Foods",
+    "sku": "9642815"
+   },
+   {
+    "item": "6 oz Squat Cup Lid US Foods",
+    "sku": "5169168"
+   },
+   {
+    "item": "9\" Disposable Plates Quick Supply",
+    "sku": "37480900"
+   },
+   {
+    "item": "Cutlery Kits Quick Supply",
+    "sku": "346BKFSM"
+   },
+   {
+    "item": "Black Serving Tongs Quick Supply",
+    "sku": "130TONG6BLK"
+   },
+   {
+    "item": "Condiments",
+    "sku": ""
+   },
+   {
+    "item": "SS Ketchup Packets US Foods",
+    "sku": "6002398"
+   },
+   {
+    "item": "SS Mustard Packets US Foods",
+    "sku": "2008860"
+   },
+   {
+    "item": "SS Mayo Packets US Foods",
+    "sku": "64857"
+   },
+   {
+    "item": "Lay's Potato Chips - 1oz US Foods",
+    "sku": "9315128"
+   },
+   {
+    "item": "Grandma's Chocolate Chip Cookies 2.5 oz US Foods",
+    "sku": "5734900"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Each of the black trays should be lined with three Mugshots basket liners."
+    ]
+   },
+   {
+    "head": "Burger/Sandwich Platter",
+    "body": [
+     "Cut burgers/sandwiches in half and place in a circle around the lined 16\" platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "Tender Platter",
+    "body": [
+     "Make sure all 36 tenders have been properly drained of grease using a Sav A Day accordingly. Fill two 6 oz squats with Ranch dressing and cover with 6 oz squat lids. Stack sauces and place in center of lined 16\" catering platter. Place tenders around sauces on platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "Garnish Platter",
+    "body": [
+     "Place1/3 cup diced red onions and 18 dill pickle chips in separate 6 oz squats in center of lined 12\" tray. Secure product with 6 oz squat cup lids. Place 12 slices of tomatoes one side of platter. Place 2 cups shredded burger lettuce on the remaining half of platter. Cover platter with 12\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   },
+   {
+    "head": "Chips/Cookie Platter",
+    "body": [
+     "On lined 16\" platter, place 12 bags of Lay's Plain Potato Chips on one half and place 12 packages of Grandma's Chocolate Chip Cookies on the other half. Cover platter with 16\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   }
+  ],
+  "photos": [
+   "burger-and-tender-platter-0.jpg",
+   "burger-and-tender-platter-1.jpg",
+   "burger-and-tender-platter-2.jpg",
+   "burger-and-tender-platter-3.jpg"
+  ]
+ },
+ {
+  "name": "Katie's Kickin' Chicken Platter",
+  "packaging": [
+   {
+    "item": "16\" Black Plastic Platter",
+    "sku": "Quick Supply 130TRAY16"
+   },
+   {
+    "item": "12\" Black Plastic Platter",
+    "sku": "Quick Supply 130TRAY12"
+   },
+   {
+    "item": "16\" Clear Dome Lid",
+    "sku": "Quick Supply 130LID16"
+   },
+   {
+    "item": "12\" Clear Dome Lid",
+    "sku": "Quick Supply 130LID12"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "6 oz Squat Cup",
+    "sku": "US Foods 9642815"
+   },
+   {
+    "item": "6 oz Squat Cup Lid",
+    "sku": "US Foods 5169168"
+   },
+   {
+    "item": "9\" Disposable Plates",
+    "sku": "Quick Supply 37480900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   },
+   {
+    "item": "Black Serving Tongs",
+    "sku": "Quick Supply 130TONG6BLK"
+   },
+   {
+    "item": "Lay's Potato Chips - 1oz",
+    "sku": "US Foods 9315128"
+   },
+   {
+    "item": "Grandma's Chocolate Chip Cookies 2.5 oz",
+    "sku": "US Foods 5734900"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Each of the black trays should be lined with three Mugshots basket liners."
+    ]
+   },
+   {
+    "head": "Tender Platter",
+    "body": [
+     "Make sure all 36 chicken tenders have been properly drained of grease using a Sav A Day accordingly. Fill two 6 oz squats with Ranch dressing and cover with 6 oz squat lids. Stack sauces and place in center of lined 16\" catering platter. Place tenders around sauces on platter. Cover with 16\" Clear Dome Lid with Mugshots sticker in center"
+    ]
+   },
+   {
+    "head": "Chips/Cookie Platter",
+    "body": [
+     "On lined 12\" platter, place 6 bags of Lay's Plain Potato Chips on one half and place 6 packages of Grandma's Chocolate Chip Cookies on the other half. Cover platter with 12\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   }
+  ],
+  "photos": [
+   "katie-s-kickin-chicken-platter-0.jpg",
+   "katie-s-kickin-chicken-platter-1.jpg"
+  ]
+ },
+ {
+  "name": "Salad Platter",
+  "packaging": [
+   {
+    "item": "160 oz Black Plastic Bowl",
+    "sku": "Quick Supply 346151160LBK"
+   },
+   {
+    "item": "Lid for 160 oz Black Plastic Bowl",
+    "sku": "Quick Supply 34615816LL"
+   },
+   {
+    "item": "12\" Black Plastic Platter",
+    "sku": "Quick Supply 130TRAY12"
+   },
+   {
+    "item": "12\" Clear Dome Lid",
+    "sku": "Quick Supply 130LID12"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "6 oz Squat Cup",
+    "sku": "US Foods 9642815"
+   },
+   {
+    "item": "6 oz Squat Cup Lid",
+    "sku": "US Foods 5169168"
+   },
+   {
+    "item": "9\" Disposable Plates",
+    "sku": "Quick Supply 37480900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   },
+   {
+    "item": "Black Serving Tongs",
+    "sku": "Quick Supply 130TONG6BLK"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "head": "Blackened Chicken Salad",
+    "body": [
+     "Place 24 oz salad mix in 160 oz black plastic catering bowl. Top with 1 cup diced tomatoes, 1/2 cup diced red onions, 1 cup shredded mixed cheese, and 4 sliced blackened chicken breasts.",
+     "Seal with clear plastic lid for 160 oz bowl and place Mugshots sticker in center of lid. Fill two 6 oz squat cups with Ranch dressing (unless otherwise requested) and top with 6 oz squat cup lid. Dressing cups are served to the side."
+    ]
+   },
+   {
+    "head": "House Salad",
+    "body": [
+     "Place 24 oz salad mix in 160 oz black plastic catering bowl. Top with 1 cup diced tomatoes, 1/2 cup diced red onions, 1 cup shredded mixed cheese, and 1 cup croutons. Seal with clear plastic lid for 160 oz bowl and place Mugshots sticker in center of lid. Fill two 6 oz squat cups with Ranch dressing (unless otherwise requested) and top with 6 oz squat cup lid. Dressing cups are served to the side."
+    ]
+   },
+   {
+    "head": "Grilled Chicken Caesar Salad",
+    "body": [
+     "Place 24 oz chopped Romaine lettuce in 160 oz black plastic catering bowl. Top with 1 cup shredded parmesan cheese, 1 cup croutons, and 4 sliced grilled chicken breasts. Seal with clear plastic lid for 160 oz bowl and place Mugshots sticker in center of lid. Fill two 6 oz white squat cups with Caesar dressing (unless otherwise requested) and top with 6 oz squat cup lid.",
+     "Dressing cups are served to the side. Substitute 32 blackened shrimp if Shrimp Caesar Salad."
+    ]
+   },
+   {
+    "head": "Chips/Cookie Platter",
+    "body": [
+     "Place 6 packages of Grandma's Chocolate Chip Cookies on lined 12\" platter. Cover platter with 12\" Clear Dome Lid with Mugshots sticker in center."
+    ]
+   }
+  ],
+  "photos": [
+   "salad-platter-0.jpg",
+   "salad-platter-1.jpg"
+  ]
+ },
+ {
+  "name": "Sandwich or Burger Boxed Lunch",
+  "packaging": [
+   {
+    "item": "Mugshots White Catering Box",
+    "sku": "US Foods 6882430"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "Insulated Foil Wrap",
+    "sku": "Quick Supply 612W65"
+   },
+   {
+    "item": "Lay's Potato Chips - 1oz",
+    "sku": "US Foods 9315128"
+   },
+   {
+    "item": "Grandma's Chocolate Chip Cookies 2.5 oz",
+    "sku": "US Foods 5734900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   },
+   {
+    "item": "Condiments",
+    "sku": ""
+   },
+   {
+    "item": "SS Ketchup Packets",
+    "sku": "US Foods 6002398"
+   },
+   {
+    "item": "SS Mustard Packets",
+    "sku": "US Foods 2008860"
+   },
+   {
+    "item": "SS Mayo Packets",
+    "sku": "US Foods 64857"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Line the Mugshots paper box with Mugshots basket liner. Label with menu item inside using a Sharpie.",
+     "If requested, label with names as well."
+    ]
+   },
+   {
+    "head": "Burger/Sandwich Packing Procedure",
+    "body": [
+     "Place burger/sandwich in center of insulated foil wrap. Fold one side of the foil on top of the burger/sandwich followed by the other side. Fold ends under burger/sandwich. Place wrapped burger in right side of lined box."
+    ]
+   },
+   {
+    "head": "Garnish Cup",
+    "body": [
+     "Place 1 tbsp diced red onions and 3 dill pickle chips in equal halves in bottom of 6 oz squat cup topped with 1/3 cup shredded burger lettuce followed by a slice of tomato.",
+     "Place a 6 oz squat cup lid on top of cup and close to secure. Put garnish cup in lined box to the left of the burger/sandwich."
+    ]
+   },
+   {
+    "body": [
+     "Lay's Potato Chips - Place on top of garnish cup Grandma's Chocolate Chip Cookies - Place upright behind garnish cup.",
+     "Place one each - ketchup, mustard, mayo packets in front of garnish cup and burger/sandwich. Place cutlery kit on top."
+    ]
+   }
+  ],
+  "photos": [
+   "sandwich-or-burger-boxed-lunch-0.jpg"
+  ]
+ },
+ {
+  "name": "Katie's Kickin' Chicken Boxed Lunch",
+  "packaging": [
+   {
+    "item": "Mugshots White Catering Box",
+    "sku": "US Foods 6882430"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "2 oz Souffle Cup",
+    "sku": "Quick Supply 127P2B"
+   },
+   {
+    "item": "2 oz Souffle Lid",
+    "sku": "Quick Supply 127PL2"
+   },
+   {
+    "item": "Lay's Potato Chips 1oz Package",
+    "sku": "US Foods 9315128"
+   },
+   {
+    "item": "Grandma's Chocolate Chip Cookies 2.5 oz",
+    "sku": "US Foods 5734900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Line the Mugshots paper box with Mugshots basket liner. Label with menu item inside using a Sharpie. If requested, label with names as well."
+    ]
+   },
+   {
+    "head": "Tenders",
+    "body": [
+     "Make sure that the 6 chicken tenders have been properly drained using a Sav-a Day.",
+     "Once drained, place tenders in lined box towards the front of the box."
+    ]
+   },
+   {
+    "head": "Dipping Sauce",
+    "body": [
+     "Unless otherwise requested, fill a 2 oz souffle cup with honey mustard and top with a 2 oz souffle cup lid. Place cup in lined box with tenders."
+    ]
+   },
+   {
+    "body": [
+     "Lay's Potato Chips - Place in back left corner Grandma's Chocolate Chip Cookies - Place in back right corner."
+    ]
+   }
+  ],
+  "photos": [
+   "katie-s-kickin-chicken-boxed-lunch-0.jpg"
+  ]
+ },
+ {
+  "name": "Salad Boxed Lunch",
+  "packaging": [
+   {
+    "item": "Mugshots White Catering Box",
+    "sku": "US Foods 6882430"
+   },
+   {
+    "item": "Mugshots Basket Liners",
+    "sku": "US Foods 3168891"
+   },
+   {
+    "item": "2 oz Souffle Cup",
+    "sku": "Quick Supply 127P2B"
+   },
+   {
+    "item": "2 oz Souffle Lid",
+    "sku": "Quick Supply 127PL2"
+   },
+   {
+    "item": "Grandma's Chocolate Chip Cookies 2.5 oz",
+    "sku": "US Foods 5734900"
+   },
+   {
+    "item": "Cutlery Kits",
+    "sku": "Quick Supply 346BKFSM"
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [
+   {
+    "body": [
+     "Line the Mugshots paper box with Mugshots basket liner. Label with food item using a Sharpie. If requested, label with names as well."
+    ]
+   },
+   {
+    "head": "Blackened Chicken Salad",
+    "body": [
+     "Place 8 oz salad mix in lined box. Top with 1/3 cup diced tomatoes, 1/4 cup diced red onions, 1/2 cup shredded mixed cheese, and sliced grilled 6 oz chicken breast. Fill two 2 oz souffle cups with Ranch dressing (unless otherwise requested) and top with 2 oz souffle cup lid. Place dressing cups in opposite back corners of box."
+    ]
+   },
+   {
+    "head": "Grilled Chicken Caesar Salad",
+    "body": [
+     "Place 8 oz chopped Romaine lettuce in lined box. Top with 1 oz shredded parmesan cheese, croutons, and sliced grilled 6 oz chicken breast. Fill two 2 oz souffle cups with Caesar dressing (unless otherwise requested) and top with 2 oz souffle cup lid. Place dressing cups in opposite back corners of box. Substitue 8 blackened shrimp if Shrimp Caesar Salad."
+    ]
+   },
+   {
+    "body": [
+     "Grandma's Chocolate Chip Cookies - Place in back center of box between salad dressings.",
+     "Cutlery Kit is served on the side"
+    ]
+   }
+  ],
+  "photos": [
+   "salad-boxed-lunch-0.jpg"
+  ]
+ },
+ {
+  "name": "Beverages",
+  "packaging": [
+   {
+    "item": "One Gallon Jug with Lid",
+    "sku": "US Foods 6865687"
+   },
+   {
+    "item": "Mugshots 22 oz Souvenir Cups",
+    "sku": "US Foods 6147290"
+   },
+   {
+    "item": "16-22oz Clear Lid",
+    "sku": "US Foods 5492697"
+   },
+   {
+    "item": "Wrapped Black Straws",
+    "sku": "US Foods 9865718"
+   },
+   {
+    "item": "Ice Bag",
+    "sku": "Quick Supply 130IC10PCL1M"
+   },
+   {
+    "item": "Place Mugshots Catering Sticker on jugand label BEFORE",
+    "sku": "filling with beverage. Fill gallon jug with"
+   },
+   {
+    "item": "128 oz of beverage of choice - Lemonade, Unsweet",
+    "sku": "Tea, Sweet Tea, and snap lid into place. Please"
+   },
+   {
+    "item": "not that once the lid is snapped into place, you will",
+    "sku": "not be able to remove the lid without breaking"
+   },
+   {
+    "item": "the seal.",
+    "sku": ""
+   },
+   {
+    "item": "Souvenir Cups, Lids, and Straws should equal the",
+    "sku": "number of guests being served. As a standard - one"
+   },
+   {
+    "item": "gallon of beverage serves 8.",
+    "sku": ""
+   },
+   {
+    "item": "One bag of ice per gallon of beverage",
+    "sku": ""
+   }
+  ],
+  "procHead": "Procedure",
+  "steps": [],
+  "photos": [
+   "beverages-0.jpg"
+  ]
+ }
+]
