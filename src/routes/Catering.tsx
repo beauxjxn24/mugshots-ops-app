@@ -238,11 +238,6 @@ export function Catering() {
           {/* Right rail: reservations + auto-sync explainer */}
           <div className="space-y-5">
             <Reservations reservations={reservations} setReservations={setReservations} />
-            {/* Beside the orders, not on Specs. A cook packing a Mombo Platter
-                has the ticket open; sending them to another screen to find out
-                how many liners it takes is the hunt that keeps the laminated
-                packet in a drawer. */}
-            <CateringBuilds />
             <Card className="flex items-start gap-3 border-brand/25 bg-brand/[0.06] p-4">
               <span className="rounded bg-navy px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
                 Auto
@@ -254,6 +249,13 @@ export function Catering() {
             </Card>
           </div>
         </div>
+
+        {/* Beside the orders, not on Specs — a cook packing a Mombo Platter has
+            the ticket open, and sending them to another screen to find out how
+            many liners it takes is the hunt that keeps the packet in a drawer.
+            Full width rather than in the rail: these are photo cards, and the
+            photo is the thing you build against. */}
+        <CateringBuilds />
 
         {/* Completed events log */}
         {completed.length > 0 && (
