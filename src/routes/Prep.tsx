@@ -18,6 +18,7 @@ import { shiftPerson } from '../lib/daycode'
 import { entryColumn, entryField } from '../lib/nextfield'
 import { PrintSheet } from '../components/PrintSheet'
 import { fmtTime as fmtBookingTime, type Booking } from '../lib/catering'
+import { prepHitsFor, hitLabel } from '../lib/cateringprep'
 
 interface PrepItem {
   name: string
@@ -197,6 +198,14 @@ export function Prep() {
       .filter((b) => b && !b.completedAt && (b.date === t || b.date === tomorrow))
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
   }, [rawBookings, t])
+  /**
+   * Prep item → the ordered dishes that use it.
+   *
+   * The line builds already say what goes into what; this just asks them on
+   * behalf of the order. Memoised because answering it walks every build sheet
+   * line, which is not a per-row job on a forty-nine row screen.
+   */
+  const cateringHits = useMemo(() => prepHitsFor(soonCatering), [soonCatering])
 
   // One-time station migrations, per location:
   //  • v3: a store still on the first-pass default (Fry side / Grill side) is
@@ -566,6 +575,7 @@ export function Prep() {
     const n = need(it)
     const sug = suggested(it)
     const bump = bumped(it)
+    const hits = cateringHits.get(it.name) ?? []
     const counted = onHand[it.name] != null
     return (
       <div key={it.name}>
@@ -582,8 +592,10 @@ export function Prep() {
           setOverName(null)
         }}
         className={`group grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_86px_104px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
-          dragName === it.name ? 'opacity-40' : ''
-        } ${overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''}`}
+          hits.length > 0 ? 'bg-brand/[0.07]' : ''
+        } ${dragName === it.name ? 'opacity-40' : ''} ${
+          overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''
+        }`}
       >
         <span
           draggable={canEdit}
@@ -622,6 +634,22 @@ export function Prep() {
             )
           })()}
           <div className="flex items-center gap-2 text-[10px] text-muted">
+            {/* What the catering going out is about to take out of this item.
+                Not a number: the build sheet knows the portion but the pars
+                were set for a normal day, and adding those two together is a
+                judgement — so the row says what's coming and the manager sets
+                Prep this. */}
+            {hits.length > 0 && (
+              <span
+                title={`On the catering order: ${hits.map(hitLabel).join(' · ')}`}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/20 px-1.5 py-0.5 text-[10px] font-extrabold text-brand-600"
+              >
+                <PartyPopper size={9} />
+                <span className="max-w-[11rem] truncate normal-case">
+                  {hits.map(hitLabel).join(' · ')}
+                </span>
+              </span>
+            )}
             <span className="truncate">{it.spec || it.unit}</span>
             {/* What this prep feeds is on the recipe card, not here. The sheet
                 is read standing in a cooler with a clipboard; the row wants the
@@ -761,16 +789,24 @@ export function Prep() {
                     : 'border-black/10 bg-white placeholder:font-normal placeholder:text-muted/70'
                 }`}
               />
-              {bump && (
-                <button
-                  onClick={() => setTargetFor(it.name, undefined)}
-                  aria-label={`Put ${it.name} back to the suggested ${fmtQty(sug)}`}
-                  title="Back to the suggestion"
-                  className="shrink-0 rounded-md px-1 py-1 text-[11px] font-bold text-muted hover:text-down"
-                >
-                  ↺
-                </button>
-              )}
+              {/* Always in the layout, only visible once there's something to
+                  undo. Rendered conditionally it appeared the instant you
+                  changed a number and shoved the box a few pixels left —
+                  straight under a thumb that was tapping the spinner, so the
+                  second tap on the up-arrow landed on Reset and threw the
+                  change away. Nothing may move under a finger mid-edit. */}
+              <button
+                onClick={() => setTargetFor(it.name, undefined)}
+                aria-label={`Put ${it.name} back to the suggested ${fmtQty(sug)}`}
+                title="Back to the suggestion"
+                tabIndex={bump ? 0 : -1}
+                aria-hidden={!bump}
+                className={`shrink-0 rounded-md px-1 py-1 text-[11px] font-bold text-muted hover:text-down ${
+                  bump ? '' : 'invisible'
+                }`}
+              >
+                ↺
+              </button>
             </>
           ) : n > 0 ? (
             <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
