@@ -14,7 +14,7 @@ import {
   type Role,
   type Section,
 } from '../lib/sidework'
-import { BohCleaning } from '../components/BohCleaning'
+import { BohCleaning, CleaningToday } from '../components/BohCleaning'
 import { SheetRail, ClosersStrip } from '../components/SheetRail'
 import { rolesOf, type Person } from '../lib/staff'
 import { useRole } from '../lib/role'
@@ -478,6 +478,21 @@ export function Sidework() {
   const byId = new Map(duties.map((d) => [d.id, d]))
 
   /**
+   * Duty id → who is on it tonight.
+   *
+   * The sheet shows every duty, and the deal says which of them are yours. That
+   * pairing is the whole point: a cook wants the station's full list in front
+   * of them AND to see at a glance which lines have their name on.
+   */
+  const ownerOf = useMemo(() => {
+    const m = new Map<string, { who: string; cut: number }>()
+    for (const [id, cut] of Object.entries(plan.assign ?? {})) {
+      m.set(id, { who: (plan.people?.[cut] ?? '').trim(), cut })
+    }
+    return m
+  }, [plan])
+
+  /**
    * Every sheet's state for tonight, for the rail.
    *
    * Computed across the store's whole sheet rather than the open one — the
@@ -518,7 +533,7 @@ export function Sidework() {
           title="Your sidework"
           subtitle={
             !myCut
-              ? `${role} ${activePhase} · ${today()}`
+              ? `${role} ${activePhase} · ${fmtDay(today())}`
               : isReleased(plan, myCut)
                 ? `Cut ${myCut} · ${role} ${activePhase} · ${mineDone}/${myDuties.length} done`
                 : `Cut ${myCut} · not cut yet`
@@ -620,6 +635,67 @@ export function Sidework() {
               ))}
             </Card>
           )}
+
+          {/* The rest of the sheet.
+              Yours stays on top and stays the big tap targets — that's the work
+              you're actually holding. Under it is everything else, so you can
+              see the whole close and who has what instead of wondering whether
+              a job you can see needs doing is somebody's or nobody's. */}
+          {sections.length > 0 && (
+            <Card className="overflow-hidden">
+              <div className="flex items-center gap-2 border-b border-black/5 px-4 py-2.5">
+                <span className="font-display text-sm font-semibold text-ink">
+                  Everything on the {role} sheet
+                </span>
+                <span className="ml-auto text-[11px] text-muted">yours is highlighted</span>
+              </div>
+              {sections.map((sec) => (
+                <div key={sec.section}>
+                  <div className="border-b border-black/5 bg-black/[0.02] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                    {sec.section}
+                  </div>
+                  {sec.tasks.map((t, ti) => {
+                    const id = dutyId(role, activePhase, sec.section, t)
+                    const owner = ownerOf.get(id)
+                    const mine = !!owner && !!viewer && owner.who === viewer
+                    return (
+                      <button
+                        key={ti}
+                        onClick={() => setDone((d) => ({ ...d, [id]: !d[id] }))}
+                        className={`flex w-full items-start gap-2.5 border-b border-black/5 px-4 py-2.5 text-left last:border-0 ${
+                          done[id] ? 'bg-up/[0.04]' : mine ? 'bg-brand/[0.12]' : ''
+                        }`}
+                      >
+                        <span
+                          className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 ${
+                            done[id] ? 'border-up bg-up text-white' : 'border-black/15 text-transparent'
+                          }`}
+                        >
+                          <Check size={12} strokeWidth={3} />
+                        </span>
+                        <span
+                          className={`min-w-0 flex-1 text-sm ${
+                            done[id] ? 'text-muted line-through' : mine ? 'font-semibold text-ink' : 'text-ink/80'
+                          }`}
+                        >
+                          {t}
+                        </span>
+                        {owner && (
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${
+                              mine ? 'bg-brand text-navy' : 'bg-black/10 text-muted'
+                            }`}
+                          >
+                            {mine ? 'yours' : owner.who || `cut ${owner.cut}`}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </Card>
+          )}
           </div>
         </div>
       </>
@@ -690,7 +766,9 @@ export function Sidework() {
             of the work, instead of a row of chips floating above four cards. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="font-display text-lg font-semibold text-ink">{role}</span>
-          <div className="flex gap-1 rounded-xl bg-black/5 p-1">
+          {/* Hidden when a sheet has one phase — a segmented control with a
+              single button reads as a setting you can't change. */}
+          <div className={`flex gap-1 rounded-xl bg-black/5 p-1 ${phases.length < 2 ? 'hidden' : ''}`}>
             {phases.map((ph) => (
               <button
                 key={ph}
@@ -746,11 +824,13 @@ export function Sidework() {
           </Card>
         )}
 
-        {/* The cuts are the work, so they lead. Who stays to shut the building
-            down is decided once and read at the end, so it sits under them as
-            one line that unfolds — it used to be the biggest thing on the page,
-            two columns of tick boxes with half of it empty. */}
-        <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
+        {/* Cuts are a floor idea — who goes home and in what order. A kitchen
+            station is closed by whoever is standing at it, so the planner would
+            be four empty boxes asking a question nobody has. */}
+        {!isStation(role) && (
+          <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
+        )}
+
 
         <Card className="overflow-hidden">
           <ClosersStrip
@@ -776,22 +856,23 @@ export function Sidework() {
           )}
         </Card>
 
-        {/* The duty list the cuts are dealt from.
-            Folded away, because the cuts ARE the layout now -- how the duties
-            happen to be grouped in here is bookkeeping, and leaving those boxes
-            on screen beside the cuts showed the same work twice under two
-            different sets of names. Open it to edit what the duties are. */}
-        <details className="rounded-2xl border border-black/10 bg-white px-4 py-3">
-          <summary className="cursor-pointer text-sm font-bold text-ink">
-            Duty list
+        {/* The duties themselves — the answer to "what does this station do",
+            which is the question the tab is asking. It used to be folded into a
+            summary called "Duty list", under the cuts, because the cuts were
+            the layout. That reads on the Server sheet and it does not read on
+            Dish: a station has no cuts, so a closer tapping Fry got a cut
+            planner and had to go hunting for the actual jobs. */}
+        <div className="rounded-2xl border border-black/10 bg-white px-4 py-3">
+          <div className="text-sm font-bold text-ink">
+            {role} duties
             <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">
               {duties.length}
             </span>
             <span className="ml-2 text-xs font-normal text-muted">
-              everything the cuts are dealt from — edit it here
+              {isStation(role) ? 'whoever is on the station works these' : 'what the cuts are dealt from'}
             </span>
-          </summary>
-          {isCloser && stockSheet && (
+          </div>
+          {isCloser && stockSheet && editingSec !== null && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-black/10 bg-black/[0.02] px-3 py-2">
               <span className="text-[11px] text-muted">
                 This sheet is stored on this device. If it doesn't match the app's current one —
@@ -898,11 +979,20 @@ export function Sidework() {
                     </button>
                   </div>
                 ) : (
+                  (() => {
+                    // Stations don't run cuts, and the planner is hidden for
+                    // them — a leftover CUT 2 badge on a fryer duty points at a
+                    // control that isn't on the screen.
+                    const owner = isStation(role)
+                      ? undefined
+                      : ownerOf.get(dutyId(role, activePhase, sec.section, t))
+                    const mine = !!owner && !!viewer && owner.who === viewer
+                    return (
                   <button
                     key={ti}
                     onClick={() => setDone((d) => ({ ...d, [key(sec.section, t)]: !d[key(sec.section, t)] }))}
                     className={`flex w-full items-start gap-3 border-b border-black/5 px-4 py-3 text-left last:border-0 ${
-                      done[key(sec.section, t)] ? 'bg-up/5' : ''
+                      done[key(sec.section, t)] ? 'bg-up/5' : mine ? 'bg-brand/[0.10]' : ''
                     }`}
                   >
                     <span
@@ -913,13 +1003,24 @@ export function Sidework() {
                       {done[key(sec.section, t)] && '✓'}
                     </span>
                     <span
-                      className={`text-sm ${
+                      className={`min-w-0 flex-1 text-sm ${
                         done[key(sec.section, t)] ? 'text-muted line-through' : 'text-ink'
                       }`}
                     >
                       {t}
                     </span>
+                    {owner && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${
+                          mine ? 'bg-brand text-navy' : 'bg-black/10 text-muted'
+                        }`}
+                      >
+                        {owner.who || `cut ${owner.cut}`}
+                      </span>
+                    )}
                   </button>
+                    )
+                  })()
                 ),
               )}
 
@@ -944,7 +1045,17 @@ export function Sidework() {
           )
         })}
           </div>
-        </details>
+        </div>
+
+        {/* The kitchen's half of the bar's weekly card: the station's own
+            duties above, then the deep clean that's due on this shift. */}
+        {isStation(role) && (
+          <CleaningToday
+            date={today()}
+            done={done}
+            onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
+          />
+        )}
 
         {/* The closer's sign-off on this role + phase, for today. */}
         {sections.length > 0 && (

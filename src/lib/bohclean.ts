@@ -18,9 +18,9 @@ import { load, save } from './store'
 import { useScope } from './scope'
 
 export interface CleanDay {
-  AM?: string
-  PM?: string
-  /** The sheet's own aside, where it has one — Saturday defines "detail shelves". */
+  AM?: string[]
+  PM?: string[]
+  /** A day's own aside, where it has one. */
   note?: string
 }
 export interface MonthlyClean extends CleanDay {
@@ -32,6 +32,8 @@ export interface CleanSchedule {
   weekly: CleanDay[]
   /** Four entries: the 1st through 4th Sunday of the month. */
   monthly: MonthlyClean[]
+  /** The schedule's own standing note, printed under every day. */
+  note?: string
 }
 
 export const SEED_CLEAN = SEED as CleanSchedule
@@ -50,18 +52,41 @@ const key = (): string => {
  * all-or-nothing, so a store that has edited Tuesday still picks up a day the
  * app adds later.
  */
+/**
+ * One shift's jobs, whatever shape they were stored in.
+ *
+ * The first version of this file held ONE string per shift, because the
+ * laminated sheet has one line per box. The second BOH document has three or
+ * four, so a shift is a list now — and any device that saved the old shape has
+ * a bare string sitting in storage that would blow up the moment it was mapped
+ * over.
+ */
+const lines = (v: unknown): string[] | undefined => {
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string' && !!x.trim())
+  if (typeof v === 'string' && v.trim()) return [v]
+  return undefined
+}
+const fold = <T extends CleanDay>(seed: T, saved: unknown): T => {
+  if (!saved || typeof saved !== 'object') return seed
+  const s = saved as Record<string, unknown>
+  return {
+    ...seed,
+    ...s,
+    AM: lines(s.AM) ?? seed.AM,
+    PM: lines(s.PM) ?? seed.PM,
+  } as T
+}
+
 export function getSchedule(): CleanSchedule {
   const raw = load<Partial<CleanSchedule> | null>(key(), null)
   const mine = raw && typeof raw === 'object' ? raw : {}
-  const weekly = SEED_CLEAN.weekly.map((d, i) => {
-    const m = Array.isArray(mine.weekly) ? mine.weekly[i] : undefined
-    return m && typeof m === 'object' ? { ...d, ...m } : d
-  })
-  const monthly = SEED_CLEAN.monthly.map((d, i) => {
-    const m = Array.isArray(mine.monthly) ? mine.monthly[i] : undefined
-    return m && typeof m === 'object' ? { ...d, ...m } : d
-  })
-  return { weekly, monthly }
+  const weekly = SEED_CLEAN.weekly.map((d, i) =>
+    fold(d, Array.isArray(mine.weekly) ? mine.weekly[i] : undefined),
+  )
+  const monthly = SEED_CLEAN.monthly.map((d, i) =>
+    fold(d, Array.isArray(mine.monthly) ? mine.monthly[i] : undefined),
+  )
+  return { weekly, monthly, note: typeof mine.note === 'string' ? mine.note : SEED_CLEAN.note }
 }
 
 export const setSchedule = (s: CleanSchedule): void => save(key(), s)

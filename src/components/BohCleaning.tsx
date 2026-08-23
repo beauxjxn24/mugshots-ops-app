@@ -1,10 +1,10 @@
 // The BOH deep-clean tab — today's jobs first, the whole schedule under it.
 //
 // Ordered that way on purpose. The wall sheet is a reference you have to search;
-// this is a shift, so the two lines that are actually due today come first and
-// the rest is there for looking ahead.
+// this is a shift, so the jobs actually due today come first and the rest is
+// there for looking ahead.
 import { useMemo, useState } from 'react'
-import { Pencil, Check, RotateCcw, CalendarDays } from 'lucide-react'
+import { Pencil, Check, RotateCcw, CalendarDays, Sparkles } from 'lucide-react'
 import { Card } from './ui'
 import {
   getSchedule,
@@ -15,15 +15,125 @@ import {
   DOW_LONG,
   ORDINAL,
   type CleanSchedule,
+  type CleanDay,
 } from '../lib/bohclean'
 
+/**
+ * Today's BOH cleaning, as one card.
+ *
+ * This is the bar's weekly-sidework card applied to the kitchen: a station's
+ * own duties are its sheet, and the deep clean is the other thing that has to
+ * happen on that shift. Shown on every station tab, because the schedule is
+ * kitchen-wide — it isn't the fry cook's list or the dish list, it's the
+ * building's, and whoever is on tonight does the line that's due.
+ */
+export function CleaningToday({
+  date,
+  done,
+  onToggle,
+}: {
+  date: string
+  done: Record<string, boolean>
+  onToggle: (id: string) => void
+}) {
+  const schedule = useMemo(() => getSchedule(), [])
+  const due = useMemo(() => dueOn(date, schedule), [date, schedule])
+  const has = (due.weekly.AM?.length ?? 0) + (due.weekly.PM?.length ?? 0) > 0
+  if (!has && !due.monthly) return null
+
+  return (
+    <Card className="overflow-hidden border-warn/30">
+      <div className="flex flex-wrap items-center gap-2 border-b border-black/5 bg-warn/[0.07] px-4 py-2.5">
+        <Sparkles size={14} className="shrink-0 text-warn" />
+        <span className="font-display text-sm font-semibold text-ink">
+          Deep clean — {DOW_LONG[due.weekday]}
+        </span>
+        {due.nth > 0 && due.monthly && (
+          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-brand-600">
+            + {ORDINAL[due.nth]} Sunday · {due.monthly.title}
+          </span>
+        )}
+        <span className="ml-auto text-[11px] text-muted">everyone in the BOH, not one station</span>
+      </div>
+      <Slots day={due.weekly} scope="w" done={done} onToggle={onToggle} />
+      {due.monthly && (
+        <div className="border-t-2 border-brand/25">
+          <div className="bg-brand/[0.05] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-brand-600">
+            Monthly · {ORDINAL[due.nth]} Sunday · {due.monthly.title}
+          </div>
+          <Slots day={due.monthly} scope="m" done={done} onToggle={onToggle} />
+        </div>
+      )}
+      {schedule.note && (
+        <p className="border-t border-black/5 bg-black/[0.02] px-4 py-2 text-[11px] leading-snug text-ink/70">
+          {schedule.note}
+        </p>
+      )}
+    </Card>
+  )
+}
+
+/** Both shifts of one day, every line tickable. */
+function Slots({
+  day,
+  scope,
+  done,
+  onToggle,
+}: {
+  day: CleanDay
+  scope: 'w' | 'm'
+  done: Record<string, boolean>
+  onToggle: (id: string) => void
+}) {
+  return (
+    <div className="divide-y divide-black/5">
+      {(['AM', 'PM'] as const).map((slot) => {
+        const list = day[slot] ?? []
+        if (list.length === 0) return null
+        return (
+          <div key={slot} className="flex gap-2 px-4 py-2">
+            <span className="w-7 shrink-0 pt-1.5 font-mono text-xs font-extrabold text-muted">
+              {slot}
+            </span>
+            <div className="min-w-0 flex-1">
+              {list.map((text) => {
+                const id = cleanTickId(scope, slot, text)
+                const on = !!done[id]
+                return (
+                  <button
+                    key={id}
+                    onClick={() => onToggle(id)}
+                    className="flex w-full items-start gap-2.5 py-1 text-left text-sm"
+                  >
+                    <span
+                      className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border ${
+                        on ? 'border-up bg-up text-white' : 'border-black/25'
+                      }`}
+                    >
+                      {on && <Check size={11} strokeWidth={3} />}
+                    </span>
+                    <span className={on ? 'text-muted line-through' : 'text-ink/90'}>{text}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+      {day.note && (
+        <p className="px-4 py-2 text-[11px] leading-snug text-ink/60">{day.note}</p>
+      )}
+    </div>
+  )
+}
+
+/** The full schedule tab — today at the top, the week and the month under it. */
 export function BohCleaning({
   date,
   done,
   onToggle,
   canEdit,
 }: {
-  /** Today, as the rest of the screen reckons it. */
   date: string
   done: Record<string, boolean>
   onToggle: (id: string) => void
@@ -40,14 +150,21 @@ export function BohCleaning({
     setSchedule(fn(schedule))
     bump()
   }
-  const editWeekly = (i: number, slot: 'AM' | 'PM' | 'note', v: string) =>
-    write((s) => ({ ...s, weekly: s.weekly.map((d, x) => (x === i ? { ...d, [slot]: v } : d)) }))
-  const editMonthly = (i: number, slot: 'AM' | 'PM' | 'title', v: string) =>
-    write((s) => ({ ...s, monthly: s.monthly.map((d, x) => (x === i ? { ...d, [slot]: v } : d)) }))
+  // Edited as one box per shift, a line per row — the same way the sheet reads
+  // on the wall, and far less fiddly than a row of inputs that have to be added
+  // and removed one at a time.
+  const editDay = (kind: 'weekly' | 'monthly', i: number, slot: 'AM' | 'PM', v: string) =>
+    write((s) => ({
+      ...s,
+      [kind]: s[kind].map((d, x) =>
+        x === i ? { ...d, [slot]: v.split('\n').map((l) => l.trim()).filter(Boolean) } : d,
+      ),
+    }))
+  const editTitle = (i: number, v: string) =>
+    write((s) => ({ ...s, monthly: s.monthly.map((d, x) => (x === i ? { ...d, title: v } : d)) }))
 
   return (
     <div className="space-y-4">
-      {/* ── Due today ─────────────────────────────────────────────────────── */}
       <Card className="overflow-hidden border-brand/30">
         <div className="flex flex-wrap items-center gap-2 border-b border-black/5 bg-brand/[0.08] px-4 py-2.5">
           <CalendarDays size={15} className="shrink-0 text-brand-600" />
@@ -60,30 +177,7 @@ export function BohCleaning({
             </span>
           )}
         </div>
-        <div className="divide-y divide-black/5">
-          <Line
-            slot="AM"
-            text={due.weekly.AM}
-            id={due.weekly.AM ? cleanTickId('w', 'AM', due.weekly.AM) : undefined}
-            done={done}
-            onToggle={onToggle}
-          />
-          <Line
-            slot="PM"
-            text={due.weekly.PM}
-            id={due.weekly.PM ? cleanTickId('w', 'PM', due.weekly.PM) : undefined}
-            done={done}
-            onToggle={onToggle}
-          />
-        </div>
-        {due.weekly.note && (
-          <p className="border-t border-black/5 bg-black/[0.02] px-4 py-2 text-[11px] leading-snug text-ink/70">
-            {due.weekly.note}
-          </p>
-        )}
-
-        {/* The monthly job, stacked on today rather than sitting on a second
-            sheet nobody remembers to check. */}
+        <Slots day={due.weekly} scope="w" done={done} onToggle={onToggle} />
         {due.nth > 0 && (
           <div className="border-t-2 border-brand/25">
             <div className="flex flex-wrap items-center gap-2 bg-brand/[0.05] px-4 py-2">
@@ -95,22 +189,7 @@ export function BohCleaning({
               )}
             </div>
             {due.monthly ? (
-              <div className="divide-y divide-black/5">
-                <Line
-                  slot="AM"
-                  text={due.monthly.AM}
-                  id={due.monthly.AM ? cleanTickId('m', 'AM', due.monthly.AM) : undefined}
-                  done={done}
-                  onToggle={onToggle}
-                />
-                <Line
-                  slot="PM"
-                  text={due.monthly.PM}
-                  id={due.monthly.PM ? cleanTickId('m', 'PM', due.monthly.PM) : undefined}
-                  done={done}
-                  onToggle={onToggle}
-                />
-              </div>
+              <Slots day={due.monthly} scope="m" done={done} onToggle={onToggle} />
             ) : (
               // A fifth Sunday has nothing on it. Saying so is the answer; an
               // empty box reads as something that failed to load.
@@ -120,9 +199,13 @@ export function BohCleaning({
             )}
           </div>
         )}
+        {schedule.note && (
+          <p className="border-t border-black/5 bg-black/[0.02] px-4 py-2 text-[11px] leading-snug text-ink/70">
+            {schedule.note}
+          </p>
+        )}
       </Card>
 
-      {/* ── The whole schedule ────────────────────────────────────────────── */}
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
           <span className="font-display text-sm font-semibold text-ink">Weekly cleaning</span>
@@ -142,57 +225,14 @@ export function BohCleaning({
           )}
         </div>
         {schedule.weekly.map((d, i) => (
-          <div
+          <DayBlock
             key={i}
-            className={`border-t border-black/5 px-4 py-2.5 ${
-              i === due.weekday ? 'bg-brand/[0.06]' : ''
-            }`}
-          >
-            <div className="mb-1 flex items-center gap-2">
-              <span
-                className={`text-xs font-extrabold uppercase tracking-wide ${
-                  i === due.weekday ? 'text-brand-600' : 'text-muted'
-                }`}
-              >
-                {DOW_LONG[i]}
-              </span>
-              {i === due.weekday && (
-                <span className="rounded-full bg-brand px-1.5 py-px text-[9px] font-extrabold uppercase text-white">
-                  today
-                </span>
-              )}
-            </div>
-            {(['AM', 'PM'] as const).map((slot) => (
-              <div key={slot} className="flex gap-2.5 py-0.5 text-sm">
-                <span className="w-7 shrink-0 font-mono text-xs font-extrabold text-muted">{slot}</span>
-                {editing ? (
-                  <input
-                    value={d[slot] ?? ''}
-                    onChange={(e) => editWeekly(i, slot, e.target.value)}
-                    placeholder="—"
-                    className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1 text-sm text-ink outline-none focus:border-brand"
-                  />
-                ) : (
-                  <span className="text-ink/90">{d[slot] || '—'}</span>
-                )}
-              </div>
-            ))}
-            {(d.note || editing) && (
-              <div className="flex gap-2.5 pt-1">
-                <span className="w-7 shrink-0" />
-                {editing ? (
-                  <input
-                    value={d.note ?? ''}
-                    onChange={(e) => editWeekly(i, 'note', e.target.value)}
-                    placeholder="Note for this day (optional)"
-                    className="min-w-0 flex-1 rounded-lg border border-dashed border-black/15 bg-white px-2 py-1 text-xs text-ink outline-none focus:border-brand"
-                  />
-                ) : (
-                  <span className="text-[11px] leading-snug text-ink/60">{d.note}</span>
-                )}
-              </div>
-            )}
-          </div>
+            label={DOW_LONG[i]}
+            today={i === due.weekday}
+            day={d}
+            editing={editing}
+            onEdit={(slot, v) => editDay('weekly', i, slot, v)}
+          />
         ))}
       </Card>
 
@@ -202,59 +242,16 @@ export function BohCleaning({
           <span className="text-[11px] text-muted">on the Sunday listed</span>
         </div>
         {schedule.monthly.map((d, i) => (
-          <div
+          <DayBlock
             key={i}
-            className={`border-t border-black/5 px-4 py-2.5 ${
-              due.nth === i + 1 ? 'bg-brand/[0.06]' : ''
-            }`}
-          >
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span
-                className={`text-xs font-extrabold uppercase tracking-wide ${
-                  due.nth === i + 1 ? 'text-brand-600' : 'text-muted'
-                }`}
-              >
-                {ORDINAL[i + 1]} Sunday
-              </span>
-              {editing ? (
-                <input
-                  value={d.title ?? ''}
-                  onChange={(e) => editMonthly(i, 'title', e.target.value)}
-                  placeholder="What it is"
-                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1 text-sm font-bold text-ink outline-none focus:border-brand"
-                />
-              ) : (
-                d.title && <span className="text-sm font-bold text-ink">{d.title}</span>
-              )}
-              {due.nth === i + 1 && (
-                <span className="rounded-full bg-brand px-1.5 py-px text-[9px] font-extrabold uppercase text-white">
-                  today
-                </span>
-              )}
-            </div>
-            {(['AM', 'PM'] as const).map((slot) =>
-              editing ? (
-                <div key={slot} className="flex gap-2.5 py-0.5 text-sm">
-                  <span className="w-7 shrink-0 font-mono text-xs font-extrabold text-muted">{slot}</span>
-                  <input
-                    value={d[slot] ?? ''}
-                    onChange={(e) => editMonthly(i, slot, e.target.value)}
-                    placeholder="—"
-                    className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1 text-sm text-ink outline-none focus:border-brand"
-                  />
-                </div>
-              ) : (
-                d[slot] && (
-                  <div key={slot} className="flex gap-2.5 py-0.5 text-sm">
-                    <span className="w-7 shrink-0 font-mono text-xs font-extrabold text-muted">
-                      {slot}
-                    </span>
-                    <span className="text-ink/90">{d[slot]}</span>
-                  </div>
-                )
-              ),
-            )}
-          </div>
+            label={`${ORDINAL[i + 1]} Sunday`}
+            today={due.nth === i + 1}
+            day={d}
+            editing={editing}
+            title={d.title}
+            onTitle={(v) => editTitle(i, v)}
+            onEdit={(slot, v) => editDay('monthly', i, slot, v)}
+          />
         ))}
         {canEdit && editing && (
           <div className="border-t border-black/5 p-3">
@@ -274,46 +271,79 @@ export function BohCleaning({
   )
 }
 
-/** One AM/PM line, tickable when there's something on it. */
-function Line({
-  slot,
-  text,
-  id,
-  done,
-  onToggle,
+function DayBlock({
+  label,
+  today,
+  day,
+  editing,
+  title,
+  onTitle,
+  onEdit,
 }: {
-  slot: 'AM' | 'PM'
-  text?: string
-  id?: string
-  done: Record<string, boolean>
-  onToggle: (id: string) => void
+  label: string
+  today: boolean
+  day: CleanDay
+  editing: boolean
+  title?: string
+  onTitle?: (v: string) => void
+  onEdit: (slot: 'AM' | 'PM', v: string) => void
 }) {
-  if (!text)
-    return (
-      <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
-        <span className="w-7 shrink-0 font-mono text-xs font-extrabold text-muted">{slot}</span>
-        <span className="text-muted">Nothing on this shift</span>
-      </div>
-    )
-  const on = id ? !!done[id] : false
   return (
-    <button
-      onClick={() => id && onToggle(id)}
-      className={`flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-sm hover:bg-black/[0.02] ${
-        on ? 'opacity-55' : ''
-      }`}
-    >
-      <span className="w-7 shrink-0 pt-0.5 font-mono text-xs font-extrabold text-muted">{slot}</span>
-      <span
-        className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border ${
-          on ? 'border-up bg-up text-white' : 'border-black/25'
-        }`}
-      >
-        {on && <Check size={11} />}
-      </span>
-      <span className={`min-w-0 flex-1 ${on ? 'text-muted line-through' : 'text-ink/90'}`}>
-        {text}
-      </span>
-    </button>
+    <div className={`border-t border-black/5 px-4 py-2.5 ${today ? 'bg-brand/[0.06]' : ''}`}>
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span
+          className={`text-xs font-extrabold uppercase tracking-wide ${
+            today ? 'text-brand-600' : 'text-muted'
+          }`}
+        >
+          {label}
+        </span>
+        {onTitle &&
+          (editing ? (
+            <input
+              value={title ?? ''}
+              onChange={(e) => onTitle(e.target.value)}
+              placeholder="What it is"
+              className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-1 text-sm font-bold text-ink outline-none focus:border-brand"
+            />
+          ) : (
+            title && <span className="text-sm font-bold text-ink">{title}</span>
+          ))}
+        {today && (
+          <span className="rounded-full bg-brand px-1.5 py-px text-[9px] font-extrabold uppercase text-white">
+            today
+          </span>
+        )}
+      </div>
+      {(['AM', 'PM'] as const).map((slot) => {
+        const list = day[slot] ?? []
+        if (!editing && list.length === 0) return null
+        return (
+          <div key={slot} className="flex gap-2.5 py-0.5">
+            <span className="w-7 shrink-0 pt-1 font-mono text-xs font-extrabold text-muted">
+              {slot}
+            </span>
+            {editing ? (
+              <textarea
+                value={list.join('\n')}
+                onChange={(e) => onEdit(slot, e.target.value)}
+                rows={Math.max(1, list.length)}
+                placeholder="One job per line"
+                className="min-w-0 flex-1 resize-y rounded-lg border border-black/10 bg-white px-2 py-1 text-sm text-ink outline-none focus:border-brand"
+              />
+            ) : (
+              <ul className="min-w-0 flex-1 space-y-0.5">
+                {list.map((t, i) => (
+                  <li key={i} className="text-sm text-ink/90">
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })}
+      {day.note && <p className="pl-9 pt-1 text-[11px] leading-snug text-ink/60">{day.note}</p>}
+    </div>
   )
 }
