@@ -15,6 +15,7 @@ import {
   type Section,
 } from '../lib/sidework'
 import { BohCleaning, CleaningToday } from '../components/BohCleaning'
+import { phaseKind, PHASE_META } from '../lib/sidework'
 import { SheetRail, ClosersStrip } from '../components/SheetRail'
 import { rolesOf, type Person } from '../lib/staff'
 import { useRole } from '../lib/role'
@@ -499,6 +500,19 @@ export function Sidework() {
    * question a closer has is "which of these nine are finished", and the old
    * page could only answer it about whichever tab was showing.
    */
+  /** This sheet's phases, each with its own progress for the day. */
+  const phaseStates = useMemo(() => {
+    const out: Record<string, { done: number; total: number }> = {}
+    for (const ph of phases) {
+      const secs = (data?.[role]?.[ph] ?? []) as Section[]
+      const keys = secs.flatMap((sec) => sec.tasks.map((t) => `${role}|${ph}|${sec.section}|${t}`))
+      out[ph] = { total: keys.length, done: keys.filter((k) => done[k]).length }
+    }
+    return out
+  }, [phases, data, role, done])
+  /** The phase the clock says we're in — marked, not forced. */
+  const nowPhase = useMemo(() => phaseForShift(phases, shift), [phases, shift])
+
   const sheetStates = useMemo(
     () =>
       roles.map((r) => {
@@ -762,32 +776,73 @@ export function Sidework() {
           />
         ) : (
         <>
-        {/* Which sheet you're on and which phase of it — one line, at the top
-            of the work, instead of a row of chips floating above four cards. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="font-display text-lg font-semibold text-ink">{role}</span>
-          {/* Hidden when a sheet has one phase — a segmented control with a
-              single button reads as a setting you can't change. */}
-          <div className={`flex gap-1 rounded-xl bg-black/5 p-1 ${phases.length < 2 ? 'hidden' : ''}`}>
-            {phases.map((ph) => (
-              <button
-                key={ph}
-                onClick={() => {
-                  setPhase(ph)
-                  setEditingSec(null)
-                }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-                  activePhase === ph ? 'bg-navy text-white shadow-sm' : 'text-muted hover:text-ink'
-                }`}
-              >
-                {ph}
-              </button>
-            ))}
-          </div>
           <span className="ml-auto font-mono text-xs font-bold text-muted">
             {doneCount}/{allTasks.length}
           </span>
         </div>
+
+        {/* The day, left to right, with who is on the hook for each part.
+            Three identical pills said these were three views of one thing.
+            They aren't: opening is split across the crew, shift change is the
+            AM's work that the closers CHECK, and close is the closers' own and
+            can't start until the guests are gone. */}
+        {phases.length > 1 && (
+          <div className="grid gap-2 sm:grid-cols-3">
+            {phases.map((ph) => {
+              const k = phaseKind(ph)
+              const m = PHASE_META[k]
+              const st = phaseStates[ph] ?? { done: 0, total: 0 }
+              const on = activePhase === ph
+              const signed = verified[`${role}|${ph}`]
+              const full = st.total > 0 && st.done === st.total
+              return (
+                <button
+                  key={ph}
+                  onClick={() => {
+                    setPhase(ph)
+                    setEditingSec(null)
+                  }}
+                  className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                    on
+                      ? 'border-brand bg-brand/[0.12]'
+                      : 'border-black/10 bg-white hover:border-brand/40'
+                  }`}
+                >
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-sm font-bold ${on ? 'text-brand-600' : 'text-ink'}`}>
+                      {m.title}
+                    </span>
+                    {ph === nowPhase && (
+                      <span className="rounded-full bg-signal/20 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-signal">
+                        now
+                      </span>
+                    )}
+                    <span className="ml-auto shrink-0 font-mono text-[11px] font-bold text-muted">
+                      {signed ? `✓ ${signed.init}` : st.total > 0 ? `${st.done}/${st.total}` : '—'}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-muted">{m.who}</div>
+                  {st.total > 0 && (
+                    <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-white/10">
+                      <span
+                        className={`block h-full rounded-full ${full ? 'bg-up' : 'bg-brand'}`}
+                        style={{ width: `${Math.round((st.done / st.total) * 100)}%` }}
+                      />
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* What this part of the day actually is, in the owner's words. */}
+        <p className="px-1 text-xs leading-relaxed text-ink/70">
+          <b className="text-ink">{PHASE_META[phaseKind(activePhase)].title}</b> ·{' '}
+          {PHASE_META[phaseKind(activePhase)].note}
+        </p>
 
         {/* Today's weekly detail. Both bar daily lists end with "do weekly side
             work", and the sheet it points at lives behind the bar — so the one
@@ -827,7 +882,7 @@ export function Sidework() {
         {/* Cuts are a floor idea — who goes home and in what order. A kitchen
             station is closed by whoever is standing at it, so the planner would
             be four empty boxes asking a question nobody has. */}
-        {!isStation(role) && (
+        {!isStation(role) && phaseKind(activePhase) === 'close' && (
           <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
         )}
 
@@ -869,7 +924,13 @@ export function Sidework() {
               {duties.length}
             </span>
             <span className="ml-2 text-xs font-normal text-muted">
-              {isStation(role) ? 'whoever is on the station works these' : 'what the cuts are dealt from'}
+              {isStation(role)
+                ? 'whoever is on the station works these'
+                : phaseKind(activePhase) === 'open'
+                  ? 'split across the crew — a name on each section'
+                  : phaseKind(activePhase) === 'handover'
+                    ? 'the AM crew’s work — the closers check it’s done'
+                    : 'what the cuts are dealt from'}
             </span>
           </div>
           {isCloser && stockSheet && editingSec !== null && (
@@ -918,7 +979,14 @@ export function Sidework() {
                       {/* Type a name; the roster for this role suggests as you
                           go. A select meant scrolling fifteen servers on a
                           tablet, and an empty one read as disabled. */}
-                      <div className="w-[9.5rem]">
+                      {/* A name per section is how OPENING gets divided among
+                          the crew. On shift change there's nobody to assign —
+                          it's the AM's work and the closer is checking it. */}
+                      <div
+                        className={`w-[9.5rem] ${
+                          phaseKind(activePhase) === 'handover' ? 'hidden' : ''
+                        }`}
+                      >
                         <NamePicker
                           value={assigned[aKey(si)] ?? ''}
                           options={crew}
@@ -980,12 +1048,15 @@ export function Sidework() {
                   </div>
                 ) : (
                   (() => {
-                    // Stations don't run cuts, and the planner is hidden for
-                    // them — a leftover CUT 2 badge on a fryer duty points at a
-                    // control that isn't on the screen.
-                    const owner = isStation(role)
-                      ? undefined
-                      : ownerOf.get(dutyId(role, activePhase, sec.section, t))
+                    // A CUT badge points at the cut planner, so it may only
+                    // appear where the planner does: front of house, closing.
+                    // On an opening sheet the crew is split by SECTION, and on
+                    // a station there are no cuts at all — a stray "CUT 2"
+                    // there points at a control that isn't on the screen.
+                    const owner =
+                      isStation(role) || phaseKind(activePhase) !== 'close'
+                        ? undefined
+                        : ownerOf.get(dutyId(role, activePhase, sec.section, t))
                     const mine = !!owner && !!viewer && owner.who === viewer
                     return (
                   <button

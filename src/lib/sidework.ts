@@ -425,3 +425,46 @@ export const SPEED_POUR_DAYS = [1, 3, 6]
 /** The sheet's own warning, carried through to the screen. */
 export const BAR_WEEKLY_NOTE =
   'If not done, write-ups will be given and bar shifts will be taken away.'
+
+/**
+ * The three phases are not three tabs — they're three different jobs, with
+ * different people on the hook. Owner's words:
+ *
+ *   Opening      "assigned to everyone"
+ *   Shift change "the responsibility of the closers to ensure they are done"
+ *   Close        "assigned to the closers, and is the work that can't be done
+ *                 until after we close and the customers have left"
+ *
+ * Which is why one control set never fitted all three. Opening is divided
+ * among the crew, so it wants a name against each section. Shift change is
+ * somebody else's work being CHECKED, so it wants no assignment at all and a
+ * sign-off. Close is the closers' own work and can't start early, so it's the
+ * one that carries the cuts.
+ */
+export type PhaseKind = 'open' | 'handover' | 'close'
+
+export function phaseKind(phase: string): PhaseKind {
+  if (/open/i.test(phase)) return 'open'
+  // "AM Closing" is the shift change — the AM crew handing a clean section to
+  // the PM crew — not the building closing. Tested before the general /clos/.
+  if (/^\s*am\b|hand.?over|shift.?change|mid/i.test(phase)) return 'handover'
+  return 'close'
+}
+
+export const PHASE_META: Record<PhaseKind, { title: string; who: string; note: string }> = {
+  open: {
+    title: 'Opening',
+    who: 'everyone on',
+    note: 'Split across the crew — put a name on each section so nothing is nobody’s.',
+  },
+  handover: {
+    title: 'Shift change',
+    who: 'closers check these',
+    note: 'The AM crew’s work. The closers’ job is making sure it actually got done before they take the floor.',
+  },
+  close: {
+    title: 'Close',
+    who: 'the closers',
+    note: 'Can’t start until the doors are shut and the guests have gone.',
+  },
+}
