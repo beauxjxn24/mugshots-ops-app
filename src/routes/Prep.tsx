@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Printer, Pencil, Check, GripVertical, Archive, Send, Undo2, ChefHat } from 'lucide-react'
+import { Printer, Pencil, Check, GripVertical, Archive, Send, Undo2, ChefHat, PartyPopper } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useRole } from '../lib/role'
 import { useCurrentNames } from '../lib/scope'
@@ -17,6 +17,7 @@ import { driftFrom, hasDrift, prepSendKey, sendPrep, unsendPrep, type PrepSend, 
 import { shiftPerson } from '../lib/daycode'
 import { entryColumn, entryField } from '../lib/nextfield'
 import { PrintSheet } from '../components/PrintSheet'
+import { fmtTime as fmtBookingTime, type Booking } from '../lib/catering'
 
 interface PrepItem {
   name: string
@@ -138,6 +139,11 @@ export function Prep() {
     pars: Array.isArray(it?.pars) ? it.pars : [0, 0, 0, 0, 0, 0, 0],
   }))
   const [onHand, setOnHand] = usePersistentState<Record<string, number>>(`prep:onhand:${t}`, {})
+  // What a manager has ASKED for, where that differs from the suggestion —
+  // today only, and only the items actually changed. Keyed per day like the
+  // on-hands, so yesterday's catering bump doesn't quietly ride into today.
+  const [rawTarget, setTarget] = usePersistentState<Record<string, number>>(`prep:target:${t}`, {})
+  const target = rawTarget && typeof rawTarget === 'object' ? rawTarget : {}
   const [rawHistory, setHistory] = usePersistentState<HistEntry[]>('prep:history', [])
   const history = Array.isArray(rawHistory) ? rawHistory : []
   const [editingPars, setEditingPars] = useState(false)
@@ -176,6 +182,21 @@ export function Prep() {
   // What's been sent to the floor, if anything. Held in persistent state so the
   // button reflects a send made on this device a moment ago.
   const [sent, setSent] = usePersistentState<PrepSend | null>(prepSendKey(t), null)
+  // Catering going out today or tomorrow. The pars can't know about it — a par
+  // is set for an ordinary Wednesday — so the sheet says so out loud, next to
+  // the column that does something about it.
+  const [rawBookings] = usePersistentState<Booking[]>('catering:bookings', [])
+  const soonCatering = useMemo(() => {
+    const list = Array.isArray(rawBookings) ? rawBookings : []
+    const tomorrow = (() => {
+      const [y, m, d] = t.split('-').map(Number)
+      const n = new Date(y, m - 1, d + 1)
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`
+    })()
+    return list
+      .filter((b) => b && !b.completedAt && (b.date === t || b.date === tomorrow))
+      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+  }, [rawBookings, t])
 
   // One-time station migrations, per location:
   //  • v3: a store still on the first-pass default (Fry side / Grill side) is
@@ -280,7 +301,32 @@ export function Prep() {
   const parked = items.filter((it) => it.parked)
   const inSection = (sec: string) => active.filter((it) => (it.section ?? 'Recipes') === sec && onStation(it))
 
-  const need = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
+  /**
+   * The maths: today's par less what's already in the cooler.
+   *
+   * A suggestion, and named one — because it can only see the par, and the par
+   * was set for an ordinary Wednesday. A catering order going out at eleven is
+   * not on it, and neither is a bus of forty that somebody rang about.
+   */
+  const suggested = (it: PrepItem) => Math.max(0, (it.pars[di] ?? 0) - (onHand[it.name] ?? 0))
+
+  /**
+   * What we're actually asking the kitchen for.
+   *
+   * The suggestion unless a manager has said otherwise, and everything
+   * downstream reads this one — the sheet that prints, the list that goes to
+   * the floor, the drift check. So a bump typed here is the number the cook
+   * works to, which is the whole point of typing it.
+   */
+  const need = (it: PrepItem) => target[it.name] ?? suggested(it)
+  const bumped = (it: PrepItem) => target[it.name] != null && target[it.name] !== suggested(it)
+  const setTargetFor = (name: string, v: number | undefined) =>
+    setTarget((m) => {
+      const next = { ...m }
+      if (v == null) delete next[name]
+      else next[name] = v
+      return next
+    })
 
   // The list as the floor would receive it: everything still owed today. An
   // item already at par isn't work, so it doesn't go out.
@@ -518,6 +564,8 @@ export function Prep() {
 
   const renderRow = (it: PrepItem) => {
     const n = need(it)
+    const sug = suggested(it)
+    const bump = bumped(it)
     const counted = onHand[it.name] != null
     return (
       <div key={it.name}>
@@ -533,7 +581,7 @@ export function Prep() {
           setDragName(null)
           setOverName(null)
         }}
-        className={`group grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
+        className={`group grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_86px_104px] items-center gap-1 border-b border-black/5 px-4 py-2 last:border-0 ${
           dragName === it.name ? 'opacity-40' : ''
         } ${overName === it.name && dragName !== it.name ? 'border-t-2 border-t-brand' : ''}`}
       >
@@ -675,13 +723,59 @@ export function Prep() {
             </span>
           ),
         )}
-        <span className="text-right">
-          {n > 0 ? (
+        {/* What the maths says … */}
+        <span className="text-center">
+          {sug > 0 ? (
+            <span className="font-mono text-xs font-bold text-muted">
+              {fmtQty(sug)} {unitFor(sug, it.unit)}
+            </span>
+          ) : counted ? (
+            <span className="text-[11px] font-bold text-up">✓ at par</span>
+          ) : (
+            <span className="text-xs text-muted">—</span>
+          )}
+        </span>
+        {/* … and what we're asking for. Blank means "the suggestion" rather
+            than "nothing", so a manager only types on the items they're
+            actually changing — which on a catering day is three or four of
+            forty-nine, not all of them. */}
+        <span className="flex items-center justify-end gap-1">
+          {canEdit ? (
+            <>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0"
+                value={target[it.name] ?? ''}
+                placeholder={fmtQty(sug)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setTargetFor(it.name, v === '' ? undefined : Math.max(0, parseFloat(v) || 0))
+                }}
+                {...entryField('target')}
+                title={`Suggested ${fmtQty(sug)} — type a different number to ask for more or less`}
+                className={`w-[62px] rounded-lg border px-1 py-1.5 text-center font-mono text-sm outline-none focus:border-brand ${
+                  bump
+                    ? 'border-brand bg-brand/15 font-extrabold text-brand-600'
+                    : 'border-black/10 bg-white placeholder:font-normal placeholder:text-muted/70'
+                }`}
+              />
+              {bump && (
+                <button
+                  onClick={() => setTargetFor(it.name, undefined)}
+                  aria-label={`Put ${it.name} back to the suggested ${fmtQty(sug)}`}
+                  title="Back to the suggestion"
+                  className="shrink-0 rounded-md px-1 py-1 text-[11px] font-bold text-muted hover:text-down"
+                >
+                  ↺
+                </button>
+              )}
+            </>
+          ) : n > 0 ? (
             <span className="rounded-full bg-brand/15 px-2.5 py-1 font-mono text-xs font-extrabold text-brand-600">
               {fmtQty(n)} {unitFor(n, it.unit)}
             </span>
-          ) : counted ? (
-            <span className="rounded-full bg-up/10 px-2.5 py-1 text-xs font-extrabold text-up">✓ at par</span>
           ) : (
             <span className="text-xs text-muted">—</span>
           )}
@@ -829,8 +923,8 @@ export function Prep() {
             : station
               ? `${station} only · prints just this station's items — switch stations up top`
               : stations.length > 0
-                ? "Enter on-hands · prep needed = today's par − on hand · printing All puts each used station on its own page + the rest together"
-                : "Enter on-hands · prep needed = today's par − on hand · drag rows into your shelf order"
+                ? "Enter on-hands · Suggested = today's par − on hand, Prep this is what goes out · printing All puts each used station on its own page + the rest together"
+                : "Enter on-hands · Suggested = today's par − on hand, Prep this is what goes out · drag rows into your shelf order"
         }
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -900,7 +994,11 @@ export function Prep() {
           separate page to every station. A selected station prints just its page. */}
       <div className="prep-print hidden">
         {(() => {
-          const printable = (it: PrepItem) => (it.pars[di] ?? 0) > 0 && (onHand[it.name] == null || need(it) > 0)
+          // An item a manager asked for prints whether or not it has a par
+          // today — that's the catering case exactly: nothing on Wednesday's
+          // par, two pans wanted because a banquet is going out at eleven.
+          const printable = (it: PrepItem) =>
+            need(it) > 0 || ((it.pars[di] ?? 0) > 0 && onHand[it.name] == null)
           // Sections (Recipes / Test / LTO) with something to prep for a page.
           const secsFor = (match: (it: PrepItem) => boolean) =>
             SECTIONS.map((sec) => ({
@@ -977,13 +1075,44 @@ export function Prep() {
         className={`px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 print:hidden ${mode === 'bar' ? 'hidden' : ''}`}
       >
         <div className="mx-auto w-full max-w-7xl space-y-5">
+        {/* First thing on the sheet when there is one, because it changes the
+            numbers you are about to type. */}
+        {canEdit && mode === 'kitchen' && soonCatering.length > 0 && (
+          <Card className="border-brand/40 bg-brand/[0.09] p-4">
+            <div className="mb-1.5 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">
+              <PartyPopper size={13} />
+              Catering {soonCatering.some((b) => b.date === t) ? 'today' : 'tomorrow'}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {soonCatering.map((b) => (
+                <Link
+                  key={b.id}
+                  to={`/catering?booking=${b.id}`}
+                  className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-ink hover:border-brand/50"
+                >
+                  <span className="font-bold">{b.date === t ? 'Today' : 'Tomorrow'}</span>
+                  {b.time && ` ${fmtBookingTime(b.time)}`}
+                  {b.guests > 0 && ` · ${b.guests} guests`}
+                  <span className="ml-1.5 text-muted">{b.event}</span>
+                </Link>
+              ))}
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-ink/80">
+              The pars don't know about this. Open the order to see what it's taking, then type the
+              bigger number in <b className="text-brand-600">Prep this</b> on the items it eats — that's
+              what prints and what goes to the floor.
+            </p>
+          </Card>
+        )}
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)]">
           <Card className="border-brand/25 bg-brand/[0.06] p-4">
             <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">How pars work here</div>
             <p className="text-xs leading-relaxed text-ink/80">
               Each prep item has a par for every day of the week (Friday ≠ Monday). Today's column
               is highlighted; on-hands entered here are tracked so the app learns if pars are
-              chronically over or under.
+              chronically over or under. <b>Suggested</b> is that maths — par less what's on hand.
+              <b className="text-brand-600"> Prep this</b> is what the kitchen actually gets, and it
+              follows the suggestion until you type over it.
             </p>
           </Card>
           <Card className="flex flex-wrap items-center gap-3 p-4">
@@ -1154,8 +1283,8 @@ export function Prep() {
               </div>
               {/* Counting a cooler is one pass down the column, so Enter goes to
                   the same box on the next row rather than nowhere. */}
-              <div className="min-w-[880px]" {...entryColumn}>
-                <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_110px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <div className="min-w-[960px]" {...entryColumn}>
+                <div className="grid grid-cols-[20px_minmax(0,2fr)_86px_repeat(7,52px)_86px_104px] items-center gap-1 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
                   <span />
                   <span>Prep item</span>
                   <span className="text-center">On hand</span>
@@ -1164,7 +1293,8 @@ export function Prep() {
                       {d}
                     </span>
                   ))}
-                  <span className="text-right">Prep today</span>
+                  <span className="text-center">Suggested</span>
+                  <span className="text-right text-brand-600">Prep this</span>
                 </div>
                 {rows.length === 0 ? (
                   <p className="px-4 py-4 text-center text-xs text-muted">{canEdit ? 'Nothing here — drag an item in, or add one below.' : 'Nothing on the prep list here today.'}</p>

@@ -11,6 +11,7 @@ import { ConciergeBell, UtensilsCrossed, Search, ChevronDown } from 'lucide-reac
 import { Aurora } from './Aurora'
 import { Toaster } from './Toaster'
 import { CommandPalette, openCommandPalette } from './CommandPalette'
+import { DropCatcher, DropBoxPill } from './DropBox'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -55,24 +56,15 @@ export function AppShell() {
     else delete document.body.dataset.navOpen
   }, [open])
 
-  // Prevent the browser from navigating away to open a file when one is dropped
-  // outside a drop zone (that "print preview" behavior). The Imports screen adds
-  // its own handler to actually read files dropped anywhere on that page.
-  useEffect(() => {
-    const prevent = (e: DragEvent) => e.preventDefault()
-    window.addEventListener('dragover', prevent)
-    window.addEventListener('drop', prevent)
-    return () => {
-      window.removeEventListener('dragover', prevent)
-      window.removeEventListener('drop', prevent)
-    }
-  }, [])
-
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_1fr]">
       <Aurora />
       <Toaster />
       <CommandPalette />
+      {/* Catches a file dropped anywhere in the app and lands it on Imports —
+          and, on every screen, stops the browser navigating away to open a
+          stray drop, which looks exactly like the app falling over. */}
+      <DropCatcher />
       {/* ---- Desktop rail ---- */}
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />
@@ -88,6 +80,9 @@ export function AppShell() {
             <StoreLabel />
           </div>
         ) : null}
+        {/* Above the menu, not inside it: the Drop Box is somewhere to aim at
+            rather than something to go and find. Staff have nothing to import. */}
+        {role !== 'staff' && <DropBoxPill />}
         <Rail sections={sections} onNavigate={() => setOpen(false)} />
         <BuildStamp />
       </aside>
@@ -130,6 +125,7 @@ export function AppShell() {
                 <StoreLabel />
               </div>
             ) : null}
+            {role !== 'staff' && <DropBoxPill onNavigate={() => setOpen(false)} />}
             <DrawerNav sections={sections} onNavigate={() => setOpen(false)} />
             <BuildStamp />
           </div>

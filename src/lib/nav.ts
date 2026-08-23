@@ -81,6 +81,17 @@ export const NAV: NavSection[] = [
     items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, color: '#E4B84C', anim: GridIcon }],
   },
   {
+    // Its own area, a single row near the top of the rail, rather than ninth
+    // in a list of thirteen. Everything the app knows starts with a file
+    // getting in, and a screen you have to hunt for is one that doesn't get
+    // used — the Drop Box pill above the menu is the other half of that.
+    title: 'Imports',
+    areaIcon: ScanLine,
+    items: [
+      { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },
+    ],
+  },
+  {
     title: 'Daily Ops',
     areaIcon: ChefHat,
     items: [
@@ -99,7 +110,6 @@ export const NAV: NavSection[] = [
       { to: '/prep', label: 'Prep', icon: ChefHat, color: '#FB7185', anim: ChefIcon, staff: true },
       { to: '/ordering', label: 'Ordering', icon: PackageOpen, color: '#F0A94C', anim: BoxIcon },
       { to: '/invoices', label: 'Invoices', icon: ReceiptText, color: '#A78BFA', anim: ReceiptIcon },
-      { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },
       { to: '/petty', label: 'Petty Cash', icon: Wallet, color: '#4ADE80', anim: WalletIcon },
       { to: '/maintenance', label: 'Maintenance', icon: Wrench, color: '#94A3B8', anim: BoltIcon },
       { to: '/printables', label: 'Printables', icon: ReceiptText, color: '#94A3B8', anim: ScanDocIcon },
