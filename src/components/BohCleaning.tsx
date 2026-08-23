@@ -4,7 +4,7 @@
 // this is a shift, so the jobs actually due today come first and the rest is
 // there for looking ahead.
 import { useMemo, useState } from 'react'
-import { Pencil, Check, RotateCcw, CalendarDays, Sparkles } from 'lucide-react'
+import { Pencil, Check, RotateCcw, CalendarDays, Sparkles, X } from 'lucide-react'
 import { Card } from './ui'
 import {
   getSchedule,
@@ -14,6 +14,9 @@ import {
   cleanTickId,
   DOW_LONG,
   ORDINAL,
+  liveRepeats,
+  dropPlacement,
+  placeLabel,
   type CleanSchedule,
   type CleanDay,
 } from '../lib/bohclean'
@@ -144,6 +147,7 @@ export function BohCleaning({
   const schedule = useMemo(() => getSchedule(), [tick])
   const bump = () => setTick((n) => n + 1)
   const due = useMemo(() => dueOn(date, schedule), [date, schedule])
+  const repeats = useMemo(() => liveRepeats(schedule), [schedule])
   const [editing, setEditing] = useState(false)
 
   const write = (fn: (s: CleanSchedule) => CleanSchedule) => {
@@ -205,6 +209,50 @@ export function BohCleaning({
           </p>
         )}
       </Card>
+
+      {/* Every copy of the sheet is in. What's left is the same job landing on
+          two days, which is a thing only the kitchen can settle — so it's
+          listed rather than guessed at. */}
+      {canEdit && repeats.length > 0 && (
+        <Card className="overflow-hidden border-warn/30">
+          <div className="flex flex-wrap items-baseline gap-2 border-b border-black/5 bg-warn/[0.07] px-4 py-2.5">
+            <span className="font-display text-sm font-semibold text-ink">On two days</span>
+            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-muted">
+              {repeats.length}
+            </span>
+            <span className="ml-auto text-[11px] text-muted">
+              take off the one you don’t run — the job stays on the other day
+            </span>
+          </div>
+          {repeats.map((r) => (
+            <div key={r.id} className="border-b border-black/5 px-4 py-2.5 last:border-0">
+              <div className="text-[13px] font-bold text-ink">{r.job}</div>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {r.at.map((p, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white py-1 pl-2.5 pr-1 text-[11px]"
+                  >
+                    <span className="font-bold text-ink">{placeLabel(p)}</span>
+                    <span className="max-w-[16rem] truncate text-muted">{p.text}</span>
+                    <button
+                      onClick={() => {
+                        dropPlacement(p)
+                        bump()
+                      }}
+                      aria-label={`Take ${r.job} off ${placeLabel(p)}`}
+                      title={`Take it off ${placeLabel(p)}`}
+                      className="grid size-5 shrink-0 place-items-center rounded text-muted hover:bg-down/10 hover:text-down"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">

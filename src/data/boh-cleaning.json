@@ -7,67 +7,92 @@
         "Clean out fry freezer and restock"
       ],
       "PM": [
+        "Empty and detail all lowboys",
         "Hood detailed",
-        "Dishes pulled out of the expo window, and window detailed",
-        "Wipe down KDS screens"
+        "Dishes pulled out of the expo window, and window detailed"
       ]
     },
     {
       "AM": [
-        "Wall detail — prep area",
+        "Wall detail — prep area, and down the hallway to dry storage",
         "Wall detail — under and behind the ice machine",
-        "Wall detail — cook line",
-        "Wall detail — dish area and the equipment side of the line"
-      ],
-      "PM": ["All low-boys and coolers detailed", "Under the coolers cleaned"]
-    },
-    {
-      "AM": ["Detail floors and FRP wall in dry storage and the hallway"],
-      "PM": ["All tables and bun drawer detailed"]
-    },
-    {
-      "AM": [
-        "Detail walk-in floor",
-        "Freezer floor swept and cleaned — use antifreeze on the freezer floor",
-        "Detail entire dish area (machine / walls / floor / pipes)"
-      ],
-      "PM": ["All drains, floor fans and trash cans detailed with bleach"]
-    },
-    {
-      "AM": [
-        "Detail prep equipment shelves (chemical shelves included)",
-        "All prep tables detailed (tops / shelves / legs)"
+        "Wall detail — cook line"
       ],
       "PM": [
-        "Back dock detailed",
-        "Empty and detail all setup coolers on the line & stand-up freezer (make sure all baskets are cleaned)"
+        "All walls in the dish area and on the equipment side of the line",
+        "All low-boys and coolers detailed",
+        "Under the coolers cleaned"
       ]
     },
     {
-      "AM": ["Dish racks organized", "Speed racks taken out back and sprayed off"],
+      "AM": [
+        "Detail and organize all the expo windows (shelves & top) and wipe down KDS screens",
+        "Detail floors and FRP wall in dry storage and the hallway"
+      ],
       "PM": [
+        "Detail all heat wells",
+        "All tables and bun drawer detailed"
+      ]
+    },
+    {
+      "AM": [
+        "Detail entire dish area (machine / walls / floor / pipes)",
+        "Detail walk-in floor",
+        "Freezer floor swept and cleaned — use antifreeze on the freezer floor"
+      ],
+      "PM": [
+        "All drains, floor fans and trash cans detailed with bleach"
+      ]
+    },
+    {
+      "AM": [
+        "All prep tables detailed (tops / shelves / legs) and setup side of the line walls detailed",
+        "Detail prep equipment shelves (chemical shelves included)"
+      ],
+      "PM": [
+        "Empty and detail all setup coolers on the line & stand-up freezer (make sure all baskets are cleaned)",
+        "Back dock detailed"
+      ]
+    },
+    {
+      "AM": [
+        "Dry storage floor detailed, swept, and mopped",
+        "Dish racks organized",
+        "Speed racks taken out back and sprayed off"
+      ],
+      "PM": [
+        "Walk-in freezer and cooler shelves & floors detailed, swept and mopped — use antifreeze on the freezer floor",
         "Air vents and surrounding tiles wiped down",
         "All stainless on the front of equipment detailed — front of fryers, front of grill, etc."
       ]
     },
     {
-      "AM": ["Walk-in walls and shelves detailed"],
+      "AM": [
+        "Bun drawer pulled out and detailed. Detail all tables online",
+        "Walk-in walls and shelves detailed"
+      ],
       "PM": [
+        "All sinks and drains cleaned / bleached (prep, hand, 3-compartment and dish sinks, and every drain in the BOH)",
         "Detail clean all heat wells",
-        "Detail clean flour bins",
-        "All sinks cleaned / bleached (prep, hand, 3-compartment and dish sinks)"
+        "Detail clean flour bins"
       ]
     }
   ],
   "monthly": [
     {
       "title": "Ice machine",
-      "AM": ["Turn off first thing and clean outside of machine"],
-      "PM": ["Burn ice and clean inside the machine with the hose"]
+      "AM": [
+        "Turn off first thing and clean outside of machine"
+      ],
+      "PM": [
+        "Burn ice and clean inside the machine with the hose"
+      ]
     },
     {
       "title": "Flour bins",
-      "PM": ["Rotate and clean all flour bins"]
+      "PM": [
+        "Rotate and clean all flour bins"
+      ]
     },
     {
       "title": "Speed racks",
@@ -77,7 +102,213 @@
     },
     {
       "title": "Ceiling tiles",
-      "PM": ["Wipe ceiling tiles as needed"]
+      "PM": [
+        "Wipe ceiling tiles as needed"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "wall",
+      "label": "Wall sheet (laminated)"
+    },
+    {
+      "id": "doc2026",
+      "label": "BOH daily cleaning 2026"
+    }
+  ],
+  "repeats": [
+    {
+      "id": "heat-wells",
+      "job": "Heat wells",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 2,
+          "slot": "PM",
+          "text": "Detail all heat wells"
+        },
+        {
+          "where": "weekly",
+          "idx": 6,
+          "slot": "PM",
+          "text": "Detail clean all heat wells"
+        }
+      ]
+    },
+    {
+      "id": "lowboys",
+      "job": "Lowboys and coolers",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 0,
+          "slot": "PM",
+          "text": "Empty and detail all lowboys"
+        },
+        {
+          "where": "weekly",
+          "idx": 1,
+          "slot": "PM",
+          "text": "All low-boys and coolers detailed"
+        }
+      ]
+    },
+    {
+      "id": "back-dock",
+      "job": "Back dock",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 0,
+          "slot": "AM",
+          "text": "Back dock detailed — cleaned, organized and sprayed off"
+        },
+        {
+          "where": "weekly",
+          "idx": 4,
+          "slot": "PM",
+          "text": "Back dock detailed"
+        }
+      ]
+    },
+    {
+      "id": "expo",
+      "job": "Expo window",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 0,
+          "slot": "PM",
+          "text": "Dishes pulled out of the expo window, and window detailed"
+        },
+        {
+          "where": "weekly",
+          "idx": 2,
+          "slot": "AM",
+          "text": "Detail and organize all the expo windows (shelves & top) and wipe down KDS screens"
+        }
+      ]
+    },
+    {
+      "id": "bun-drawer",
+      "job": "Bun drawer and the tables on the line",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 2,
+          "slot": "PM",
+          "text": "All tables and bun drawer detailed"
+        },
+        {
+          "where": "weekly",
+          "idx": 6,
+          "slot": "AM",
+          "text": "Bun drawer pulled out and detailed. Detail all tables online"
+        }
+      ]
+    },
+    {
+      "id": "dry-storage",
+      "job": "Dry storage floor",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 2,
+          "slot": "AM",
+          "text": "Detail floors and FRP wall in dry storage and the hallway"
+        },
+        {
+          "where": "weekly",
+          "idx": 5,
+          "slot": "AM",
+          "text": "Dry storage floor detailed, swept, and mopped"
+        }
+      ]
+    },
+    {
+      "id": "walk-in",
+      "job": "Walk-in and freezer",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 3,
+          "slot": "AM",
+          "text": "Detail walk-in floor"
+        },
+        {
+          "where": "weekly",
+          "idx": 3,
+          "slot": "AM",
+          "text": "Freezer floor swept and cleaned — use antifreeze on the freezer floor"
+        },
+        {
+          "where": "weekly",
+          "idx": 5,
+          "slot": "PM",
+          "text": "Walk-in freezer and cooler shelves & floors detailed, swept and mopped — use antifreeze on the freezer floor"
+        },
+        {
+          "where": "weekly",
+          "idx": 6,
+          "slot": "AM",
+          "text": "Walk-in walls and shelves detailed"
+        }
+      ]
+    },
+    {
+      "id": "speed-racks",
+      "job": "Speed racks",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 5,
+          "slot": "AM",
+          "text": "Speed racks taken out back and sprayed off"
+        },
+        {
+          "where": "monthly",
+          "idx": 2,
+          "slot": "AM",
+          "text": "Detail all speed racks — take them out back, spray them with grease strip, let that sit about 5 minutes, then spray off with hot water"
+        }
+      ]
+    },
+    {
+      "id": "flour-bins",
+      "job": "Flour bins",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 6,
+          "slot": "PM",
+          "text": "Detail clean flour bins"
+        },
+        {
+          "where": "monthly",
+          "idx": 1,
+          "slot": "PM",
+          "text": "Rotate and clean all flour bins"
+        }
+      ]
+    },
+    {
+      "id": "drains",
+      "job": "Drains",
+      "at": [
+        {
+          "where": "weekly",
+          "idx": 3,
+          "slot": "PM",
+          "text": "All drains, floor fans and trash cans detailed with bleach"
+        },
+        {
+          "where": "weekly",
+          "idx": 6,
+          "slot": "PM",
+          "text": "All sinks and drains cleaned / bleached (prep, hand, 3-compartment and dish sinks, and every drain in the BOH)"
+        }
+      ]
     }
   ]
 }

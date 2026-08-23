@@ -152,3 +152,70 @@ export function cleanTickId(scope: 'w' | 'm', slot: 'AM' | 'PM', text: string): 
   }
   return `clean|${scope}|${slot}|${(h >>> 0).toString(36)}`
 }
+
+// ── The copies, condensed ────────────────────────────────────────────────────
+//
+// There isn't one BOH cleaning sheet. There's a laminate on the wall, a Word
+// document, and by the owner's account more of both still out there — and they
+// disagree about which day several jobs land on.
+//
+// The app doesn't pick a winner. Guessing an authority is how a screen quietly
+// stops matching the building, which is worse than paper because at least paper
+// is obviously old. Everything from every copy is in, deduped where two sheets
+// put the same job on the same shift in different words.
+//
+// What's left is the same job landing on two different days. That's real and
+// it's listed below rather than silently kept or silently dropped: the kitchen
+// can see it lands twice and take off whichever one it doesn't run. Once
+// they've been through it, the app is the copy.
+
+export interface Placement {
+  where: 'weekly' | 'monthly'
+  idx: number
+  slot: 'AM' | 'PM'
+  text: string
+}
+export interface Repeat {
+  id: string
+  job: string
+  at: Placement[]
+}
+
+export const REPEATS = ((SEED as unknown as { repeats?: Repeat[] }).repeats ?? []) as Repeat[]
+
+/**
+ * The repeats still standing in THIS store's schedule.
+ *
+ * Read against the saved schedule rather than the shipped list, so a placement
+ * already taken off — here or by hand in the editor — stops being reported, and
+ * a job that's down to one day drops off the list entirely.
+ */
+export function liveRepeats(s: CleanSchedule = getSchedule()): Array<Repeat & { at: Placement[] }> {
+  const has = (p: Placement): boolean => {
+    const day = p.where === 'weekly' ? s.weekly[p.idx] : s.monthly[p.idx]
+    return !!day && (day[p.slot] ?? []).includes(p.text)
+  }
+  return REPEATS.map((r) => ({ ...r, at: r.at.filter(has) })).filter((r) => r.at.length > 1)
+}
+
+/** Take one placement off the schedule — the job stays on its other day. */
+export function dropPlacement(p: Placement): CleanSchedule {
+  const s = getSchedule()
+  const next: CleanSchedule = {
+    ...s,
+    weekly: s.weekly.map((d) => ({ ...d, AM: [...(d.AM ?? [])], PM: [...(d.PM ?? [])] })),
+    monthly: s.monthly.map((d) => ({ ...d, AM: [...(d.AM ?? [])], PM: [...(d.PM ?? [])] })),
+  }
+  const day = p.where === 'weekly' ? next.weekly[p.idx] : next.monthly[p.idx]
+  if (day) {
+    const list = day[p.slot] as string[] | undefined
+    const at = list?.indexOf(p.text) ?? -1
+    if (list && at >= 0) list.splice(at, 1)
+  }
+  setSchedule(next)
+  return next
+}
+
+/** "Wednesday PM" / "2nd Sunday AM" — where a placement actually sits. */
+export const placeLabel = (p: Placement): string =>
+  p.where === 'weekly' ? `${DOW_LONG[p.idx]} ${p.slot}` : `${ORDINAL[p.idx + 1]} Sunday ${p.slot}`
