@@ -641,12 +641,15 @@ export function Prep() {
                 Prep this. */}
             {hits.length > 0 && (
               <span
-                title={`On the catering order: ${hits.map(hitLabel).join(' · ')}`}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/20 px-1.5 py-0.5 text-[10px] font-extrabold text-brand-600"
+                title={`Catering ${hits.some((h) => h.date === t) ? 'today' : 'tomorrow'} — ${hits
+                  .map(hitLabel)
+                  .join(' · ')}. Bump Prep this if you need more.`}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/20 px-2 py-0.5 text-[10px] font-extrabold text-brand-600"
               >
                 <PartyPopper size={9} />
-                <span className="max-w-[11rem] truncate normal-case">
-                  {hits.map(hitLabel).join(' · ')}
+                <span className="max-w-[13rem] truncate normal-case">
+                  Catering {hits.some((h) => h.date === t) ? 'today' : 'tomorrow'} ·{' '}
+                  {hits.map(hitLabel).join(' · ')} — bump up
                 </span>
               </span>
             )}

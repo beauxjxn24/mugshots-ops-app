@@ -349,17 +349,57 @@ export function buildFor(name: string): LineBuild | undefined {
  * Built once over every build rather than re-scanned per item, so a prep sheet
  * of a hundred rows costs one pass instead of a hundred.
  */
+/**
+ * A section that holds the vessel, not the food.
+ *
+ * "Lined Wire Basket on Lined Burger Basket" is what a tray of wings is served
+ * ON, and it was putting BURGERS into the wings' component list — which then
+ * told the prep sheet a catering order for wings needed more burger patties.
+ *
+ * Only these two labels. Bread, Bun and Bottom Bun are food and stay.
+ */
+const isVessel = (label: string): boolean => /^\s*(plate|glass)ware\s*$/i.test(label)
+
+/**
+ * A pick-one list — the sauces, not the ingredients.
+ *
+ * The Wangs garnish line reads "Mild, Hot, BBQ, Teriyaki, Sesame Ginger, Lemon
+ * Pepper, Carolina Gold, Honey Hot, Sweet Chili, Mango Habanero": ten sauces
+ * you choose ONE of, and "Sweet Chili" was putting Chili into the build.
+ *
+ * Tuned against all 610 lines on the sheets rather than guessed, because the
+ * obvious rule — "lots of commas" — is wrong here. Three real lines have four
+ * or more commas and every one of them carries genuine components:
+ *
+ *   Eggrolls  "Ingredients are: Chicken, Peppers, Black Beans, Spinach, …"
+ *   Rocket Pop Shake  "Combine soft serve shake and Finest Call blue curacao…"
+ *   Rocket Pop 'Rita  "Combine frozen rita, soft serve shake, and blue …"
+ *
+ * What actually separates a choice list is its SHAPE: five or more parts, no
+ * colon introducing them, and every part a bare name of a few words. A recipe
+ * sentence fails on part length; an "Ingredients are:" list fails on the colon.
+ */
+function isChoiceList(line: string): boolean {
+  if (line.includes(':')) return false
+  const parts = line.split(',').map((x) => x.trim()).filter(Boolean)
+  if (parts.length < 5) return false
+  return parts.every((x) => x.split(/\s+/).length <= 3)
+}
+
 export function usageIndex(prepNames: string[] = [], stockNames: string[] = []): Map<string, string[]> {
   const idx = new Map<string, string[]>()
   for (const b of allBuilds())
-    for (const s of b.sections)
+    for (const s of b.sections) {
+      if (isVessel(s.label)) continue
       for (const raw of s.lines) {
+        if (isChoiceList(raw)) continue
         for (const link of readLine(raw, prepNames, stockNames).links) {
           const list = idx.get(link.name) ?? []
           if (!list.includes(b.sheetName)) list.push(b.sheetName)
           idx.set(link.name, list)
         }
       }
+    }
   for (const list of idx.values()) list.sort((a, b) => a.localeCompare(b))
   return idx
 }

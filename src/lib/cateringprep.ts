@@ -19,7 +19,7 @@
 // says "Pulled Pork Sandwich", and matching those is fuzzy, messy, human work.
 // The matching below is deliberately literal — it finds what it can be sure
 // of and stays quiet about the rest, rather than guessing and being trusted.
-import { allBuilds, norm, readLine } from './linebuilds'
+import { allBuilds, norm, readLine, usageIndex } from './linebuilds'
 import { prepItemNames, barPrepNames, getCatalog } from './catalog'
 import type { Booking } from './catering'
 
@@ -64,48 +64,6 @@ export function dishesIn(b: Booking): OrderDish[] {
 }
 
 /**
- * Dish → the prep it actually eats.
- *
- * Deliberately stricter than `usageIndex`, which reports every known name a
- * build line mentions. Two kinds of mention are not an ingredient, and both
- * turned up the first time this ran against a real order:
- *
- *  • Plateware. "Lined Wire Basket on Lined Burger Basket" made a tray of
- *    wings ask the kitchen for more BURGERS.
- *
- *  • A list of choices. The Wangs garnish line reads "Mild, Hot, BBQ,
- *    Teriyaki, … Sweet Chili, Mango Habanero" — ten sauces you pick ONE of,
- *    and "Sweet Chili" put Chili on the prep list.
- *
- * A prep sheet that cries wolf gets ignored, and the two above are exactly the
- * kind of wrong that teaches a cook to stop reading the flag.
- */
-function dishComponents(): Map<string, string[]> {
-  const names = [...prepItemNames(), ...barPrepNames()]
-  const stock = getCatalog().map((i) => i.name)
-  const byDish = new Map<string, string[]>()
-
-  for (const b of allBuilds()) {
-    const list: string[] = []
-    for (const s of b.sections) {
-      // What the food is served ON, not what's in it.
-      if (/plate|ware|basket|bowl|dish\b/i.test(s.label)) continue
-      for (const raw of s.lines) {
-        // Pick-one lists. Two or three comma-separated parts is a real line
-        // ("1 Ranch, 2 Celery per 5 Wings"); ten of them is a menu.
-        if (raw.split(',').length >= 4) continue
-        if (/\bbasket\b|\bplate\b|\bliner\b/i.test(raw)) continue
-        for (const link of readLine(raw, names, stock).links) {
-          if (!list.includes(link.name)) list.push(link.name)
-        }
-      }
-    }
-    if (list.length) byDish.set(b.sheetName, list)
-  }
-  return byDish
-}
-
-/**
  * Prep item → the ordered dishes that eat it.
  *
  * Built once for a set of bookings; the index above walks every build sheet
@@ -116,7 +74,19 @@ export function prepHitsFor(bookings: Booking[]): Map<string, OrderDish[]> {
   const ordered = bookings.flatMap(dishesIn)
   if (ordered.length === 0) return hits
 
-  const byDish = dishComponents()
+  // usageIndex is prep -> dishes; this question runs the other way. It knows
+  // to skip plateware and pick-one sauce lists now, so the two false positives
+  // this feature found — a wings tray asking for BURGERS off "Lined Burger
+  // Basket", and "Sweet Chili" putting Chili on the list — are gone at source
+  // rather than filtered again here.
+  const idx = usageIndex(
+    [...prepItemNames(), ...barPrepNames()],
+    getCatalog().map((i) => i.name),
+  )
+  const byDish = new Map<string, string[]>()
+  for (const [prep, dishes] of idx) {
+    for (const d of dishes) byDish.set(d, [...(byDish.get(d) ?? []), prep])
+  }
 
   for (const o of ordered) {
     for (const prep of byDish.get(o.dish) ?? []) {
