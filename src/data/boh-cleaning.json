@@ -1,0 +1,52 @@
+{
+  "weekly": [
+    {
+      "AM": "Back dock cleaned, organized, and sprayed off",
+      "PM": "Empty and detail all lowboys"
+    },
+    {
+      "AM": "All walls in the prep area and down the hallway to dry storage cleaned",
+      "PM": "All walls in dish area and walls on equipment side of the line cleaned"
+    },
+    {
+      "AM": "Detail and organize all the expo windows (shelves & top) and wipe down KDS screens",
+      "PM": "Detail all heat wells"
+    },
+    {
+      "AM": "Detail entire dish area (machine / walls / floor / pipes)",
+      "PM": "All trash cans detailed with bleach"
+    },
+    {
+      "AM": "All prep tables detailed (tops / shelves / legs) and setup side of the line walls detailed",
+      "PM": "Empty and detail all setup coolers on line & stand-up freezer (make sure all baskets are cleaned)"
+    },
+    {
+      "AM": "Dry storage floor detailed, swept, and mopped",
+      "PM": "Walk-in freezer and cooler shelves & floors detailed, swept and mopped — use antifreeze on the freezer floor",
+      "note": "Detail shelves means organize product, discard all possible boxes, and wipe the shelves."
+    },
+    {
+      "AM": "Bun drawer pulled out and detailed. Detail all tables online",
+      "PM": "All sinks and drains cleaned / bleached (prep, hand, 3-compartment and dish sinks, and every drain in the BOH)"
+    }
+  ],
+  "monthly": [
+    {
+      "title": "Ice machine",
+      "AM": "Turn off first thing and clean outside of machine",
+      "PM": "Burn ice and clean inside the machine with the hose"
+    },
+    {
+      "title": "Flour bins",
+      "PM": "Rotate and clean all flour bins"
+    },
+    {
+      "title": "Speed racks",
+      "AM": "Detail all speed racks — take them out back, spray them with grease strip, let that sit about 5 minutes, then spray off with hot water"
+    },
+    {
+      "title": "Ceiling tiles",
+      "PM": "Wipe ceiling tiles as needed"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import {
   type Role,
   type Section,
 } from '../lib/sidework'
+import { BohCleaning } from '../components/BohCleaning'
 import { rolesOf, type Person } from '../lib/staff'
 import { useRole } from '../lib/role'
 import { useShift, phaseForShift } from '../lib/shift'
@@ -52,6 +53,15 @@ export function Sidework() {
   // Editable copy of the duty sheet, persisted to the device.
   const [data, setData] = usePersistentState<Data>('sidework:data', SIDEWORK)
   const [role, setRole] = useState<Role>('Server')
+  /**
+   * The deep-clean tab.
+   *
+   * Held apart from `role` rather than folded into it: the tabs pick a duty
+   * SHEET, and this isn't one — it's a day-indexed schedule with no phases,
+   * sections or cuts. Making it a fake role would have every lookup below
+   * quietly resolving to an empty sheet.
+   */
+  const [showClean, setShowClean] = useState(false)
   const phases = phasesFor(role)
   /**
    * The tabs come from the STORE'S sheet, not the shipped one.
@@ -603,6 +613,7 @@ export function Sidework() {
                 <button
                   key={r}
                   onClick={() => {
+                    setShowClean(false)
                     setRole(r)
                     setPhase(phasesFor(r)[0])
                     setEditingSec(null)
@@ -616,6 +627,21 @@ export function Sidework() {
                   {r}
                 </button>
               ))}
+              {/* The wall sheets: weekly every-shift cleaning, plus the
+                  numbered-Sunday monthly jobs. Kitchen-wide rather than per
+                  station, so it sits alongside the stations, not inside one. */}
+              {label === 'Kitchen' && (
+                <button
+                  onClick={() => setShowClean(true)}
+                  className={`min-w-[5.5rem] flex-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition-colors ${
+                    showClean
+                      ? 'border-brand bg-brand text-white'
+                      : 'border-black/10 bg-white text-muted hover:border-brand/40'
+                  }`}
+                >
+                  Deep clean
+                </button>
+              )}
               {/* Every kitchen runs different stations and I can't know yours,
                   so the list is yours to extend rather than mine to guess at. */}
               {label === 'Kitchen' && isCloser && (
@@ -630,6 +656,15 @@ export function Sidework() {
           </div>
         ))}
 
+        {showClean ? (
+          <BohCleaning
+            date={today()}
+            done={done}
+            onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
+            canEdit={isCloser}
+          />
+        ) : (
+        <>
         {/* Phase chips */}
         <div className="flex flex-wrap gap-2">
           {phases.map((ph) => (
@@ -921,6 +956,8 @@ export function Sidework() {
               </div>
             )}
           </Card>
+        )}
+        </>
         )}
         </div>
       </div>
