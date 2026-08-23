@@ -826,6 +826,62 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   .pp-dense .pp-name { font-size: 10px; line-height: 12px; }
   .pp-dense .pp-spec { display: none; }
   .pp-dense .pp-qty { font-size: 10px; }
+
+  /* ---- The catering order sheet (OrderTicket.tsx) ------------------------
+     Two things can print from an order. The caterer's own PDF prints itself:
+     it's an iframe, so the browser prints that document and none of this
+     applies. These rules are for the other one — the sheet the app builds
+     from the ticket text when that PDF isn't on this device, which it often
+     isn't, because IndexedDB stays on whichever device did the import.
+
+     The dialog is portaled to <body>, so the whole app tree is one selector
+     away and the sheet can own the paper instead of fighting the log
+     underneath it. */
+  body:has(.order-print) #root { display: none !important; }
+  body:has(.order-print) .order-dialog {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  /* On screen this is a fixed box that scrolls; on paper it has to be a plain
+     block, or only the slice that happened to be visible would print. */
+  body:has(.order-print) .order-panel {
+    position: static !important;
+    display: block !important;
+    max-width: none !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  body:has(.order-print) .order-scroll {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  /* Ink on paper. Unlike the prep sheet, this one is also a screen view, so it
+     is built from the app's utilities — and the app's text colour is #e9eef6,
+     near-white. Every one of those has to be overridden here or the whole
+     order prints as a ghost. The greys and rules are put back below. */
+  .order-print,
+  .order-print * {
+    color: #000 !important;
+    background: transparent !important;
+  }
+  /* The sheet keeps its measure on paper — released to full width, the four
+     header facts spread to the page edges and stop reading as a group. */
+  .order-print .op-quiet, .order-print .op-quiet * { color: #555 !important; }
+  .order-print .op-rule { border-bottom: 2px solid #000 !important; }
+  .order-print pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .order-print li { break-inside: avoid; }
 }
 
 /* The Mugsy launcher sits above every overlay so it stays draggable anywhere.

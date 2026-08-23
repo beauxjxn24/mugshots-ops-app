@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Check, Undo2, Plus, Pencil, Printer, ExternalLink } from 'lucide-react'
+import { Check, Undo2, Plus, Pencil, FileText } from 'lucide-react'
 import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { confirmDelete } from '../lib/confirm'
-import { getDoc } from '../lib/docs'
-import { getLastCateringImport, type Booking, type Reservation } from '../lib/catering'
+import { OrderTicket } from '../components/OrderTicket'
+import { getLastCateringImport, fmtDate, fmtTime, type Booking, type Reservation } from '../lib/catering'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 
@@ -121,7 +121,7 @@ export function Catering() {
             </div>
 
             {/* Column headers */}
-            <div className="hidden grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_56px] gap-2 border-b border-black/5 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted lg:grid">
+            <div className="hidden grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_96px] gap-2 border-b border-black/5 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted lg:grid">
               <span>When</span>
               <span>Event & contact</span>
               <span>Guests</span>
@@ -140,13 +140,12 @@ export function Catering() {
               active.map((b) => {
                 const st = STATUS_META[b.status ?? 'confirmed']
                 const focused = b.id === focusId
-                const open = b.id === openId
                 return (
                   <div key={b.id} id={`booking-${b.id}`} className="border-b border-black/5 last:border-0">
                   <div
-                    onClick={() => setOpenId(open ? null : b.id)}
-                    title={open ? 'Close order' : 'Open the order'}
-                    className={`grid cursor-pointer grid-cols-[1fr_auto] items-center gap-2 px-4 py-3 hover:bg-black/[0.02] lg:grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_56px] ${
+                    onClick={() => setOpenId(b.id)}
+                    title="Open the order — the caterer’s sheet, ready to print"
+                    className={`grid cursor-pointer grid-cols-[1fr_auto] items-center gap-2 px-4 py-3 hover:bg-black/[0.02] lg:grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_96px] ${
                       focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''
                     }`}
                   >
@@ -192,6 +191,19 @@ export function Catering() {
                       </button>
                     </div>
                     <div className="flex items-center gap-1.5">
+                      {/* The row opens the order too, but a tablet never shows
+                          a title tooltip — so the way in is also a button. */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenId(b.id)
+                        }}
+                        aria-label={`Open the order for ${b.event}`}
+                        title="Open the order"
+                        className="grid size-7 place-items-center rounded-lg bg-brand/10 text-brand-600 hover:bg-brand hover:text-white"
+                      >
+                        <FileText size={14} />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -216,7 +228,6 @@ export function Catering() {
                       </button>
                     </div>
                   </div>
-                  {open && <OrderSheet b={b} />}
                   </div>
                 )
               })
@@ -247,7 +258,14 @@ export function Catering() {
             {showDone && (
               <Card className="divide-y divide-black/5">
                 {completed.map((b) => (
-                  <div key={b.id} className="flex items-center gap-3 p-3 opacity-75">
+                  // Clickable for the same reason as an active one: a past
+                  // event is exactly what you reopen to reprint an order.
+                  <div
+                    key={b.id}
+                    onClick={() => setOpenId(b.id)}
+                    title="Open the order"
+                    className="flex cursor-pointer items-center gap-3 p-3 opacity-75 hover:bg-black/[0.02] hover:opacity-100"
+                  >
                     <Check size={15} className="shrink-0 text-up" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-ink">{b.event}</div>
@@ -256,7 +274,10 @@ export function Catering() {
                       </div>
                     </div>
                     <button
-                      onClick={() => undo(b.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        undo(b.id)
+                      }}
                       aria-label={`Undo complete for ${b.event}`}
                       title="Move back to active"
                       className="inline-flex items-center gap-1 rounded-lg border border-black/10 bg-white px-2 py-1 text-xs font-semibold text-ink"
@@ -269,139 +290,15 @@ export function Catering() {
             )}
           </div>
         )}
+
+        {/* The order itself, over the log. Looked up from `bookings` rather than
+            held in state so an edit — or a delete — can't leave a stale copy
+            open on screen. */}
+        <OrderTicket
+          booking={bookings.find((b) => b.id === openId) ?? null}
+          onClose={() => setOpenId(null)}
+        />
             </Page>
-  )
-}
-
-/** The actual order, opened under its row — every detail we captured. */
-function OrderSheet({ b }: { b: Booking }) {
-  // Import notes pack details with " · " separators — unpack into lines.
-  const detailLines = (b.notes || '').split(/\s·\s/).map((s) => s.trim()).filter(Boolean)
-  return (
-    <div className="border-t border-brand/20 bg-brand/[0.04] px-4 py-4">
-      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
-        {b.orderNo && (
-          <span className="font-mono font-bold text-ink">Order #{b.orderNo}</span>
-        )}
-        {b.source && <span className="rounded bg-brand/15 px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-brand-600">{b.source}</span>}
-        <span className="text-muted">
-          {fmtDate(b.date)}
-          {b.time && ` · ${fmtTime(b.time)}`}
-        </span>
-        {b.guests > 0 && <span className="font-semibold text-ink">{b.guests} guests</span>}
-        {b.deposit != null && (
-          <span className={b.depositPaid ? 'font-semibold text-up' : 'text-muted'}>
-            deposit {money(b.deposit)} {b.depositPaid ? '✓ paid' : 'pending'}
-          </span>
-        )}
-        {b.estimate != null && <span className="font-semibold text-ink">est. {money(b.estimate)}</span>}
-      </div>
-      {detailLines.length > 0 && (
-        <ul className="space-y-1">
-          {detailLines.map((l, i) => (
-            <li key={i} className="flex items-baseline gap-2 text-sm text-ink/85">
-              <span className="mt-1 size-1.5 shrink-0 rounded-full bg-brand/60" />
-              {l}
-            </li>
-          ))}
-        </ul>
-      )}
-      {b.docId && <TicketPdf docId={b.docId} />}
-      {b.raw && (
-        <details className="mt-3">
-          <summary className="cursor-pointer text-xs font-semibold text-muted">Full ticket text</summary>
-          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-ink/80">
-            {b.raw}
-          </pre>
-        </details>
-      )}
-      {detailLines.length === 0 && !b.raw && !b.docId && (
-        <p className="text-xs text-muted">No extra details on this booking — edit it or re-drop the order PDF on Imports.</p>
-      )}
-    </div>
-  )
-}
-
-/**
- * The caterer's own order PDF, under the row it belongs to.
- *
- * The file was already kept at import time; this just hands it back. Printing
- * goes through the frame when the browser allows it and falls back to a new tab
- * otherwise — phone PDF viewers vary too much to rely on one path, and a manager
- * who needs the sheet on the line cannot be left with a dead button.
- */
-function TicketPdf({ docId }: { docId: string }) {
-  const [url, setUrl] = useState<string | null>(null)
-  const [missing, setMissing] = useState(false)
-  const frame = useRef<HTMLIFrameElement>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    let made = ''
-    void getDoc(docId).then((rec) => {
-      if (cancelled) return
-      if (!rec) return setMissing(true)
-      made = URL.createObjectURL(rec.blob)
-      setUrl(made)
-    })
-    // Revoked on unmount so collapsing the row doesn't leak the blob.
-    return () => {
-      cancelled = true
-      if (made) URL.revokeObjectURL(made)
-    }
-  }, [docId])
-
-  const openTab = () => {
-    if (url) window.open(url, '_blank', 'noopener')
-  }
-  const print = () => {
-    try {
-      const w = frame.current?.contentWindow
-      if (w) {
-        w.focus()
-        w.print()
-        return
-      }
-    } catch {
-      /* viewer blocked scripted printing — fall through to the tab */
-    }
-    openTab()
-  }
-
-  if (missing)
-    return (
-      <p className="mt-3 text-xs text-muted">
-        The original PDF isn’t on this device — only the most recent imports are kept. Re-drop it on
-        Imports to print it.
-      </p>
-    )
-  if (!url) return <p className="mt-3 text-xs text-muted">Loading the order…</p>
-
-  return (
-    <div className="mt-3">
-      <div className="mb-2 flex items-center gap-2 print:hidden">
-        <span className="mr-auto text-xs font-semibold text-muted">Original order</span>
-        <button
-          onClick={print}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-1.5 text-xs font-bold text-white"
-        >
-          <Printer size={12} /> Print
-        </button>
-        <button
-          onClick={openTab}
-          aria-label="Open the order in a new tab"
-          className="grid size-8 place-items-center rounded-lg border border-black/10 bg-white text-ink"
-        >
-          <ExternalLink size={13} />
-        </button>
-      </div>
-      <iframe
-        ref={frame}
-        src={url}
-        title="Catering order"
-        className="h-[28rem] w-full rounded-lg border border-black/10 bg-white"
-      />
-    </div>
   )
 }
 
@@ -526,17 +423,4 @@ function Reservations({
       </div>
     </Card>
   )
-}
-
-function fmtDate(iso: string): string {
-  if (!iso) return ''
-  const [y, m, d] = iso.split('-').map(Number)
-  const dt = new Date(y, m - 1, d)
-  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-function fmtTime(t: string): string {
-  const [h, m] = t.split(':').map(Number)
-  const ap = h >= 12 ? 'p' : 'a'
-  const h12 = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, '0')}${ap}`
 }

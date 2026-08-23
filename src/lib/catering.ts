@@ -191,3 +191,19 @@ export function parseCatering(text: string, fileName = ''): Omit<Booking, 'id'> 
 function pad(n: string): string {
   return String(n).padStart(2, '0')
 }
+
+/** "Tue, Aug 26" — the log's date column and the printed order both read this. */
+export function fmtDate(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+/** "6:30p" — short enough for a table cell. */
+export function fmtTime(t: string): string {
+  const [h, m] = t.split(':').map(Number)
+  const ap = h >= 12 ? 'p' : 'a'
+  const h12 = h % 12 || 12
+  return `${h12}:${String(m).padStart(2, '0')}${ap}`
+}
