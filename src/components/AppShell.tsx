@@ -12,6 +12,7 @@ import { Aurora } from './Aurora'
 import { Toaster } from './Toaster'
 import { CommandPalette, openCommandPalette } from './CommandPalette'
 import { DropCatcher, DropBoxPill } from './DropBox'
+import { NavBadge, rollUp, useNavBadges, type Badge } from './NavBadge'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -34,6 +35,9 @@ export function AppShell() {
     [],
   )
   const sections = role === 'staff' ? STAFF_SECTIONS : rollup ? ROLLUP_SECTIONS : isAdmin ? NAV : managerSections
+  // Counts that ride on a nav item — right now the checklists, which reset on
+  // a schedule whether or not anyone worked them.
+  const badges = useNavBadges(role)
   const current = [...NAV_FLAT, SHIFT_ITEM].find((i) => i.to === loc.pathname)
   const bottom = rollup ? ROLLUP_SECTIONS.flatMap((s) => s.items) : bottomItems(role)
 
@@ -83,7 +87,7 @@ export function AppShell() {
         {/* Above the menu, not inside it: the Drop Box is somewhere to aim at
             rather than something to go and find. Staff have nothing to import. */}
         {role !== 'staff' && <DropBoxPill />}
-        <Rail sections={sections} onNavigate={() => setOpen(false)} />
+        <Rail sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
         <BuildStamp />
       </aside>
 
@@ -126,7 +130,7 @@ export function AppShell() {
               </div>
             ) : null}
             {role !== 'staff' && <DropBoxPill onNavigate={() => setOpen(false)} />}
-            <DrawerNav sections={sections} onNavigate={() => setOpen(false)} />
+            <DrawerNav sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
             <BuildStamp />
           </div>
           <style>{`@keyframes slidein{from{transform:translateX(-105%)}to{transform:translateX(0)}}`}</style>
@@ -229,7 +233,15 @@ function Brand() {
  * So: no icon column, no collapsing. Areas as headings, screens as rows, the
  * whole menu under your thumb.
  */
-function DrawerNav({ sections, onNavigate }: { sections: NavSection[]; onNavigate: () => void }) {
+function DrawerNav({
+  sections,
+  onNavigate,
+  badges,
+}: {
+  sections: NavSection[]
+  onNavigate: () => void
+  badges: Record<string, Badge | undefined>
+}) {
   const row = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-colors ${
       isActive
@@ -263,6 +275,7 @@ function DrawerNav({ sections, onNavigate }: { sections: NavSection[]; onNavigat
               <NavLink key={it.to} to={it.to} onClick={onNavigate} className={row}>
                 <it.icon size={16} strokeWidth={2} className="shrink-0 opacity-70" />
                 {it.label}
+                <NavBadge badge={badges[it.to]} />
               </NavLink>
             ))}
           </div>
@@ -284,7 +297,15 @@ function DrawerNav({ sections, onNavigate }: { sections: NavSection[]; onNavigat
  * The open area follows the route, so arriving from a link or a deep link shows
  * that screen's area instead of leaving the rail pointing somewhere else.
  */
-function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: () => void }) {
+function Rail({
+  sections,
+  onNavigate,
+  badges,
+}: {
+  sections: NavSection[]
+  onNavigate: () => void
+  badges: Record<string, Badge | undefined>
+}) {
   const loc = useLocation()
   // A section with no title holds a single destination (Dashboard, My Shift) —
   // it IS its own rail row and never expands.
@@ -339,6 +360,7 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
             }
           >
             {it.label}
+            <NavBadge badge={badges[it.to]} />
           </NavLink>
         ))}
 
@@ -348,6 +370,9 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
           // row would just be a second click to reach it.
           const only = sec.items.length === 1 ? sec.items[0] : null
           const here = sec.items.some((x) => x.to === loc.pathname)
+          // A closed area hides its screens, which is exactly where a badge
+          // would go unseen — so the header carries what's inside it.
+          const rolled = rollUp(sec.items.map((x) => x.to), badges)
 
           if (only) {
             return (
@@ -365,6 +390,7 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
                 }
               >
                 {sec.title}
+                <NavBadge badge={rolled} />
               </NavLink>
             )
           }
@@ -381,10 +407,15 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
                   isOpen || here ? 'text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                <span className="truncate">{sec.title}</span>
+                {/* flex-1 so the title, not the chevron, gives up the width a
+                    badge needs — the chevron stays pinned to the right edge. */}
+                <span className="flex-1 truncate text-left">{sec.title}</span>
+                {/* Only when shut: an open area shows the badge on the screen
+                    that owns it, and two badges for one number reads as two. */}
+                {!isOpen && <NavBadge badge={rolled} />}
                 <ChevronDown
                   size={13}
-                  className={`ml-auto shrink-0 opacity-45 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  className={`ml-1 shrink-0 opacity-45 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -404,6 +435,7 @@ function Rail({ sections, onNavigate }: { sections: NavSection[]; onNavigate: ()
                       }
                     >
                       {it.label}
+                      <NavBadge badge={badges[it.to]} />
                     </NavLink>
                   ))}
                 </div>
