@@ -72,21 +72,19 @@ export function AppShell() {
       {/* ---- Desktop rail ---- */}
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />
-        <RoleToggle />
-        <ShiftBadge />
-        <SyncBadge />
-        {isAdmin ? (
-          <div className="mb-3">
-            <StoreSwitcher />
-          </div>
-        ) : role === 'manager' ? (
-          <div className="mb-3">
-            <StoreLabel />
-          </div>
-        ) : null}
-        {/* Above the menu, not inside it: the Drop Box is somewhere to aim at
-            rather than something to go and find. Staff have nothing to import. */}
-        {role !== 'staff' && <DropBoxPill />}
+        {/* Who you are, which shift, which store, where to drop things — one
+            stack with one gap. Each of these used to carry its own bottom
+            margin, so the spacing between them depended on which ones your
+            role happened to render. */}
+        <div className="mb-4 space-y-2">
+          <RoleToggle />
+          <ShiftBadge />
+          <SyncBadge />
+          {isAdmin ? <StoreSwitcher /> : role === 'manager' ? <StoreLabel /> : null}
+          {/* Above the menu, not inside it: the Drop Box is somewhere to aim at
+              rather than something to go and find. Staff have nothing to import. */}
+          {role !== 'staff' && <DropBoxPill />}
+        </div>
         <Rail sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
         <BuildStamp />
       </aside>
@@ -117,19 +115,13 @@ export function AppShell() {
           />
           <div className="absolute inset-y-0 left-0 w-[82%] max-w-[300px] overflow-y-auto overscroll-contain bg-navy px-3 py-4 text-white/70 shadow-2xl [padding-top:env(safe-area-inset-top)] animate-[slidein_.25s_ease]">
             <Brand />
-            <RoleToggle />
-            <ShiftBadge />
-            <SyncBadge />
-            {isAdmin ? (
-              <div className="mb-3">
-                <StoreSwitcher />
-              </div>
-            ) : role === 'manager' ? (
-              <div className="mb-3">
-                <StoreLabel />
-              </div>
-            ) : null}
-            {role !== 'staff' && <DropBoxPill onNavigate={() => setOpen(false)} />}
+            <div className="mb-4 space-y-2">
+              <RoleToggle />
+              <ShiftBadge />
+              <SyncBadge />
+              {isAdmin ? <StoreSwitcher /> : role === 'manager' ? <StoreLabel /> : null}
+              {role !== 'staff' && <DropBoxPill onNavigate={() => setOpen(false)} />}
+            </div>
             <DrawerNav sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
             <BuildStamp />
           </div>
@@ -265,7 +257,11 @@ function DrawerNav({
 
       {sections.map((sec, i) => (
         <div key={sec.title || `solo-${i}`} className="mb-2">
-          {sec.title && (
+          {/* A heading only earns its place over more than one row. A section
+              holding a single screen was printing "IMPORTS" above a row called
+              "Imports" — the same word twice, and a whole heading's worth of
+              space to say nothing. */}
+          {sec.title && sec.items.length > 1 && (
             <div className="px-3 pb-1 pt-2 text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/35">
               {sec.title}
             </div>
@@ -274,7 +270,10 @@ function DrawerNav({
             {sec.items.map((it) => (
               <NavLink key={it.to} to={it.to} onClick={onNavigate} className={row}>
                 <it.icon size={16} strokeWidth={2} className="shrink-0 opacity-70" />
-                {it.label}
+                {/* Labelled by its section when the section IS the screen —
+                    the menu has always called this one "Imports", not
+                    whatever the route inside it is named. */}
+                {sec.items.length === 1 && sec.title ? sec.title : it.label}
                 <NavBadge badge={badges[it.to]} />
               </NavLink>
             ))}
@@ -307,15 +306,35 @@ function Rail({
   badges: Record<string, Badge | undefined>
 }) {
   const loc = useLocation()
-  // A section with no title holds a single destination (Dashboard, My Shift) —
-  // it IS its own rail row and never expands.
-  const areas = useMemo(() => sections.filter((s) => s.title), [sections])
-  const solo = useMemo(() => sections.filter((s) => !s.title).flatMap((s) => s.items), [sections])
+  /**
+   * Places, then folders — never mixed.
+   *
+   * A section with no title holds a single destination (Dashboard, My Shift),
+   * and a section holding exactly ONE screen *is* that screen: unfolding it to
+   * a single row is just a second click to arrive. Both are rows you tap to go
+   * somewhere, so both belong in one list.
+   *
+   * Left in source order they interleaved — Dashboard, Imports, Daily Ops,
+   * Training, Item Catalog, Management — so the rail alternated place, place,
+   * folder, folder, place, folder. That is the order that read as random, and
+   * no amount of styling fixes an arbitrary sequence.
+   */
+  const groups = useMemo(() => sections.filter((s) => s.title && s.items.length > 1), [sections])
+  const links = useMemo(
+    () =>
+      sections.flatMap((s) =>
+        // A one-screen section is labelled by the SECTION, not the item inside
+        // it: the menu says "Imports", the route inside it is called something
+        // else, and the rail has always shown the former.
+        !s.title ? s.items : s.items.length === 1 ? [{ ...s.items[0], label: s.title }] : [],
+      ),
+    [sections],
+  )
 
   // The area holding the current route — the resting state the rail returns to.
   const routeArea = useMemo(
-    () => areas.findIndex((a) => a.items.some((x) => x.to === loc.pathname)),
-    [areas, loc.pathname],
+    () => groups.findIndex((a) => a.items.some((x) => x.to === loc.pathname)),
+    [groups, loc.pathname],
   )
   // Which area is open, as one value rather than a hover state layered over a
   // click state: layering them meant a click could not close what the pointer
@@ -335,7 +354,9 @@ function Rail({
           its escape hatch just costs you the extra click. */}
       <button
         onClick={openCommandPalette}
-        className="mb-2 flex w-full items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2 text-[12px] text-white/45 hover:border-signal/40 hover:text-white/70"
+        // Same surface as the blocks above it — it was a fifth fill (4%) and a
+        // fifth radius sitting directly under four others.
+        className="rail-block mb-2 flex w-full items-center gap-2 px-2.5 py-2 text-[12px] text-white/45 hover:text-white/70"
       >
         <Search size={13} className="shrink-0" />
         {/* It finds dishes now, not just screens, and nobody taps a box to go
@@ -345,7 +366,7 @@ function Rail({
       </button>
 
       <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-        {solo.map((it) => (
+        {links.map((it) => (
           <NavLink
             key={it.to}
             to={it.to}
@@ -359,41 +380,25 @@ function Rail({
               }`
             }
           >
+            <it.icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />
             {it.label}
             <NavBadge badge={badges[it.to]} />
           </NavLink>
         ))}
 
-        {areas.map((sec, i) => {
+        {/* Somewhere to go, above; things that open, below. Without the rule
+            the two ran together as one list of six, half of which navigated
+            and half of which unfolded, with nothing saying which was which. */}
+        {links.length > 0 && groups.length > 0 && (
+          <div className="my-2 border-t border-white/[0.07]" />
+        )}
+
+        {groups.map((sec, i) => {
           const isOpen = i === open
-          // An area wrapping a single screen is that screen — expanding to one
-          // row would just be a second click to reach it.
-          const only = sec.items.length === 1 ? sec.items[0] : null
           const here = sec.items.some((x) => x.to === loc.pathname)
           // A closed area hides its screens, which is exactly where a badge
           // would go unseen — so the header carries what's inside it.
           const rolled = rollUp(sec.items.map((x) => x.to), badges)
-
-          if (only) {
-            return (
-              <NavLink
-                key={sec.title}
-                to={only.to}
-                onClick={onNavigate}
-                onMouseEnter={() => setOpen(-1)}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
-                    isActive
-                      ? 'bg-signal/12 text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
-                      : 'text-white/70 hover:bg-white/5 hover:text-white'
-                  }`
-                }
-              >
-                {sec.title}
-                <NavBadge badge={rolled} />
-              </NavLink>
-            )
-          }
 
           return (
             <div key={sec.title} onMouseEnter={() => setOpen(i)}>
@@ -403,8 +408,14 @@ function Rail({
                 // closing sticks until you leave the area and come back.
                 onClick={() => setOpen((o) => (o === i ? -1 : i))}
                 aria-expanded={isOpen}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
-                  isOpen || here ? 'text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                // A folder, styled like one. It used to be pixel-identical to
+                // Dashboard and Imports — same size, weight, colour and indent
+                // — with a 45%-opacity chevron as the only clue that one of
+                // them took you somewhere and the other unfolded. Small, wide-
+                // tracked caps read as a heading; the destinations keep their
+                // icons and sentence case.
+                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[10.5px] font-extrabold uppercase tracking-[0.12em] transition-colors ${
+                  isOpen || here ? 'text-white/75' : 'text-white/40 hover:bg-white/5 hover:text-white/70'
                 }`}
               >
                 {/* flex-1 so the title, not the chevron, gives up the width a
@@ -414,26 +425,31 @@ function Rail({
                     that owns it, and two badges for one number reads as two. */}
                 {!isOpen && <NavBadge badge={rolled} />}
                 <ChevronDown
-                  size={13}
-                  className={`ml-1 shrink-0 opacity-45 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  size={12}
+                  className={`ml-1 shrink-0 opacity-70 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
               {isOpen && (
-                <div className="mb-1 ml-[7px] flex flex-col gap-0.5 border-l border-white/10 pl-2">
+                // Aligned so a child's icon sits under the header's first
+                // letter — the guide rule and the text used to disagree by a
+                // couple of pixels, which is the sort of thing you feel
+                // without being able to name it.
+                <div className="mb-1.5 ml-3 flex flex-col gap-0.5 border-l border-white/10 pl-2">
                   {sec.items.map((it) => (
                     <NavLink
                       key={it.to}
                       to={it.to}
                       onClick={onNavigate}
                       className={({ isActive }) =>
-                        `flex items-center rounded-lg px-2.5 py-1.5 text-[12.5px] transition-colors ${
+                        `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12.5px] transition-colors ${
                           isActive
                             ? 'bg-signal/12 font-semibold text-signal shadow-[inset_2px_0_0_var(--color-signal)]'
                             : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }`
                       }
                     >
+                      <it.icon size={14} strokeWidth={2} className="shrink-0 opacity-60" />
                       {it.label}
                       <NavBadge badge={badges[it.to]} />
                     </NavLink>

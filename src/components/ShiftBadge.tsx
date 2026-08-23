@@ -50,12 +50,12 @@ function ShiftReadout() {
   const OtherIcon = other === 'AM' ? Sun : Moon
 
   return (
-    <div className="mb-3">
+    <div>
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         title={overridden ? 'Set by hand — clears overnight' : 'Following the clock'}
-        className="flex w-full items-center gap-2 rounded-xl bg-white/[0.07] px-2.5 py-2 text-left hover:bg-white/10"
+        className="rail-block flex w-full items-center gap-2 px-2.5 py-2 text-left"
       >
         <Icon size={14} className="shrink-0 text-brand" />
         <span className="min-w-0 flex-1">

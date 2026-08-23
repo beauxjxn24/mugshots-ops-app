@@ -46,8 +46,10 @@ export function RoleToggle() {
     location.reload()
   }
 
+  // Margin lives on the rail's stack, not on each block — four components each
+  // owning their own gap is how they ended up unevenly spaced.
   return (
-    <div className="mb-3 rounded-xl bg-white/10 p-1">
+    <div className="rail-block p-1 hover:!bg-white/[0.06]">
       <div className="mb-1 px-1.5 text-[9px] font-bold uppercase tracking-wider text-white/40">
         Viewing as
       </div>

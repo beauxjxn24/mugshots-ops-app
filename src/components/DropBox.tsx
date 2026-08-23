@@ -115,11 +115,14 @@ export function DropBoxPill({ onNavigate, dark = true }: { onNavigate?: () => vo
         }}
         onClick={() => file.current?.click()}
         title="Drop a file here, or tap to pick one — it lands on Imports"
-        className={`mb-3 flex w-full items-center gap-2.5 rounded-xl border-2 border-dashed px-2.5 py-2.5 text-left transition-colors ${
+        // Still dashed — on this one the border is the message, "aim here" —
+        // but at the same weight, fill and padding as the blocks it stacks with
+        // instead of a 2px outline shouting over them.
+        className={`flex w-full items-center gap-2.5 rounded-xl border border-dashed px-2.5 py-2 text-left transition-colors ${
           dark
             ? over
               ? 'border-brand bg-brand/20 text-white'
-              : 'border-white/20 bg-white/[0.04] text-white/75 hover:border-brand/60 hover:bg-brand/10 hover:text-white'
+              : 'rail-block border-white/20 text-white/75 hover:border-brand/60 hover:!bg-brand/10 hover:text-white'
             : over
               ? 'border-brand bg-brand/10 text-ink'
               : 'border-black/15 bg-black/[0.02] text-ink hover:border-brand/50'

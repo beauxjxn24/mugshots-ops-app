@@ -106,6 +106,25 @@ body {
 [class*="border-black/"] { border-color: var(--line) !important; }
 [class*="bg-black/"] { background-color: rgba(255, 255, 255, 0.045) !important; }
 
+/* ============================================================
+   The rail's status blocks — who you are, which shift, which
+   store, and the drop target. They stack straight on top of one
+   another, and each had invented its own surface: fills at 10%,
+   7% and 4%, three different paddings, and one 2px dashed
+   border. Four widgets that do the same job, looking like four
+   unrelated things, which is most of why the rail read as
+   sloppy.
+
+   One definition, so they can't drift apart again. Drop Box
+   keeps its dashes — on that one the border is the message
+   ("aim here") — but at the same weight and fill as the rest.
+   ============================================================ */
+.rail-block {
+  border-radius: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+.rail-block:hover { background-color: rgba(255, 255, 255, 0.1); }
+
 /* ---- White type on a solid accent: the one pairing here that can't be read.
    The palette's accents are all LIGHT — gold #e4b84c, mint #43d59b, cyan
    #4fe3c1 — so white on them lands at 1.6–2.7:1 where the readable floor is

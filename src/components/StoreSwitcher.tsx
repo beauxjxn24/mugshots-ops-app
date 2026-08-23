@@ -26,8 +26,8 @@ export function StoreSwitcher({ dark = true }: { dark?: boolean }) {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left ${
-          dark ? 'bg-white/10 text-white hover:bg-white/15' : 'border border-black/10 bg-white text-ink'
+        className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left ${
+          dark ? 'rail-block text-white' : 'border border-black/10 bg-white text-ink'
         }`}
       >
         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white">
