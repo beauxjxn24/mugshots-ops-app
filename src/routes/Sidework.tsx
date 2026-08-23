@@ -15,7 +15,7 @@ import {
   type Section,
 } from '../lib/sidework'
 import { BohCleaning, CleaningToday } from '../components/BohCleaning'
-import { phaseKind, PHASE_META } from '../lib/sidework'
+import { phaseKind, PHASE_META, OPENING_DUTIES, OPENING_SECTION, openingId } from '../lib/sidework'
 import { SheetRail, ClosersStrip } from '../components/SheetRail'
 import { rolesOf, type Person } from '../lib/staff'
 import { useRole } from '../lib/role'
@@ -345,6 +345,36 @@ export function Sidework() {
   )
   const doneCount = allTasks.filter((k) => done[k]).length
 
+  /**
+   * Opening the building — the crew's shared list, editable and added to.
+   *
+   * Kept out of `allTasks` on purpose. That array is what a closer signs off
+   * and what "clear this sheet" wipes, and neither should reach across to work
+   * the whole crew shares: clearing the Server sheet must not untick the chairs
+   * for the Host tab too.
+   */
+  const [opening, setOpening] = usePersistentState<string[]>('sidework:opening', OPENING_DUTIES)
+  const [addOpen, setAddOpen] = useState('')
+  // Behind a pencil, like the section cards. A delete on every row put eight
+  // ✕'s down the edge of a list whose whole job is being ticked.
+  const [editOpening, setEditOpening] = useState(false)
+  const isOpening = phaseKind(activePhase) === 'open'
+  // Same trap as the duty sheet and the prep list: seeded once per device, so a
+  // duty added to the shipped list would reach a fresh install and nothing
+  // else. Only ADDS what's missing — a store's own edits are never touched, and
+  // a duty deliberately deleted here stays deleted once it's off the shipped
+  // list too.
+  useEffect(() => {
+    setOpening((mine) => {
+      const have = new Set((mine ?? []).map((t) => t.trim().toLowerCase()))
+      const missing = OPENING_DUTIES.filter((t) => !have.has(t.trim().toLowerCase()))
+      return missing.length === 0 ? mine : [...(mine ?? []), ...missing]
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const openKeys = useMemo(() => (opening ?? []).map(openingId), [opening])
+  const openDone = openKeys.filter((k) => done[k]).length
+
   // Every duty on the sheet for this role and phase, flattened out of its
   // sections — the sections stay the library, the cuts are tonight's deal.
   const duties: Duty[] = useMemo(
@@ -506,10 +536,14 @@ export function Sidework() {
     for (const ph of phases) {
       const secs = (data?.[role]?.[ph] ?? []) as Section[]
       const keys = secs.flatMap((sec) => sec.tasks.map((t) => `${role}|${ph}|${sec.section}|${t}`))
+      // The crew's shared opening list counts here, because this is the number
+      // the Opening pill shows and opening the building is most of what opening
+      // IS. Without it the pill was quoting one role's laminated sheet.
+      if (phaseKind(ph) === 'open') keys.push(...openKeys)
       out[ph] = { total: keys.length, done: keys.filter((k) => done[k]).length }
     }
     return out
-  }, [phases, data, role, done])
+  }, [phases, data, role, done, openKeys])
   /** The phase the clock says we're in — marked, not forced. */
   const nowPhase = useMemo(() => phaseForShift(phases, shift), [phases, shift])
 
@@ -808,8 +842,10 @@ export function Sidework() {
         <>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="font-display text-lg font-semibold text-ink">{role}</span>
+          {/* Matches the pill below it — on opening that means counting the
+              shared list too, or the two numbers would disagree on one screen. */}
           <span className="ml-auto font-mono text-xs font-bold text-muted">
-            {doneCount}/{allTasks.length}
+            {doneCount + (isOpening ? openDone : 0)}/{allTasks.length + (isOpening ? openKeys.length : 0)}
           </span>
         </div>
 
@@ -943,29 +979,133 @@ export function Sidework() {
         )}
 
 
-        <Card className="overflow-hidden">
-          <ClosersStrip
-            foh={closers.FOH}
-            boh={closers.BOH}
-            open={closersOpen}
-            onToggle={() => setClosersOpen((v) => !v)}
-            left={closerLeft}
-          />
-          {closersOpen && (
-            <Closers
-              phase={activePhase}
-              roster={everyone}
-              closers={closers}
-              onSetCloser={assignCloser}
-              done={done}
-              onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
-              canEdit={isCloser}
-              // So the card can name the rows on THIS sheet a closer already owns.
-              sheet={duties}
-              bare
+        {/* Naming tonight's closers at nine in the morning is a question with
+            no answer yet, and it was the first thing under the Opening pill.
+            It belongs to the half of the day that's actually closing. */}
+        {!isOpening && (
+          <Card className="overflow-hidden">
+            <ClosersStrip
+              foh={closers.FOH}
+              boh={closers.BOH}
+              open={closersOpen}
+              onToggle={() => setClosersOpen((v) => !v)}
+              left={closerLeft}
             />
-          )}
-        </Card>
+            {closersOpen && (
+              <Closers
+                phase={activePhase}
+                roster={everyone}
+                closers={closers}
+                onSetCloser={assignCloser}
+                done={done}
+                onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
+                canEdit={isCloser}
+                // So the card can name the rows on THIS sheet a closer already owns.
+                sheet={duties}
+                bare
+              />
+            )}
+          </Card>
+        )}
+
+        {/* Opening the building, before anybody's own section.
+            The complaint this answers: tapping Opening still showed "Server
+            duties" over five tiles called Section 1 to Section 5, so the pill
+            led to the role's general sidework and nothing on the screen ever
+            said what opening actually is. This does, in the owner's words, and
+            it's the same list on every tab — one crew, one building. */}
+        {isOpening && (
+          <Card className={`overflow-hidden ${editOpening ? 'ring-2 ring-brand' : 'border-signal/30'}`}>
+            <div
+              className={`flex items-center gap-2 border-b px-4 py-2 ${
+                editOpening ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-signal/[0.07]'
+              }`}
+            >
+              <span className="font-display text-sm font-semibold text-ink">{OPENING_SECTION}</span>
+              <span className="rounded-full bg-signal/15 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide text-signal">
+                whole crew
+              </span>
+              <span className="ml-auto font-mono text-xs font-bold text-muted">
+                {openDone}/{openKeys.length}
+              </span>
+              {isCloser && (
+                <button
+                  onClick={() => setEditOpening((v) => !v)}
+                  aria-label={editOpening ? 'Done editing opening duties' : 'Edit opening duties'}
+                  className={`grid size-7 shrink-0 place-items-center rounded-lg border ${
+                    editOpening ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white text-muted'
+                  }`}
+                >
+                  {editOpening ? <Check size={13} /> : <Pencil size={12} />}
+                </button>
+              )}
+            </div>
+            {(opening ?? []).map((t) => {
+              const id = openingId(t)
+              return (
+                <div key={t} className="flex items-center border-b border-black/5 last:border-0">
+                  <button
+                    onClick={() => setDone((d) => ({ ...d, [id]: !d[id] }))}
+                    className={`flex min-w-0 flex-1 items-start gap-3 px-4 py-2.5 text-left ${
+                      done[id] ? 'bg-up/5' : 'hover:bg-black/[0.02]'
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 text-[10px] transition-colors ${
+                        done[id] ? 'border-up bg-up text-white' : 'border-black/20'
+                      }`}
+                    >
+                      {done[id] && '✓'}
+                    </span>
+                    <span className={`text-sm ${done[id] ? 'text-muted line-through' : 'text-ink'}`}>{t}</span>
+                  </button>
+                  {isCloser && editOpening && (
+                    <button
+                      onClick={async () => {
+                        if (await confirmDelete(`Remove "${t}" from opening?`)) {
+                          setOpening((list) => list.filter((x) => x !== t))
+                        }
+                      }}
+                      aria-label={`Remove ${t}`}
+                      className="shrink-0 px-3 py-2.5 text-muted hover:text-down"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+            {/* "Start with this and make it to where we can add on to it." */}
+            {isCloser && editOpening && (
+              <div className="flex items-center gap-2 bg-black/[0.02] px-4 py-2.5">
+                <input
+                  value={addOpen}
+                  onChange={(e) => setAddOpen(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return
+                    const v = addOpen.trim()
+                    if (!v || (opening ?? []).some((x) => x.toLowerCase() === v.toLowerCase())) return
+                    setOpening((list) => [...list, v])
+                    setAddOpen('')
+                  }}
+                  placeholder="Add an opening duty…"
+                  className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm text-ink outline-none focus:border-brand"
+                />
+                <button
+                  onClick={() => {
+                    const v = addOpen.trim()
+                    if (!v || (opening ?? []).some((x) => x.toLowerCase() === v.toLowerCase())) return
+                    setOpening((list) => [...list, v])
+                    setAddOpen('')
+                  }}
+                  className="shrink-0 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-brand/40"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* The duties themselves — the answer to "what does this station do",
             which is the question the tab is asking. It used to be folded into a
@@ -973,17 +1113,23 @@ export function Sidework() {
             the layout. That reads on the Server sheet and it does not read on
             Dish: a station has no cuts, so a closer tapping Fry got a cut
             planner and had to go hunting for the actual jobs. */}
-        <div className="rounded-2xl border border-black/10 bg-white px-4 py-3">
+        {/* No box around the boxes. The sections below are cards already, and
+            wrapping them in a second card put two borders and two headers
+            between the reader and the first actual duty. */}
+        <div className="px-1">
+          {/* Named for the part of the day you tapped, not for the tab you're
+              on. It said "Server duties" under every pill, so Opening, Shift
+              change and Close all announced themselves as the same thing. */}
           <div className="text-sm font-bold text-ink">
-            {role} duties
+            {isOpening ? 'Then, each section' : `${PHASE_META[phaseKind(activePhase)].title} · ${role}`}
             <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">
               {duties.length}
             </span>
             <span className="ml-2 text-xs font-normal text-muted">
               {isStation(role)
                 ? 'whoever is on the station works these'
-                : phaseKind(activePhase) === 'open'
-                  ? 'split across the crew — a name on each section'
+                : isOpening
+                  ? 'split across the crew — put a name on each one'
                   : phaseKind(activePhase) === 'handover'
                     ? 'the AM crew’s work — the closers check it’s done'
                     : 'what the cuts are dealt from'}
@@ -1184,8 +1330,11 @@ export function Sidework() {
           />
         )}
 
-        {/* The closer's sign-off on this role + phase, for today. */}
-        {sections.length > 0 && (
+        {/* The closer's sign-off on this role + phase, for today.
+            Not on opening: the closers aren't in the building yet, and shift
+            change is where they check the AM crew's work — which is the whole
+            point of the split. */}
+        {sections.length > 0 && !isOpening && (
           <Card className={`overflow-hidden ${vRec ? 'ring-2 ring-up/40' : ''}`}>
             <div className="flex items-center gap-2 border-b border-black/5 bg-black/[0.02] px-4 py-2">
               <span className="font-display text-sm font-semibold text-ink">Closer verification</span>

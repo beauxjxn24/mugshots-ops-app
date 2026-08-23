@@ -451,11 +451,49 @@ export function phaseKind(phase: string): PhaseKind {
   return 'close'
 }
 
+/**
+ * Opening the building — the jobs that belong to the shift, not to a job title.
+ *
+ * The Opening pill used to lead to whichever sections the role's laminated
+ * sheet happened to hold, so it read "Server duties" over five tiles called
+ * Section 1 through Section 5, and nothing on the screen ever said what opening
+ * actually is. These are the owner's own words for it, and they're the same
+ * list whoever is standing there — so they're kept off the role sheets and
+ * shown on every tab, ticked once for the whole crew.
+ *
+ * Editable and additive on purpose: this is the start of the list, not the end
+ * of it. `OPENING_SECTION` is the section name the ticks are keyed under, so it
+ * doesn't get renamed — renaming it would orphan a day of checkmarks.
+ */
+export const OPENING_SECTION = 'Open the building'
+export const OPENING_DUTIES: string[] = [
+  'Flip the chairs down',
+  'Wipe every table — clean and ready for service',
+  'Check the silverware — rolled, stocked, and clean',
+  'Lay out the mats',
+  'Set up the shake machine',
+  'Fill the ice bins',
+  // One line, not two: coffee nobody has asked for would sit unticked all day
+  // and drag the count down, which is how a list stops getting read.
+  'Brew the tea (coffee only when someone asks for it)',
+  'Set up the sauce coolers — enough on hand for the whole shift',
+]
+
+/**
+ * The tick id for a shared opening duty.
+ *
+ * Carries no role and no phase name, deliberately. One person flips the chairs
+ * and they're flipped — it must not want re-ticking on the Host tab, and the
+ * two spellings of the opening phase ('Opening' and 'AM Opening') must not
+ * split it into two lists that each look half done.
+ */
+export const openingId = (task: string): string => `Everyone|Opening|${OPENING_SECTION}|${task}`
+
 export const PHASE_META: Record<PhaseKind, { title: string; who: string; note: string }> = {
   open: {
     title: 'Opening',
     who: 'everyone on',
-    note: 'Split across the crew — put a name on each section so nothing is nobody’s.',
+    note: 'The building comes first — then each section is somebody’s.',
   },
   handover: {
     title: 'Shift change',
