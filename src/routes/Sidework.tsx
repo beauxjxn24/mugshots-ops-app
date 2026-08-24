@@ -28,10 +28,8 @@ import { getClosers, setCloser, getCloserDuties, closerDutyId, SIDES, type Side 
 import {
   cutFor,
   dealEvenly,
-  dutiesForCut,
   dutyId,
   emptyPlan,
-  isReleased,
   planKey,
   type ShiftPlan,
 } from '../lib/shiftcuts'
@@ -122,7 +120,23 @@ export function Sidework() {
   const [vInit, setVInit] = useState('')
   const weekdayIdx = weekdayOf(today())
   const viewerRole = useRole((r) => r.role)
-  const isCloser = viewerRole !== 'staff'
+  /**
+   * Who may do what on this page — three levels, not two.
+   *
+   * It used to be one line: `isCloser = role !== 'staff'`, which called every
+   * manager a closer and no server one, and that is not how the floor works.
+   * The owner's own chain is: the MOD names tonight's closers, and the closers
+   * split the sidework between the servers.
+   *
+   * So "closer" is an ASSIGNMENT, not an app role. A server named as tonight's
+   * FOH closer can deal the cuts and put names on sections; a manager who was
+   * never named still can, because they're the MOD. Changing the duty sheet
+   * itself — what the jobs ARE — stays with the manager either way.
+   *
+   * `closers` is resolved below, so the two booleans that depend on it live
+   * with it rather than up here.
+   */
+  const isMod = viewerRole !== 'staff'
   // Tonight's deal, per role and phase. The duty sheet is the library; this is
   // who has what, and it only lasts the day.
   const [plans, setPlans] = usePersistentState<Record<string, ShiftPlan>>(planKey(today()), {})
@@ -403,13 +417,22 @@ export function Sidework() {
   // same thing happens to the second person to pick it up.
   const [viewAs, setViewAs] = useState('')
   const viewer = viewAs || shiftPerson()
+  /**
+   * Am I one of tonight's closers?
+   *
+   * By name, off the MOD's assignment — the whole point of the chain. Compared
+   * loosely because a roster types "Katie B." and a closer picker offers
+   * "Katie B", and a trailing full stop must not quietly cost someone the
+   * ability to deal their own cuts.
+   */
+  const sameName = (a?: string, b?: string): boolean =>
+    !!a && !!b && a.trim().replace(/\.$/, '').toLowerCase() === b.trim().replace(/\.$/, '').toLowerCase()
+  const mySide = SIDES.find((s) => sameName(closers[s], viewer))
+  /** Deal cuts and put names on sections: the MOD, or a named closer. */
+  const canAssign = isMod || Boolean(mySide)
+  /** Change what the jobs ARE, and who is closing: the MOD only. */
+  const canEditSheet = isMod
   const myCut = cutFor(plan, viewer)
-  const myDuties = myCut ? dutiesForCut(plan, myCut, duties.map((d) => d.id)) : []
-  // Everyone the closer has put on a cut tonight.
-  const onCuts = Object.entries(plan.people)
-    .filter(([, who]) => who)
-    .map(([c, who]) => ({ cut: Number(c), who }))
-    .sort((a, b) => a.cut - b.cut)
   const vKey = `${role}|${activePhase}`
   const vRec = verified[vKey]
 
@@ -506,7 +529,6 @@ export function Sidework() {
       return next
     })
 
-  const byId = new Map(duties.map((d) => [d.id, d]))
 
   /**
    * Duty id → who is on it tonight.
@@ -599,187 +621,6 @@ export function Sidework() {
     [roles, data, activePhase, shift, done, verified],
   )
 
-  // A server sees the cut they were dealt, and nothing else. The full sheet is
-  // the closer's tool -- handing a server forty duties to find their six in is
-  // how the list stops being read.
-  if (!isCloser) {
-    const mineDone = myDuties.filter((id) => done[id]).length
-    return (
-      <>
-        <PageHeader
-          width="narrow"
-          title="Your sidework"
-          subtitle={
-            !myCut
-              ? `${role} ${activePhase} · ${fmtDay(today())}`
-              : isReleased(plan, myCut)
-                ? `Cut ${myCut} · ${role} ${activePhase} · ${mineDone}/${myDuties.length} done`
-                : `Cut ${myCut} · not cut yet`
-          }
-        />
-        <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="mx-auto w-full max-w-3xl space-y-3">
-          {viewAs && (
-            <div className="flex items-center gap-2 rounded-xl bg-brand/10 px-3 py-2 text-xs">
-              <span className="font-semibold text-ink">Showing {viewAs}'s sidework</span>
-              <button onClick={() => setViewAs('')} className="ml-auto font-bold text-brand-600">
-                switch
-              </button>
-            </div>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {phases.map((ph) => (
-              <button
-                key={ph}
-                onClick={() => setPhase(ph)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                  activePhase === ph
-                    ? 'border-navy bg-navy text-white'
-                    : 'border-black/10 bg-white text-muted'
-                }`}
-              >
-                {ph}
-              </button>
-            ))}
-          </div>
-
-          {!myCut ? (
-            <Card className="p-4">
-              <p className="text-center text-sm text-muted text-pretty">
-                No cut for {viewer || 'you'} on the {activePhase} sheet yet.
-              </p>
-              {onCuts.length > 0 && (
-                <>
-                  <p className="mt-3 text-center text-[11px] font-extrabold uppercase tracking-wider text-muted">
-                    Not you? Tap your name
-                  </p>
-                  <div className="mt-2 space-y-1.5">
-                    {onCuts.map(({ cut, who }) => (
-                      <button
-                        key={cut}
-                        onClick={() => setViewAs(who)}
-                        className="flex w-full items-center gap-3 rounded-xl border border-black/10 px-3 py-2.5 text-left hover:border-brand"
-                      >
-                        <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-extrabold text-brand-600">
-                          Cut {cut}
-                        </span>
-                        <span className="truncate text-sm font-semibold text-ink">{who}</span>
-                        {isReleased(plan, cut) && (
-                          <span className="ml-auto text-[11px] font-bold text-up">cut</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </Card>
-          ) : !isReleased(plan, myCut) ? (
-            /* Dealt a cut but still on section. Sidework opens when the closer
-               cuts them -- showing it early is how a section goes unwatched. */
-            <Card className="p-6 text-center">
-              <div className="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-brand/10 text-brand">
-                <Check size={22} />
-              </div>
-              <p className="font-display text-base font-semibold text-ink">You're on cut {myCut}</p>
-              <p className="mt-1 text-sm text-muted text-pretty">
-                Your sidework opens when a manager cuts you. Stay on your section until then.
-              </p>
-            </Card>
-          ) : myDuties.length === 0 ? (
-            <Card className="p-6 text-center">
-              <p className="text-sm text-muted">Cut {myCut} has nothing on it yet.</p>
-            </Card>
-          ) : (
-            <Card className="overflow-hidden">
-              {myDuties.map((id) => (
-                <button
-                  key={id}
-                  onClick={() => setDone((d) => ({ ...d, [id]: !d[id] }))}
-                  className={`flex w-full items-center gap-3 border-b border-black/5 px-3 py-3 text-left last:border-0 ${
-                    done[id] ? 'bg-up/[0.04]' : ''
-                  }`}
-                >
-                  <span
-                    className={`grid size-9 shrink-0 place-items-center rounded-xl border-2 ${
-                      done[id] ? 'border-up bg-up text-white' : 'border-black/15 text-transparent'
-                    }`}
-                  >
-                    <Check size={18} strokeWidth={3} />
-                  </span>
-                  <span className={`text-[15px] ${done[id] ? 'text-muted line-through' : 'text-ink'}`}>
-                    {byId.get(id)?.task}
-                  </span>
-                </button>
-              ))}
-            </Card>
-          )}
-
-          {/* The rest of the sheet.
-              Yours stays on top and stays the big tap targets — that's the work
-              you're actually holding. Under it is everything else, so you can
-              see the whole close and who has what instead of wondering whether
-              a job you can see needs doing is somebody's or nobody's. */}
-          {sections.length > 0 && (
-            <Card className="overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-black/5 px-4 py-2.5">
-                <span className="font-display text-sm font-semibold text-ink">
-                  Everything on the {role} sheet
-                </span>
-                <span className="ml-auto text-[11px] text-muted">yours is highlighted</span>
-              </div>
-              {sections.map((sec) => (
-                <div key={sec.section}>
-                  <div className="border-b border-black/5 bg-black/[0.02] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                    {sec.section}
-                  </div>
-                  {sec.tasks.map((t, ti) => {
-                    const id = dutyId(role, activePhase, sec.section, t)
-                    const owner = ownerOf.get(id)
-                    const mine = !!owner && !!viewer && owner.who === viewer
-                    return (
-                      <button
-                        key={ti}
-                        onClick={() => setDone((d) => ({ ...d, [id]: !d[id] }))}
-                        className={`flex w-full items-start gap-2.5 border-b border-black/5 px-4 py-2.5 text-left last:border-0 ${
-                          done[id] ? 'bg-up/[0.04]' : mine ? 'bg-brand/[0.12]' : ''
-                        }`}
-                      >
-                        <span
-                          className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 ${
-                            done[id] ? 'border-up bg-up text-white' : 'border-black/15 text-transparent'
-                          }`}
-                        >
-                          <Check size={12} strokeWidth={3} />
-                        </span>
-                        <span
-                          className={`min-w-0 flex-1 text-sm ${
-                            done[id] ? 'text-muted line-through' : mine ? 'font-semibold text-ink' : 'text-ink/80'
-                          }`}
-                        >
-                          {t}
-                        </span>
-                        {owner && (
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${
-                              mine ? 'bg-brand text-navy' : 'bg-black/10 text-muted'
-                            }`}
-                          >
-                            {mine ? 'yours' : owner.who || `cut ${owner.cut}`}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              ))}
-            </Card>
-          )}
-          </div>
-        </div>
-      </>
-    )
-  }
-
   return (
     <>
       <PageHeader
@@ -787,7 +628,11 @@ export function Sidework() {
         title="Sidework"
         subtitle={fmtDay(today())}
         right={
-          doneCount > 0 && (
+          // Wiping a shift's ticks belongs to whoever is running it. A server
+          // reading their own list should not be one mis-tap from clearing
+          // everybody's night.
+          doneCount > 0 &&
+          canAssign && (
             <button
               onClick={clearChecks}
               className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-muted"
@@ -826,7 +671,7 @@ export function Sidework() {
             onAddStation={addStation}
             cleanActive={showClean}
             onPickClean={() => setShowClean(true)}
-            canEdit={isCloser}
+            canEdit={canEditSheet}
           />
         </div>
 
@@ -836,7 +681,7 @@ export function Sidework() {
             date={today()}
             done={done}
             onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
-            canEdit={isCloser}
+            canEdit={canEditSheet}
           />
         ) : (
         <>
@@ -936,6 +781,63 @@ export function Sidework() {
           {PHASE_META[phaseKind(activePhase)].note}
         </p>
 
+        {/* Who the app thinks is holding the device.
+            The tablet by the server station gets picked up by whoever is next,
+            and everything below — what's highlighted, whether you can deal the
+            cuts — hangs off this name. It followed whoever typed the day code
+            and offered no way to say otherwise, so the second person to pick it
+            up was reading somebody else's night. */}
+        {!isMod && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
+            <span className="text-xs text-muted">
+              {viewer ? (
+                <>
+                  Showing <b className="text-ink">{viewer}</b>
+                  {myCut ? ` · cut ${myCut}` : ''}
+                </>
+              ) : (
+                'Nobody signed in on this device'
+              )}
+            </span>
+            <div className="w-[10rem]">
+              <NamePicker
+                value={viewAs}
+                options={everyone}
+                placeholder={viewer ? 'Not you?' : 'Pick your name'}
+                onChange={setViewAs}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* You're closing tonight.
+            Said out loud, because being named by the MOD is what hands you the
+            cut planner and the name pickers, and a control that appears without
+            explanation reads as a bug. Staff only — a manager has these anyway
+            and doesn't need telling why. */}
+        {!isMod && mySide && (
+          <Card className="flex flex-wrap items-center gap-x-3 gap-y-1 border-brand/40 bg-brand/[0.1] px-4 py-2.5">
+            <Check size={15} className="shrink-0 text-brand-600" />
+            <span className="text-sm font-bold text-ink">
+              You’re closing {mySide} tonight
+            </span>
+            <span className="text-[11px] text-muted">
+              so you can deal the cuts and put names on sections
+            </span>
+          </Card>
+        )}
+
+        {/* And if you're not, who is — the thing a server wants to know when
+            they walk in, without unfolding a panel to find it. */}
+        {!isMod && !mySide && (closers.FOH || closers.BOH) && phaseKind(activePhase) === 'close' && (
+          <p className="px-1 text-xs text-muted">
+            Closing tonight:{' '}
+            {SIDES.filter((s) => closers[s])
+              .map((s) => `${closers[s]} (${s})`)
+              .join(' · ')}
+          </p>
+        )}
+
         {/* Today's weekly detail. Both bar daily lists end with "do weekly side
             work", and the sheet it points at lives behind the bar — so the one
             line that applies today is shown here rather than being looked up. */}
@@ -974,7 +876,10 @@ export function Sidework() {
         {/* Cuts are a floor idea — who goes home and in what order. A kitchen
             station is closed by whoever is standing at it, so the planner would
             be four empty boxes asking a question nobody has. */}
-        {!isStation(role) && phaseKind(activePhase) === 'close' && (
+        {/* Dealing the cuts is the closers' own job — the MOD names them, they
+            split the night. A server who isn't closing reads the result on the
+            sheet below rather than being handed the controls for it. */}
+        {!isStation(role) && phaseKind(activePhase) === 'close' && canAssign && (
           <CutPlanner plan={plan} setPlan={setPlan} duties={duties} crew={crew} done={done} />
         )}
 
@@ -999,7 +904,7 @@ export function Sidework() {
                 onSetCloser={assignCloser}
                 done={done}
                 onToggle={(id) => setDone((d) => ({ ...d, [id]: !d[id] }))}
-                canEdit={isCloser}
+                canEdit={canEditSheet}
                 // So the card can name the rows on THIS sheet a closer already owns.
                 sheet={duties}
                 bare
@@ -1028,7 +933,7 @@ export function Sidework() {
               <span className="ml-auto font-mono text-xs font-bold text-muted">
                 {openDone}/{openKeys.length}
               </span>
-              {isCloser && (
+              {canEditSheet && (
                 <button
                   onClick={() => setEditOpening((v) => !v)}
                   aria-label={editOpening ? 'Done editing opening duties' : 'Edit opening duties'}
@@ -1059,7 +964,7 @@ export function Sidework() {
                     </span>
                     <span className={`text-sm ${done[id] ? 'text-muted line-through' : 'text-ink'}`}>{t}</span>
                   </button>
-                  {isCloser && editOpening && (
+                  {canEditSheet && editOpening && (
                     <button
                       onClick={async () => {
                         if (await confirmDelete(`Remove "${t}" from opening?`)) {
@@ -1076,7 +981,7 @@ export function Sidework() {
               )
             })}
             {/* "Start with this and make it to where we can add on to it." */}
-            {isCloser && editOpening && (
+            {canEditSheet && editOpening && (
               <div className="flex items-center gap-2 bg-black/[0.02] px-4 py-2.5">
                 <input
                   value={addOpen}
@@ -1135,7 +1040,7 @@ export function Sidework() {
                     : 'what the cuts are dealt from'}
             </span>
           </div>
-          {isCloser && stockSheet && editingSec !== null && (
+          {canEditSheet && stockSheet && editingSec !== null && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-black/10 bg-black/[0.02] px-3 py-2">
               <span className="text-[11px] text-muted">
                 This sheet is stored on this device. If it doesn't match the app's current one —
@@ -1184,24 +1089,44 @@ export function Sidework() {
                       {/* A name per section is how OPENING gets divided among
                           the crew. On shift change there's nobody to assign —
                           it's the AM's work and the closer is checking it. */}
+                      {/* Whoever may deal the work gets the picker; everyone
+                          else gets the answer. A server reading the sheet needs
+                          to see that Section 2 is Katie's — they just mustn't be
+                          able to make it somebody else's. */}
                       <div
                         className={`w-[9.5rem] ${
                           phaseKind(activePhase) === 'handover' ? 'hidden' : ''
                         }`}
                       >
-                        <NamePicker
-                          value={assigned[aKey(si)] ?? ''}
-                          options={crew}
-                          placeholder="Unassigned"
-                          onChange={(name) =>
-                            setAssigned((a) => {
-                              const next = { ...a }
-                              if (name) next[aKey(si)] = name
-                              else delete next[aKey(si)]
-                              return next
-                            })
-                          }
-                        />
+                        {canAssign ? (
+                          <NamePicker
+                            value={assigned[aKey(si)] ?? ''}
+                            options={crew}
+                            placeholder="Unassigned"
+                            onChange={(name) =>
+                              setAssigned((a) => {
+                                const next = { ...a }
+                                if (name) next[aKey(si)] = name
+                                else delete next[aKey(si)]
+                                return next
+                              })
+                            }
+                          />
+                        ) : (
+                          <span
+                            className={`block truncate rounded-lg px-2 py-1.5 text-center text-[11px] font-bold ${
+                              sameName(assigned[aKey(si)], viewer)
+                                ? 'bg-brand text-navy'
+                                : assigned[aKey(si)]
+                                  ? 'bg-black/5 text-muted'
+                                  : 'text-muted/50'
+                            }`}
+                          >
+                            {sameName(assigned[aKey(si)], viewer)
+                              ? 'Yours'
+                              : assigned[aKey(si)] || 'Unassigned'}
+                          </span>
+                        )}
                       </div>
                       <span className="text-xs text-muted">
                         {secDone}/{sec.tasks.length}
@@ -1219,7 +1144,11 @@ export function Sidework() {
                       Reset to default
                     </button>
                   )}
+                  {/* Rewriting what the duties ARE is a different thing from
+                      dealing tonight's, and it outlives the shift. A closer
+                      splits the work; the manager decides what the work is. */}
                   <button
+                    hidden={!canEditSheet}
                     onClick={() => setEditingSec(editing ? null : si)}
                     aria-label={editing ? `Done editing ${sec.section}` : `Edit ${sec.section}`}
                     title={editing ? 'Done editing' : 'Edit this list'}
