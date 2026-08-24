@@ -8,10 +8,10 @@ import type { Booking } from '../lib/catering'
 import { getCatMix, type Night } from '../lib/nightly'
 import { sanitizePmix, type PmixDays } from '../lib/pmix'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X, Pencil } from 'lucide-react'
+import { PartyPopper, PackageOpen, Truck, Plus, Moon, ChevronLeft, ChevronRight, Flame, Megaphone, X, Pencil, AlertTriangle } from 'lucide-react'
 import { useRole } from '../lib/role'
 import { FocusPicker } from '../components/FocusPicker'
-import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf } from '../lib/forecast'
+import { dowAverages, projectDay, periodWeek, periodStart as periodStartOf, outlierNights } from '../lib/forecast'
 import { ACTIVE_SPECS } from '../lib/specs'
 import { DashDrop } from '../components/DashDrop'
 import { dishPhoto } from '../lib/photos'
@@ -147,6 +147,8 @@ export function Dashboard() {
   const displayFc = useCountUp(fc.total)
   const vsPrior = fc.prior > 0 ? ((fc.total - fc.prior) / fc.prior) * 100 : null
   const priorNet = fc.prior
+  /** Days in the log that can't be trading days — see the banner below. */
+  const badNights = useMemo(() => outlierNights(nights), [nights])
 
   // ---- Sales by category across the scope ----
   // Real per-night categories win. When a night has none (e.g. days imported
@@ -284,6 +286,29 @@ export function Dashboard() {
                         </span>
                       )}
                     </div>
+                    {/* A night in the log that cannot be a trading day.
+                        The forecast already ignores it — it takes the middle of
+                        four same-weekdays now, not the average — but every
+                        total on this page still ADDS it, so it has to be said
+                        and it has to be fixable. Named with its date: "some day
+                        is wrong" is not something anyone can act on. */}
+                    {badNights.length > 0 && (
+                      <Link
+                        to="/nightly"
+                        className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-down/40 bg-down/[0.1] px-3 py-2 text-left"
+                      >
+                        <AlertTriangle size={14} className="shrink-0 text-down" />
+                        <span className="text-[12.5px] font-bold text-ink">
+                          {badNights.length === 1
+                            ? `${fmtWhen(badNights[0].date)} is logged at ${money(badNights[0].netSales)}`
+                            : `${badNights.length} nights are logged far above a normal day`}
+                        </span>
+                        <span className="text-[11px] text-muted">
+                          a typical night here is {money(badNights[0].typical)} — usually a report’s
+                          total row imported as a day. Open Nightly Numbers to fix it.
+                        </span>
+                      </Link>
+                    )}
                   </div>
                   {/* Where the week's graph was. The graph restated what the
                       number above already says; a report waiting to be imported

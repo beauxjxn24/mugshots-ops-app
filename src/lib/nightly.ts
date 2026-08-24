@@ -785,6 +785,7 @@ export function parseSalesSummary(text: string): SalesRow[] {
         : cols.findIndex((h) => h.includes('net') || h.includes('sales') || h.includes('total'))
     const iCov = cols.findIndex((h) => h.includes('cover') || h.includes('guest') || h.includes('check'))
     for (let r = 1; r < lines.length; r++) {
+      if (isTotalRow(lines[r])) continue
       const c = splitCsv(lines[r])
       const date = parseDate(c[iDate] ?? '')
       const net = num(c[iNet] ?? '')
@@ -792,6 +793,7 @@ export function parseSalesSummary(text: string): SalesRow[] {
     }
   } else {
     for (const line of lines) {
+      if (isTotalRow(line)) continue
       const date = parseDate(line)
       if (!date) continue
       const monies = (line.match(/\$\s?\d[\d,]*(?:\.\d{2})?|\d[\d,]*\.\d{2}/g) || []).map(num).filter((v) => v > 0)
@@ -812,6 +814,22 @@ function pad(n: string | number): string {
 }
 function num(s: string): number {
   return parseFloat(String(s).replace(/[^0-9.]/g, '')) || 0
+}
+
+/**
+ * The summary line at the bottom of an export.
+ *
+ * A year of "Sales by day" ends in a Grand Total, and that row carries a date
+ * range — so the date parser finds a date in it and the row lands as a trading
+ * day worth a year of sales. One of those in the log made the Monday forecast
+ * $2.78m, because the projection averaged it with three real Mondays.
+ *
+ * Matched at the START of the line only. "Total" appears in plenty of legitimate
+ * column values and mid-row text, but a real day's row begins with its date or
+ * its store, never with the word.
+ */
+function isTotalRow(line: string): boolean {
+  return /^\s*"?\s*(grand\s+)?(total|totals|sum|subtotal|all\s+days|summary)\b/i.test(line)
 }
 function parseDate(s: string): string {
   let m: RegExpMatchArray | null
