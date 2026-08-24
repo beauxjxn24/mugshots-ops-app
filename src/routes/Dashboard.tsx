@@ -49,7 +49,7 @@ export function Dashboard() {
   const { concept, location } = useCurrentNames()
   const [rawBookings] = usePersistentState<Booking[]>('catering:bookings', [])
   const bookings = Array.isArray(rawBookings) ? rawBookings : []
-  const [rawNights] = usePersistentState<Night[]>('nightly:log', [])
+  const [rawNights, setRawNights] = usePersistentState<Night[]>('nightly:log', [])
   const nights = Array.isArray(rawNights) ? rawNights : []
   const [targets] = usePersistentState<Targets>(TARGETS_KEY, DEFAULT_TARGETS)
   const [scope, setScope] = useState<Scope>('day')
@@ -293,21 +293,52 @@ export function Dashboard() {
                         and it has to be fixable. Named with its date: "some day
                         is wrong" is not something anyone can act on. */}
                     {badNights.length > 0 && (
-                      <Link
-                        to="/nightly"
-                        className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-down/40 bg-down/[0.1] px-3 py-2 text-left"
-                      >
-                        <AlertTriangle size={14} className="shrink-0 text-down" />
-                        <span className="text-[12.5px] font-bold text-ink">
-                          {badNights.length === 1
-                            ? `${fmtWhen(badNights[0].date)} is logged at ${money(badNights[0].netSales)}`
-                            : `${badNights.length} nights are logged far above a normal day`}
-                        </span>
-                        <span className="text-[11px] text-muted">
-                          a typical night here is {money(badNights[0].typical)} — usually a report’s
-                          total row imported as a day. Open Nightly Numbers to fix it.
-                        </span>
-                      </Link>
+                      <div className="mt-3 rounded-xl border border-down/40 bg-down/[0.1] px-3 py-2">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <AlertTriangle size={14} className="shrink-0 text-down" />
+                          <span className="text-[12.5px] font-bold text-ink">
+                            {badNights.length === 1
+                              ? `${fmtWhen(badNights[0].date)} is logged at ${money(badNights[0].netSales)}`
+                              : `${badNights.length} nights are logged far above a normal day`}
+                          </span>
+                          <span className="text-[11px] text-muted">
+                            a typical night here is {money(badNights[0].typical)} — usually a
+                            report’s total row imported as a day.
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {/* One tap, because the alternative is hunting a date
+                              in a year of nights. Removing the row rather than
+                              zeroing it: re-dropping the sales file puts the
+                              real day back, and the importer now skips the
+                              total row that caused this. */}
+                          <button
+                            onClick={async () => {
+                              const what =
+                                badNights.length === 1
+                                  ? `Remove ${fmtWhen(badNights[0].date)} — logged at ${money(badNights[0].netSales)}?`
+                                  : `Remove ${badNights.length} impossible nights from the log?`
+                              const ok = await confirmDelete(
+                                what,
+                                'Re-drop your sales report afterwards and the real day comes back with the right figure — the importer now skips the report’s total row.',
+                                'Remove',
+                              )
+                              if (!ok) return
+                              const drop = new Set(badNights.map((b) => b.date))
+                              setRawNights(nights.filter((n) => !drop.has(n.date)))
+                            }}
+                            className="rounded-lg bg-down px-3 py-1.5 text-xs font-bold text-white"
+                          >
+                            {badNights.length === 1 ? 'Remove this night' : `Remove all ${badNights.length}`}
+                          </button>
+                          <Link
+                            to="/nightly"
+                            className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-bold text-ink"
+                          >
+                            Open Nightly Numbers
+                          </Link>
+                        </div>
+                      </div>
                     )}
                   </div>
                   {/* Where the week's graph was. The graph restated what the
