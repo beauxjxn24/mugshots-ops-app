@@ -72,17 +72,14 @@ export function AppShell() {
       {/* ---- Desktop rail ---- */}
       <aside className="hidden lg:flex sticky top-0 h-[100dvh] flex-col overflow-y-auto bg-navy px-3 py-5 text-white/70">
         <Brand />
-        {/* Who you are, which shift, which store, where to drop things — one
-            stack with one gap. Each of these used to carry its own bottom
-            margin, so the spacing between them depended on which ones your
-            role happened to render. */}
+        {/* What's left in the rail: who you are, and where to drop things.
+            The shift and the store moved to the top right — both are facts you
+            glance at rather than controls you reach for, and as full-width
+            blocks they were spending ~100px of menu height to say two words.
+            The Drop Box stays because it's a target: it has to be big, and it
+            has to be somewhere your eye already is. */}
         <div className="mb-4 space-y-2">
           <RoleToggle />
-          <ShiftBadge />
-          <SyncBadge />
-          {isAdmin ? <StoreSwitcher /> : role === 'manager' ? <StoreLabel /> : null}
-          {/* Above the menu, not inside it: the Drop Box is somewhere to aim at
-              rather than something to go and find. Staff have nothing to import. */}
           {role !== 'staff' && <DropBoxPill />}
         </div>
         <Rail sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
@@ -115,12 +112,16 @@ export function AppShell() {
           />
           <div className="absolute inset-y-0 left-0 w-[82%] max-w-[300px] overflow-y-auto overscroll-contain bg-navy px-3 py-4 text-white/70 shadow-2xl [padding-top:env(safe-area-inset-top)] animate-[slidein_.25s_ease]">
             <Brand />
+            {/* Same order as the rail — Drop Box directly under the role
+                switch. The phone keeps the full-size shift and store below it
+                rather than in a corner: there is no top-right here, and its
+                top bar has room for the shift but not the store's name. */}
             <div className="mb-4 space-y-2">
               <RoleToggle />
+              {role !== 'staff' && <DropBoxPill onNavigate={() => setOpen(false)} />}
               <ShiftBadge />
               <SyncBadge />
               {isAdmin ? <StoreSwitcher /> : role === 'manager' ? <StoreLabel /> : null}
-              {role !== 'staff' && <DropBoxPill onNavigate={() => setOpen(false)} />}
             </div>
             <DrawerNav sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
             <BuildStamp />
@@ -131,6 +132,19 @@ export function AppShell() {
 
       {/* ---- Main ---- */}
       <main className="min-w-0 pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0">
+        {/* Which shift, which store, and whether anything is still going up.
+            Desktop only — the phone already carries all three in its top bar.
+
+            Sticky, because "which store am I looking at" is the question you
+            ask halfway down a page of numbers, not at the top of it. It sits
+            above the page's own header rather than adding a band of its own:
+            a second full-width strip on every screen would cost more room
+            than the rail just gave back. */}
+        <div className="sticky top-0 z-20 hidden items-center justify-end gap-2 bg-navy/70 px-6 py-1.5 backdrop-blur-md lg:flex">
+          <SyncBadge compact />
+          <ShiftBadge compact />
+          {isAdmin ? <StoreSwitcher compact /> : role === 'manager' ? <StoreLabel compact /> : null}
+        </div>
         <Outlet />
       </main>
 
@@ -168,8 +182,22 @@ export function AppShell() {
 }
 
 /** Locked store display for managers — shows their store, no switching. */
-function StoreLabel() {
+function StoreLabel({ compact = false }: { compact?: boolean }) {
   const { concept, location } = useCurrentNames()
+  if (compact) {
+    // Matches the shift pill beside it. Still padlocked, because a manager who
+    // taps it should learn why nothing happens rather than tap it again.
+    return (
+      <span
+        title={`${location} · ${concept} — only an admin can switch stores`}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white/85"
+      >
+        <UtensilsCrossed size={12} className="shrink-0 text-brand" />
+        <span className="max-w-[9rem] truncate">{location || 'Your store'}</span>
+        <span className="text-white/40">🔒</span>
+      </span>
+    )
+  }
   return (
     <div className="flex w-full items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left">
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white">

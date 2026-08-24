@@ -6,7 +6,21 @@ import { useScope, useCurrentNames, ALL } from '../lib/scope'
 /** Concept + location switcher. Lives in the nav so it's available everywhere.
  *  Includes read-only roll-up scopes: a whole concept (all its locations) and
  *  the whole company (every store), which open the combined reporting view. */
-export function StoreSwitcher({ dark = true }: { dark?: boolean }) {
+export function StoreSwitcher({
+  dark = true,
+  /**
+   * The top-right form: one line, no icon tile, sized like the shift pill.
+   *
+   * Which store you're in is a fact you glance at, not a control you reach for
+   * — it changes a few times a week at most. As a full-width block in the rail
+   * it was taking a menu row's worth of height to say one word, and pushing
+   * the actual menu down the screen.
+   */
+  compact = false,
+}: {
+  dark?: boolean
+  compact?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const concepts = useScope((s) => s.concepts)
   const currentConcept = useScope((s) => s.currentConcept)
@@ -23,29 +37,47 @@ export function StoreSwitcher({ dark = true }: { dark?: boolean }) {
   }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left ${
-          dark ? 'rail-block text-white' : 'border border-black/10 bg-white text-ink'
-        }`}
-      >
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white">
-          <UtensilsCrossed size={16} />
-        </span>
-        <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-[13px] font-semibold">{location || 'Pick a store'}</span>
-          <span className={`block truncate text-[10px] ${dark ? 'text-white/50' : 'text-muted'}`}>
-            {concept}
+    <div className={compact ? 'relative' : 'relative'}>
+      {compact ? (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          title={`${location} · ${concept} — tap to switch`}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white/85 hover:bg-white/15"
+        >
+          <UtensilsCrossed size={12} className="shrink-0 text-brand" />
+          <span className="max-w-[9rem] truncate">{location || 'Pick a store'}</span>
+          <span className="text-white/50">▾</span>
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left ${
+            dark ? 'rail-block text-white' : 'border border-black/10 bg-white text-ink'
+          }`}
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white">
+            <UtensilsCrossed size={16} />
           </span>
-        </span>
-        <span className={`text-xs ${dark ? 'text-white/60' : 'text-muted'}`}>▾</span>
-      </button>
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block truncate text-[13px] font-semibold">{location || 'Pick a store'}</span>
+            <span className={`block truncate text-[10px] ${dark ? 'text-white/50' : 'text-muted'}`}>
+              {concept}
+            </span>
+          </span>
+          <span className={`text-xs ${dark ? 'text-white/60' : 'text-muted'}`}>▾</span>
+        </button>
+      )}
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[60vh] overflow-y-auto rounded-xl border border-black/10 bg-white p-1.5 shadow-xl">
+          {/* Right-anchored when compact: the pill sits at the screen's edge,
+              so a menu stretched to its own left/right would hang off it. */}
+          <div
+            className={`absolute top-full z-50 mt-1 max-h-[60vh] overflow-y-auto rounded-xl border border-black/10 bg-white p-1.5 shadow-xl ${
+              compact ? 'right-0 w-64' : 'left-0 right-0'
+            }`}
+          >
             {/* Company-wide roll-up — only when there's more than one store. */}
             {totalStores > 1 && (
               <button
