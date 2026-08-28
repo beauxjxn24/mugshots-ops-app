@@ -256,5 +256,131 @@
         ]
       }
     ]
+  },
+  "gluten-free": {
+    "title": "Gluten Free",
+    "group": "Front of house",
+    "what": "What we can serve gluten free, and how it has to be handled to mean anything. Read the protocol before the menu — the menu is the easy half.",
+    "days": [
+      {
+        "day": "Ask first",
+        "focus": "Preference or allergy",
+        "items": [
+          "Ask the guest outright: is this a preference, or an allergy? Everything below depends on the answer.",
+          "PREFERENCE — build it off the gluten free menu and send it like any other ticket.",
+          "ALLERGY — the kit comes out, gloves change in front of the guest, and one person owns that plate from the pull to the pass.",
+          "Ring it on the screen so the kitchen sees ALLERGY, not a note buried in the modifiers.",
+          "Tell the MOD. The ServSafe manager on duty owns every allergy ticket that goes out."
+        ]
+      },
+      {
+        "day": "What we tell a guest",
+        "focus": "Accommodate is not guarantee",
+        "items": [
+          "We can accommodate gluten free. We cannot guarantee a gluten free kitchen — there is flour in the air and shared equipment on every line.",
+          "Never say \"it's gluten free\" about a dish. Say what we do: gluten free bun, clean board, fresh gloves, separate utensils.",
+          "NOTHING FRIED. We cannot say what has been through a fryer, so no fries, no tenders, no wings, no fried anything.",
+          "Caesar Salad comes with NO croutons. Hamburger Steak comes with NO gravy and NO toast.",
+          "Mugshakes only in vanilla, chocolate, strawberry and peanut butter — no Monster Cookie.",
+          "If you are not certain about an item, ask the MOD before you say it to the table."
+        ]
+      },
+      {
+        "day": "The kit",
+        "focus": "How an allergy ticket is built",
+        "items": [
+          "The kit lives in one place and stays together: its own coloured knife, its own cutting board, Udi's buns single wrapped.",
+          "Fresh gloves, changed in front of the guest.",
+          "Clean surface before anything touches it. Wipe down and sanitise the area you are building on.",
+          "One person carries the plate down the line. Do not hand it off.",
+          "No reused knives on the way down — a clean knife is worth the extra ten seconds.",
+          "Udi's bun stays wrapped until the moment it is dressed."
+        ]
+      },
+      {
+        "day": "Smashburgers",
+        "focus": "Served on Udi's gluten free bun",
+        "items": [
+          "Signature Smash",
+          "Savell Smash",
+          "McDowell Smash"
+        ]
+      },
+      {
+        "day": "Handhelds",
+        "focus": "Served on Udi's gluten free bun",
+        "items": [
+          "Howard's Hillbilly Philly",
+          "Hicks Chicken Philly",
+          "Mugs Chicken Sandwich (blackened or grilled)",
+          "Caitlin's Cajun",
+          "Callie's Mahi",
+          "The Briscoe Inferno (blackened or grilled)"
+        ]
+      },
+      {
+        "day": "Original burgers",
+        "focus": "Udi's bun, with steamed veggies, sweet potatoes or black beans",
+        "items": [
+          "Middleberger",
+          "Pato",
+          "Savell",
+          "McDowell",
+          "Stu's Magic Mushroom",
+          "Anthony's Peanut Butter Burger"
+        ]
+      },
+      {
+        "day": "Specialty burgers",
+        "focus": "Udi's bun, with steamed veggies, sweet potatoes or black beans",
+        "items": [
+          "Breakfast Burger",
+          "A1 Steak Sauce Burger"
+        ]
+      },
+      {
+        "day": "Salads",
+        "focus": "With blackened or grilled chicken or shrimp",
+        "items": [
+          "Rajun \"Hester\" Cajun",
+          "Buffalo Bleu",
+          "Caesar Salad — NO croutons"
+        ]
+      },
+      {
+        "day": "Plates",
+        "focus": "Sides are steamed veggies, sweet potatoes or black beans",
+        "items": [
+          "Hamburger Steak — NO gravy, NO toast",
+          "Blackened Mahi",
+          "Katie's Kickin' Chicken, grilled or blackened, served with veggies"
+        ]
+      },
+      {
+        "day": "Mini Mugs",
+        "focus": "Kids",
+        "items": [
+          "Bishop Burger — Udi's bun, with veggies, sweet potatoes or black beans",
+          "Kayla's Mini Chicken Basket, grilled or blackened, served with veggies"
+        ]
+      },
+      {
+        "day": "Shakes & floats",
+        "focus": "Drinks",
+        "items": [
+          "Mugshakes: vanilla, chocolate, strawberry, peanut butter — NO Monster Cookie",
+          "Floats: Barq's and Dr Pepper"
+        ]
+      },
+      {
+        "day": "Not on the menu yet",
+        "focus": "Do not sell these — checked against our build sheets",
+        "items": [
+          "Classic Smash — the Summer 2026 LTO ended. The live build is Single Classic Smash.",
+          "Caesar's Lemon Blackout — this is a WRAP on our build sheets, not a sandwich. The gluten free tortilla is still only a sample request, so it cannot be sold gluten free until that lands.",
+          "Chris' Steakhouse Burger — no build sheet exists for this. Confirm the name before anyone rings it."
+        ]
+      }
+    ]
   }
 }
