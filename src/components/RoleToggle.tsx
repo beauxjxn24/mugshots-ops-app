@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useRole, type Role } from '../lib/role'
-import { pinMatches } from '../lib/users'
 import { forgetUnlock } from '../lib/daycode'
+import { requirePin } from '../lib/pin'
 
 /** Admin ↔ Manager ↔ Staff view switch (a stand-in for real per-account roles).
  *  Admin is the owner — the only role that can switch stores and see other
@@ -25,14 +25,13 @@ export function RoleToggle() {
   // which is a preview, not a handover. Handing the device over is a real thing
   // people do, so it kept its own button below — said out loud instead of
   // hiding inside a view switch.
-  const pick = (r: Role) => {
-    if (r !== 'staff' && role === 'staff') {
-      const pin = window.prompt('Manager PIN to leave the staff view:')
-      if (!pin || !pinMatches(pin.trim())) {
-        if (pin) window.alert('That PIN is not on the manager list.')
-        return
-      }
-    }
+  // Through the app's own PIN gate, not window.prompt. The browser prompt has
+  // no way to mask what's typed, so the manager PIN was going in as plain text
+  // in front of whoever was stood at the till, and it summoned a full keyboard
+  // rather than digits. requirePin also honours the 20-minute unlock, so
+  // stepping in and out of the staff view stops asking every single time.
+  const pick = async (r: Role) => {
+    if (r !== 'staff' && role === 'staff' && !(await requirePin('Leave the staff view'))) return
     setRole(r)
     navigate(r === 'staff' ? '/shift' : '/')
   }

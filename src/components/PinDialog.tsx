@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Lock } from 'lucide-react'
+import { Lock, Delete } from 'lucide-react'
 import { usePin } from '../lib/pin'
 import { PERMS } from '../lib/users'
 
@@ -48,14 +48,58 @@ export function PinDialog() {
         </span>
         <div className="font-display text-lg font-semibold text-ink">Manager PIN</div>
         <p className="mt-0.5 text-sm text-muted">{action}</p>
+        {/* Four dots and a keypad, the same instrument the day-code screen uses
+            and for the same reason: this gets tapped one-handed, on a shared
+            tablet, by someone who has just been handling food. A text field
+            summons a keyboard over the top of the dialog on a phone, and it
+            was showing the PIN in the clear while a room full of people
+            watched. */}
+        <div className="mt-4 flex justify-center gap-3" aria-label={`${pin.length} of 4 digits`}>
+          {[0, 1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className={`size-3 rounded-full transition-all duration-200 ${
+                shake ? 'bg-down/70' : i < pin.length ? 'scale-110 bg-brand' : 'bg-black/15'
+              }`}
+            />
+          ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
+            <button
+              key={d}
+              onClick={() => tryPin((pin + d).slice(0, 4))}
+              className="rounded-xl border border-black/10 bg-white py-3 font-mono text-xl font-semibold text-ink transition-colors active:bg-black/10"
+            >
+              {d}
+            </button>
+          ))}
+          <span />
+          <button
+            onClick={() => tryPin((pin + '0').slice(0, 4))}
+            className="rounded-xl border border-black/10 bg-white py-3 font-mono text-xl font-semibold text-ink transition-colors active:bg-black/10"
+          >
+            0
+          </button>
+          <button
+            onClick={() => setPin((c) => c.slice(0, -1))}
+            aria-label="Delete"
+            className="grid place-items-center rounded-xl text-muted transition-colors active:bg-black/10"
+          >
+            <Delete size={20} />
+          </button>
+        </div>
+
+        {/* Kept for hardware keyboards — visually hidden, still typeable. */}
         <input
           ref={inputRef}
           type="password"
-          inputMode="numeric"
+          inputMode="none"
           maxLength={4}
           value={pin}
           onChange={(e) => tryPin(e.target.value.replace(/\D/g, ''))}
-          className="mx-auto mt-4 block w-32 rounded-xl border-2 border-black/10 bg-white py-2.5 text-center font-mono text-2xl tracking-[0.4em] outline-none focus:border-brand"
+          className="sr-only"
           aria-label="4-digit PIN"
         />
         {/* Naming the right, not the rank — since an AGM can now be handed one
