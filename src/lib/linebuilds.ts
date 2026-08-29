@@ -1,4 +1,4 @@
-import { SPECS, ACTIVE_SPECS } from './specs'
+import { SPECS, ACTIVE_SPECS, prepSpecName } from './specs'
 import { slugify } from './photos'
 import { getImported } from './buildsheet'
 import { prepItemNames, barPrepNames, getCatalog } from './catalog'
@@ -417,7 +417,15 @@ export function usedIn(name: string, prepNames: string[] = [], stockNames: strin
  * business knowing a prep sheet exists, so it asks this instead.
  */
 export function goesInto(name: string): string[] {
-  return usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name)).get(name) ?? []
+  const idx = usageIndex([...prepItemNames(), ...barPrepNames()], getCatalog().map((i) => i.name))
+  const direct = idx.get(name)
+  if (direct?.length) return direct
+  // Nothing under the sheet's own name — try the recipe card it's made from.
+  // The sheets link to "Burger Lettuce"; the prep sheet calls the same thing
+  // "Shredded Lettuce", and asking the wrong one is why almost nothing on the
+  // prep sheet knew what it was for.
+  const card = prepSpecName(name)
+  return (card && idx.get(card)) || []
 }
 
 const PHOTOS: Record<string, string> = Object.fromEntries(

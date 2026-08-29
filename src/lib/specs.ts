@@ -79,7 +79,13 @@ const PREP_SHORTHAND: Record<string, string> = {
   'Garlic Parm Chz': 'Garlic Parmesan Sauce',
   'Pimento Chz': 'Pimento Cheese',
   Romaine: 'Romaine Lettuce (chopped)',
-  'Shredded Lettuce': 'Iceberg Lettuce (chopped)',
+  // NOT 'Iceberg Lettuce (chopped)'. Those are two different products and the
+  // cards say so: Burger Lettuce is the BLUE shredder at 1/4" off 3 heads, the
+  // chopped card is the GREEN chopper at 1"x1" off 6. The sheet's "Shredded
+  // Lettuce" is the shredded one — a cook tapping it was getting the wrong
+  // blade and twice the heads. It is also what the build sheets mean by a bare
+  // "Lettuce" (see SHEET_ALIASES), so this is what joins the two ends.
+  'Shredded Lettuce': 'Burger Lettuce',
   'Alfredo Sauce': 'Alfredo',
   Eggroll: 'Egg Rolls',
   'Pow Pow Sauce': 'Pow Pow Shrimp Sauce',
@@ -98,6 +104,18 @@ const PREP_SHORTHAND: Record<string, string> = {
   'Mac & Chz': 'Kid Mac',
   Mash: 'Mashed Potatoes',
   Veggies: 'Veggie Mix',
+  'Diced Red Onions': 'Diced Onions',
+  Celery: 'Celery',
+  Chili: 'Chili',
+  Marinara: 'Marinara',
+  'Cheese Sauce': 'Cheese Sauce',
+  Shrooms: 'Shrooms',
+  Turkey: 'Turkey',
+  'Asian Slaw': 'Asian Slaw',
+  'Bell Peppers': 'Bell Peppers',
+  'Sriracha Ranch': 'Sriracha Ranch',
+  'Blackened Shrimp': 'Blackened Shrimp',
+  'Pow Pow Shrimp': 'Pow Pow Shrimp',
   Rotel: 'Rotel Cheese Sauce',
 }
 
