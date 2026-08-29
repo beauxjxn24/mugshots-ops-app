@@ -301,21 +301,23 @@
         "day": "Smashburgers",
         "focus": "Served on Udi's gluten free bun",
         "items": [
-          "Signature Smash",
-          "Savell Smash",
-          "McDowell Smash"
+          "Classic Smash — the double",
+          "Signature Smash (Signature SmashBurger)",
+          "Savell Smash (Savell SmashBurger)",
+          "McDowell Smash (McDowell SmashBurger)"
         ]
       },
       {
         "day": "Handhelds",
         "focus": "Served on Udi's gluten free bun",
         "items": [
-          "Howard's Hillbilly Philly",
-          "Hicks Chicken Philly",
+          "Howard's Hillbilly Philly (build sheet: Philly)",
+          "Hicks Chicken Philly (build sheet: Hicks)",
           "Mugs Chicken Sandwich (blackened or grilled)",
           "Caitlin's Cajun",
           "Callie's Mahi",
-          "The Briscoe Inferno (blackened or grilled)"
+          "The Briscoe Inferno (build sheet: Briscoe) — blackened or grilled",
+          "Caesar's Lemon Blackout (build sheet: Caesar's Lemon Blackout Wrap)"
         ]
       },
       {
@@ -326,7 +328,7 @@
           "Pato",
           "Savell",
           "McDowell",
-          "Stu's Magic Mushroom",
+          "Stu's Magic Mushroom (build sheet: Stu)",
           "Anthony's Peanut Butter Burger"
         ]
       },
@@ -335,14 +337,15 @@
         "focus": "Udi's bun, with steamed veggies, sweet potatoes or black beans",
         "items": [
           "Breakfast Burger",
-          "A1 Steak Sauce Burger"
+          "A1 Steak Sauce Burger (build sheet: A1 Sauce Burger)",
+          "Chris' Steakhouse Burger (build sheet: Steak Burger)"
         ]
       },
       {
         "day": "Salads",
         "focus": "With blackened or grilled chicken or shrimp",
         "items": [
-          "Rajun \"Hester\" Cajun",
+          "Rajun \"Hester\" Cajun (build sheet: Rajun Cajun Salad)",
           "Buffalo Bleu",
           "Caesar Salad — NO croutons"
         ]
@@ -370,15 +373,6 @@
         "items": [
           "Mugshakes: vanilla, chocolate, strawberry, peanut butter — NO Monster Cookie",
           "Floats: Barq's and Dr Pepper"
-        ]
-      },
-      {
-        "day": "Not on the menu yet",
-        "focus": "Do not sell these — checked against our build sheets",
-        "items": [
-          "Classic Smash — the Summer 2026 LTO ended. The live build is Single Classic Smash.",
-          "Caesar's Lemon Blackout — this is a WRAP on our build sheets, not a sandwich. The gluten free tortilla is still only a sample request, so it cannot be sold gluten free until that lands.",
-          "Chris' Steakhouse Burger — no build sheet exists for this. Confirm the name before anyone rings it."
         ]
       }
     ]
