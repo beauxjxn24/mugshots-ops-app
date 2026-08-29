@@ -175,8 +175,14 @@ const SHEET_ALIASES: Record<string, string> = {
   // the match first and the prep card showed as used by nothing.
   'Alfredo Sauce': 'Alfredo',
   'Garlic Parm Sauce': 'Garlic Parmesan Sauce',
+  // Both spellings mean the shredded card. The chopped one is a different
+  // product — GREEN chopper at 1"x1" against the BLUE shredder at 1/4" — and it
+  // never goes on a plate: it exists to become Salad Mix (see PREP_FEEDS). This
+  // said 'Iceberg Lettuce (chopped)', so the two sheets that spell it out in
+  // full — the Quesadilla and the Cheeseburger Bowl — were pulling the salad
+  // card while every other burger pulled the burger one.
   Lettuce: 'Burger Lettuce',
-  'Shredded Lettuce': 'Iceberg Lettuce (chopped)',
+  'Shredded Lettuce': 'Burger Lettuce',
   Queso: 'Mugshots Queso Dip',
   Jalapeños: 'Sliced Jalapeños',
   Jalapenos: 'Sliced Jalapeños',
@@ -386,6 +392,27 @@ function isChoiceList(line: string): boolean {
   return parts.every((x) => x.split(/\s+/).length <= 3)
 }
 
+/**
+ * Prep that feeds other prep.
+ *
+ * Some prep never reaches a plate. Chopped iceberg and chopped romaine exist
+ * only to become Salad Mix — their cards say so in the method ("Prep iceberg +
+ * romaine per their cards") — so a build sheet never names them and they read
+ * as used by nothing, which is wrong in a way that matters: their par is driven
+ * entirely by salad sales.
+ *
+ * Hand-checked off the cards, like every other table here, because the names
+ * don't line up and fuzzy matching gets it badly wrong: Salad Mix lists
+ * "Chopped Iceberg" against a card called "Iceberg Lettuce (chopped)", and a
+ * loose matcher paired plain Mayo with Sriracha Mayo, raw Tomatoes with Diced
+ * Tomatoes and bottled Sriracha with Sriracha Ranch. Read as: making the KEY
+ * consumes the items listed.
+ */
+const PREP_FEEDS: Record<string, string[]> = {
+  'Salad Mix': ['Iceberg Lettuce (chopped)', 'Romaine Lettuce (chopped)'],
+  'Sriracha Ranch': ['Ranch Dressing'],
+}
+
 export function usageIndex(prepNames: string[] = [], stockNames: string[] = []): Map<string, string[]> {
   const idx = new Map<string, string[]>()
   for (const b of allBuilds())
@@ -399,6 +426,14 @@ export function usageIndex(prepNames: string[] = [], stockNames: string[] = []):
           idx.set(link.name, list)
         }
       }
+    }
+  // A prep card that feeds another prep card is used BY it — the only honest
+  // answer for something that never appears on a build sheet.
+  for (const [card, feeds] of Object.entries(PREP_FEEDS))
+    for (const item of feeds) {
+      const list = idx.get(item) ?? []
+      if (!list.includes(card)) list.push(card)
+      idx.set(item, list)
     }
   for (const list of idx.values()) list.sort((a, b) => a.localeCompare(b))
   return idx
