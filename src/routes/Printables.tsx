@@ -22,6 +22,7 @@ interface DocLink { id: string; name: string; kind: 'link' | 'file'; url?: strin
  * instead: in the build, on every device and every store, from first load.
  */
 const BUILTIN_DOCS: { name: string; note: string; href: string }[] = [
+  { name: 'Application for Employment', note: '2 pages · hiring', href: 'sheets/employment-application.pdf' },
   { name: 'Mini Mugs kids menu 2026', note: '2 pages · placemat', href: 'sheets/mini-mugs-2026.pdf' },
 ]
 const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
@@ -117,17 +118,29 @@ export function Printables() {
           )}
         </div>
 
-        {/* The sheet itself — plain, ink-friendly */}
-        {/* A prep card is going on a wall, so on paper it owns the page: the
-            same .prep-print contract the count sheet uses drops the app's page
-            header and strips the dark shell's backgrounds. .prep-card then puts
-            the ink back — this sheet is built from the app's own text classes,
-            and text-ink is #e9eef6, which prints as nothing. */}
-        <Card
-          className={`p-6 print:border-0 print:p-0 print:shadow-none ${
-            sheet === 'Prep card' || sheet === 'Produce order guide' ? 'prep-print prep-card' : ''
-          }`}
-        >
+        {/* The sheet's own handle. There is a Print button at the top of the
+            page, but by the time you have picked a sheet and looked at it your
+            eye is down here, and a document you are about to take should say
+            so where it is. */}
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+            Ready to print · {sheet === 'Sidework' ? `${role} sidework` : sheet}
+          </span>
+          <button
+            onClick={() => window.print()}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white"
+          >
+            <Printer size={13} /> Print this sheet
+          </button>
+        </div>
+
+        {/* The sheet renders as paper — white, black ink, locked — on the
+            tablet as well as on the printer. It was an app card in the dark
+            theme, which read as a live table you could tap into and change,
+            and printed the app's near-white text onto white paper. Every
+            sheet takes the same treatment now rather than the two I happened
+            to build: .prep-print gives it the page, .sheet-paper the ink. */}
+        <Card className="p-6 print:border-0 print:p-0 print:shadow-none prep-print sheet-paper">
           {sheet !== 'Produce order guide' && (
           <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
             <div>

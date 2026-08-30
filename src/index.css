@@ -152,6 +152,59 @@ body {
    `tabular-nums` and missing half the places digits appear. ---- */
 .font-mono { font-variant-numeric: tabular-nums; }
 
+/* ============================================================
+   A generated sheet is a DOCUMENT, not a screen.
+   ------------------------------------------------------------
+   These rules live outside @media print on purpose — they apply
+   on the tablet too, which is the whole point.
+
+   Two problems, one cause. Every sheet on Printables was rendered
+   in the app's own dark card, using the app's own text classes,
+   so on screen it read as a live table somebody could tap into
+   and change — and on paper text-ink (#e9eaee) printed at 1.20:1
+   on white, which is to say blank. Three of the five sheets came
+   off the printer with nothing on them.
+
+   Rendering on paper fixes both at once: white ground, black ink,
+   a page's proportions and a drop shadow. Nobody mistakes it for
+   something to edit, and what's on the screen is what comes out
+   of the printer.
+   ============================================================ */
+.sheet-paper {
+  /* !important because the dark remap above claims .bg-white with one too,
+     and Card carries bg-white. */
+  background: #ffffff !important;
+  color: #000000;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 40px -16px rgba(0, 0, 0, 0.75);
+  /* Nothing here is an input, but a finger dragging across a table still
+     selects and highlights it, which looks exactly like breaking something. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sheet-paper, .sheet-paper * { color: #000 !important; }
+/* Labels and footnotes stay grey, the way the company sheets set them.
+   Two classes beat one, so these win over the blanket black. */
+.sheet-paper .pc-dim, .sheet-paper .pc-dim * { color: #555 !important; }
+/* Rules are drawn with black/10 for a dark surface; on paper that is either
+   invisible or, with backgrounds on, a box. Make them hairlines. */
+.sheet-paper [class*="border-"] { border-color: #ccc !important; }
+.sheet-paper .border-b-2 { border-bottom-color: #000 !important; }
+/* Inputs and fills inside a sheet are remapped to --surface by the dark theme
+   above; on paper they have to be paper. */
+.sheet-paper .bg-white,
+.sheet-paper [class*="bg-black/"] { background-color: #fff !important; }
+/* The produce guide's title band, on screen as well as on paper — the preview
+   has to be the sheet, or it is just another approximation of it. */
+.sheet-paper .produce-guide .pg-band { background-color: #cfe0b4 !important; }
+.sheet-paper .produce-guide th,
+.sheet-paper .produce-guide td { border: 0.6px solid #000 !important; }
+@media print {
+  /* On paper the page IS the sheet — the raised-card treatment would print a
+     grey rectangle round the edge. */
+  .sheet-paper { box-shadow: none; border-radius: 0; }
+}
+
 /* ---- White type on a solid accent: the one pairing here that can't be read.
    Every accent in this palette is LIGHT by design — blue #6c8cff, green
    #3fbf7f, amber #e0a82e — so white on them lands between 1.9:1 and 3.1:1
@@ -830,21 +883,6 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   body:has(.prep-print) *:not(.pp):not(.pp *) { background: transparent !important; box-shadow: none !important; }
   @page { margin: 11mm; }
 
-  /* ---- A spec card printed as a prep sheet (Printables → Prep card) -------
-     Unlike the count sheet, this one is ordinary app markup — Tailwind's
-     text-ink and text-muted — because the same component has to look right on
-     a tablet. Both are dark-theme inks: text-ink is #e9eef6, so the sheet came
-     off the printer effectively blank. Restated here rather than rebuilt as
-     print-only markup, which would put the same card in two places. */
-  .prep-card, .prep-card * { color: #000 !important; }
-  /* Labels and the provenance footnote stay grey, the way the company sheets
-     set them. Two classes beat one, so these win over the blanket black. */
-  .prep-card .pc-dim, .prep-card .pc-dim * { color: #555 !important; }
-  /* Rules are drawn with black/10 against a dark surface — on paper that is
-     either invisible or, with backgrounds on, a box. Make them hairlines. */
-  .prep-card [class*="border-"] { border-color: #ccc !important; }
-  .prep-card .border-b-2 { border-bottom-color: #000 !important; }
-
   /* ---- The produce order guide, printed as the paper one ------------------
      A ruled grid, not a list: the sheet is carried into the walk-in and
      counted on, so the boxes have to be real boxes. The blanket #ccc above
@@ -853,12 +891,12 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      for this sheet. */
   .produce-guide table { table-layout: fixed; width: 100%; }
   /* Both of these have to out-specify the generic sheet rules above, which are
-     !important and were written to flatten a card: `.prep-card [class*=border-]`
+     !important and were written to flatten a card: `.sheet-paper [class*=border-]`
      greys every rule to #ccc, and the body:has(...) background reset takes the
      green off the title. Scoped deeper rather than weakening those — they are
      right for every other sheet. */
-  .prep-card .produce-guide th,
-  .prep-card .produce-guide td { border: 0.6px solid #000 !important; }
+  .sheet-paper .produce-guide th,
+  .sheet-paper .produce-guide td { border: 0.6px solid #000 !important; }
   body:has(.prep-print) .produce-guide .pg-band {
     background: #cfe0b4 !important;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
