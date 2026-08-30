@@ -69,7 +69,22 @@ export function getOrdering(): OrderingData {
   return out
 }
 
-export const suggested = (it: { par: number; onHand: number }) => Math.max(0, it.par - it.onHand)
+/**
+ * Which of the two pars applies today.
+ *
+ * The produce sheet carries M-PAR and F-PAR because the Monday delivery has to
+ * last until Friday's and the Friday one has to cover the weekend — not the
+ * same amount of tomatoes. So Mon–Thu counts against M, Fri–Sun against F. An
+ * item with a single par, which is nearly all of them, is unaffected.
+ */
+export const parToday = (it: { par: number; parF?: number }, d = new Date()): number => {
+  if (typeof it.parF !== 'number') return it.par
+  const dow = d.getDay() // 0 Sun … 6 Sat
+  return dow === 5 || dow === 6 || dow === 0 ? it.parF : it.par
+}
+
+export const suggested = (it: { par: number; onHand: number; parF?: number }) =>
+  Math.max(0, parToday(it) - it.onHand)
 export const vendors = (): string[] => {
   const set = new Set(DEFAULT_VENDORS)
   for (const ci of getCatalog()) if (ci.vendor) set.add(ci.vendor)
@@ -109,14 +124,14 @@ export function getParEdits(): ParEdit[] {
  * Only real movement is logged — a field re-entered with the same number is not
  * a change, and logging it would bury the ones that matter.
  */
-export function setParEntry(id: string, patch: Partial<{ par: number; onHand: number }>): void {
+export function setParEntry(id: string, patch: Partial<{ par: number; parF: number; onHand: number }>): void {
   const pars = getPars()
   const cur = pars[id] ?? { par: 0, onHand: 0 }
   const who = shiftPerson() || 'unknown'
   const now = new Date().toISOString()
   const log = getParEdits()
   for (const [field, to] of Object.entries(patch)) {
-    const from = field === 'par' ? cur.par : cur.onHand
+    const from = field === 'par' ? cur.par : field === 'parF' ? (cur.parF ?? 0) : cur.onHand
     if (typeof to !== 'number' || to === from) continue
     log.push({ id, field, from, to, by: who, at: now })
   }

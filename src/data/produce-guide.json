@@ -1,0 +1,18 @@
+[
+  { "name": "Lettuce, Spring Mix", "size": "4/3 LB", "mPar": 3, "fPar": 3 },
+  { "name": "Lettuce, Iceberg", "size": "24 CT", "mPar": 6, "fPar": 6 },
+  { "name": "Lettuce, Romaine", "size": "24 CT", "mPar": 2, "fPar": 2 },
+  { "name": "Squash, Yellow", "size": "18-20 LB", "mPar": 1, "fPar": 0.75 },
+  { "name": "Squash, Zucchini", "size": "18-20 LB", "mPar": 1, "fPar": 0.75 },
+  { "name": "Peppers, Green", "size": "22-28 LB", "mPar": 0.5, "fPar": 0.5 },
+  { "name": "Tomatoes", "size": "20 LB", "mPar": 4, "fPar": 5 },
+  { "name": "Peppers, Jalapeño", "size": "5 LB", "mPar": 0.5, "fPar": 0.5 },
+  { "name": "Oranges", "size": "5 LB", "mPar": 1, "fPar": 1 },
+  { "name": "Mushrooms, Button", "size": "10 LB", "mPar": 4, "fPar": 4 },
+  { "name": "Mushrooms, Sliced", "size": "10 LB", "mPar": 2, "fPar": 2 },
+  { "name": "Onions, Red", "size": "25 LB", "mPar": 3, "fPar": 3.25 },
+  { "name": "Onions, Yellow", "size": "50 LB", "mPar": 0.5, "fPar": 0.5 },
+  { "name": "Limes", "size": "200 CT", "mPar": 0.25, "fPar": 0.25 },
+  { "name": "Lemons", "size": "200 CT", "mPar": 1, "fPar": 1.5 },
+  { "name": "Celery", "size": "36 CT", "mPar": 0.25, "fPar": 0.25 }
+]

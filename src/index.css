@@ -845,6 +845,38 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   .prep-card [class*="border-"] { border-color: #ccc !important; }
   .prep-card .border-b-2 { border-bottom-color: #000 !important; }
 
+  /* ---- The produce order guide, printed as the paper one ------------------
+     A ruled grid, not a list: the sheet is carried into the walk-in and
+     counted on, so the boxes have to be real boxes. The blanket #ccc above
+     would wash them out, and the transparent-background rule would take the
+     green band off the title — both are undone here, deliberately and only
+     for this sheet. */
+  .produce-guide table { table-layout: fixed; width: 100%; }
+  /* Both of these have to out-specify the generic sheet rules above, which are
+     !important and were written to flatten a card: `.prep-card [class*=border-]`
+     greys every rule to #ccc, and the body:has(...) background reset takes the
+     green off the title. Scoped deeper rather than weakening those — they are
+     right for every other sheet. */
+  .prep-card .produce-guide th,
+  .prep-card .produce-guide td { border: 0.6px solid #000 !important; }
+  body:has(.prep-print) .produce-guide .pg-band {
+    background: #cfe0b4 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    border-color: #000 !important;
+  }
+  /* The printed columns take what they need; the write-in boxes share the
+     rest, so the grid always reaches the edge of the paper whatever the
+     printer's margins are. */
+  .produce-guide .pg-w-name { width: 27%; }
+  .produce-guide .pg-w-size { width: 11%; }
+  .produce-guide .pg-w-par { width: 7%; }
+  .produce-guide table { font-size: 10px; }
+  /* Tall rows, because the grid has to fill the page the way the paper one
+     does — these are boxes somebody writes a case count into with a pen in a
+     cold room, not table rows. Sized so the sheet lands on one page. */
+  .produce-guide tbody td { height: 36px; }
+  .produce-guide tr { page-break-inside: avoid; }
+
   /* ---- The prep sheet itself (rendered by PrintSheet.tsx) ----------------
      Print-only, so its styles live here with the rest of the paper rules.
      Metrics are tuned so two columns of ~29 rows land on one US-Letter page;

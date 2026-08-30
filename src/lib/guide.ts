@@ -7,6 +7,7 @@ import { load, save } from './store'
 import { useScope } from './scope'
 import { getCatalog, getFlags, getPars, setPars, setOnGuide, registerItem } from './catalog'
 import LIQUOR_SEED from '../data/liquor-guide-flowood.json'
+import PRODUCE_SEED from '../data/produce-guide.json'
 
 export interface GuideSection {
   title: string
@@ -43,6 +44,40 @@ export function seedLiquorGuide(): void {
   setPars(pars)
   save(layoutKey('Liquor'), sections)
   save(scoped('guide:seeded:liquor'), 'v1')
+}
+
+/**
+ * The produce order guide, from the owner's paper sheet.
+ *
+ * Unlike the liquor seed this is NOT pinned to one store — both Flowood and
+ * Pearl run it, and the key is store-scoped, so each gets its own copy from
+ * the same sheet and can then drift apart. Pars are a store's own number.
+ *
+ * Only ever adds. An item already on the guide keeps whatever par the store
+ * has set: the sheet is where this list came from, not what it is now.
+ */
+export function seedProduceGuide(): void {
+  if (load<string>(scoped('guide:seeded:produce'), '') === 'v1') return
+  const pars = getPars()
+  const existing = getGuideSections('Produce')
+  const have = new Set(existing.flatMap((s) => s.ids))
+  const ids: string[] = []
+  for (const it of PRODUCE_SEED as Array<{ name: string; size: string; mPar: number; fPar: number }>) {
+    const ci = registerItem({ name: it.name, unit: 'cs', category: 'Produce', size: it.size })
+    setOnGuide(ci.id, true)
+    if (!have.has(ci.id)) {
+      const cur = pars[ci.id] ?? { par: 0, onHand: 0 }
+      pars[ci.id] = { ...cur, par: it.mPar, parF: it.fPar }
+      ids.push(ci.id)
+    }
+  }
+  setPars(pars)
+  if (ids.length) {
+    // Its own band, named as the sheet is, rather than folded into whatever
+    // produce arrived from an invoice.
+    save(layoutKey('Produce'), [...existing, { title: 'Produce Order Guide', ids }])
+  }
+  save(scoped('guide:seeded:produce'), 'v1')
 }
 
 /** Does this catalog item belong on the given shelf tab? */

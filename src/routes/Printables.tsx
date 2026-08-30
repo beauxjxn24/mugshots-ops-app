@@ -4,7 +4,8 @@ import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
-import { getCatalog, getFlags } from '../lib/catalog'
+import { getCatalog, getFlags, getPars } from '../lib/catalog'
+import { getGuideSections } from '../lib/guide'
 import { saveDoc, openDoc } from '../lib/docs'
 import { SPECS, groups } from '../lib/specs'
 import { builtFrom } from '../lib/linebuilds'
@@ -16,7 +17,7 @@ const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).
 type Phase = 'Opening' | 'Closing' | 'Weekly'
 type SidworkData = Record<Role, Record<string, Section[]>>
 
-const SHEETS = ['Opening checklist', 'Closing checklist', 'Weekly checklist', 'Sidework', 'Inventory count', 'Prep card'] as const
+const SHEETS = ['Opening checklist', 'Closing checklist', 'Weekly checklist', 'Sidework', 'Inventory count', 'Prep card', 'Produce order guide'] as const
 type Sheet = (typeof SHEETS)[number]
 
 /** Every company prep sheet opens with these two, without exception — so a card
@@ -112,9 +113,10 @@ export function Printables() {
             and text-ink is #e9eef6, which prints as nothing. */}
         <Card
           className={`p-6 print:border-0 print:p-0 print:shadow-none ${
-            sheet === 'Prep card' ? 'prep-print prep-card' : ''
+            sheet === 'Prep card' || sheet === 'Produce order guide' ? 'prep-print prep-card' : ''
           }`}
         >
+          {sheet !== 'Produce order guide' && (
           <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
             <div>
               <div className="font-display text-xl font-semibold uppercase text-ink">
@@ -127,6 +129,7 @@ export function Printables() {
               <div className="mt-1">{sheet === 'Prep card' ? 'Prepped by' : 'Completed by'}: ____________</div>
             </div>
           </div>
+          )}
 
           {sheet.endsWith('checklist') && (
             <CheckSheet tasks={checkData[sheet.replace(' checklist', '') as Phase] ?? []} />
@@ -134,6 +137,7 @@ export function Printables() {
           {sheet === 'Sidework' && <SideworkSheet role={role} data={sidework} />}
           {sheet === 'Inventory count' && <InventorySheet />}
           {sheet === 'Prep card' && <PrepCardSheet spec={spec} />}
+          {sheet === 'Produce order guide' && <ProduceGuideSheet />}
         </Card>
             </Page>
   )
@@ -361,6 +365,88 @@ function PrepCardSheet({ spec }: { spec: Spec }) {
           which is the fact a manager needs when the card is questioned. */}
       <div className="border-t border-black/10 pt-2 text-[10px] pc-dim text-muted">
         {spec.doc ? `Source: ${spec.doc}` : 'Source not recorded'}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The produce order guide, printed as the paper one: a green title band, the
+ * four printed columns, then a run of empty boxes to write counts into.
+ *
+ * The blank grid is the point. This sheet gets carried into the walk-in and
+ * counted on over and over — one column per count — so the printed part is
+ * only the left third and the rest of the page has to be somewhere to write.
+ * Items and pars come from this store's live guide, so a par changed in the
+ * app is on the next sheet off the printer.
+ */
+const TALLY_COLS = 14
+
+function ProduceGuideSheet() {
+  const pars = getPars()
+  const byId = new Map(getCatalog().map((c) => [c.id, c]))
+  const rows = getGuideSections('Produce')
+    .flatMap((sec) => sec.ids)
+    .flatMap((id) => {
+      const ci = byId.get(id)
+      if (!ci) return []
+      const p = pars[id] ?? { par: 0, onHand: 0 }
+      return [{ name: ci.name, size: ci.size ?? '', m: p.par, f: p.parF }]
+    })
+
+  const num = (v?: number) => (typeof v === 'number' ? String(v) : '')
+
+  if (rows.length === 0) {
+    return (
+      <p className="py-6 text-center text-sm text-muted">
+        Nothing on the produce guide yet — add items on the Orders screen.
+      </p>
+    )
+  }
+
+  return (
+    <div className="produce-guide">
+      <div className="pg-band border-2 px-3 py-2 text-center">
+        <span className="font-display text-xl font-bold tracking-wide text-ink">Produce Order Guide</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="pg-table w-full border-collapse text-[11px]">
+          <thead>
+            <tr>
+              <th className="pg-band pg-w-name border px-1.5 py-1 text-left font-bold uppercase">Product</th>
+              <th className="pg-band pg-w-size border px-1.5 py-1 text-left font-bold uppercase">Size</th>
+              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">M-Par</th>
+              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">F-Par</th>
+              {/* Undated on purpose — whoever counts writes the date in. */}
+              {Array.from({ length: TALLY_COLS }, (_, i) => (
+                <th key={i} className="border border-black/40 px-0 py-1" />
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.name}>
+                <td className="border border-black/60 px-1.5 py-[3px] font-medium">{r.name}</td>
+                <td className="border border-black/60 px-1.5 py-[3px]">{r.size}</td>
+                <td className="border border-black/60 px-1 py-[3px] text-center tabular-nums">{num(r.m)}</td>
+                <td className="border border-black/60 px-1 py-[3px] text-center tabular-nums">{num(r.f)}</td>
+                {Array.from({ length: TALLY_COLS }, (_, i) => (
+                  <td key={i} className="border border-black/40 px-0 py-[3px]" />
+                ))}
+              </tr>
+            ))}
+            {/* Spare lines, because a new item turns up before a new sheet does. */}
+            {Array.from({ length: 4 }, (_, i) => (
+              <tr key={`blank${i}`}>
+                {Array.from({ length: 4 + TALLY_COLS }, (_, c) => (
+                  <td key={c} className={`border px-1 py-[3px] ${c < 4 ? 'border-black/60' : 'border-black/40'}`}>
+                    &nbsp;
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

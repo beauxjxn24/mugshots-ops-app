@@ -29,6 +29,16 @@ export const SHELVES = ['Produce', 'Liquor', 'Beer', 'Food', 'Paper / Supply', '
 export interface ParEntry {
   par: number
   onHand: number
+  /**
+   * The second par, for an item ordered twice a week to different levels.
+   *
+   * The paper produce guide prints two columns — M-PAR and F-PAR — because a
+   * Monday delivery has to last until Friday's and a Friday one has to cover
+   * the weekend, which are not the same amount of tomatoes. `par` is the
+   * Monday number and stays the only one most items ever have; this is set
+   * only where a sheet actually prints a second column.
+   */
+  parF?: number
 }
 
 // Catalog is per-concept; flags/pars are per-store.

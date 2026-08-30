@@ -8,6 +8,7 @@ import { suggested, setParEntry, getReceiptLog, getParEdits, vendors } from '../
 import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog } from '../lib/catalog'
 import {
   GUIDE_SHELVES,
+  seedProduceGuide,
   type GuideShelf,
   seedLiquorGuide,
   getGuideSections,
@@ -31,6 +32,10 @@ interface Row {
   unit: string
   par: number
   onHand: number
+  /** Second par, where a sheet prints one — see parToday(). */
+  parF?: number
+  /** Pack size off the order guide: 24 CT, 4/3 LB, 20 LB. */
+  size?: string
   cost?: number
   vendor: string
 }
@@ -46,14 +51,25 @@ export function Ordering() {
   const [tick, setTick] = useState(0)
   const refresh = () => setTick((t) => t + 1)
 
-  // Flowood's liquor guide seeds once from the owner's 2025 order sheet.
+  // Flowood's liquor guide seeds once from the owner's 2025 order sheet; the
+  // produce guide seeds for every store, each getting its own copy.
   useMemo(() => seedLiquorGuide(), [])
+  useMemo(() => seedProduceGuide(), [])
 
   const isPhone = useIsPhone()
   const priceLog = useMemo(() => getPriceLog(), [])
   const [shelf, setShelf] = useState<GuideShelf>('Liquor')
   const [view, setView] = useState<'guide' | 'usage'>('guide')
   const [copied, setCopied] = useState(false)
+  // Produce is ordered twice a week to two different levels, so its guide shows
+  // both columns the paper sheet does. Every other shelf has one par and gets
+  // one column — an empty "F par" on the liquor guide is a question nobody can
+  // answer. Fri–Sun the Order column counts against F; Mon–Thu against M.
+  const twoPar = shelf === 'Produce'
+  const onF = [5, 6, 0].includes(new Date().getDay())
+  const gridCols = twoPar
+    ? 'grid-cols-[20px_minmax(0,1fr)_76px_52px_52px_60px_68px]'
+    : 'grid-cols-[20px_minmax(0,1fr)_76px_56px_64px_72px]'
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const sections = useMemo(() => getGuideSections(shelf), [shelf, tick])
@@ -63,7 +79,7 @@ export function Ordering() {
     return new Map<string, Row>(
       getCatalog().map((ci) => {
         const p = pars[ci.id] ?? { par: 0, onHand: 0 }
-        return [ci.id, { id: ci.id, name: ci.name, unit: ci.unit, par: p.par, onHand: p.onHand, cost: ci.cost, vendor: ci.vendor }]
+        return [ci.id, { id: ci.id, name: ci.name, unit: ci.unit, par: p.par, parF: p.parF, size: ci.size, onHand: p.onHand, cost: ci.cost, vendor: ci.vendor }]
       }),
     )
   }, [tick])
@@ -477,11 +493,20 @@ export function Ordering() {
               <CopyButtons size="lg" />
             </div>
 
-            <div className="grid grid-cols-[20px_minmax(0,1fr)_76px_56px_64px_72px] items-center gap-2 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+            <div className={`grid ${gridCols} items-center gap-2 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted`}>
               <span />
               <span>Item</span>
               <span className="text-right">$ / {shelf === 'Liquor' ? 'btl' : 'case'}</span>
-              <span className="text-center">Par</span>
+              {twoPar ? (
+                <>
+                  {/* The paper sheet's two columns, kept as two. Today's is lit,
+                      because that is the one the Order column is counting. */}
+                  <span className={`text-center ${onF ? '' : 'text-brand-600'}`}>M par</span>
+                  <span className={`text-center ${onF ? 'text-brand-600' : ''}`}>F par</span>
+                </>
+              ) : (
+                <span className="text-center">Par</span>
+              )}
               <span className="text-center">On hand</span>
               <span className="text-right">Order</span>
             </div>
@@ -569,7 +594,7 @@ export function Ordering() {
                           setDrag(null)
                           setOver(null)
                         }}
-                        className={`group grid grid-cols-[20px_minmax(0,1fr)_76px_56px_64px_72px] items-center gap-2 border-b border-black/5 px-4 py-2 ${
+                        className={`group grid ${gridCols} items-center gap-2 border-b border-black/5 px-4 py-2 ${
                           drag?.sec === si && drag.idx === idx ? 'opacity-40' : ''
                         } ${isOver ? 'border-t-2 border-t-brand' : ''}`}
                       >
@@ -596,6 +621,7 @@ export function Ordering() {
                           title="Click to edit this item"
                         >
                           <span className="block truncate text-sm font-medium text-ink group-hover:text-brand-600">{r.name}</span>
+                          {r.size && <span className="block truncate font-mono text-[10px] text-muted">{r.size}</span>}
                         </button>
                         <button
                           onClick={() => (editingId === r.id ? setEditingId(null) : openEdit(r, 'cost'))}
@@ -605,6 +631,9 @@ export function Ordering() {
                           {r.cost != null ? money2(r.cost) : <span className="text-muted underline decoration-dotted underline-offset-2">add $</span>}
                         </button>
                         <NumCell col="par" value={r.par} onChange={(v) => { setParEntry(r.id, { par: v }); refresh() }} />
+                        {twoPar && (
+                          <NumCell col="parf" value={r.parF ?? r.par} onChange={(v) => { setParEntry(r.id, { parF: v }); refresh() }} />
+                        )}
                         <NumCell col="onhand" value={r.onHand} onChange={(v) => { setParEntry(r.id, { onHand: v }); refresh() }} />
                         <div className={`text-right font-display text-base font-semibold ${need > 0 ? 'text-brand' : 'text-ink/25'}`}>
                           {need > 0 ? `${need} ${r.unit}` : '—'}
