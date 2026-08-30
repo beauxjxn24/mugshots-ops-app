@@ -161,25 +161,12 @@ export function useDue(): PhaseDue[] {
   return due
 }
 
-/**
- * What the nav badge shows: how many lists are actually behind.
- *
- * Counting LISTS rather than items on purpose. "3" meaning three lists needing
- * attention is a number somebody acts on; "47" meaning forty-seven unticked
- * boxes across four lists is a number somebody learns to ignore.
- */
-export function badgeFrom(all: PhaseDue[]): { count: number; worst: Urgency } {
-  const due = all.filter((d) => d.total > 0 && d.left > 0)
-  if (due.length === 0) return { count: 0, worst: 'clear' }
-  const worst: Urgency = due.some((d) => d.urgency === 'late')
-    ? 'late'
-    : due.some((d) => d.urgency === 'soon')
-      ? 'soon'
-      : 'open'
-  return { count: due.length, worst }
-}
-
-export const checklistBadge = (t = today()): { count: number; worst: Urgency } => badgeFrom(allDue(t))
+/* badgeFrom() and checklistBadge() lived here to feed a count pill on the nav.
+   That pill is gone — a number that rides every screen all day stops being a
+   prompt and becomes wallpaper, and there is no way to clear it except to go
+   and do the work, which is not what you want a permanent red dot for. The due
+   state is still computed; it is just shown on the Checklists screen, where
+   you went to deal with it. */
 
 /** "2 days left" / "last day" / "resets tonight". */
 export function whenLabel(d: PhaseDue): string {

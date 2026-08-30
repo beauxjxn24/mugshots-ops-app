@@ -11,7 +11,6 @@ import { ConciergeBell, UtensilsCrossed, Search, ChevronDown } from 'lucide-reac
 import { Toaster } from './Toaster'
 import { CommandPalette, openCommandPalette } from './CommandPalette'
 import { DropCatcher, DropBoxPill } from './DropBox'
-import { NavBadge, rollUp, useNavBadges, type Badge } from './NavBadge'
 
 /**
  * Responsive app shell — one layout, three form factors:
@@ -34,9 +33,6 @@ export function AppShell() {
     [],
   )
   const sections = role === 'staff' ? STAFF_SECTIONS : rollup ? ROLLUP_SECTIONS : isAdmin ? NAV : managerSections
-  // Counts that ride on a nav item — right now the checklists, which reset on
-  // a schedule whether or not anyone worked them.
-  const badges = useNavBadges(role)
   const current = [...NAV_FLAT, SHIFT_ITEM].find((i) => i.to === loc.pathname)
   const bottom = rollup ? ROLLUP_SECTIONS.flatMap((s) => s.items) : bottomItems(role)
 
@@ -80,7 +76,7 @@ export function AppShell() {
           <RoleToggle />
           {role !== 'staff' && <DropBoxPill />}
         </div>
-        <Rail sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
+        <Rail sections={sections} onNavigate={() => setOpen(false)} />
         <BuildStamp />
       </aside>
 
@@ -121,7 +117,7 @@ export function AppShell() {
               <SyncBadge />
               {isAdmin ? <StoreSwitcher /> : role === 'manager' ? <StoreLabel /> : null}
             </div>
-            <DrawerNav sections={sections} onNavigate={() => setOpen(false)} badges={badges} />
+            <DrawerNav sections={sections} onNavigate={() => setOpen(false)} />
             <BuildStamp />
           </div>
           <style>{`@keyframes slidein{from{transform:translateX(-105%)}to{transform:translateX(0)}}`}</style>
@@ -252,11 +248,9 @@ function Brand() {
 function DrawerNav({
   sections,
   onNavigate,
-  badges,
 }: {
   sections: NavSection[]
   onNavigate: () => void
-  badges: Record<string, Badge | undefined>
 }) {
   const row = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-colors ${
@@ -298,7 +292,6 @@ function DrawerNav({
                     the menu has always called this one "Imports", not
                     whatever the route inside it is named. */}
                 {sec.items.length === 1 && sec.title ? sec.title : it.label}
-                <NavBadge badge={badges[it.to]} />
               </NavLink>
             ))}
           </div>
@@ -323,11 +316,9 @@ function DrawerNav({
 function Rail({
   sections,
   onNavigate,
-  badges,
 }: {
   sections: NavSection[]
   onNavigate: () => void
-  badges: Record<string, Badge | undefined>
 }) {
   const loc = useLocation()
   /**
@@ -406,7 +397,6 @@ function Rail({
           >
             <it.icon size={15} strokeWidth={2} className="shrink-0 opacity-70" />
             {it.label}
-            <NavBadge badge={badges[it.to]} />
           </NavLink>
         ))}
 
@@ -420,10 +410,6 @@ function Rail({
         {groups.map((sec, i) => {
           const isOpen = i === open
           const here = sec.items.some((x) => x.to === loc.pathname)
-          // A closed area hides its screens, which is exactly where a badge
-          // would go unseen — so the header carries what's inside it.
-          const rolled = rollUp(sec.items.map((x) => x.to), badges)
-
           return (
             <div key={sec.title} onMouseEnter={() => setOpen(i)}>
               <button
@@ -442,12 +428,7 @@ function Rail({
                   isOpen || here ? 'text-white/75' : 'text-white/40 hover:bg-white/5 hover:text-white/70'
                 }`}
               >
-                {/* flex-1 so the title, not the chevron, gives up the width a
-                    badge needs — the chevron stays pinned to the right edge. */}
                 <span className="flex-1 truncate text-left">{sec.title}</span>
-                {/* Only when shut: an open area shows the badge on the screen
-                    that owns it, and two badges for one number reads as two. */}
-                {!isOpen && <NavBadge badge={rolled} />}
                 <ChevronDown
                   size={12}
                   className={`ml-1 shrink-0 opacity-70 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -475,7 +456,6 @@ function Rail({
                     >
                       <it.icon size={14} strokeWidth={2} className="shrink-0 opacity-60" />
                       {it.label}
-                      <NavBadge badge={badges[it.to]} />
                     </NavLink>
                   ))}
                 </div>
