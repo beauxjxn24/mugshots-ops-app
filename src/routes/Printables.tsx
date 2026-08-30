@@ -12,6 +12,18 @@ import { builtFrom } from '../lib/linebuilds'
 import type { Spec } from '../lib/types'
 
 interface DocLink { id: string; name: string; kind: 'link' | 'file'; url?: string; docId?: string }
+
+/**
+ * Real Mugshots documents that ship in the build.
+ *
+ * The attach-a-file box below keeps its files in the device's own storage, so
+ * a sheet attached on the office laptop is not on the tablet by the pass, and
+ * a new device starts empty. Anything the whole company prints belongs here
+ * instead: in the build, on every device and every store, from first load.
+ */
+const BUILTIN_DOCS: { name: string; note: string; href: string }[] = [
+  { name: 'Mini Mugs kids menu 2026', note: '2 pages · placemat', href: 'sheets/mini-mugs-2026.pdf' },
+]
 const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
 
 type Phase = 'Opening' | 'Closing' | 'Weekly'
@@ -187,6 +199,30 @@ function Documents() {
         <FileText size={13} /> Your documents
       </div>
       <p className="mb-3 text-xs text-muted">Attach the real sheets you print, or paste a link to them. Tap one to open it and print or save.</p>
+
+      {/* Sheets that ship with the app. Anything below this lives in the
+          device's own storage and has to be attached again on every tablet;
+          these are in the build, so they are on every device and every store
+          the moment it loads, and nobody has to remember to put them there. */}
+      <div className="mb-3">
+        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted/70">Comes with the app</div>
+        <div className="space-y-1.5">
+          {BUILTIN_DOCS.map((d) => (
+            <a
+              key={d.href}
+              href={`${import.meta.env.BASE_URL}${d.href}`}
+              target="_blank"
+              rel="noopener"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 hover:border-signal/40"
+            >
+              <FileText size={14} className="shrink-0 text-muted" />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{d.name}</span>
+              <span className="shrink-0 text-[11px] text-muted">{d.note}</span>
+              <ExternalLink size={15} className="shrink-0 text-muted" />
+            </a>
+          ))}
+        </div>
+      </div>
 
       {docs.length > 0 && (
         <div className="mb-3 space-y-1.5">
