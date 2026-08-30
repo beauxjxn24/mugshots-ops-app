@@ -404,18 +404,25 @@ export function Dashboard() {
             </div>
           </>
         ) : (
-          <Card className="p-8 text-center">
-            <div className="mx-auto mb-3 grid size-14 place-items-center rounded-2xl bg-brand/10 text-brand">
-              <Moon size={26} />
+          /* A prompt, not a monument. This was a centred 280px-tall card with a
+             56px badge on it — the emptiest thing in the app given the most
+             space in the app, at the top of the first screen anyone opens. An
+             empty state is a sentence and a button; the room belongs to the
+             LTO card and the events strip underneath, which have something to
+             say. */
+          <Card className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand">
+              <Moon size={17} />
+            </span>
+            <div className="min-w-[15rem] flex-1">
+              <h2 className="font-display text-sm font-semibold text-ink">No sales logged yet</h2>
+              <p className="text-xs text-muted text-pretty">
+                Log a night and the hero number and sales trend fill in automatically.
+              </p>
             </div>
-            <h2 className="font-display text-xl font-semibold text-ink">No sales logged yet</h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted text-pretty">
-              Log a night to bring this dashboard to life — the hero number and sales trend fill in
-              automatically. (Live Toast sync comes with the backend.)
-            </p>
             <Link
               to="/nightly"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
+              className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white"
             >
               <Plus size={15} /> Add tonight’s numbers
             </Link>
@@ -718,8 +725,9 @@ function LtoFocus() {
     }
   }
 
-  // Prototype spec: navy card, gold FOOD FOCUS header, white serif item name,
-  // gold deal chip, product photo on the right.
+  // Darkest card on the page, accent FOOD FOCUS header, white item name, accent
+  // deal chip, product photo on the right. The gold this used to be was
+  // hardcoded three times right here and outlived the palette that justified it.
   return (
     <Card
       onMouseEnter={() => setPaused(true)}
@@ -727,7 +735,7 @@ function LtoFocus() {
       className="drift [--i:4] flex h-full flex-col border-navy !bg-navy p-5"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-[#e0b23c]">
+        <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-brand">
           <Flame size={14} /> Food focus ·{' '}
           {chosen.length ? 'Picked' : allLtos.some((l) => l.name === s.name) ? 'LTO' : 'Top seller'}
         </div>
@@ -784,7 +792,7 @@ function LtoFocus() {
             ) : (
               <span className="text-xs text-white/50">sales fill in from your PMIX drops</span>
             )}
-            <Link to={cardLink(s)} className="ml-auto text-sm font-semibold text-[#e0b23c]">
+            <Link to={cardLink(s)} className="ml-auto text-sm font-semibold text-brand">
               View build →
             </Link>
           </div>
@@ -794,7 +802,7 @@ function LtoFocus() {
         ) : (
           <div className="grid w-[42%] place-items-center self-stretch rounded-xl bg-white/[0.06]">
             <div className="text-center">
-              <Flame size={26} className="mx-auto text-[#e0b23c]/50" />
+              <Flame size={26} className="mx-auto text-brand/50" />
               <div className="mt-1 text-[11px] font-semibold text-white/50">photo coming soon</div>
             </div>
           </div>

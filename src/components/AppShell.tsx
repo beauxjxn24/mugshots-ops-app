@@ -8,7 +8,6 @@ import { SyncBadge } from './SyncBadge'
 import { useRole } from '../lib/role'
 import { useRollupLevel, useScope, useCurrentNames } from '../lib/scope'
 import { ConciergeBell, UtensilsCrossed, Search, ChevronDown } from 'lucide-react'
-import { Aurora } from './Aurora'
 import { Toaster } from './Toaster'
 import { CommandPalette, openCommandPalette } from './CommandPalette'
 import { DropCatcher, DropBoxPill } from './DropBox'
@@ -62,7 +61,6 @@ export function AppShell() {
 
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_1fr]">
-      <Aurora />
       <Toaster />
       <CommandPalette />
       {/* Catches a file dropped anywhere in the app and lands it on Imports —
@@ -169,7 +167,13 @@ export function AppShell() {
                     size={18}
                     strokeWidth={2.2}
                     className={`nav-ico ${i.idle ?? 'idle-pulse'}`}
-                    style={{ animationDelay: `${(idx * 0.1).toFixed(2)}s`, color: i.color }}
+                    /* No per-item colour. Every destination carried its own
+                       hue — fifteen across the nav, gold and pink and teal and
+                       rose — so the bar read as a paint chart, and the one
+                       thing colour should have been saying (which of these am
+                       I on) was the one thing it could not say. The icon
+                       inherits now: muted at rest, accent when active. */
+                    style={{ animationDelay: `${(idx * 0.1).toFixed(2)}s` }}
                   />
                 )}
                 {i.label.split(' ')[0]}

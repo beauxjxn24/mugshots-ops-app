@@ -48,31 +48,50 @@
   --font-sans: 'Geist', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 
-  /* ---- COMMAND DECK — dark, cyan+gold, terminal-luxury ---- */
-  --color-brand: #e4b84c;      /* gold — primary accent / key numbers */
-  --color-brand-600: #cf9f34;
-  --color-signal: #4fe3c1;     /* cyan — interactive / focus / live */
-  --color-navy: #0b1220;       /* rail */
-  --color-navy-700: #16233c;
-  --color-cream: #070b13;      /* app ground (now dark) */
-  --color-ink: #e9eef6;        /* primary text (light) */
-  --color-muted: #8a97ab;      /* secondary text */
+  /* ============================================================
+     GRAPHITE — near-black, neutral, one accent.
+     ------------------------------------------------------------
+     Replaces COMMAND DECK, which spent three accents at once: gold for
+     key numbers, cyan for anything interactive, plus red badges. Three
+     things all shouting is three things nobody looks at, so this spends
+     exactly one hue and leaves the rest greyscale. Colour that survives
+     is either the accent or a status.
 
-  /* Semantic status — tuned to read on a dark ground */
-  --color-up: #43d59b;
-  --color-down: #ff6f8f;
-  --color-warn: #e8b73a;
+     The neutrals carry a faint cool cast rather than the old navy —
+     enough that the greys read as chosen, not enough to be a colour.
+
+     One hue, two steps. Both are LIGHT, which is only safe because of
+     the .bg-brand.text-white rule further down: text on an accent fill
+     is forced to navy, so a fill is read against near-black, not white.
+     That rule is what lets the accent be bright in both roles at once.
+     Measured against the #0a0a0c ground and that navy text —
+       #6c8cff  6.44:1 as text on ground · 6.44:1 under navy on a fill
+       #8da4ff  8.37:1 on ground — the lighter step, for links and focus
+     ============================================================ */
+  --color-brand: #6c8cff;      /* the one accent — fills, and text at weight */
+  --color-brand-600: #5878f0;  /* pressed / hover */
+  --color-signal: #8da4ff;     /* the light step — links, focus, live */
+  --color-navy: #0a0a0c;       /* rail */
+  --color-navy-700: #17181c;
+  --color-cream: #08090a;      /* app ground */
+  --color-ink: #e9eaee;        /* primary text — 16.5:1 */
+  --color-muted: #83868f;      /* secondary text — 5.4:1 */
+
+  /* Semantic status. Deliberately NOT the accent: a number being up is a
+     different kind of fact from a button being tappable, and the eye should
+     not have to work out which one it is looking at. */
+  --color-up: #3fbf7f;
+  --color-down: #e5484d;
+  --color-warn: #e0a82e;
 }
 
 :root {
   color-scheme: dark;
-  --surface: #0f1826;          /* cards, inputs, menus (solid) */
-  --surface-2: #131f31;
-  --line: rgba(255, 255, 255, 0.10);
-  --aur-a: #1fb89a;            /* aurora blobs */
-  --aur-b: #0e5f6e;
-  --aur-c: #123a5a;
-  --aur-d: #05070c;
+  --surface: #101013;          /* cards, inputs, menus (solid) */
+  --surface-2: #16171b;
+  /* Hairlines, not borders. The old 10% white drew a visible box around every
+     card; at 7% on a near-black ground a rule separates without enclosing. */
+  --line: rgba(255, 255, 255, 0.07);
 }
 
 html,
@@ -83,9 +102,9 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(120% 90% at 50% -10%, rgba(79, 227, 193, 0.05), transparent 55%),
-    var(--color-cream);
+  /* Flat. There was a teal radial bloom over the top of the page here as well
+     as the aurora behind it — the ground is just the ground now. */
+  background: var(--color-cream);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -125,14 +144,25 @@ body {
 }
 .rail-block:hover { background-color: rgba(255, 255, 255, 0.1); }
 
-/* ---- White type on a solid accent: the one pairing here that can't be read.
-   The palette's accents are all LIGHT — gold #e4b84c, mint #43d59b, cyan
-   #4fe3c1 — so white on them lands at 1.6–2.7:1 where the readable floor is
-   4.5:1. It's legible enough on a clean desk monitor and it is not legible on
-   a kitchen tablet with grease on the screen and the lights up.
+/* ---- Digits that line up.
+   Geist Mono is already the number face, but proportional figures let a column
+   of pars, counts and money go ragged, so the eye can't compare down it and a
+   wrong digit doesn't announce itself. Tabular figures are the whole reason a
+   line check reads at a glance. Set once on the face rather than sprinkling
+   `tabular-nums` and missing half the places digits appear. ---- */
+.font-mono { font-variant-numeric: tabular-nums; }
 
-   Navy on the same golds is 10:1. Fixed here rather than across the ninety-odd
-   buttons that do this, for the same reason the dark remap above exists.
+/* ---- White type on a solid accent: the one pairing here that can't be read.
+   Every accent in this palette is LIGHT by design — blue #6c8cff, green
+   #3fbf7f, amber #e0a82e — so white on them lands between 1.9:1 and 3.1:1
+   where the readable floor is 4.5:1. It's legible enough on a clean desk
+   monitor and it is not legible on a kitchen tablet with grease on the screen
+   and the lights up.
+
+   Near-black on those same accents is 6.4:1 or better. Fixed here rather than
+   across the ninety-odd buttons that do this, for the same reason the dark
+   remap above exists — and it is what allows the accent to be bright enough to
+   also work as text on the ground, which is the other 177 uses.
 
    Deliberately scoped to `.bg-x.text-white` — an element carrying BOTH. The
    opacity variants (bg-brand/10 and friends) are a tint over the dark ground
@@ -163,12 +193,11 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); background-clip: content-box; }
 
-/* Live aurora canvas mounted behind the whole app */
-#app-aurora {
-  position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1;
-  filter: blur(52px) saturate(1.2); opacity: .55; pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) { #app-aurora { opacity: .4; } }
+/* The aurora — a full-page canvas of blurred teal and gold blobs, drifting at
+   55% opacity behind every screen — is gone. It was the single loudest thing
+   in the app: no surface ever read as flat, the prep list sat on a moving
+   green field, and it printed over the sheets. Software people trust is
+   still. The ground is a colour now, not a light show. */
 
 /* Respect reduced-motion for the whole app.
    Decoration stops; a status border does not. A phone with Reduce Motion on
@@ -757,11 +786,10 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
 /* Print: only the sheet — no rail, bars, or buttons. */
 @media print {
   aside, header, nav, .print\:hidden { display: none !important; }
-  /* The aurora is a fixed, full-page canvas of blurred teal and gold blobs at
-     55% opacity, sitting OUTSIDE main — so none of the rules below reached it
-     and it printed straight over the sheet. That's the coloured wash that made
-     every page look faded. The Mugsy launcher is fixed and outside main too. */
-  #app-aurora, .mugsy-fab { display: none !important; }
+  /* The Mugsy launcher is fixed and outside main, so none of the rules below
+     reach it and it prints over the sheet. (The aurora used to need this too,
+     and printing faded pages is part of why it's gone.) */
+  .mugsy-fab { display: none !important; }
   main { padding: 0 !important; }
   /* Paper is light. The app runs color-scheme: dark, and with "print
      backgrounds" ticked Chromium fills the paper around the page box with the

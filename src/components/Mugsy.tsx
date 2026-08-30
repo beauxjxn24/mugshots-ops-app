@@ -153,7 +153,7 @@ export function Mugsy() {
 
       {/* Slide-in panel */}
       <div
-        className={`fixed right-0 top-0 z-[101] flex h-dvh w-[min(440px,94vw)] flex-col bg-[#0f1826] text-ink shadow-[-24px_0_60px_-30px_rgba(23,32,55,0.5)] transition-transform duration-300 print:hidden ${
+        className={`fixed right-0 top-0 z-[101] flex h-dvh w-[min(440px,94vw)] flex-col bg-[var(--surface)] text-ink shadow-[-24px_0_60px_-30px_rgba(23,32,55,0.5)] transition-transform duration-300 print:hidden ${
           open ? 'translate-x-0' : 'translate-x-[105%]'
         }`}
       >
@@ -223,7 +223,7 @@ export function Mugsy() {
           </div>
         )}
 
-        <div className="border-t border-white/10 bg-[#0f1826] px-4 pb-4 pt-3">
+        <div className="border-t border-white/10 bg-[var(--surface)] px-4 pb-4 pt-3">
           <div className="flex items-end gap-2 rounded-2xl border-[1.5px] border-white/15 bg-white py-2 pl-3.5 pr-2">
             <textarea
               ref={inputRef}

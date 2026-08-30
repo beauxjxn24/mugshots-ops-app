@@ -34,7 +34,7 @@ export function Toaster() {
         return (
           <div
             key={t.id}
-            className={`pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border bg-[#0f1826]/95 px-4 py-3.5 backdrop-blur-md animate-[toastin_.28s_cubic-bezier(.2,.9,.3,1.4)] ${ring}`}
+            className={`pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border bg-[var(--surface)]/95 px-4 py-3.5 backdrop-blur-md animate-[toastin_.28s_cubic-bezier(.2,.9,.3,1.4)] ${ring}`}
             role="status"
           >
             <Icon size={22} className={`shrink-0 ${tint}`} />

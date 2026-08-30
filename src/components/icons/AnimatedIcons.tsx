@@ -271,8 +271,8 @@ export function GridIcon({ size = 18, className = '' }: P) {
       <svg viewBox="0 0 24 24" width={size} height={size} overflow="visible">
         {/* dashboard tiles in a gold family, lighting up in turn */}
         <rect className="tile t1" x="3.5" y="3.5" width="8" height="8" rx="2.4" fill="#F5DFA0" />
-        <rect className="tile t2" x="12.5" y="3.5" width="8" height="8" rx="2.4" fill="#E4B84C" />
-        <rect className="tile t3" x="3.5" y="12.5" width="8" height="8" rx="2.4" fill="#E4B84C" />
+        <rect className="tile t2" x="12.5" y="3.5" width="8" height="8" rx="2.4" fill="#6c8cff" />
+        <rect className="tile t3" x="3.5" y="12.5" width="8" height="8" rx="2.4" fill="#6c8cff" />
         <rect className="tile t4" x="12.5" y="12.5" width="8" height="8" rx="2.4" fill="#C99B33" />
       </svg>
     </span>
@@ -299,7 +299,7 @@ export function BookIcon({ size = 18, className = '' }: P) {
     <span className={className} style={wrap(size)} aria-hidden>
       <svg viewBox="0 0 24 24" width={size} height={size} overflow="visible">
         {/* filled open cookbook; right page flips */}
-        <path d="M12 5.2 C 10 3.8 7 3.8 4 4.2 V18.2 C 7 17.8 10 17.8 12 19.2 Z" fill="#E4B84C" />
+        <path d="M12 5.2 C 10 3.8 7 3.8 4 4.2 V18.2 C 7 17.8 10 17.8 12 19.2 Z" fill="#6c8cff" />
         <path d="M12 5.2 C 14 3.8 17 3.8 20 4.2 V18.2 C 17 17.8 14 17.8 12 19.2 Z" fill="#C99B33" />
         <path className="page" d="M12 5.2 C 14 3.8 17 3.8 20 4.2 V18.2 C 17 17.8 14 17.8 12 19.2 Z" fill="#F5DFA0" />
         <rect x="11.4" y="4.6" width="1.2" height="14.6" rx=".6" fill="#8A6A1B" opacity=".6" />
@@ -369,7 +369,7 @@ export function MartiniIcon({ size = 18, className = '' }: P) {
           <path d="M8.2 19.6 a3.8 1.4 0 0 1 7.6 0 Z" fill="#F472B6" />
           {/* olive on a pick */}
           <g className="olive">
-            <line x1="14.8" y1="3.2" x2="12.6" y2="7.6" stroke="#E4B84C" strokeWidth="1" strokeLinecap="round" />
+            <line x1="14.8" y1="3.2" x2="12.6" y2="7.6" stroke="#6c8cff" strokeWidth="1" strokeLinecap="round" />
             <circle cx="13.2" cy="6.4" r="1.5" fill="#4ADE80" />
             <circle cx="13.2" cy="6.4" r=".55" fill="#166534" />
           </g>
@@ -385,9 +385,9 @@ export function KeyTurnIcon({ size = 18, className = '' }: P) {
       <svg viewBox="0 0 24 24" width={size} height={size} overflow="visible">
         {/* filled key that turns in place */}
         <g className="keyturn">
-          <circle cx="8.4" cy="8.4" r="5" fill="#E4B84C" />
+          <circle cx="8.4" cy="8.4" r="5" fill="#6c8cff" />
           <circle cx="8.4" cy="8.4" r="2" fill="#1C2740" />
-          <path d="M11.6 11.6 L19.6 19.6 v1.6 h-2.6 v-2 h-2 v-2 l-1.9-1.9 Z" fill="#E4B84C" />
+          <path d="M11.6 11.6 L19.6 19.6 v1.6 h-2.6 v-2 h-2 v-2 l-1.9-1.9 Z" fill="#6c8cff" />
           <circle cx="7" cy="7" r="1.1" fill="#F5DFA0" opacity=".9" />
         </g>
       </svg>
@@ -403,7 +403,7 @@ export function StorefrontIcon({ size = 18, className = '' }: P) {
         <path d="M5 11.5 h14 v7.6 a1.4 1.4 0 0 1-1.4 1.4 H6.4 A1.4 1.4 0 0 1 5 19.1 Z" fill="#C99B33" />
         <path d="M9.8 20.5 v-4.6 a1 1 0 0 1 1-1 h2.4 a1 1 0 0 1 1 1 v4.6 Z" fill="#F5DFA0" />
         <g className="awning">
-          <path d="M3 8.2 L5 3.8 h14 l2 4.4 a2.25 2.25 0 0 1-4.5 0 a2.25 2.25 0 0 1-4.5 0 a2.25 2.25 0 0 1-4.5 0 A2.25 2.25 0 0 1 3 8.2 Z" fill="#E4B84C" />
+          <path d="M3 8.2 L5 3.8 h14 l2 4.4 a2.25 2.25 0 0 1-4.5 0 a2.25 2.25 0 0 1-4.5 0 a2.25 2.25 0 0 1-4.5 0 A2.25 2.25 0 0 1 3 8.2 Z" fill="#6c8cff" />
           <path d="M7.5 8.2 a2.25 2.25 0 0 0 4.5 0 L11.3 3.8 h-2.6 Z" fill="#F5DFA0" />
           <path d="M16.5 8.2 a2.25 2.25 0 0 0 4.5 0 L19 3.8 h-2.6 Z" fill="#F5DFA0" />
         </g>
