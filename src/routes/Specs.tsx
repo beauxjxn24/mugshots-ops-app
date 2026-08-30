@@ -614,6 +614,19 @@ function SpecCard({
           {/* A prep card's other half: not what goes in it, but what it goes
               into. Read straight off the line builds, so it can never drift. */}
           <UsedIn name={spec.name} className="mt-3 border-t border-black/5 pt-3" />
+          {/* Where the spec is written down. Worth a line on the card because
+              "where did this come from?" otherwise costs a search of every PDF,
+              photo and email — and the answer is sometimes that no company
+              document exists and this card is the only copy. */}
+          <div className="mt-3 border-t border-black/5 pt-3 text-[11px] text-muted">
+            {spec.doc ? (
+              <>
+                <span className="font-semibold uppercase tracking-wide">Source</span> · {spec.doc}
+              </>
+            ) : (
+              <span className="text-muted/70">Source not recorded</span>
+            )}
+          </div>
           <div className="mt-3 border-t border-black/5 pt-3">
             {archived ? (
               <button

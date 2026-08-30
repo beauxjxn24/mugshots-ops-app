@@ -6,6 +6,8 @@ import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
 import { getCatalog, getFlags } from '../lib/catalog'
 import { saveDoc, openDoc } from '../lib/docs'
+import { SPECS, groups } from '../lib/specs'
+import type { Spec } from '../lib/types'
 
 interface DocLink { id: string; name: string; kind: 'link' | 'file'; url?: string; docId?: string }
 const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
@@ -13,8 +15,12 @@ const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).
 type Phase = 'Opening' | 'Closing' | 'Weekly'
 type SidworkData = Record<Role, Record<string, Section[]>>
 
-const SHEETS = ['Opening checklist', 'Closing checklist', 'Weekly checklist', 'Sidework', 'Inventory count'] as const
+const SHEETS = ['Opening checklist', 'Closing checklist', 'Weekly checklist', 'Sidework', 'Inventory count', 'Prep card'] as const
 type Sheet = (typeof SHEETS)[number]
+
+/** Every company prep sheet opens with these two, without exception — so a card
+ *  printed from here has to as well, or it reads as a different document. */
+const HYGIENE = ['Wash hands thoroughly', 'Sanitize prep area']
 
 /**
  * Printables (handoff spec) — clean black-and-white sheets straight from your
@@ -31,6 +37,9 @@ export function Printables() {
     Weekly: [],
   })
   const [sidework] = usePersistentState<SidworkData>('sidework:data', SIDEWORK)
+  // Salad mix is the reason this sheet exists, so it is what opens.
+  const [specName, setSpecName] = useState('Salad Mix')
+  const spec = SPECS.find((s) => s.name === specName) ?? SPECS[0]
 
   return (
       <Page
@@ -77,20 +86,35 @@ export function Printables() {
               ))}
             </select>
           )}
+          {sheet === 'Prep card' && (
+            <select
+              value={specName}
+              onChange={(e) => setSpecName(e.target.value)}
+              className="min-w-0 max-w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-brand"
+            >
+              {groups().map((g) => (
+                <optgroup key={g} label={g}>
+                  {SPECS.filter((s) => s.g === g).map((s) => (
+                    <option key={s.name}>{s.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* The sheet itself — plain, ink-friendly */}
         <Card className="p-6 print:border-0 print:p-0 print:shadow-none">
           <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
             <div>
-              <div className="font-display text-xl font-semibold text-ink">
-                {sheet === 'Sidework' ? `${role} Sidework` : sheet}
+              <div className="font-display text-xl font-semibold uppercase text-ink">
+                {sheet === 'Sidework' ? `${role} Sidework` : sheet === 'Prep card' ? spec.name : sheet}
               </div>
               <div className="text-xs text-muted">{location}</div>
             </div>
             <div className="text-right text-xs text-muted">
               <div>Date: {today()}</div>
-              <div className="mt-1">Completed by: ____________</div>
+              <div className="mt-1">{sheet === 'Prep card' ? 'Prepped by' : 'Completed by'}: ____________</div>
             </div>
           </div>
 
@@ -99,6 +123,7 @@ export function Printables() {
           )}
           {sheet === 'Sidework' && <SideworkSheet role={role} data={sidework} />}
           {sheet === 'Inventory count' && <InventorySheet />}
+          {sheet === 'Prep card' && <PrepCardSheet spec={spec} />}
         </Card>
             </Page>
   )
@@ -224,6 +249,82 @@ function SideworkSheet({ role, data }: { role: Role; data: SidworkData }) {
           ))}
         </div>
       ))}
+    </div>
+  )
+}
+
+/**
+ * A spec card in the company's own prep-sheet layout — the storage/yields/shelf
+ * strip, an ingredients table, then numbered procedures.
+ *
+ * Built because salad mix has no prep sheet and never has: it sits on both line
+ * checks, feeds nine builds, and the only written copy of the recipe is the card
+ * in this app. Rather than making that one card a special case, any card can now
+ * be printed as the sheet it should always have had.
+ */
+function PrepCardSheet({ spec }: { spec: Spec }) {
+  // Hygiene leads on prep, not on a build sheet — a cook plating a burger is
+  // already on the line, and printing "wash hands" above a build reads as filler.
+  const steps = spec.g === 'Prep' ? [...HYGIENE, ...spec.steps] : spec.steps
+  const meta: [string, string][] = [
+    ['Storage', spec.storage],
+    ['Yields', spec.yields],
+    ['Shelf life', spec.shelf],
+  ]
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-3 border-b border-black/10 pb-3">
+        {meta.map(([k, v]) => (
+          <div key={k}>
+            <div className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{k}</div>
+            <div className="text-sm font-semibold text-ink">{v || '—'}</div>
+          </div>
+        ))}
+      </div>
+
+      {spec.off && (
+        <div className="border-l-2 border-ink/40 pl-3 text-[13px] text-ink">
+          <span className="font-bold">Off the menu.</span> {spec.off}
+        </div>
+      )}
+
+      <div className="break-inside-avoid">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2 border-ink text-left text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <th className="py-1.5">Ingredients</th>
+              <th className="w-40 py-1.5">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spec.ing.map(([n, qty], i) => (
+              <tr key={i} className="border-b border-black/10">
+                <td className="py-2 text-ink">{n}</td>
+                <td className="py-2 font-semibold text-ink">{qty}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="break-inside-avoid">
+        <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">Procedures</div>
+        <ol className="space-y-1.5">
+          {steps.map((s, i) => (
+            <li key={i} className="flex gap-2.5 text-[13px] leading-snug text-ink">
+              <span className="shrink-0 font-semibold text-muted">{i + 1})</span>
+              {s}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Where the spec is written down. On most cards this names a company
+          document; on salad mix it says plainly that no such document exists,
+          which is the fact a manager needs when the card is questioned. */}
+      <div className="border-t border-black/10 pt-2 text-[10px] text-muted">
+        {spec.doc ? `Source: ${spec.doc}` : 'Source not recorded'}
+      </div>
     </div>
   )
 }

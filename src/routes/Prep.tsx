@@ -102,7 +102,7 @@ const RETIRED_PREP = ['Pico De Gallo', 'Pico de Gallo']
  * anything in the seed and missing from a device might have been taken off on
  * purpose — re-adding all of those would undo a manager's own housekeeping.
  */
-const ADDED_PREP = ['Blackened Shrimp']
+const ADDED_PREP = ['Blackened Shrimp', 'Salad Mix']
 
 /** First-run classification (owner spec): brined chicken / queso meat /
  *  sliced jals were tests; LTO items get their own box; the originals are
@@ -248,9 +248,14 @@ export function Prep() {
    * name can only be an older seed, never somebody's deliberate change. Items
    * added by hand aren't in the seed and aren't touched. From here on the
    * pencil owns it, and this never runs again.
+   *
+   * The version moves on when a row is added or retired, so those two passes do
+   * run again — they're idempotent, and a device that already took the spec
+   * overwrite at v4 must not take it a second time now that the pencil owns it.
    */
   useEffect(() => {
-    if (specsVer >= 4) return
+    if (specsVer >= 5) return
+    const takeSpecs = specsVer < 4
     const seed = new Map((PREP_SEED as PrepItem[]).map((s) => [s.name, s]))
     setItems((is) => {
       const kept = is
@@ -260,6 +265,7 @@ export function Prep() {
         // the seed is usually one the store added on purpose.
         .filter((x) => !RETIRED_PREP.some((r) => r.toLowerCase() === x.name.trim().toLowerCase()))
         .map((x) => {
+          if (!takeSpecs) return x
           const s = seed.get(x.name)
           if (!s || (x.spec === s.spec && x.unit === s.unit)) return x
           return { ...x, spec: s.spec, unit: s.unit }
@@ -279,7 +285,7 @@ export function Prep() {
       }
       return out
     })
-    setSpecsVer(4)
+    setSpecsVer(5)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

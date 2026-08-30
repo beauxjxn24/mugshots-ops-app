@@ -168,6 +168,20 @@
     ]
   },
   {
+    "name": "Salad Mix",
+    "spec": "Plastic ice bags · 3 bags per batch",
+    "unit": "bags",
+    "pars": [
+      6.0,
+      6.0,
+      6.0,
+      6.0,
+      9.0,
+      12.0,
+      6.0
+    ]
+  },
+  {
     "name": "Rotel",
     "spec": "Amber 1/6 pan",
     "unit": "pans",

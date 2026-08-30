@@ -46,6 +46,19 @@ export interface Spec {
    */
   usedIn?: string[]
   /**
+   * Where this spec is written down — the company document it appears in, or
+   * how it was confirmed when no such document exists.
+   *
+   * Added after "where did the Salad Mix card come from?" took a scan of every
+   * PDF, photo and email to answer. The answer turned out to be worth keeping:
+   * salad mix is on both line checks and feeds nine builds, and no company prep
+   * sheet for it has ever existed — the recipe lived in the GM's head until it
+   * was read back to him. A card with no `doc` is not a suspect card; it means
+   * nobody has recorded where it came from yet, which is a question worth being
+   * able to ask rather than one worth guessing at.
+   */
+  doc?: string
+  /**
    * Which limited-time run this build belongs to — "Fall 2024", "SmashBurger",
    * "Colony Classic".
    *
