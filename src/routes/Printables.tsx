@@ -80,12 +80,34 @@ export function Printables() {
     return () => window.removeEventListener('afterprint', done)
   }, [])
 
-  /** A shipped PDF prints from a hidden frame; if the browser won't print a
-   *  plugin document that way, open it and let them print from the viewer. */
+  /**
+   * Print a shipped PDF from an off-screen frame.
+   *
+   * The frame must be RENDERED, not `display: none`. A hidden iframe never
+   * lays its document out, so Chrome had nothing to print and sent a blank
+   * page — which is exactly what came out of the printer. It lives off the
+   * left edge at a real page size instead (see the element at the bottom).
+   *
+   * The load has to finish before print() or the same blank page comes back,
+   * and a PDF that never loads has to end up somewhere the person can still
+   * use it, so a slow or blocked frame falls back to opening the file.
+   */
   const printPdf = (href: string) => {
     const el = frame.current
-    if (!el) return
+    // iOS and Safari don't reliably print a PDF out of a frame — sometimes
+    // nothing happens, sometimes a blank sheet. On a tablet the document
+    // opens in the viewer instead, where Share → Print is one tap. Worse by
+    // one tap, and it cannot silently print nothing.
+    const ua = navigator.userAgent
+    const shaky = /iPad|iPhone|iPod/.test(ua) || (/Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua))
+    if (!el || shaky) return window.open(href, '_blank', 'noopener')
+    let done = false
+    const fallback = window.setTimeout(() => {
+      if (!done) window.open(href, '_blank', 'noopener')
+    }, 4000)
     el.onload = () => {
+      done = true
+      window.clearTimeout(fallback)
       try {
         el.contentWindow?.focus()
         el.contentWindow?.print()
@@ -93,6 +115,14 @@ export function Printables() {
         window.open(href, '_blank', 'noopener')
       }
     }
+    el.onerror = () => {
+      done = true
+      window.clearTimeout(fallback)
+      window.open(href, '_blank', 'noopener')
+    }
+    // Re-assigning the same src doesn't reload, so a second tap on the same
+    // document would do nothing at all.
+    el.src = ''
     el.src = href
   }
 
@@ -245,7 +275,19 @@ export function Printables() {
       )}
 
       {/* The frame a shipped PDF prints from. */}
-      <iframe ref={frame} title="Printing" aria-hidden="true" className="hidden" />
+      {/* The frame a shipped PDF prints from. Off-screen, NOT display:none —
+          a hidden iframe never lays out, so there is nothing for the browser
+          to print and the job comes out blank. Given a real page's worth of
+          space so the PDF actually renders inside it, then pushed off the
+          left edge where nobody sees it. print:hidden keeps it out of the
+          parent's own print job. */}
+      <iframe
+        ref={frame}
+        title="Printing"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="pointer-events-none fixed -left-[9999px] top-0 h-[1123px] w-[794px] border-0 opacity-0 print:hidden"
+      />
     </Page>
   )
 }
