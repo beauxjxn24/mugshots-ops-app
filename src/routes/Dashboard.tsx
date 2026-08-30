@@ -205,7 +205,7 @@ export function Dashboard() {
                   dot={cater.dot}
                   className={cater.urgent ? 'tile-nudge' : cater.soon ? 'tile-ring' : ''}
                   to={cater.to}
-                  icon={<PartyPopper size={15} />}
+                  icon={<PartyPopper size={13} />}
                   value={cater.value}
                   label={cater.label}
                   sub={cater.sub}
@@ -221,7 +221,7 @@ export function Dashboard() {
                 <KpiTile
                   compact
                   to={dueToday.length === 1 ? `/ordering?vendor=${encodeURIComponent(dueToday[0].vendor)}` : '/ordering'}
-                  icon={<PackageOpen size={15} />}
+                  icon={<PackageOpen size={13} />}
                   value={String(dueToday.length)}
                   label={dueToday.length === 1 ? 'Order to place' : 'Orders to place'}
                   sub={dueToday.length ? vendorList(dueToday) : 'nothing to place'}
@@ -229,7 +229,7 @@ export function Dashboard() {
                 <KpiTile
                   compact
                   to="/invoices"
-                  icon={<Truck size={15} />}
+                  icon={<Truck size={13} />}
                   value={String(arrivingToday.length)}
                   label={arrivingToday.length === 1 ? 'Order to receive' : 'Orders to receive'}
                   sub={arrivingToday.length ? vendorList(arrivingToday) : 'no deliveries'}
@@ -444,21 +444,21 @@ export function Dashboard() {
               dot={cater.dot}
               className={cater.urgent ? 'tile-nudge' : cater.soon ? 'tile-ring' : ''}
               to={cater.to}
-              icon={<PartyPopper size={18} />}
+              icon={<PartyPopper size={13} />}
               value={cater.value}
               label={cater.label}
               sub={cater.sub}
             />
             <KpiTile
               to={dueToday.length === 1 ? `/ordering?vendor=${encodeURIComponent(dueToday[0].vendor)}` : '/ordering'}
-              icon={<PackageOpen size={18} />}
+              icon={<PackageOpen size={13} />}
               value={String(dueToday.length)}
               label={dueToday.length === 1 ? 'Order to place' : 'Orders to place'}
               sub={dueToday.length ? vendorList(dueToday) : 'nothing to place'}
             />
             <KpiTile
               to="/invoices"
-              icon={<Truck size={18} />}
+              icon={<Truck size={13} />}
               value={String(arrivingToday.length)}
               label={arrivingToday.length === 1 ? 'Order to receive' : 'Orders to receive'}
               sub={arrivingToday.length ? vendorList(arrivingToday) : 'no deliveries'}
@@ -944,10 +944,17 @@ function KpiTile({
     <Card
       className={`h-full p-4 ${to ? 'transition-shadow hover:shadow-md hover:ring-1 hover:ring-brand/30' : ''} ${className}`}
     >
-      <div className="mb-2 grid size-9 place-items-center rounded-xl bg-brand/10 text-brand">{icon}</div>
-      <div className="font-display text-2xl font-semibold text-brand">{value}</div>
-      <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
-      {sub && <div className="text-xs text-muted">{sub}</div>}
+      {/* The number leads. This used to open with a 36px tinted rounded box
+          holding a picture of a truck, above the words "orders to receive" —
+          decoration standing in front of the only thing on the tile anyone
+          reads. The glyph still helps you pick the right tile out of a row of
+          three, so it stays, small and muted, beside the label it belongs to. */}
+      <div className="font-display text-3xl font-semibold tabular-nums text-brand">{value}</div>
+      <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+        <span className="shrink-0 opacity-70">{icon}</span>
+        {label}
+      </div>
+      {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}
     </Card>
   )
   return to ? (

@@ -28,41 +28,11 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
-import type { ComponentType } from 'react'
-import {
-  FlameIcon,
-  SparkleIcon,
-  MoonZIcon,
-  ClockIcon,
-  BarsIcon,
-  MartiniIcon,
-  PopperIcon,
-  CheckBoxIcon,
-  ChefIcon,
-  BoxIcon,
-  ScanDocIcon,
-  GraphIcon,
-  PieSpinIcon,
-  CoinIcon,
-  BoltIcon,
-  PlugIcon,
-  GridIcon,
-  ReceiptIcon,
-  BookIcon,
-  StackIcon,
-  WalletIcon,
-  PeopleIcon,
-  StorefrontIcon,
-  KeyTurnIcon,
-} from '../components/icons/AnimatedIcons'
 
 export interface NavItem {
   to: string
   label: string
   icon: LucideIcon
-  color: string
-  /** Optional custom animated icon, rendered instead of `icon`. */
-  anim?: ComponentType<{ size?: number; className?: string }>
   /** CSS class for the always-on motion applied to a plain Lucide icon. */
   idle?: string
   /** Shown to hourly staff in the focused "My Shift" experience. */
@@ -78,7 +48,7 @@ export interface NavSection {
 export const NAV: NavSection[] = [
   {
     title: '',
-    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, color: '#E4B84C', anim: GridIcon }],
+    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }],
   },
   {
     // Its own area, a single row near the top of the rail, rather than ninth
@@ -88,46 +58,46 @@ export const NAV: NavSection[] = [
     title: 'Imports',
     areaIcon: ScanLine,
     items: [
-      { to: '/imports', label: 'Imports', icon: ScanLine, color: '#38BDF8', anim: ScanDocIcon },
+      { to: '/imports', label: 'Imports', icon: ScanLine },
     ],
   },
   {
     title: 'Daily Ops',
     areaIcon: ChefHat,
     items: [
-      { to: '/catering', label: 'Catering', icon: PartyPopper, color: '#E0559B', anim: PopperIcon },
-      { to: '/nightly', label: 'Nightly Numbers', icon: Moon, color: '#818CF8', anim: MoonZIcon },
+      { to: '/catering', label: 'Catering', icon: PartyPopper },
+      { to: '/nightly', label: 'Nightly Numbers', icon: Moon },
       // Managers only. The open/close/weekly checklists are a manager's walk of
       // the building; an hourly's version of the same duties is their sidework,
       // which they already have. Two lists of duties under My Tasks just left
       // them guessing which one was theirs.
-      { to: '/checklists', label: 'Checklists', icon: ListChecks, color: '#34D399', anim: CheckBoxIcon },
-      { to: '/sidework', label: 'Sidework', icon: Sparkles, color: '#2DD4BF', anim: SparkleIcon, staff: true },
-      { to: '/tipshare', label: 'Tipshare', icon: Banknote, color: '#4ADE80', anim: CoinIcon },
+      { to: '/checklists', label: 'Checklists', icon: ListChecks },
+      { to: '/sidework', label: 'Sidework', icon: Sparkles, staff: true },
+      { to: '/tipshare', label: 'Tipshare', icon: Banknote },
       // Staff see this too — prep IS the shift for a cook, and it was the one
       // daily task missing from their menu. The screen itself is read-only for
       // them: counts editable, pars and setup are not.
-      { to: '/prep', label: 'Prep', icon: ChefHat, color: '#FB7185', anim: ChefIcon, staff: true },
-      { to: '/ordering', label: 'Ordering', icon: PackageOpen, color: '#F0A94C', anim: BoxIcon },
-      { to: '/invoices', label: 'Invoices', icon: ReceiptText, color: '#A78BFA', anim: ReceiptIcon },
-      { to: '/petty', label: 'Petty Cash', icon: Wallet, color: '#4ADE80', anim: WalletIcon },
-      { to: '/maintenance', label: 'Maintenance', icon: Wrench, color: '#94A3B8', anim: BoltIcon },
-      { to: '/printables', label: 'Printables', icon: ReceiptText, color: '#94A3B8', anim: ScanDocIcon },
+      { to: '/prep', label: 'Prep', icon: ChefHat, staff: true },
+      { to: '/ordering', label: 'Ordering', icon: PackageOpen },
+      { to: '/invoices', label: 'Invoices', icon: ReceiptText },
+      { to: '/petty', label: 'Petty Cash', icon: Wallet },
+      { to: '/maintenance', label: 'Maintenance', icon: Wrench },
+      { to: '/printables', label: 'Printables', icon: ReceiptText },
     ],
   },
   {
     title: 'Training',
     areaIcon: BookOpen,
     items: [
-      { to: '/forecast', label: 'Forecast', icon: TrendingUp, color: '#4ADE80', anim: GraphIcon },
-      { to: '/mix', label: 'Product Mix', icon: PieChart, color: '#FB923C', anim: PieSpinIcon },
-      { to: '/lto', label: 'LTO', icon: Flame, color: '#F87171', anim: FlameIcon },
-      { to: '/specs', label: 'Specs & Recipes', icon: BookOpen, color: '#E4B84C', anim: BookIcon, staff: true },
+      { to: '/forecast', label: 'Forecast', icon: TrendingUp },
+      { to: '/mix', label: 'Product Mix', icon: PieChart },
+      { to: '/lto', label: 'LTO', icon: Flame },
+      { to: '/specs', label: 'Specs & Recipes', icon: BookOpen, staff: true },
       // staff: a bartender is hourly. Locking the drink builds to managers made
       // the one person who builds these all night the one person who couldn't
       // look one up. Same reasoning as Specs & Recipes above — it's reference,
       // not a control.
-      { to: '/drinks', label: 'Signature Drinks', icon: Martini, color: '#F472B6', anim: MartiniIcon, staff: true },
+      { to: '/drinks', label: 'Signature Drinks', icon: Martini, staff: true },
       // staff: the people being certified against these are the ones who need
       // to read them. A study guide in a manager's folder trains nobody.
       //
@@ -135,7 +105,7 @@ export const NAV: NavSection[] = [
       // five staff items, and a bartender needs the drink builds every shift
       // while a certification packet gets read during onboarding — so Drinks
       // keeps the tab and this lives in the menu.
-      { to: '/training', label: 'Training resources', icon: GraduationCap, color: '#38BDF8', staff: true },
+      { to: '/training', label: 'Training resources', icon: GraduationCap, staff: true },
     ],
   },
   {
@@ -146,7 +116,7 @@ export const NAV: NavSection[] = [
     title: 'Item Catalog',
     areaIcon: Boxes,
     items: [
-      { to: '/catalog', label: 'Item Catalog', icon: Boxes, color: '#2DD4BF', anim: StackIcon },
+      { to: '/catalog', label: 'Item Catalog', icon: Boxes },
     ],
   },
   {
@@ -155,15 +125,15 @@ export const NAV: NavSection[] = [
     title: 'Management',
     areaIcon: BarChart3,
     items: [
-      { to: '/period', label: 'Period Review', icon: BarChart3, color: '#A78BFA', anim: BarsIcon },
-      { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays, color: '#60A5FA', anim: ClockIcon },
+      { to: '/period', label: 'Period Review', icon: BarChart3 },
+      { to: '/schedule', label: 'Mgr Schedule', icon: CalendarDays },
       // Managers only — the staff experience is the shift in front of you, and
       // the posted schedule was the one thing in My Tasks that wasn't a task.
-      { to: '/posted', label: 'Posted schedule', icon: CalendarCheck, color: '#34D399', anim: ClockIcon },
-      { to: '/staff', label: 'Staff', icon: Users, color: '#F472B6', anim: PeopleIcon },
-      { to: '/users', label: 'Users & PINs', icon: Users, color: '#E4B84C', anim: KeyTurnIcon },
-      { to: '/stores', label: 'Stores & Concepts', icon: Store, color: '#E4B84C', anim: StorefrontIcon },
-      { to: '/connections', label: 'Connections', icon: Cable, color: '#38BDF8', anim: PlugIcon },
+      { to: '/posted', label: 'Posted schedule', icon: CalendarCheck },
+      { to: '/staff', label: 'Staff', icon: Users },
+      { to: '/users', label: 'Users & PINs', icon: Users },
+      { to: '/stores', label: 'Stores & Concepts', icon: Store },
+      { to: '/connections', label: 'Connections', icon: Cable },
     ],
   },
 ]
@@ -176,14 +146,14 @@ export const NAV_FLAT = NAV.flatMap((s) => s.items)
 export const ROLLUP_SECTIONS: NavSection[] = [
   {
     title: '',
-    items: [{ to: '/', label: 'Combined roll-up', icon: BarChart3, color: '#E4B84C', anim: GridIcon }],
+    items: [{ to: '/', label: 'Combined roll-up', icon: BarChart3 }],
   },
   {
     title: 'Company',
     areaIcon: Store,
     items: [
-      { to: '/stores', label: 'Stores & Concepts', icon: Store, color: '#E4B84C', anim: StorefrontIcon },
-      { to: '/connections', label: 'Connections', icon: Cable, color: '#38BDF8', anim: PlugIcon },
+      { to: '/stores', label: 'Stores & Concepts', icon: Store },
+      { to: '/connections', label: 'Connections', icon: Cable },
     ],
   },
 ]
@@ -193,7 +163,6 @@ export const SHIFT_ITEM: NavItem = {
   to: '/shift',
   label: 'My Shift',
   icon: ClipboardList,
-  color: '#E4B84C',
 }
 const STAFF_ITEMS = NAV_FLAT.filter((i) => i.staff)
 export const STAFF_SECTIONS: NavSection[] = [

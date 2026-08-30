@@ -160,22 +160,14 @@ export function AppShell() {
                   }`
                 }
               >
-                {i.anim ? (
-                  <i.anim size={20} className="shrink-0" />
-                ) : (
-                  <i.icon
-                    size={18}
-                    strokeWidth={2.2}
-                    className={`nav-ico ${i.idle ?? 'idle-pulse'}`}
-                    /* No per-item colour. Every destination carried its own
-                       hue — fifteen across the nav, gold and pink and teal and
-                       rose — so the bar read as a paint chart, and the one
-                       thing colour should have been saying (which of these am
-                       I on) was the one thing it could not say. The icon
-                       inherits now: muted at rest, accent when active. */
-                    style={{ animationDelay: `${(idx * 0.1).toFixed(2)}s` }}
-                  />
-                )}
+                {/* One icon set, one stroke weight, no colour and no motion.
+                    Twenty-nine of these destinations used to render a bespoke
+                    two-tone SVG with an idle pulse on it, and the rest a plain
+                    Lucide glyph — so the bar was two icon sets at once, each
+                    in its own hue, several of them twitching. An icon in a nav
+                    is there to be recognised, not looked at. It inherits the
+                    link's colour: muted at rest, accent when active. */}
+                <i.icon size={18} strokeWidth={2} className="shrink-0" />
                 {i.label.split(' ')[0]}
               </NavLink>
             ),
