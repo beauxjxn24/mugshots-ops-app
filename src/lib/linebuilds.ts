@@ -413,6 +413,19 @@ const PREP_FEEDS: Record<string, string[]> = {
   'Sriracha Ranch': ['Ranch Dressing'],
 }
 
+/**
+ * The cards a card is made from — the same table, read forwards.
+ *
+ * Printables uses it to make a sheet stand on its own. "Prep iceberg + romaine
+ * per their cards" is fine on a tablet, where those cards are one tap away, and
+ * useless on a laminate in someone's hand. Rather than writing the chopper spec
+ * out twice and letting the two copies drift, the print pulls the feeder methods
+ * in from their own cards at render time.
+ */
+export function builtFrom(name: string): string[] {
+  return PREP_FEEDS[name] ?? []
+}
+
 export function usageIndex(prepNames: string[] = [], stockNames: string[] = []): Map<string, string[]> {
   const idx = new Map<string, string[]>()
   for (const b of allBuilds())

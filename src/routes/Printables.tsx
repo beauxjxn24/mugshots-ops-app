@@ -7,6 +7,7 @@ import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/side
 import { getCatalog, getFlags } from '../lib/catalog'
 import { saveDoc, openDoc } from '../lib/docs'
 import { SPECS, groups } from '../lib/specs'
+import { builtFrom } from '../lib/linebuilds'
 import type { Spec } from '../lib/types'
 
 interface DocLink { id: string; name: string; kind: 'link' | 'file'; url?: string; docId?: string }
@@ -104,7 +105,16 @@ export function Printables() {
         </div>
 
         {/* The sheet itself — plain, ink-friendly */}
-        <Card className="p-6 print:border-0 print:p-0 print:shadow-none">
+        {/* A prep card is going on a wall, so on paper it owns the page: the
+            same .prep-print contract the count sheet uses drops the app's page
+            header and strips the dark shell's backgrounds. .prep-card then puts
+            the ink back — this sheet is built from the app's own text classes,
+            and text-ink is #e9eef6, which prints as nothing. */}
+        <Card
+          className={`p-6 print:border-0 print:p-0 print:shadow-none ${
+            sheet === 'Prep card' ? 'prep-print prep-card' : ''
+          }`}
+        >
           <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
             <div>
               <div className="font-display text-xl font-semibold uppercase text-ink">
@@ -266,6 +276,9 @@ function PrepCardSheet({ spec }: { spec: Spec }) {
   // Hygiene leads on prep, not on a build sheet — a cook plating a burger is
   // already on the line, and printing "wash hands" above a build reads as filler.
   const steps = spec.g === 'Prep' ? [...HYGIENE, ...spec.steps] : spec.steps
+  const feeders = builtFrom(spec.name)
+    .map((n) => SPECS.find((s) => s.name === n))
+    .filter((s): s is Spec => Boolean(s?.steps.length))
   const meta: [string, string][] = [
     ['Storage', spec.storage],
     ['Yields', spec.yields],
@@ -276,7 +289,7 @@ function PrepCardSheet({ spec }: { spec: Spec }) {
       <div className="grid grid-cols-3 gap-3 border-b border-black/10 pb-3">
         {meta.map(([k, v]) => (
           <div key={k}>
-            <div className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{k}</div>
+            <div className="text-[10px] font-extrabold uppercase tracking-wide pc-dim text-muted">{k}</div>
             <div className="text-sm font-semibold text-ink">{v || '—'}</div>
           </div>
         ))}
@@ -291,7 +304,7 @@ function PrepCardSheet({ spec }: { spec: Spec }) {
       <div className="break-inside-avoid">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b-2 border-ink text-left text-[10px] font-extrabold uppercase tracking-wide text-muted">
+            <tr className="border-b-2 border-ink text-left text-[10px] font-extrabold uppercase tracking-wide pc-dim text-muted">
               <th className="py-1.5">Ingredients</th>
               <th className="w-40 py-1.5">Amount</th>
             </tr>
@@ -308,21 +321,45 @@ function PrepCardSheet({ spec }: { spec: Spec }) {
       </div>
 
       <div className="break-inside-avoid">
-        <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">Procedures</div>
+        <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wide pc-dim text-muted">Procedures</div>
         <ol className="space-y-1.5">
           {steps.map((s, i) => (
             <li key={i} className="flex gap-2.5 text-[13px] leading-snug text-ink">
-              <span className="shrink-0 font-semibold text-muted">{i + 1})</span>
+              <span className="shrink-0 font-semibold pc-dim text-muted">{i + 1})</span>
               {s}
             </li>
           ))}
         </ol>
       </div>
 
+      {/* Sub-recipes, pulled from their own cards rather than written out twice.
+          A cook holding this sheet can work from it alone; the chopper spec
+          still lives in exactly one place, so it can't drift between the two. */}
+      {feeders.map((f) => (
+        <div key={f.name} className="break-inside-avoid border-t border-black/10 pt-3">
+          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+            <div className="text-[10px] font-extrabold uppercase tracking-wide pc-dim text-muted">
+              Made from · {f.name}
+            </div>
+            <div className="text-[10px] pc-dim text-muted">
+              {[f.yields && `Yields ${f.yields}`, f.shelf, f.storage].filter(Boolean).join(' · ')}
+            </div>
+          </div>
+          <ol className="space-y-1">
+            {f.steps.map((s, i) => (
+              <li key={i} className="flex gap-2.5 text-[12px] leading-snug text-ink/90">
+                <span className="shrink-0 font-semibold pc-dim text-muted">{i + 1})</span>
+                {s}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+
       {/* Where the spec is written down. On most cards this names a company
           document; on salad mix it says plainly that no such document exists,
           which is the fact a manager needs when the card is questioned. */}
-      <div className="border-t border-black/10 pt-2 text-[10px] text-muted">
+      <div className="border-t border-black/10 pt-2 text-[10px] pc-dim text-muted">
         {spec.doc ? `Source: ${spec.doc}` : 'Source not recorded'}
       </div>
     </div>

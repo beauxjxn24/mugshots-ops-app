@@ -802,6 +802,21 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   body:has(.prep-print) *:not(.pp):not(.pp *) { background: transparent !important; box-shadow: none !important; }
   @page { margin: 11mm; }
 
+  /* ---- A spec card printed as a prep sheet (Printables → Prep card) -------
+     Unlike the count sheet, this one is ordinary app markup — Tailwind's
+     text-ink and text-muted — because the same component has to look right on
+     a tablet. Both are dark-theme inks: text-ink is #e9eef6, so the sheet came
+     off the printer effectively blank. Restated here rather than rebuilt as
+     print-only markup, which would put the same card in two places. */
+  .prep-card, .prep-card * { color: #000 !important; }
+  /* Labels and the provenance footnote stay grey, the way the company sheets
+     set them. Two classes beat one, so these win over the blanket black. */
+  .prep-card .pc-dim, .prep-card .pc-dim * { color: #555 !important; }
+  /* Rules are drawn with black/10 against a dark surface — on paper that is
+     either invisible or, with backgrounds on, a box. Make them hairlines. */
+  .prep-card [class*="border-"] { border-color: #ccc !important; }
+  .prep-card .border-b-2 { border-bottom-color: #000 !important; }
+
   /* ---- The prep sheet itself (rendered by PrintSheet.tsx) ----------------
      Print-only, so its styles live here with the rest of the paper rules.
      Metrics are tuned so two columns of ~29 rows land on one US-Letter page;
