@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
-import { Printer, Paperclip, Link2, ExternalLink, FileText, X, Plus } from 'lucide-react'
-import { Page, Card } from '../components/ui'
+import { useEffect, useRef, useState } from 'react'
+import { Printer, Paperclip, Link2, ExternalLink, X, Plus } from 'lucide-react'
+import { Page } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
@@ -38,133 +38,215 @@ type Sheet = (typeof SHEETS)[number]
 const HYGIENE = ['Wash hands thoroughly', 'Sanitize prep area']
 
 /**
- * Printables (handoff spec) — clean black-and-white sheets straight from your
- * live data: checklists, sidework duty sheets by role, and a blank inventory
- * count sheet. Pick a sheet, hit print.
+ * Printables — a list of names. Tap one and it prints.
+ *
+ * This was a chip rail, a live preview and an attach-a-file panel, in that
+ * order, before you reached anything printable: three decisions to get one
+ * piece of paper. Nobody comes here to browse. They come because they need the
+ * closing checklist in their hand, so the page is the list of things you can
+ * hold, and tapping a name opens the print dialog.
+ *
+ * The two kinds behave the same from the outside. A generated sheet is built
+ * from live data and rendered off-screen to print; a shipped PDF is printed
+ * from a hidden frame. Neither shows you a preview first, because a preview is
+ * a thing to look at and this page is a thing to use.
  */
 export function Printables() {
   const { location } = useCurrentNames()
-  const [sheet, setSheet] = useState<Sheet>('Opening checklist')
-  const [role, setRole] = useState<Role>('Server')
   const [checkData] = usePersistentState<Record<Phase, string[]>>('checklists:data', {
     Opening: [],
     Closing: [],
     Weekly: [],
   })
   const [sidework] = usePersistentState<SidworkData>('sidework:data', SIDEWORK)
-  // Salad mix is the reason this sheet exists, so it is what opens.
   const [specName, setSpecName] = useState('Salad Mix')
   const spec = SPECS.find((s) => s.name === specName) ?? SPECS[0]
 
-  return (
-      <Page
-        title="Printables"
-        subtitle="Print-ready sheets from your live data"
-        right={
-          <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white print:hidden"
-          >
-            <Printer size={15} /> Print
-          </button>
-        }
-        width="narrow"
-        flush
-        className="space-y-4"
-      >
-        {/* Your real Mugshots documents — link or attach the actual files */}
-        <Documents />
+  /** Which sheet is rendered for printing right now, if any. */
+  const [job, setJob] = useState<{ sheet: Sheet; role: Role } | null>(null)
+  const frame = useRef<HTMLIFrameElement>(null)
 
-        <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted print:hidden">
-          Generate a sheet from live data
-        </div>
-        <div className="flex flex-wrap gap-2 print:hidden">
-          {SHEETS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSheet(s)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                sheet === s ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white text-muted hover:border-brand/40'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-          {sheet === 'Sidework' && (
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-brand"
-            >
-              {ROLES.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
-          )}
-          {sheet === 'Prep card' && (
+  // Render, then print. One frame's wait, because print() reads the DOM as it
+  // stands and React has not committed the sheet at the moment of the click.
+  useEffect(() => {
+    if (!job) return
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
+    return () => cancelAnimationFrame(id)
+  }, [job])
+  // Clear once the dialog closes, so the next tap re-renders and prints again.
+  useEffect(() => {
+    const done = () => setJob(null)
+    window.addEventListener('afterprint', done)
+    return () => window.removeEventListener('afterprint', done)
+  }, [])
+
+  /** A shipped PDF prints from a hidden frame; if the browser won't print a
+   *  plugin document that way, open it and let them print from the viewer. */
+  const printPdf = (href: string) => {
+    const el = frame.current
+    if (!el) return
+    el.onload = () => {
+      try {
+        el.contentWindow?.focus()
+        el.contentWindow?.print()
+      } catch {
+        window.open(href, '_blank', 'noopener')
+      }
+    }
+    el.src = href
+  }
+
+  type Row = { key: string; name: string; note: string; go: () => void; pick?: React.ReactNode }
+  /* Grouped, because one flat list put eight sidework rows in the middle of it
+     and buried everything else. The headings aren't controls — nothing to
+     open, nothing to choose — they just let your eye skip to the right third
+     of the list. */
+  const groupsOfRows: Array<{ title: string; rows: Row[] }> = [
+    {
+      title: 'Checklists',
+      rows: (['Opening checklist', 'Closing checklist', 'Weekly checklist'] as const).map((sh) => ({
+        key: sh,
+        name: sh,
+        note: `${(checkData[sh.replace(' checklist', '') as Phase] ?? []).length} tasks`,
+        go: () => setJob({ sheet: sh, role: 'Server' }),
+      })),
+    },
+    {
+      // A name per role rather than one row plus a control you have to operate
+      // first — you know whose sheet you want before you get here.
+      title: 'Sidework',
+      rows: ROLES.map((r) => ({
+        key: `sw-${r}`,
+        name: `${r} sidework`,
+        note: 'duties by shift',
+        go: () => setJob({ sheet: 'Sidework', role: r }),
+      })),
+    },
+    {
+      title: 'Ordering & counts',
+      rows: [
+        {
+          key: 'produce',
+          name: 'Produce order guide',
+          note: 'with the count grid',
+          go: () => setJob({ sheet: 'Produce order guide', role: 'Server' }),
+        },
+        {
+          key: 'inventory',
+          name: 'Inventory count sheet',
+          note: 'blank, from your catalog',
+          go: () => setJob({ sheet: 'Inventory count', role: 'Server' }),
+        },
+      ],
+    },
+    {
+      title: 'Recipes',
+      rows: [
+        {
+          key: 'prep',
+          name: `Prep card — ${spec.name}`,
+          note: 'pick a card, then print',
+          go: () => setJob({ sheet: 'Prep card', role: 'Server' }),
+          // The one row that can't be a fixed name: there are 183 cards.
+          pick: (
             <select
               value={specName}
+              onClick={(e) => e.stopPropagation()}
               onChange={(e) => setSpecName(e.target.value)}
-              className="min-w-0 max-w-full rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-brand"
+              aria-label="Which prep card"
+              className="max-w-[9rem] rounded-lg border border-black/10 bg-white px-2 py-1 text-xs font-semibold text-ink outline-none focus:border-brand"
             >
               {groups().map((g) => (
                 <optgroup key={g} label={g}>
-                  {SPECS.filter((s) => s.g === g).map((s) => (
-                    <option key={s.name}>{s.name}</option>
+                  {SPECS.filter((x) => x.g === g).map((x) => (
+                    <option key={x.name}>{x.name}</option>
                   ))}
                 </optgroup>
               ))}
             </select>
-          )}
-        </div>
+          ),
+        },
+      ],
+    },
+    {
+      title: 'Documents',
+      rows: BUILTIN_DOCS.map((d) => ({
+        key: d.href,
+        name: d.name,
+        note: d.note,
+        go: () => printPdf(`${import.meta.env.BASE_URL}${d.href}`),
+      })),
+    },
+  ]
 
-        {/* The sheet's own handle. There is a Print button at the top of the
-            page, but by the time you have picked a sheet and looked at it your
-            eye is down here, and a document you are about to take should say
-            so where it is. */}
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-            Ready to print · {sheet === 'Sidework' ? `${role} sidework` : sheet}
-          </span>
-          <button
-            onClick={() => window.print()}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white"
-          >
-            <Printer size={13} /> Print this sheet
-          </button>
-        </div>
+  const active = job ?? { sheet: 'Opening checklist' as Sheet, role: 'Server' as Role }
 
-        {/* The sheet renders as paper — white, black ink, locked — on the
-            tablet as well as on the printer. It was an app card in the dark
-            theme, which read as a live table you could tap into and change,
-            and printed the app's near-white text onto white paper. Every
-            sheet takes the same treatment now rather than the two I happened
-            to build: .prep-print gives it the page, .sheet-paper the ink. */}
-        <Card className="p-6 print:border-0 print:p-0 print:shadow-none prep-print sheet-paper">
-          {sheet !== 'Produce order guide' && (
-          <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
-            <div>
-              <div className="font-display text-xl font-semibold uppercase text-ink">
-                {sheet === 'Sidework' ? `${role} Sidework` : sheet === 'Prep card' ? spec.name : sheet}
-              </div>
-              <div className="text-xs text-muted">{location}</div>
+  return (
+    <Page title="Printables" subtitle={`Tap a name to print it · ${location}`} width="narrow" flush className="space-y-5">
+      <div className="overflow-hidden rounded-2xl border border-black/10 bg-white print:hidden">
+        {groupsOfRows.map((g, gi) => (
+          <div key={g.title}>
+            <div
+              className={`bg-black/[0.04] px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted ${
+                gi ? 'border-t border-black/10' : ''
+              }`}
+            >
+              {g.title}
             </div>
-            <div className="text-right text-xs text-muted">
-              <div>Date: {today()}</div>
-              <div className="mt-1">{sheet === 'Prep card' ? 'Prepped by' : 'Completed by'}: ____________</div>
-            </div>
+            {g.rows.map((r) => (
+              <button
+                key={r.key}
+                onClick={r.go}
+                className="flex w-full items-center gap-3 border-t border-black/5 px-4 py-3 text-left transition-colors hover:bg-brand/[0.06]"
+              >
+                <Printer size={15} className="shrink-0 text-muted" />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{r.name}</span>
+                {r.pick}
+                <span className="hidden shrink-0 text-[11px] text-muted sm:block">{r.note}</span>
+              </button>
+            ))}
           </div>
-          )}
+        ))}
+      </div>
 
-          {sheet.endsWith('checklist') && (
-            <CheckSheet tasks={checkData[sheet.replace(' checklist', '') as Phase] ?? []} />
+      {/* Yours, and out of the way until you want it. */}
+      <Documents />
+
+      {/* Rendered only while printing — never on screen, so there is no preview
+          to mistake for something you can edit. */}
+      {job && (
+        <div className="hidden print:block prep-print sheet-paper">
+          {active.sheet !== 'Produce order guide' && (
+            <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
+              <div>
+                <div className="font-display text-xl font-semibold uppercase text-ink">
+                  {active.sheet === 'Sidework'
+                    ? `${active.role} Sidework`
+                    : active.sheet === 'Prep card'
+                      ? spec.name
+                      : active.sheet}
+                </div>
+                <div className="text-xs text-muted">{location}</div>
+              </div>
+              <div className="text-right text-xs text-muted">
+                <div>Date: {today()}</div>
+                <div className="mt-1">{active.sheet === 'Prep card' ? 'Prepped by' : 'Completed by'}: ____________</div>
+              </div>
+            </div>
           )}
-          {sheet === 'Sidework' && <SideworkSheet role={role} data={sidework} />}
-          {sheet === 'Inventory count' && <InventorySheet />}
-          {sheet === 'Prep card' && <PrepCardSheet spec={spec} />}
-          {sheet === 'Produce order guide' && <ProduceGuideSheet />}
-        </Card>
-            </Page>
+          {active.sheet.endsWith('checklist') && (
+            <CheckSheet tasks={checkData[active.sheet.replace(' checklist', '') as Phase] ?? []} />
+          )}
+          {active.sheet === 'Sidework' && <SideworkSheet role={active.role} data={sidework} />}
+          {active.sheet === 'Inventory count' && <InventorySheet />}
+          {active.sheet === 'Prep card' && <PrepCardSheet spec={spec} />}
+          {active.sheet === 'Produce order guide' && <ProduceGuideSheet />}
+        </div>
+      )}
+
+      {/* The frame a shipped PDF prints from. */}
+      <iframe ref={frame} title="Printing" aria-hidden="true" className="hidden" />
+    </Page>
   )
 }
 
@@ -207,35 +289,20 @@ function Documents() {
   const remove = (id: string) => setDocs(docs.filter((d) => d.id !== id))
 
   return (
-    <div className="rounded-2xl border border-signal/20 bg-gradient-to-b from-signal/[0.06] to-transparent p-4 print:hidden">
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-signal">
-        <FileText size={13} /> Your documents
-      </div>
-      <p className="mb-3 text-xs text-muted">Attach the real sheets you print, or paste a link to them. Tap one to open it and print or save.</p>
-
-      {/* Sheets that ship with the app. Anything below this lives in the
-          device's own storage and has to be attached again on every tablet;
-          these are in the build, so they are on every device and every store
-          the moment it loads, and nobody has to remember to put them there. */}
-      <div className="mb-3">
-        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted/70">Comes with the app</div>
-        <div className="space-y-1.5">
-          {BUILTIN_DOCS.map((d) => (
-            <a
-              key={d.href}
-              href={`${import.meta.env.BASE_URL}${d.href}`}
-              target="_blank"
-              rel="noopener"
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 hover:border-signal/40"
-            >
-              <FileText size={14} className="shrink-0 text-muted" />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{d.name}</span>
-              <span className="shrink-0 text-[11px] text-muted">{d.note}</span>
-              <ExternalLink size={15} className="shrink-0 text-muted" />
-            </a>
-          ))}
-        </div>
-      </div>
+    /* Shut by default. This is setup, and it was sitting above the things
+       people actually came for. The shipped PDFs moved out of here into the
+       print list, where they read as one more name you can tap. */
+    <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
+      <summary className="cursor-pointer text-sm font-bold text-ink">
+        Add your own
+        {docs.length > 0 && (
+          <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">{docs.length}</span>
+        )}
+        <span className="ml-2 text-xs font-normal text-muted">attach a file or paste a link — this device only</span>
+      </summary>
+      <p className="mb-3 mt-3 text-xs text-muted">
+        Files added here live on this device. Anything the whole company prints should ship with the app instead — send it over and it lands in the list above, on every tablet in both stores.
+      </p>
 
       {docs.length > 0 && (
         <div className="mb-3 space-y-1.5">
@@ -274,7 +341,7 @@ function Documents() {
         </button>
         <input ref={fileRef} type="file" accept="application/pdf,image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
       </div>
-    </div>
+    </details>
   )
 }
 
