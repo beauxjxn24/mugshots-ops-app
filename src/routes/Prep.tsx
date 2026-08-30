@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Printer, Pencil, Check, GripVertical, Archive, Send, Undo2, ChefHat, PartyPopper } from 'lucide-react'
+import { Printer, Pencil, Check, GripVertical, Archive, Send, Undo2, ChefHat, PartyPopper, Plus, X } from 'lucide-react'
 import { PageHeader, Card } from '../components/ui'
 import { useRole } from '../lib/role'
 import { useCurrentNames } from '../lib/scope'
@@ -167,6 +167,9 @@ export function Prep() {
   const [station, setStation] = useState('')
   const [newStation, setNewStation] = useState('')
   const [adding, setAdding] = useState({ name: '', spec: '', unit: 'pans', section: 'Recipes', station: '' })
+  // Which section's Add box is open, or null. One at a time: two open boxes
+  // sharing one `adding` would type into both and add to whichever you clicked.
+  const [addOpen, setAddOpen] = useState<string | null>(null)
   const [addMsg, setAddMsg] = useState('')
   // Editing an item itself -- its name, its pan and portion spec, its unit.
   // None of that could be changed once an item existed: a portion that moved
@@ -494,7 +497,9 @@ export function Prep() {
     setEditing(null)
   }
 
-  const addItem = () => {
+  /** Add into `sec` — the section whose own Add box you opened, so the choice
+   *  is made by where you're standing rather than by a dropdown. */
+  const addItem = (sec: string) => {
     const name = adding.name.trim()
     if (!name) {
       setAddMsg('Type an item name first.')
@@ -521,7 +526,7 @@ export function Prep() {
         spec: adding.spec.trim(),
         unit: adding.unit || 'pans',
         pars: [1, 1, 1, 1, 1, 1, 1],
-        section: adding.section,
+        section: sec,
         station: adding.station || undefined,
       },
     ])
@@ -1246,62 +1251,15 @@ export function Prep() {
           )
         })()}
 
-        {/* Add row — above the sheet, so adding an item doesn't mean scrolling
-            past every section to reach the box and back again to see the result. */}
-        {canEdit && (
-        <Card className="flex flex-wrap gap-2 p-3">
-          <input
-            value={adding.name}
-            onChange={(e) => { setAdding({ ...adding, name: e.target.value }); if (addMsg) setAddMsg('') }}
-            onKeyDown={(e) => e.key === 'Enter' && addItem()}
-            placeholder="Add prep item…"
-            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-          <input
-            value={adding.spec}
-            onChange={(e) => setAdding({ ...adding, spec: e.target.value })}
-            placeholder="Pan spec (Clear 1/6 pan…)"
-            className="w-52 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-          <input
-            value={adding.unit}
-            onChange={(e) => setAdding({ ...adding, unit: e.target.value })}
-            placeholder="unit"
-            className="w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-          <select
-            value={adding.section}
-            onChange={(e) => setAdding({ ...adding, section: e.target.value })}
-            className="rounded-lg border border-black/10 bg-white px-2 py-2 text-sm outline-none focus:border-brand"
-          >
-            {SECTIONS.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-          {stations.length > 0 && (
-            <select
-              value={adding.station}
-              onChange={(e) => setAdding({ ...adding, station: e.target.value })}
-              className="rounded-lg border border-black/10 bg-white px-2 py-2 text-sm outline-none focus:border-brand"
-            >
-              <option value="">No station</option>
-              {stations.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          )}
-          <button onClick={addItem} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white">
-            Add
-          </button>
-          {addMsg && (
-            <p className={`basis-full text-xs font-semibold ${/already/i.test(addMsg) ? 'text-warn' : 'text-up'}`}>{addMsg}</p>
-          )}
-        </Card>
-        )}
+        {/* One box per section — Recipes / Test items / LTO. Each one owns its
+            own Add box; there is no longer a global add row above the sheet.
 
-        {/* One box per section — Recipes / Test items / LTO */}
+            That row made you name the section in a dropdown and then look
+            somewhere else entirely to see whether it had worked — the section
+            you were adding to and the section you were looking at were two
+            different choices, and either could be wrong. Opening the box from
+            a section header removes the question: you add where you're
+            standing, and the new row appears directly under your hands. */}
         {SECTIONS.map((sec) => {
           const rows = inSection(sec)
           return (
@@ -1317,7 +1275,7 @@ export function Prep() {
                   setDragName(null)
                   setOverName(null)
                 }}
-                className="flex items-center justify-between border-b border-brand/20 bg-brand/[0.07] px-4 py-2"
+                className="flex items-center gap-3 border-b border-brand/20 bg-brand/[0.07] px-4 py-2"
               >
                 <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600">
                   {sec} <span className="ml-1 font-semibold text-muted">{rows.length}</span>
@@ -1325,7 +1283,76 @@ export function Prep() {
                 {sec !== 'Recipes' && (
                   <span className="text-[10px] text-muted">{sec === 'LTO' ? 'limited-time builds' : 'trial recipes — park or promote'}</span>
                 )}
+                {canEdit && (
+                  <button
+                    onClick={() => {
+                      setAddOpen((o) => (o === sec ? null : sec))
+                      setAddMsg('')
+                      setAdding((a) => ({ ...a, name: '', spec: '' }))
+                    }}
+                    aria-expanded={addOpen === sec}
+                    className={`ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                      addOpen === sec ? 'bg-brand text-white' : 'text-brand-600 hover:bg-brand/10'
+                    }`}
+                  >
+                    {addOpen === sec ? <X size={12} /> : <Plus size={12} />}
+                    {addOpen === sec ? 'Close' : 'Add item'}
+                  </button>
+                )}
               </div>
+
+              {/* The Add box, inside the section it fills. No section picker —
+                  the section is wherever you opened it. */}
+              {canEdit && addOpen === sec && (
+                <div className="flex flex-wrap gap-2 border-b border-black/10 bg-black/[0.04] px-4 py-3">
+                  <input
+                    autoFocus
+                    value={adding.name}
+                    onChange={(e) => { setAdding({ ...adding, name: e.target.value }); if (addMsg) setAddMsg('') }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addItem(sec)
+                      if (e.key === 'Escape') setAddOpen(null)
+                    }}
+                    /* Section casing as written — lowercasing turns LTO into "lto". */
+                    placeholder={`Add to ${sec}…`}
+                    className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    value={adding.spec}
+                    onChange={(e) => setAdding({ ...adding, spec: e.target.value })}
+                    onKeyDown={(e) => e.key === 'Enter' && addItem(sec)}
+                    placeholder="Pan spec (Clear 1/6 pan…)"
+                    className="w-52 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    value={adding.unit}
+                    onChange={(e) => setAdding({ ...adding, unit: e.target.value })}
+                    onKeyDown={(e) => e.key === 'Enter' && addItem(sec)}
+                    placeholder="unit"
+                    className="w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+                  />
+                  {stations.length > 0 && (
+                    <select
+                      value={adding.station}
+                      onChange={(e) => setAdding({ ...adding, station: e.target.value })}
+                      className="rounded-lg border border-black/10 bg-white px-2 py-2 text-sm outline-none focus:border-brand"
+                    >
+                      <option value="">No station</option>
+                      {stations.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button onClick={() => addItem(sec)} className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white">
+                    Add
+                  </button>
+                  {addMsg && (
+                    <p className={`basis-full text-xs font-semibold ${/already/i.test(addMsg) ? 'text-warn' : 'text-up'}`}>{addMsg}</p>
+                  )}
+                </div>
+              )}
               {/* Counting a cooler is one pass down the column, so Enter goes to
                   the same box on the next row rather than nowhere. */}
               <div className="min-w-[960px]" {...entryColumn}>
@@ -1342,7 +1369,7 @@ export function Prep() {
                   <span className="text-right text-brand-600">Prep this</span>
                 </div>
                 {rows.length === 0 ? (
-                  <p className="px-4 py-4 text-center text-xs text-muted">{canEdit ? 'Nothing here — drag an item in, or add one below.' : 'Nothing on the prep list here today.'}</p>
+                  <p className="px-4 py-4 text-center text-xs text-muted">{canEdit ? 'Nothing here — drag an item in, or use Add item above.' : 'Nothing on the prep list here today.'}</p>
                 ) : (
                   rows.map(renderRow)
                 )}
