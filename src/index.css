@@ -870,6 +870,18 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      Set here rather than !important so the deliberate greys and the station
      colours still win. */
   .prep-print { display: block !important; padding: 0 5mm !important; overflow: visible !important; color: #000; }
+  /* ---- Print-only paper ink, for something that is a dark app screen on
+     the tablet and a sheet on the printer — the open checklist window.
+     .sheet-paper does this too, but it applies on screen as well, which is
+     right for Printables' previews and wrong for a window that should stay
+     in the app's theme until the moment it hits paper. The app's text-ink is
+     #e9eaee; on white that is 1.20:1, and this is the third place it has
+     printed a blank page. Pair it with .prep-print, which takes the page. */
+  .print-paper, .print-paper * { color: #000 !important; }
+  .print-paper { background: #fff !important; }
+  .print-paper .pc-dim, .print-paper .pc-dim * { color: #555 !important; }
+  .print-paper [class*="border-"] { border-color: #ccc !important; }
+  .print-paper .border-b-2 { border-bottom-color: #000 !important; }
   .prep-print * { overflow-wrap: anywhere; }
   .prep-print .whitespace-nowrap { overflow-wrap: normal; }
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }

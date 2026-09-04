@@ -123,92 +123,54 @@ export function Catering() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-            <div className="min-w-[900px]">
-            {/* Column headers.
-                Fixed tracks add up to more than the pane at some widths, so
-                the labels were spilling out of their cells and printing over
-                each other — "EVGNESTS", "MEDEPOSIT". Same answer as the prep
-                sheet: give the table a floor and let it scroll inside the
-                card rather than squeezing columns to nothing. */}
-            <div className="hidden grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_96px] gap-2 border-b border-black/5 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted lg:grid">
-              <span className="truncate">When</span>
-              <span className="truncate">Event &amp; contact</span>
-              <span className="truncate">Guests</span>
-              <span className="truncate">Menu / notes</span>
-              <span className="truncate">Deposit</span>
-              <span className="truncate">Est.</span>
-              <span className="truncate">Status</span>
-              <span />
-            </div>
-
-            {active.length === 0 ? null : (
-              active.map((b) => {
-                const st = STATUS_META[b.status ?? 'confirmed']
-                const focused = b.id === focusId
-                return (
-                  <div key={b.id} id={`booking-${b.id}`} className="border-b border-black/5 last:border-0">
-                  <div
-                    onClick={() => setOpenId(b.id)}
-                    title="Open the order — the caterer’s sheet, ready to print"
-                    className={`grid cursor-pointer grid-cols-[1fr_auto] items-center gap-2 px-4 py-3 hover:bg-black/[0.02] lg:grid-cols-[110px_minmax(0,2fr)_44px_minmax(0,1.4fr)_92px_64px_110px_96px] ${
-                      focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''
-                    }`}
-                  >
-                    <div className="text-sm">
-                      <div className="font-bold text-ink">{fmtDate(b.date)}</div>
-                      <div className="text-[11px] text-muted">{b.time ? fmtTime(b.time) : '—'}</div>
-                      {b.date < today() && (
-                        <span className="mt-0.5 inline-block rounded bg-down/10 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-down">
-                          past · close it out
-                        </span>
-                      )}
+            {/* One row per booking, two lines, and the buttons never leave the
+                screen. This was an eight-column grid pinned to 900px wide inside
+                a card that is about 660 — so Status, Open and Complete lived past
+                the right edge and you scrolled sideways to reach the one thing
+                you came to do. There is nothing a ninth column would say that the
+                second line can't; the width was for the columns' sake. */}
+            {active.map((b) => {
+              const st = STATUS_META[b.status ?? 'confirmed']
+              const focused = b.id === focusId
+              const past = b.date < today()
+              return (
+                <div
+                  key={b.id}
+                  id={`booking-${b.id}`}
+                  onClick={() => setOpenId(b.id)}
+                  title="Open the order — the caterer’s sheet, ready to print"
+                  className={`cursor-pointer border-b border-black/5 px-4 py-3 last:border-0 hover:bg-black/[0.02] ${
+                    focused ? 'bg-brand/5 ring-2 ring-inset ring-brand' : ''
+                  }`}
+                >
+                  {/* Line one: when, who, how many — and the way in and the way out. */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-[76px] shrink-0">
+                      <div className="text-sm font-bold leading-tight text-ink">{fmtDate(b.date)}</div>
+                      <div className="font-mono text-[11px] text-muted">{b.time ? fmtTime(b.time) : '—'}</div>
                     </div>
-                    <div className="min-w-0">
-                      <span className="mb-0.5 inline-block rounded bg-brand/15 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-brand-600">
-                        {b.source === 'ezCater' ? 'ezCater' : 'Catering'}
-                      </span>
+                    <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold text-ink">{b.event}</div>
+                      <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
+                        <span className="font-semibold text-brand-600">{b.source === 'ezCater' ? 'ezCater' : 'Catering'}</span>
+                        {b.guests ? <span>{b.guests} guests</span> : null}
+                        {b.estimate ? <span className="font-mono">{money(b.estimate)}</span> : null}
+                        {past && (
+                          <span className="rounded bg-down/10 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-down">
+                            past · close it out
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm font-bold text-ink">{b.guests || '—'}</div>
-                    <div className="min-w-0 text-xs text-muted">
-                      <span className="line-clamp-2">{b.notes || '—'}</span>
-                    </div>
-                    <div className="text-xs">
-                      {b.deposit ? (
-                        <span className={b.depositPaid ? 'font-semibold text-up' : 'text-muted'}>
-                          {money(b.deposit)} {b.depositPaid ? '✓' : 'pending'}
-                        </span>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </div>
-                    <div className="text-sm font-bold text-ink">{b.estimate ? money(b.estimate) : '—'}</div>
-                    <div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          cycleStatus(b.id)
-                        }}
-                        title="Click to change status"
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${st.cls}`}
-                      >
-                        {st.label}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {/* The row opens the order too, but a tablet never shows
-                          a title tooltip — so the way in is also a button. */}
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           setOpenId(b.id)
                         }}
-                        aria-label={`Open the order for ${b.event}`}
-                        title="Open the order"
-                        className="grid size-7 place-items-center rounded-lg bg-brand/10 text-brand-600 hover:bg-brand hover:text-white"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand/10 px-2.5 py-1.5 text-xs font-bold text-brand-600 hover:bg-brand hover:text-white"
                       >
-                        <FileText size={14} />
+                        <FileText size={13} /> <span className="hidden sm:inline">Order</span>
                       </button>
                       <button
                         onClick={(e) => {
@@ -216,10 +178,9 @@ export function Catering() {
                           complete(b.id)
                         }}
                         aria-label={`Mark ${b.event} complete`}
-                        title="Mark complete"
-                        className="grid size-7 place-items-center rounded-lg bg-up/10 text-up hover:bg-up hover:text-white"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-up/10 px-2.5 py-1.5 text-xs font-bold text-up hover:bg-up hover:text-white"
                       >
-                        <Check size={14} />
+                        <Check size={13} /> <span className="hidden sm:inline">Complete</span>
                       </button>
                       <button
                         onClick={async (e) => {
@@ -228,18 +189,36 @@ export function Catering() {
                             setBookings((bs) => bs.filter((x) => x.id !== b.id))
                         }}
                         aria-label="Delete booking"
-                        className="grid size-7 place-items-center rounded-lg bg-down/10 text-down hover:bg-down hover:text-white"
+                        className="grid size-8 place-items-center rounded-lg text-muted/60 hover:bg-down/10 hover:text-down"
                       >
                         ✕
                       </button>
                     </div>
                   </div>
-                  </div>
-                )
-              })
-            )}
-            </div>
-            </div>
+                  {/* Line two: the state of the money and the notes, only when there are any. */}
+                  {(b.notes || b.deposit || b.status) && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-[88px] text-xs">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          cycleStatus(b.id)
+                        }}
+                        title="Click to change status"
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${st.cls}`}
+                      >
+                        {st.label}
+                      </button>
+                      {b.deposit ? (
+                        <span className={b.depositPaid ? 'font-semibold text-up' : 'text-muted'}>
+                          deposit {money(b.deposit)} {b.depositPaid ? '✓' : 'pending'}
+                        </span>
+                      ) : null}
+                      {b.notes ? <span className="min-w-0 truncate text-muted">{b.notes}</span> : null}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
             {active.length === 0 && (
               <p className="px-4 py-8 text-center text-sm text-muted">
                 No upcoming bookings — add one, or drop an ezCater order on Imports and it lands here.

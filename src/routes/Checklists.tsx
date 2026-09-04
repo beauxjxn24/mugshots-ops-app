@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pencil, Check, Printer, Bell } from 'lucide-react'
+import { Pencil, Check, Printer, Bell, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { confirmDelete } from '../lib/confirm'
 import { Page, Card } from '../components/ui'
@@ -62,7 +62,13 @@ function carryOverLegacy(scope: string): Record<Phase, Section[]> | null {
 export function Checklists() {
   const scope = useScopeKey()
   const [data, setData] = usePersistentState<Record<Phase, Section[]>>(SECTIONS_KEY, DEFAULTS)
-  const [phase, setPhase] = useState<Phase>('AM')
+  /* Which list is OPEN — as a window over the page, not a tab that quietly
+     swaps the content below it. Tapping "AM" used to change a list you had to
+     scroll down to find, under a reminder panel and a row of tabs that looked
+     the same before and after; Beau opened one and didn't know he had. Now the
+     list takes the screen, with its own name across the top and a Close
+     button, and there is nothing else to look at while it's open. */
+  const [open, setOpen] = useState<Phase | null>(null)
   const [editing, setEditing] = useState(false)
 
   // Carry a pre-AM install's edits over the first time this store is opened.
@@ -72,60 +78,139 @@ export function Checklists() {
     if (merged) setData(merged)
   }, [scope, setData])
 
-  // Guard against a stale/legacy shape so a bad value never blanks the page.
-  const sections = Array.isArray(data?.[phase]) ? data[phase] : DEFAULTS[phase]
+  // Escape closes; the page behind stops scrolling while the window is up.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(null)
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [open])
 
   return (
-      <Page
-        title="Checklists"
-        subtitle={`${phase} · ${CADENCE[phase]} · ${today()}`}
-        right={
-          <div className="flex items-center gap-2 print:hidden">
-            <button
-              onClick={() => setEditing((e) => !e)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
-                editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
-              }`}
-            >
-              {editing ? <Check size={13} /> : <Pencil size={12} />} {editing ? 'Done' : 'Edit'}
-            </button>
-            <button
-              onClick={() => window.print()}
-              aria-label="Print this checklist"
-              className="grid size-9 place-items-center rounded-lg border border-black/10 bg-white text-ink"
-            >
-              <Printer size={14} />
-            </button>
-          </div>
-        }
-        width="narrow"
-      >
-        <DueBanner onJump={setPhase} />
+    <>
+      <Page title="Checklists" subtitle={`Tap a list to open it · ${today()}`} width="narrow">
+        <DueBanner onJump={setOpen} />
 
-        {/* Phase toggle */}
-        <div className="grid grid-cols-4 gap-1 rounded-xl bg-black/5 p-1 print:hidden">
+        {/* Four doors, not four tabs. */}
+        <div className="grid grid-cols-2 gap-2 print:hidden sm:grid-cols-4">
           {PHASES.map((ph) => (
-            <PhaseTab key={ph} phase={ph} active={ph === phase} data={data} onPick={() => setPhase(ph)} />
+            <PhaseTab key={ph} phase={ph} data={data} onPick={() => setOpen(ph)} />
           ))}
         </div>
+      </Page>
 
-        <ChecklistBody
-          phase={phase}
-          sections={sections}
+      {open && (
+        <ChecklistWindow
+          phase={open}
+          sections={Array.isArray(data?.[open]) ? data[open] : DEFAULTS[open]}
           editing={editing}
+          setEditing={setEditing}
           setData={setData}
+          onClose={() => {
+            setEditing(false)
+            setOpen(null)
+          }}
         />
+      )}
+    </>
+  )
+}
 
-        {(phase === 'Weekly' || phase === 'Period') && (
-          <p className="text-[11px] text-muted print:hidden">
-            Find something broken on a walk? Log it as a repair on the{' '}
-            <Link to="/maintenance" className="font-semibold text-brand">
-              Maintenance
-            </Link>{' '}
-            page so it gets chased.
-          </p>
-        )}
-            </Page>
+/**
+ * One list, taking the whole screen.
+ *
+ * Its name is the biggest thing on it, the count sits beside the name, and
+ * the only way out is the button that says Close — so there is no version of
+ * opening a list that leaves you unsure whether you did.
+ */
+function ChecklistWindow({
+  phase,
+  sections,
+  editing,
+  setEditing,
+  setData,
+  onClose,
+}: {
+  phase: Phase
+  sections: Section[]
+  editing: boolean
+  setEditing: (v: boolean) => void
+  setData: React.Dispatch<React.SetStateAction<Record<Phase, Section[]>>>
+  onClose: () => void
+}) {
+  const [done] = usePersistentState<Record<string, boolean>>(`checklists:done:${phase}:${scopeFor(phase)}`, {})
+  const all = sections.flatMap((s) => s.items.map((it) => `${s.title}|${it}`))
+  const doneCount = all.filter((k) => done[k]).length
+  const due = useDue().find((d) => d.phase === phase)
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${phase} checklist`}
+      className="fixed inset-0 z-[80] flex flex-col bg-cream print:static print:block print:bg-white"
+    >
+      {/* The header stays put while the list scrolls under it. */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-navy px-4 py-3 print:hidden sm:px-6">
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-2xl font-semibold leading-tight text-ink">{phase} checklist</div>
+          <div className="text-xs text-muted">
+            <span className={all.length && doneCount === all.length ? 'font-semibold text-up' : 'font-semibold text-ink'}>
+              {doneCount} of {all.length} done
+            </span>
+            {/* whenLabel is the specific one ("resets tonight", "2 days left");
+                the cadence only repeats it in vaguer words. */}
+            {due ? <> · {whenLabel(due)}</> : <> · {CADENCE[phase]}</>}
+          </div>
+        </div>
+        <button
+          onClick={() => setEditing(!editing)}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
+            editing ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
+          }`}
+        >
+          {editing ? <Check size={13} /> : <Pencil size={12} />} {editing ? 'Done' : 'Edit'}
+        </button>
+        <button
+          onClick={() => window.print()}
+          aria-label="Print this checklist"
+          className="grid size-9 place-items-center rounded-lg border border-black/10 bg-white text-ink"
+        >
+          <Printer size={14} />
+        </button>
+        <button
+          onClick={onClose}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-bold text-white"
+        >
+          <X size={15} /> Close
+        </button>
+      </div>
+
+      <div className="prep-print print-paper min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 print:overflow-visible print:p-0">
+        <div className="mx-auto max-w-3xl space-y-3">
+          {/* Paper carries the name too — the screen header above is hidden in print. */}
+          <div className="hidden border-b-2 border-ink pb-2 print:block">
+            <div className="font-display text-xl font-semibold uppercase text-ink">{phase} checklist</div>
+            <div className="text-xs text-muted">{today()} · Completed by: ____________</div>
+          </div>
+          <ChecklistBody phase={phase} sections={sections} editing={editing} setData={setData} />
+          {(phase === 'Weekly' || phase === 'Period') && (
+            <p className="text-[11px] text-muted print:hidden">
+              Find something broken on a walk? Log it as a repair on the{' '}
+              <Link to="/maintenance" className="font-semibold text-brand">
+                Maintenance
+              </Link>{' '}
+              page so it gets chased.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -207,34 +292,27 @@ function DueBanner({ onJump }: { onJump: (p: Phase) => void }) {
   )
 }
 
-/** A toggle button that also shows that phase's live progress for its cadence. */
-function PhaseTab({
-  phase,
-  active,
-  data,
-  onPick,
-}: {
-  phase: Phase
-  active: boolean
-  data: Record<Phase, Section[]>
-  onPick: () => void
-}) {
+/** A door into one list: its name, how far along it is, when it resets. */
+function PhaseTab({ phase, data, onPick }: { phase: Phase; data: Record<Phase, Section[]>; onPick: () => void }) {
   const [done] = usePersistentState<Record<string, boolean>>(`checklists:done:${phase}:${scopeFor(phase)}`, {})
   const secs = Array.isArray(data?.[phase]) ? data[phase] : DEFAULTS[phase]
   const all = secs.flatMap((s) => s.items.map((it) => `${s.title}|${it}`))
   const doneCount = all.filter((k) => done[k]).length
   const complete = all.length > 0 && doneCount === all.length
+  const pct = all.length ? Math.round((doneCount / all.length) * 100) : 0
   return (
     <button
       onClick={onPick}
-      className={`rounded-lg px-2 py-2 text-center transition-colors ${
-        active ? 'bg-white shadow-sm' : 'hover:bg-white/50'
-      }`}
+      className="rounded-xl border border-black/10 bg-white p-4 text-left transition-colors hover:border-brand/50 hover:bg-brand/[0.06]"
     >
-      <span className={`block text-xs font-bold ${active ? 'text-ink' : 'text-muted'}`}>{phase}</span>
-      <span className={`block text-[10px] font-semibold ${complete ? 'text-up' : active ? 'text-brand-600' : 'text-muted/70'}`}>
-        {complete ? 'done ✓' : `${doneCount}/${all.length}`}
-      </span>
+      <div className="font-display text-xl font-semibold text-ink">{phase}</div>
+      <div className={`mt-0.5 text-xs font-semibold ${complete ? 'text-up' : 'text-muted'}`}>
+        {complete ? 'All done ✓' : `${doneCount} of ${all.length} done`}
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/5">
+        <div className={`h-full rounded-full ${complete ? 'bg-up' : 'bg-brand'}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-muted/70">{CADENCE[phase]} · tap to open</div>
     </button>
   )
 }

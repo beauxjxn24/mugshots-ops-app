@@ -1,13 +1,11 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { Mail, Check, FileDown } from 'lucide-react'
+import { FileDown } from 'lucide-react'
 import { periodWeek } from '../lib/forecast'
 import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
-import { useCurrentNames } from '../lib/scope'
 import { catMixSplit, type Night, type BreakdownRow } from '../lib/nightly'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { DEFAULT_USERS, type User } from '../lib/users'
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 const money2 = (n: number) => `$${(n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -48,13 +46,11 @@ export function Nightly() {
   }
   const vn = byDate.get(date) ?? null
 
-  // The only manual entry left — the counted drawer + a note. Loaded from the
-  // viewed night, editable, saved back onto it.
+  // The only manual entry on the page: the deposit actually dropped. Loaded
+  // from the viewed night, editable, saved back onto it.
   const [cash, setCash] = useState('')
-  const [notes, setNotes] = useState('')
   useEffect(() => {
     setCash(vn?.deposit ? String(Math.round(vn.deposit * 100) / 100) : '')
-    setNotes(vn?.notes ?? '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, vn?.id])
 
@@ -106,7 +102,6 @@ export function Nightly() {
     const updated: Night = {
       ...vn,
       deposit: f(cash),
-      notes: notes.trim(),
       overUnder: overUnderVal,
     }
     setLog((l) => l.map((x) => (x.date === date ? updated : x)))
@@ -251,9 +246,16 @@ export function Nightly() {
                   <div>
                     <LineRow label="Expected cash (POS)" value={expected != null ? money2(expected) : '—'} zebra />
                     <label className="flex items-center justify-between gap-3 px-4 py-2.5">
-                      <span className="text-sm font-semibold text-ink">Actual cash counted</span>
-                      <span className="w-36 shrink-0">
+                      <span className="text-sm font-semibold text-ink">Actual deposit</span>
+                      <span className="flex w-52 shrink-0 items-center gap-2">
                         <MoneyInput value={cash} onChange={setCash} allowNegative highlight />
+                        <button
+                          onClick={saveDrawer}
+                          disabled={!vn || cash === ''}
+                          className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white disabled:opacity-40"
+                        >
+                          Save
+                        </button>
                       </span>
                     </label>
                     {overUnder != null && (
@@ -272,22 +274,9 @@ export function Nightly() {
               )}
             </div>
 
-            {/* Notes + save the night */}
-            <Card className="p-4">
-              <input
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notes — weather, events, callouts, 86'd items…"
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm outline-none focus:border-brand"
-              />
-              <button onClick={saveDrawer} className="mt-3 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-white">
-                Save night ✓
-              </button>
-            </Card>
+
           </>
         )}
-
-        <NightlyLog log={log} targets={targets} initialDate={focusDate ?? undefined} />
 
         {sorted.length > 0 && (
           <Card className="overflow-hidden">
@@ -626,150 +615,11 @@ function CashCard({ n }: { n: Night }) {
   )
 }
 
-// ---- Nightly Log — the single shift-notes home; composes the manager email ----
+/* The Nightly Log used to live here — six free-text boxes and a MOD picker that
+   composed the manager's recap email. Beau: this page is for reading the
+   night's reports, not writing; the only thing anyone types here is the deposit
+   they actually dropped. Everything else on it comes off the Toast exports. */
 
-interface LogEntry {
-  mod: string
-  recap: string
-  kitchen: string
-  staffing: string
-  maintenance: string
-  comps: string
-  wins: string
-}
-const EMPTY_LOG: LogEntry = { mod: '', recap: '', kitchen: '', staffing: '', maintenance: '', comps: '', wins: '' }
-const LOG_FIELDS: Array<{ key: keyof LogEntry; label: string; ph: string }> = [
-  { key: 'recap', label: 'Shift recap', ph: 'How did the night go?' },
-  { key: 'kitchen', label: 'Kitchen', ph: '86’d items, ticket times, food notes…' },
-  { key: 'staffing', label: 'Staffing', ph: 'Callouts, cuts, who crushed it…' },
-  { key: 'maintenance', label: 'Maintenance', ph: 'Anything broken or fixed…' },
-  { key: 'comps', label: 'Comps / voids', ph: 'What was comped and why…' },
-  { key: 'wins', label: 'Wins', ph: 'Big tables, reviews, milestones…' },
-]
-
-function NightlyLog({ log, targets, initialDate }: { log: Night[]; targets: Targets; initialDate?: string }) {
-  const [entries, setEntries] = usePersistentState<Record<string, LogEntry>>('nightlog:entries', {})
-  const [sent, setSent] = usePersistentState<Record<string, { lunch?: string; dinner?: string }>>('nightlog:sent', {})
-  const [users] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
-  const [date, setDate] = useState(initialDate ?? today())
-  const { concept, location } = useCurrentNames()
-
-  const entry = entries[date] ?? EMPTY_LOG
-  const setField = (k: keyof LogEntry, v: string) =>
-    setEntries((e) => ({ ...e, [date]: { ...(e[date] ?? EMPTY_LOG), [k]: v } }))
-
-  const todaySent = sent[today()] ?? {}
-
-  const compose = async (meal: 'lunch' | 'dinner') => {
-    const n = log.find((x) => x.date === date)
-    const weekNet = log
-      .filter((x) => x.date <= date)
-      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
-      .slice(0, 7)
-      .reduce((s, x) => s + x.netSales, 0)
-    const lp = n?.laborPct ?? (n?.labor && n.netSales ? (n.labor / n.netSales) * 100 : undefined)
-
-    const lines: string[] = [
-      `${concept} · ${location} — ${meal === 'lunch' ? 'Lunch' : 'Nightly'} recap, ${fmtDate(date)}`,
-      entry.mod ? `MOD: ${entry.mod}` : '',
-      '',
-    ]
-    if (n) {
-      lines.push('— The numbers —')
-      if (n.gross != null) lines.push(`Gross: ${money2(n.gross)}`)
-      lines.push(`Net: ${money2(n.netSales)}`)
-      lines.push(`Week net (7 nights): ${money2(weekNet)}`)
-      if (n.labor != null) lines.push(`Labor: ${money2(n.labor)}${lp ? ` (${lp.toFixed(1)}% — target ≤ ${targets.laborPct}%)` : ''}`)
-      if (n.deposit > 0) lines.push(`Deposit: ${money2(n.deposit)}`)
-      if (n.overUnder != null) lines.push(`Drawer over/under: ${n.overUnder >= 0 ? '+' : ''}${money2(n.overUnder)}`)
-      lines.push('')
-    } else {
-      lines.push('(No numbers saved for this date yet — see Nightly Numbers.)', '')
-    }
-    for (const fld of LOG_FIELDS) {
-      const v = entry[fld.key].trim()
-      if (v) lines.push(`— ${fld.label} —`, v, '')
-    }
-    const body = lines.filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n')
-    const subject = `${location} ${meal === 'lunch' ? 'lunch' : 'nightly'} recap — ${fmtDate(date)}`
-
-    try {
-      await navigator.clipboard.writeText(body)
-    } catch {
-      /* clipboard unavailable — mailto still carries the body */
-    }
-    const stamp = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    setSent((s) => ({ ...s, [date]: { ...(s[date] ?? {}), [meal]: stamp } }))
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  }
-
-  return (
-    <Card className="p-4">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="text-sm font-semibold text-ink">Nightly Log</div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${todaySent.lunch ? 'bg-up/10 text-up' : 'bg-black/5 text-muted'}`}>
-          LUNCH {todaySent.lunch ? `✓ ${todaySent.lunch}` : '· due'}
-        </span>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${todaySent.dinner ? 'bg-up/10 text-up' : 'bg-black/5 text-muted'}`}>
-          DINNER {todaySent.dinner ? `✓ ${todaySent.dinner}` : '· due'}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-brand"
-          />
-          <select
-            value={entry.mod}
-            onChange={(e) => setField('mod', e.target.value)}
-            className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-brand"
-          >
-            <option value="">MOD…</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.name}>
-                {u.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {LOG_FIELDS.map((f2) => (
-          <label key={f2.key} className="block">
-            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-muted">{f2.label}</span>
-            <textarea
-              value={entry[f2.key]}
-              onChange={(e) => setField(f2.key, e.target.value)}
-              placeholder={f2.ph}
-              rows={2}
-              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-            />
-          </label>
-        ))}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          onClick={() => compose('lunch')}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-ink"
-        >
-          {todaySent.lunch ? <Check size={14} className="text-up" /> : <Mail size={14} />} Lunch email
-        </button>
-        <button
-          onClick={() => compose('dinner')}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
-        >
-          {todaySent.dinner ? <Check size={14} /> : <Mail size={14} />} Dinner email
-        </button>
-        <span className="self-center text-xs text-muted">
-          Builds the full recap with tonight's numbers, copies it, and opens your mail app.
-        </span>
-      </div>
-    </Card>
-  )
-}
-
-/** Thin category mix bar: food / beer / liquor / wine / N-A. */
 function CatBar({ n }: { n: Night }) {
   const parts = [
     { v: n.food ?? 0, c: '#E4B84C', l: 'Food' },
