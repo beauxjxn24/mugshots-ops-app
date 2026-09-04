@@ -38,12 +38,33 @@ so it isn't re-litigated later.
   only while it is the print job; always exactly 20 rows (items + spare) at 30px
   so it lands on one page with margin for any printer.
 
+### Found
+
+- **`mugshots-ops-app` is public** (`mugshots-daily-ops` is private). Exposed:
+  30 nights of 2026 sales with labor, 14 of 2025, every recipe, pars, both
+  order guides, the checklists. Not exposed: any credential — none in the tree
+  or in history. Nothing is changeable by an outsider; there is no shared
+  backend. Note the deployed bundle carries the same data regardless of repo
+  visibility; a real fix is data behind a login (Supabase, October list).
+- **US Foods invoice — where it lands.** Nothing lands until the Receiving
+  sheet's post button is pressed (locked while any line is undecided). Then:
+  the invoice on Invoices; each line into the Item Catalog under vendor US
+  Foods with case price; on-hand bumped. On Orders there is no per-vendor
+  guide — guides are per shelf — so lines appear under a **"Food & other"**
+  tab that only exists once such items do; produce-keyword lines go to the
+  Produce tab.
+
 ### Open
 
+- **Cloudflare Pages cutover + private repo** — Beau's call, made 2026-09-04.
+  Runbook in `docs/deploy-cloudflare.md`. Sequence: Cloudflare live → domain
+  → private. Both dashboard steps are Beau's (no Cloudflare credentials here;
+  GitHub token is read-only on the repo). Claude removes the GitHub Pages
+  workflow once step 2 is confirmed.
+- **Per-vendor order view** — Beau is sending the order guide he actually
+  uses; build from that rather than guessing the shape.
 - **Pars on the produce guide** are transcribed from a photo — Beau is verifying
   them. Both stores hold separate copies; correct each.
-- **US Foods invoice** — Beau imported one and wants to know where it landed and
-  whether it produced an order guide. Being traced.
 - 120 spec cards still read "source not recorded" (provenance field added
   2026-08-30). Unverified ≠ wrong; work through when there's time.
 
