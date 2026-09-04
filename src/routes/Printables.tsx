@@ -6,6 +6,7 @@ import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
 import { getCatalog, getFlags, getPars } from '../lib/catalog'
 import { getGuideSections } from '../lib/guide'
+import { SECTIONS_KEY, DEFAULTS, PHASES, type Phase, type Section as CheckSection } from '../lib/checkdue'
 import { saveDoc, openDoc } from '../lib/docs'
 import { SPECS, groups } from '../lib/specs'
 import { builtFrom } from '../lib/linebuilds'
@@ -27,10 +28,9 @@ const BUILTIN_DOCS: { name: string; note: string; href: string }[] = [
 ]
 const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
 
-type Phase = 'Opening' | 'Closing' | 'Weekly'
 type SidworkData = Record<Role, Record<string, Section[]>>
 
-const SHEETS = ['Opening checklist', 'Closing checklist', 'Weekly checklist', 'Sidework', 'Inventory count', 'Prep card', 'Produce order guide'] as const
+const SHEETS = ['AM checklist', 'PM checklist', 'Weekly checklist', 'Period checklist', 'Sidework', 'Inventory count', 'Prep card', 'Produce order guide'] as const
 type Sheet = (typeof SHEETS)[number]
 
 /** Every company prep sheet opens with these two, without exception — so a card
@@ -53,11 +53,12 @@ const HYGIENE = ['Wash hands thoroughly', 'Sanitize prep area']
  */
 export function Printables() {
   const { location } = useCurrentNames()
-  const [checkData] = usePersistentState<Record<Phase, string[]>>('checklists:data', {
-    Opening: [],
-    Closing: [],
-    Weekly: [],
-  })
+  /* The same key and defaults the Checklists screen uses. This used to read
+     'checklists:data' — Opening / Closing / Weekly, a shape nothing has written
+     in a long time — so every checklist row said "0 tasks" and printed a blank
+     page. The zero was right there on screen; I put it in the list anyway. */
+  const [rawChecks] = usePersistentState<Record<Phase, CheckSection[]>>(SECTIONS_KEY, DEFAULTS)
+  const checkSections = (ph: Phase): CheckSection[] => (Array.isArray(rawChecks?.[ph]) ? rawChecks[ph] : DEFAULTS[ph])
   const [sidework] = usePersistentState<SidworkData>('sidework:data', SIDEWORK)
   const [specName, setSpecName] = useState('Salad Mix')
   const spec = SPECS.find((s) => s.name === specName) ?? SPECS[0]
@@ -134,12 +135,15 @@ export function Printables() {
   const groupsOfRows: Array<{ title: string; rows: Row[] }> = [
     {
       title: 'Checklists',
-      rows: (['Opening checklist', 'Closing checklist', 'Weekly checklist'] as const).map((sh) => ({
-        key: sh,
-        name: sh,
-        note: `${(checkData[sh.replace(' checklist', '') as Phase] ?? []).length} tasks`,
-        go: () => setJob({ sheet: sh, role: 'Server' }),
-      })),
+      rows: PHASES.map((ph) => {
+        const n = checkSections(ph).reduce((a, sec) => a + sec.items.length, 0)
+        return {
+          key: ph,
+          name: `${ph} checklist`,
+          note: `${n} tasks`,
+          go: () => setJob({ sheet: `${ph} checklist` as Sheet, role: 'Server' }),
+        }
+      }),
     },
     {
       // A name per role rather than one row plus a control you have to operate
@@ -209,7 +213,7 @@ export function Printables() {
     },
   ]
 
-  const active = job ?? { sheet: 'Opening checklist' as Sheet, role: 'Server' as Role }
+  const active = job ?? { sheet: 'AM checklist' as Sheet, role: 'Server' as Role }
 
   return (
     <Page title="Printables" subtitle={`Tap a name to print it · ${location}`} width="narrow" flush className="space-y-5">
@@ -246,6 +250,14 @@ export function Printables() {
           to mistake for something you can edit. */}
       {job && (
         <div className="hidden print:block prep-print sheet-paper">
+          {/* The produce guide is a wide grid with fourteen write-in columns;
+              on portrait they are slivers and the rows overrun the page on any
+              printer with real margins. Landscape, and only while this is the
+              job — @page is global, so it is rendered into the document just
+              for the moment this sheet is what's printing. */}
+          {active.sheet === 'Produce order guide' && (
+            <style>{'@page { size: letter landscape; margin: 10mm; }'}</style>
+          )}
           {active.sheet !== 'Produce order guide' && (
             <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
               <div>
@@ -265,7 +277,7 @@ export function Printables() {
             </div>
           )}
           {active.sheet.endsWith('checklist') && (
-            <CheckSheet tasks={checkData[active.sheet.replace(' checklist', '') as Phase] ?? []} />
+            <SectionSheet sections={checkSections(active.sheet.replace(' checklist', '') as Phase)} />
           )}
           {active.sheet === 'Sidework' && <SideworkSheet role={active.role} data={sidework} />}
           {active.sheet === 'Inventory count' && <InventorySheet />}
@@ -387,14 +399,23 @@ function Documents() {
   )
 }
 
-function CheckSheet({ tasks }: { tasks: string[] }) {
-  if (tasks.length === 0) return <p className="text-sm text-muted">No tasks — edit the checklist on the Checklists screen.</p>
+/** A checklist on paper: each section as a band, each item with a box. */
+function SectionSheet({ sections }: { sections: CheckSection[] }) {
+  const total = sections.reduce((a, s) => a + s.items.length, 0)
+  if (total === 0) return <p className="text-sm text-muted">Nothing on this list — edit it on the Checklists screen.</p>
   return (
-    <div className="space-y-0.5">
-      {tasks.map((t, i) => (
-        <div key={i} className="flex items-center gap-3 border-b border-black/10 py-2 text-sm text-ink">
-          <span className="inline-block size-4 shrink-0 rounded border-2 border-ink/50" />
-          {t}
+    <div className="space-y-3">
+      {sections.map((sec) => (
+        <div key={sec.title} className="break-inside-avoid">
+          <div className="border-b-2 border-ink pb-1 text-[11px] font-extrabold uppercase tracking-wide text-ink">
+            {sec.title}
+          </div>
+          {sec.items.map((t, i) => (
+            <div key={i} className="flex items-start gap-3 border-b border-black/10 py-1.5 text-[13px] leading-snug text-ink">
+              <span className="mt-0.5 inline-block size-4 shrink-0 rounded border-2 border-ink/50" />
+              {t}
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -593,8 +614,11 @@ function ProduceGuideSheet() {
                 ))}
               </tr>
             ))}
-            {/* Spare lines, because a new item turns up before a new sheet does. */}
-            {Array.from({ length: 4 }, (_, i) => (
+            {/* Spare lines up to a fixed twenty rows — so a new item has somewhere
+                to go, and the sheet is the same height whether the guide has
+                twelve items or nineteen. Twenty rows is what fits one landscape
+                page with room to spare. */}
+            {Array.from({ length: Math.max(0, 20 - rows.length) }, (_, i) => (
               <tr key={`blank${i}`}>
                 {Array.from({ length: 4 + TALLY_COLS }, (_, c) => (
                   <td key={c} className={`border px-1 py-[3px] ${c < 4 ? 'border-black/60' : 'border-black/40'}`}>

@@ -924,7 +924,12 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   /* Tall rows, because the grid has to fill the page the way the paper one
      does — these are boxes somebody writes a case count into with a pen in a
      cold room, not table rows. Sized so the sheet lands on one page. */
-  .produce-guide tbody td { height: 36px; }
+  /* Landscape now (the sheet sets @page itself): 20 rows at 30px plus the
+     band and header is ~670px against ~740px of usable height, so it lands on
+     one page with margin for whatever the printer adds. break-inside on the
+     table, not just the rows — a grid that splits is two half-sheets. */
+  .produce-guide tbody td { height: 30px; }
+  .produce-guide table { break-inside: avoid; page-break-inside: avoid; }
   .produce-guide tr { page-break-inside: avoid; }
 
   /* ---- The prep sheet itself (rendered by PrintSheet.tsx) ----------------
