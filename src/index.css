@@ -870,6 +870,13 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      Set here rather than !important so the deliberate greys and the station
      colours still win. */
   .prep-print { display: block !important; padding: 0 5mm !important; overflow: visible !important; color: #000; }
+  /* The sheet is the page's width, whatever column it was rendered inside.
+     Printables centres its list in a max-w-3xl column and the print sheet
+     lives in that column — so a landscape sheet was getting a portrait
+     column's width (730px of 979px) and its product numbers wrapped in half.
+     Every element between <main> and the sheet lets go of its width and its
+     side padding; the sheet's own 5mm inset is the only margin that stays. */
+  main :has(.prep-print) { max-width: none !important; padding-left: 0 !important; padding-right: 0 !important; }
   /* ---- Print-only paper ink, for something that is a dark app screen on
      the tablet and a sheet on the printer — the open checklist window.
      .sheet-paper does this too, but it applies on screen as well, which is
@@ -931,6 +938,24 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   .produce-guide tbody td { height: 30px; }
   .produce-guide table { break-inside: avoid; page-break-inside: avoid; }
   .produce-guide tr { page-break-inside: avoid; }
+  /* The US Foods sheet is 187 lines — several pages by nature. Shorter rows,
+     the table free to run across pages, and only the ROWS refuse to split.
+     The storage-area bands print grey so a page that starts mid-freezer still
+     says where you are. */
+  .produce-guide.usf tbody td { height: 22px; }
+  .produce-guide.usf table { break-inside: auto; page-break-inside: auto; }
+  /* Sized for the full landscape width (~940px): a seven-digit product number
+     in the mono face is ~50px, a "$279.96 /ea" ~60px. The eight write-in
+     boxes share what's left. */
+  .produce-guide .pg-w-code { width: 8%; }
+  .produce-guide.usf .pg-w-name { width: 38%; }
+  .produce-guide.usf .pg-w-size { width: 14%; }
+  .produce-guide.usf .pg-w-price { width: 8%; }
+  .produce-guide.usf .pg-w-par { width: 6%; }
+  body:has(.prep-print) .produce-guide .pg-section td {
+    background: #e6e6e6 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
 
   /* ---- The prep sheet itself (rendered by PrintSheet.tsx) ----------------
      Print-only, so its styles live here with the rest of the paper rules.

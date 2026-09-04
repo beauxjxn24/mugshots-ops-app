@@ -25,14 +25,19 @@ const lum = (rgb) => {
 }
 const contrastOnWhite = (rgb) => ((1.05) / (lum(rgb) + 0.05)).toFixed(2)
 
-for (const sheet of ['Opening checklist', 'Sidework', 'Inventory count', 'Prep card', 'Produce order guide']) {
+// Row names as Printables shows them today (the checklists became AM/PM; a
+// row's button also carries its note — "34 tasks" — so match the start only).
+for (const sheet of ['AM checklist', 'Bar sidework', 'Inventory count', 'Prep card', 'Produce order guide', 'US Foods order guide']) {
   await p.emulateMedia({ media: 'screen' })
-  await p.locator('button', { hasText: new RegExp(`^${sheet}$`) }).first().click()
+  await p.locator('button', { hasText: new RegExp(`^${sheet}`) }).first().click()
   await p.waitForTimeout(500)
   await p.emulateMedia({ media: 'print' })
   await p.waitForTimeout(300)
   const r = await p.evaluate(() => {
-    const card = [...document.querySelectorAll('div')].find((d) => d.className.includes('print:shadow-none'))
+    // The print sheet is the .sheet-paper block (the old preview card with
+    // print:shadow-none is gone — Printables no longer previews).
+    const card = document.querySelector('.prep-print.sheet-paper')
+      || [...document.querySelectorAll('div')].find((d) => d.className.includes('print:shadow-none'))
     if (!card) return null
     const texts = [...card.querySelectorAll('*')].filter((e) => e.children.length === 0 && e.textContent.trim())
     const colors = {}

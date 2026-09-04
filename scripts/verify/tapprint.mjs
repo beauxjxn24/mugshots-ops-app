@@ -30,7 +30,7 @@ console.log('\nno preview on screen:', (await p.locator('.sheet-paper').count())
 console.log('attach panel is shut:', await p.evaluate(() => !document.querySelector('details')?.open))
 
 // tap a name → print fires, and the right sheet is what would go to paper
-for (const name of ['Closing checklist', 'Bar sidework', 'Produce order guide']) {
+for (const name of ['PM checklist', 'Bar sidework', 'Produce order guide', 'US Foods order guide']) {
   await p.evaluate(() => { window.__prints = 0 })
   await p.locator('button', { hasText: new RegExp(`^${name}`) }).first().click()
   await p.waitForTimeout(500)

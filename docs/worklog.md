@@ -37,6 +37,37 @@ so it isn't re-litigated later.
 - **Produce order guide — landscape, one page.** Sheet sets `@page landscape`
   only while it is the print job; always exactly 20 rows (items + spare) at 30px
   so it lands on one page with margin for any printer.
+- **US Foods order guide — per vendor, from Beau's own sheet.** Built from
+  `Pearl_2026_Sheet_to_Shelf.csv`, the US Foods export he orders from: 187
+  lines in the sheet's walk order — New Dry Storage → Walkin Cooler → Freezer →
+  Servers Line → Bar → To Go → Office — each with product number, pack, brand
+  and case price (`src/data/usfoods-guide.json`). Its own **US Foods** tab on
+  Orders: guides were per shelf, this one is per vendor (`VENDOR_GUIDES` in
+  `guide.ts`; `onShelf` now takes the vendor), so US Foods lines no longer
+  fall into "Food & other". Copy order carries the product number
+  (`2 cs · #728865 — Cup, Foam 12 Oz White`). Seeded on **both stores from
+  Pearl's file**; Flowood gets its own list the moment Beau sends that sheet.
+  Pars start at 0. Printables: "US Foods order guide" prints landscape, 8
+  pages, storage bands in grey, product number first, 8 write-in boxes a line.
+  Verified by `scripts/verify/usfoods.mjs`.
+- **Add and move on the guide** (Beau: "needs to have the ability to add
+  items and move them when i want to"). Adding on the US Foods tab was a silent
+  no-op: `addGuideItem` registered the item under category "US Foods" with no
+  vendor, and a vendor guide finds its items *by vendor*, so the new line was
+  filtered out before it ever rendered. A vendor guide's add now sets the
+  vendor and takes the product number first. Moving: the drag grip stays for a
+  mouse; the edit panel gains ▲ ▼ and a "move to section" picker for a finger
+  on a tablet, and the product number is editable there. The dashboard's US
+  Foods link opens the tab instead of filtering the liquor shelf to nothing.
+- **Print sheets were getting a portrait column's width.** Printables renders
+  the sheet inside the page's `max-w-3xl` column, so a landscape sheet had
+  730px of a 979px page and seven-digit product numbers broke in half
+  ("984281 / 5"), prices too. In print, everything between `main` and the
+  sheet now lets go of its width and side padding. The produce guide's boxes
+  got wider as a result; still one page. Re-ran fix2, produce, winprint,
+  pdfprint, inkaudit, tapprint: no regressions. (inkaudit and tapprint were
+  still looking for "Opening/Closing checklist" from before the AM/PM rename
+  and had been failing on that, not on anything real — fixed.)
 
 ### Found
 
@@ -52,7 +83,9 @@ so it isn't re-litigated later.
   Foods with case price; on-hand bumped. On Orders there is no per-vendor
   guide — guides are per shelf — so lines appear under a **"Food & other"**
   tab that only exists once such items do; produce-keyword lines go to the
-  Produce tab.
+  Produce tab. *Superseded the same day:* US Foods lines now have their own
+  tab (see the US Foods guide under Done); a received invoice's new lines
+  append to that guide's last section, drag or move them where they belong.
 
 ### Open
 
@@ -61,10 +94,14 @@ so it isn't re-litigated later.
   → private. Both dashboard steps are Beau's (no Cloudflare credentials here;
   GitHub token is read-only on the repo). Claude removes the GitHub Pages
   workflow once step 2 is confirmed.
-- **Per-vendor order view** — Beau is sending the order guide he actually
-  uses; build from that rather than guessing the shape.
-- **Pars on the produce guide** are transcribed from a photo — Beau is verifying
-  them. Both stores hold separate copies; correct each.
+- **US Foods guide on Flowood** carries Pearl's list until Beau sends Flowood's
+  sheet; then re-seed that store only (bump `guide:seeded:usfoods` there).
+- **Guide sections are fixed** — the seven storage areas from the sheet. Items
+  add and move freely; adding or renaming a storage area is not in the app.
+  Say if it's needed.
+- **Pars on the US Foods guide** are 0 until set. **Pars on the produce guide**
+  are transcribed from a photo — Beau is verifying them. Both stores hold
+  separate copies; correct each.
 - 120 spec cards still read "source not recorded" (provenance field added
   2026-08-30). Unverified ≠ wrong; work through when there's time.
 

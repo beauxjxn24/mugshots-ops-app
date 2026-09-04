@@ -18,8 +18,13 @@ needed), relative asset paths (`base: './'`), Node pinned by `.nvmrc`, and the
 
 ## 1. Connect the repo (Cloudflare dashboard, ~3 minutes)
 
-1. `dash.cloudflare.com` → **Workers & Pages** → **Create** → **Pages** →
-   **Connect to Git**.
+1. `dash.cloudflare.com` → in the left sidebar under **Build**, open
+   **Compute** (this is where "Workers & Pages" lives in the 2026 dashboard)
+   → **Create** → **Pages** → **Connect to Git**.
+
+   You will see an existing Worker called `mugshots-daily-ops` in Compute.
+   That is the old, abandoned deploy target from a different repo — leave it
+   alone, create a new Pages project, and delete the Worker after cutover.
 2. Authorise the Cloudflare GitHub app if asked. Grant it access to
    **beauxjxn24/mugshots-ops-app** (it can be limited to just that repo).
 3. Pick the repo. Build settings:

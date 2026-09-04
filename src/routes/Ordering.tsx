@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Printer, Check, GripVertical, Plus, PackageOpen } from 'lucide-react'
+import { Printer, Check, GripVertical, Plus, PackageOpen, ChevronUp, ChevronDown } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { Page, Card } from '../components/ui'
 import { entryColumn, entryField } from '../lib/nextfield'
 import { suggested, setParEntry, getReceiptLog, getParEdits, vendors } from '../lib/ordering'
-import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog } from '../lib/catalog'
+import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog, updateItem } from '../lib/catalog'
 import {
   GUIDE_SHELVES,
   seedProduceGuide,
+  seedUsFoodsGuide,
+  VENDOR_GUIDES,
+  isVendorGuide,
   type GuideShelf,
   seedLiquorGuide,
   getGuideSections,
@@ -36,6 +39,9 @@ interface Row {
   parF?: number
   /** Pack size off the order guide: 24 CT, 4/3 LB, 20 LB. */
   size?: string
+  /** The vendor's product number — the sheet prints it before the name, and
+   *  it is what you read to the rep or key into their site. */
+  code?: string
   cost?: number
   vendor: string
 }
@@ -55,6 +61,7 @@ export function Ordering() {
   // produce guide seeds for every store, each getting its own copy.
   useMemo(() => seedLiquorGuide(), [])
   useMemo(() => seedProduceGuide(), [])
+  useMemo(() => seedUsFoodsGuide(), [])
 
   const isPhone = useIsPhone()
   const priceLog = useMemo(() => getPriceLog(), [])
@@ -79,7 +86,7 @@ export function Ordering() {
     return new Map<string, Row>(
       getCatalog().map((ci) => {
         const p = pars[ci.id] ?? { par: 0, onHand: 0 }
-        return [ci.id, { id: ci.id, name: ci.name, unit: ci.unit, par: p.par, parF: p.parF, size: ci.size, onHand: p.onHand, cost: ci.cost, vendor: ci.vendor }]
+        return [ci.id, { id: ci.id, name: ci.name, unit: ci.unit, par: p.par, parF: p.parF, size: ci.size, code: ci.code, onHand: p.onHand, cost: ci.cost, vendor: ci.vendor }]
       }),
     )
   }, [tick])
@@ -88,9 +95,17 @@ export function Ordering() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const hasOther = useMemo(() => {
     const flags = getFlags()
-    return getCatalog().some((ci) => flags[ci.id] && onShelf(ci.category, 'Other'))
+    return getCatalog().some((ci) => flags[ci.id] && onShelf(ci.category, 'Other', ci.vendor))
   }, [tick])
-  const tabs: GuideShelf[] = hasOther ? [...GUIDE_SHELVES, 'Other'] : [...GUIDE_SHELVES]
+  // A vendor's tab appears once anything of theirs is on the guide — for US
+  // Foods that is the moment the seed runs, so in practice always.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const vendorTabs = useMemo(() => {
+    const flags = getFlags()
+    const cat = getCatalog()
+    return VENDOR_GUIDES.filter((v) => cat.some((ci) => flags[ci.id] && ci.vendor === v))
+  }, [tick])
+  const tabs: GuideShelf[] = [...GUIDE_SHELVES, ...vendorTabs, ...(hasOther ? (['Other'] as const) : [])]
 
   const allRows: Row[] = sections.flatMap((s) => s.ids.map((id) => byId.get(id)).filter((r): r is Row => !!r))
   const needed = allRows.filter((r) => suggested(r) > 0)
@@ -104,9 +119,12 @@ export function Ordering() {
   const askedVendor = params.get('vendor')
   useEffect(() => {
     if (!askedVendor) return
-    // Only honour a vendor that's actually due — a stale link shouldn't hide
-    // the whole guide behind a filter nothing explains.
-    if (dueToday.some((s) => s.vendor === askedVendor)) setVendorFilter(askedVendor)
+    // A vendor with a guide of their own opens on that guide — filtering the
+    // liquor shelf down to US Foods would show an empty table. Otherwise, only
+    // honour a vendor that's actually due — a stale link shouldn't hide the
+    // whole guide behind a filter nothing explains.
+    if (isVendorGuide(askedVendor)) setShelf(askedVendor)
+    else if (dueToday.some((s) => s.vendor === askedVendor)) setVendorFilter(askedVendor)
     setParams({}, { replace: true })
     // Keyed to the param, NOT to mount: this is a hash router, so arriving here
     // from a link while already on the page changes the query without
@@ -158,14 +176,14 @@ export function Ordering() {
 
   // ── click-to-edit ──
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [edit, setEdit] = useState({ name: '', unit: '', cost: '', vendor: '' })
+  const [edit, setEdit] = useState({ name: '', unit: '', cost: '', vendor: '', code: '' })
   // Which field to land the cursor on when the editor opens — click the name to
   // edit the name, click the price to edit the price.
   const [editFocus, setEditFocus] = useState<'name' | 'cost'>('name')
   const openEdit = (r: Row, focus: 'name' | 'cost' = 'name') => {
     setEditingId(r.id)
     setEditFocus(focus)
-    setEdit({ name: r.name, unit: r.unit, cost: r.cost != null ? String(r.cost) : '', vendor: r.vendor ?? '' })
+    setEdit({ name: r.name, unit: r.unit, cost: r.cost != null ? String(r.cost) : '', vendor: r.vendor ?? '', code: r.code ?? '' })
   }
   const commitEdit = () => {
     if (!editingId) return
@@ -179,11 +197,26 @@ export function Ordering() {
     const c = parseFloat(edit.cost)
     if (Number.isFinite(c) && c > 0) setItemCost(editingId, c, 'manual edit') // ties into pricing everywhere
     setItemVendor(editingId, edit.vendor)
+    // The product number is only offered on a vendor's guide — it is their
+    // number, and the sheet prints it. Clearing the box clears it.
+    if (isVendorGuide(shelf)) updateItem(editingId, { code: edit.code.replace(/^#/, '') })
     setEditingId(null)
     refresh()
   }
 
-  const [adding, setAdding] = useState<{ sec: number; name: string } | null>(null)
+  const [adding, setAdding] = useState<{ sec: number; name: string; code: string } | null>(null)
+  const commitAdd = () => {
+    if (!adding || !adding.name.trim()) return
+    addGuideItem(
+      shelf,
+      adding.sec,
+      adding.name.trim(),
+      shelf === 'Liquor' ? 'btl' : 'cs',
+      isVendorGuide(shelf) ? adding.code.replace(/^#/, '').trim() : '',
+    )
+    setAdding(null)
+    refresh()
+  }
 
   const removeFromGuide = async (r: Row) => {
     if (
@@ -213,7 +246,7 @@ export function Ordering() {
     // shownNeeded, not needed: copying while a vendor is selected should copy
     // what's on screen, not the whole shelf.
     const rows = vendor ? needed.filter((r) => ((r.vendor || '').trim() || 'Unassigned') === vendor) : shownNeeded
-    const lines = rows.map((r) => `${suggested(r)} ${r.unit} — ${r.name}`)
+    const lines = rows.map((r) => `${suggested(r)} ${r.unit}${r.code ? ` · #${r.code}` : ''} — ${r.name}`)
     const head = vendor && vendor !== 'Unassigned' ? `${shelf} order · ${vendor}` : `${shelf} order`
     const text = `${head} — ${today()}\n${lines.join('\n')}`
     try {
@@ -315,14 +348,23 @@ export function Ordering() {
             </div>
             <div className="flex flex-wrap gap-2">
               {dueToday.map((s) => {
-                const on = vendorFilter === s.vendor
+                // A vendor with their own guide is "on" when their tab is
+                // open — that tab IS the filter, so there is nothing to toggle.
+                const ownGuide = isVendorGuide(s.vendor)
+                const on = ownGuide ? shelf === s.vendor : vendorFilter === s.vendor
                 const owed = allRows.filter(
                   (r) => (r.vendor ?? '') === s.vendor && suggested(r) > 0,
                 ).length
                 return (
                   <button
                     key={s.vendor}
-                    onClick={() => setVendorFilter(on ? '' : s.vendor)}
+                    onClick={() => {
+                      if (ownGuide) {
+                        setShelf(s.vendor as GuideShelf)
+                        setVendorFilter('')
+                        setEditingId(null)
+                      } else setVendorFilter(on ? '' : s.vendor)
+                    }}
                     aria-pressed={on}
                     className={`rounded-xl border px-3 py-2 text-left transition-colors ${
                       on ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white hover:border-brand/50'
@@ -409,6 +451,9 @@ export function Ordering() {
                 onClick={() => {
                   setShelf(s)
                   setEditingId(null)
+                  // A vendor's tab is already only their items; a lingering
+                  // filter would only hide the drag grips.
+                  if (isVendorGuide(s)) setVendorFilter('')
                 }}
                 className={`rounded-lg px-3.5 py-1.5 text-xs font-bold ${
                   shelf === s ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-ink'
@@ -496,7 +541,7 @@ export function Ordering() {
             <div className={`grid ${gridCols} items-center gap-2 border-b border-black/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-muted`}>
               <span />
               <span>Item</span>
-              <span className="text-right">$ / {shelf === 'Liquor' ? 'btl' : 'case'}</span>
+              <span className="text-right">$ / {shelf === 'Liquor' ? 'btl' : isVendorGuide(shelf) ? 'unit' : 'case'}</span>
               {twoPar ? (
                 <>
                   {/* The paper sheet's two columns, kept as two. Today's is lit,
@@ -543,7 +588,7 @@ export function Ordering() {
                     {sec.title} <span className="ml-1 font-semibold text-muted">{sec.ids.length}</span>
                   </span>
                   <button
-                    onClick={() => setAdding({ sec: si, name: '' })}
+                    onClick={() => setAdding({ sec: si, name: '', code: '' })}
                     title={`Add an item to ${sec.title}`}
                     className="text-muted/60 hover:text-brand-600 print:hidden"
                   >
@@ -552,21 +597,40 @@ export function Ordering() {
                 </div>
                 {adding?.sec === si && (
                   <div className="flex gap-2 border-b border-black/5 bg-brand/[0.03] px-4 py-2 print:hidden">
+                    {/* On a vendor's guide the product number comes first, the
+                        way it reads on their sheet and their site. */}
+                    {isVendorGuide(shelf) && (
+                      <input
+                        autoFocus
+                        value={adding.code}
+                        inputMode="numeric"
+                        onChange={(e) => setAdding({ ...adding, code: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitAdd()
+                          if (e.key === 'Escape') setAdding(null)
+                        }}
+                        placeholder="product #"
+                        className="w-28 rounded-lg border border-black/10 bg-white px-3 py-1.5 font-mono text-sm outline-none focus:border-brand"
+                      />
+                    )}
                     <input
-                      autoFocus
+                      autoFocus={!isVendorGuide(shelf)}
                       value={adding.name}
-                      onChange={(e) => setAdding({ sec: si, name: e.target.value })}
+                      onChange={(e) => setAdding({ ...adding, name: e.target.value })}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && adding.name.trim()) {
-                          addGuideItem(shelf, si, adding.name.trim(), shelf === 'Liquor' ? 'btl' : 'cs')
-                          setAdding(null)
-                          refresh()
-                        }
+                        if (e.key === 'Enter') commitAdd()
                         if (e.key === 'Escape') setAdding(null)
                       }}
                       placeholder={`New ${sec.title} item — Enter to add`}
                       className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand"
                     />
+                    <button
+                      onClick={commitAdd}
+                      disabled={!adding.name.trim()}
+                      className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+                    >
+                      Add
+                    </button>
                     <button onClick={() => setAdding(null)} className="text-xs font-semibold text-muted">
                       cancel
                     </button>
@@ -620,7 +684,12 @@ export function Ordering() {
                           className="min-w-0 text-left"
                           title="Click to edit this item"
                         >
-                          <span className="block truncate text-sm font-medium text-ink group-hover:text-brand-600">{r.name}</span>
+                          <span className="block truncate text-sm font-medium text-ink group-hover:text-brand-600">
+                            {isVendorGuide(shelf) && r.code && (
+                              <span className="mr-1.5 font-mono text-[11px] font-normal text-muted">#{r.code}</span>
+                            )}
+                            {r.name}
+                          </span>
                           {r.size && <span className="block truncate font-mono text-[10px] text-muted">{r.size}</span>}
                         </button>
                         <button
@@ -641,6 +710,18 @@ export function Ordering() {
                       </div>
                       {editingId === r.id && (
                         <div className="flex flex-wrap items-end gap-2 border-b border-brand/20 bg-brand/[0.05] px-4 py-2.5 print:hidden">
+                          {isVendorGuide(shelf) && (
+                            <label className="w-28 text-[10px] font-bold uppercase text-muted">
+                              Product #
+                              <input
+                                value={edit.code}
+                                inputMode="numeric"
+                                onChange={(e) => setEdit({ ...edit, code: e.target.value })}
+                                onKeyDown={(e) => e.key === 'Enter' && commitEdit()}
+                                className="mt-0.5 w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 font-mono text-sm normal-case text-ink outline-none focus:border-brand"
+                              />
+                            </label>
+                          )}
                           <label className="min-w-0 flex-1 text-[10px] font-bold uppercase text-muted">
                             Name
                             <input
@@ -692,6 +773,54 @@ export function Ordering() {
                           <button onClick={() => void removeFromGuide(r)} className="rounded-lg border border-down/30 px-3 py-2 text-xs font-bold text-down">
                             Off guide
                           </button>
+                          {/* Moving by tap, for a finger on a tablet where the
+                              drag grip is a mouse thing: a step up or down, or
+                              straight to the end of another section. Hidden
+                              while a vendor filter is on, for the same reason
+                              the grip is — the row indexes are the filtered
+                              list's, not the guide's. */}
+                          {!vendorFilter && (
+                            <div className="flex items-end gap-1">
+                              <button
+                                onClick={() => { moveGuideItem(shelf, { sec: si, idx }, { sec: si, idx: idx - 1 }); refresh() }}
+                                disabled={idx === 0}
+                                title="Move up"
+                                aria-label="Move up"
+                                className="rounded-lg border border-black/10 bg-white p-2 text-ink disabled:opacity-30"
+                              >
+                                <ChevronUp size={14} />
+                              </button>
+                              <button
+                                onClick={() => { moveGuideItem(shelf, { sec: si, idx }, { sec: si, idx: idx + 1 }); refresh() }}
+                                disabled={idx >= sec.ids.length - 1}
+                                title="Move down"
+                                aria-label="Move down"
+                                className="rounded-lg border border-black/10 bg-white p-2 text-ink disabled:opacity-30"
+                              >
+                                <ChevronDown size={14} />
+                              </button>
+                              {sections.length > 1 && (
+                                <select
+                                  value={si}
+                                  aria-label="Move to section"
+                                  title="Move to the end of another section"
+                                  onChange={(e) => {
+                                    const to = Number(e.target.value)
+                                    if (to === si) return
+                                    moveGuideItem(shelf, { sec: si, idx }, { sec: to, idx: sections[to].ids.length })
+                                    refresh()
+                                  }}
+                                  className="rounded-lg border border-black/10 bg-white px-2 py-2 text-xs font-semibold text-ink outline-none focus:border-brand"
+                                >
+                                  {sections.map((s, i) => (
+                                    <option key={s.title + i} value={i}>
+                                      {s.title}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                          )}
                           <span className="basis-full text-[10px] text-muted">
                             Cost changes flow everywhere — catalog, price ticker, costs page. Old spellings keep matching imports.
                           </span>

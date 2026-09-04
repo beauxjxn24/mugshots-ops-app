@@ -5,9 +5,10 @@
 
 import { load, save } from './store'
 import { useScope } from './scope'
-import { getCatalog, getFlags, getPars, setPars, setOnGuide, registerItem } from './catalog'
+import { getCatalog, getFlags, getPars, setPars, setOnGuide, registerItem, updateItem, guessCategory } from './catalog'
 import LIQUOR_SEED from '../data/liquor-guide-flowood.json'
 import PRODUCE_SEED from '../data/produce-guide.json'
+import USFOODS_SEED from '../data/usfoods-guide.json'
 
 export interface GuideSection {
   title: string
@@ -15,7 +16,18 @@ export interface GuideSection {
 }
 
 export const GUIDE_SHELVES = ['Liquor', 'Beer', 'Produce'] as const
-export type GuideShelf = (typeof GUIDE_SHELVES)[number] | 'Other'
+/**
+ * Guides keyed by VENDOR rather than by shelf.
+ *
+ * A shelf guide answers "what's on the bar"; a vendor guide answers "what goes
+ * on the US Foods order" — 187 lines across dry storage, the walk-in, the
+ * freezer, the servers' line, the bar, to-go and the office, walked in that
+ * order. Beau orders from a sheet laid out exactly that way, so the guide is.
+ */
+export const VENDOR_GUIDES = ['US Foods'] as const
+export type GuideShelf = (typeof GUIDE_SHELVES)[number] | (typeof VENDOR_GUIDES)[number] | 'Other'
+export const isVendorGuide = (k: string): k is (typeof VENDOR_GUIDES)[number] =>
+  (VENDOR_GUIDES as readonly string[]).includes(k)
 
 const scoped = (k: string) => {
   const s = useScope.getState()
@@ -80,10 +92,48 @@ export function seedProduceGuide(): void {
   save(scoped('guide:seeded:produce'), 'v1')
 }
 
-/** Does this catalog item belong on the given shelf tab? */
-export function onShelf(category: string, shelf: GuideShelf): boolean {
-  if (shelf === 'Other') return !GUIDE_SHELVES.includes(category as (typeof GUIDE_SHELVES)[number])
+/** Does this catalog item belong on the given guide tab? */
+export function onShelf(category: string, shelf: GuideShelf, vendor = ''): boolean {
+  if (isVendorGuide(shelf)) return vendor === shelf
+  const shelved = GUIDE_SHELVES.includes(category as (typeof GUIDE_SHELVES)[number])
+  // "Other" is the leftovers tab. An item with a vendor guide of its own is
+  // not a leftover — it would otherwise sit on two tabs at once.
+  if (shelf === 'Other') return !shelved && !isVendorGuide(vendor)
   return category === shelf
+}
+
+/**
+ * The US Foods order guide — the vendor's own "Sheet to Shelf" export.
+ *
+ * Runs for whichever store is open; each store gets its own copy and its own
+ * pars (the sheet carries none — order = par − on hand reads 0 until pars are
+ * set). Items carry the vendor's product number, brand, pack size and case
+ * price, and the layout is the sheet's: seven storage areas in walk order.
+ * Only ever adds; an item already on the guide keeps its par and its place.
+ */
+export function seedUsFoodsGuide(): void {
+  if (load<string>(scoped('guide:seeded:usfoods'), '') === 'v1') return
+  const existing = getGuideSections('US Foods')
+  const have = new Set(existing.flatMap((s) => s.ids))
+  const byGroup = new Map<string, string[]>()
+  for (const it of USFOODS_SEED as Array<{ group: string; code: string; name: string; brand: string; size: string; price: number; uom: string; category: string }>) {
+    const ci = registerItem({
+      name: it.name,
+      unit: it.uom.toLowerCase(),
+      category: it.category,
+      vendor: 'US Foods',
+      cost: it.price,
+      code: it.code,
+      size: `${it.size}${it.brand ? ` · ${it.brand}` : ''}`,
+    })
+    setOnGuide(ci.id, true)
+    if (have.has(ci.id)) continue
+    have.add(ci.id)
+    ;(byGroup.get(it.group) ?? byGroup.set(it.group, []).get(it.group)!).push(ci.id)
+  }
+  const added: GuideSection[] = [...byGroup.entries()].map(([title, ids]) => ({ title, ids }))
+  if (added.length) save(layoutKey('US Foods'), [...existing.filter((s) => s.ids.length), ...added])
+  save(scoped('guide:seeded:usfoods'), 'v1')
 }
 
 /**
@@ -93,7 +143,7 @@ export function onShelf(category: string, shelf: GuideShelf): boolean {
  */
 export function getGuideSections(shelf: GuideShelf): GuideSection[] {
   const flags = getFlags()
-  const live = new Map(getCatalog().filter((ci) => flags[ci.id] && onShelf(ci.category, shelf)).map((ci) => [ci.id, ci]))
+  const live = new Map(getCatalog().filter((ci) => flags[ci.id] && onShelf(ci.category, shelf, ci.vendor)).map((ci) => [ci.id, ci]))
   const stored = load<GuideSection[]>(layoutKey(shelf), [])
   const seen = new Set<string>()
   const sections: GuideSection[] = stored
@@ -189,9 +239,28 @@ export function placeItemInGuide(shelf: GuideShelf, id: string, name: string): v
   setGuideSections(shelf, sections)
 }
 
-/** Register a new item straight into a specific section of a shelf's guide. */
-export function addGuideItem(shelf: GuideShelf, secIdx: number, name: string, unit = 'btl'): void {
-  const ci = registerItem({ name, unit, category: shelf === 'Other' ? 'Food' : shelf })
+/**
+ * Register a new item straight into a specific section of a shelf's guide.
+ *
+ * A vendor guide finds its items by VENDOR, not by category (see onShelf), so
+ * an item registered under category "US Foods" with no vendor would be
+ * filtered straight back out of the guide it was just added to — the add
+ * would look like it did nothing. On a vendor guide the item is theirs, it
+ * carries their product number, and its category is guessed from the name.
+ */
+export function addGuideItem(shelf: GuideShelf, secIdx: number, name: string, unit = 'btl', code = ''): void {
+  const vendorGuide = isVendorGuide(shelf)
+  const ci = registerItem(
+    vendorGuide
+      ? { name, unit, vendor: shelf, code: code || undefined, category: guessCategory(name, shelf) }
+      : { name, unit, category: shelf === 'Other' ? 'Food' : shelf },
+  )
+  // registerItem leaves an existing item's vendor and code alone. Adding it to
+  // this vendor's guide is an explicit "we get it from them now" — and the
+  // guide can't show it otherwise.
+  if (vendorGuide && (ci.vendor !== shelf || (code && ci.code !== code))) {
+    updateItem(ci.id, { vendor: shelf, ...(code ? { code } : {}) })
+  }
   setOnGuide(ci.id, true)
   const sections = getGuideSections(shelf).map((s) => ({ ...s, ids: [...s.ids] }))
   // getGuideSections may have already appended the fresh item to the last

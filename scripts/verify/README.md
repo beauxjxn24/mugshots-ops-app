@@ -24,6 +24,7 @@ Screenshots and PDFs land in `scripts/verify/out/` (ignored by git).
 | `produce.mjs` | The produce order guide seeds on both stores with the right M/F pars |
 | `addflow.mjs` | Prep list Add item opens inside its section and lands the item there |
 | `badge.mjs` | No count pill left in the rail; Checklists still reports due state |
+| `usfoods.mjs` | The US Foods guide seeds on both stores in sheet-to-shelf order with product numbers; the copy-out carries them; adding on the tab lands the item in its section with the vendor set; an item moves by tap (up, and to another section); the printed sheet is landscape, full-width, black ink, grey storage bands, nothing wrapped mid-number, ≤ 8 pages. Exits non-zero on any failure |
 
 Assumptions: Chromium at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
 an admin day-code unlock written straight to localStorage, business day rolls
