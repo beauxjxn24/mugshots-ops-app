@@ -8,7 +8,8 @@ import { useScope } from './scope'
 import { getCatalog, getFlags, getPars, setPars, setOnGuide, registerItem, updateItem, guessCategory } from './catalog'
 import LIQUOR_SEED from '../data/liquor-guide-flowood.json'
 import PRODUCE_SEED from '../data/produce-guide.json'
-import USFOODS_SEED from '../data/usfoods-guide.json'
+import USFOODS_PEARL from '../data/usfoods-guide-pearl.json'
+import USFOODS_FLOWOOD from '../data/usfoods-guide-flowood.json'
 
 export interface GuideSection {
   title: string
@@ -102,21 +103,69 @@ export function onShelf(category: string, shelf: GuideShelf, vendor = ''): boole
   return category === shelf
 }
 
+interface UsfRow {
+  group: string
+  code: string
+  name: string
+  brand: string
+  size: string
+  price: number
+  uom: string
+  category: string
+}
+
 /**
- * The US Foods order guide — the vendor's own "Sheet to Shelf" export.
+ * One US Foods "Sheet to Shelf" export per store, both from Beau on
+ * 2026-09-04. Regenerate a file with scripts/usfoods-sheet-to-json.py and bump
+ * that store's stamp: a device whose stamp doesn't match re-seeds from the
+ * sheet. (Pearl's stamp stays 'v1' — its sheet hasn't changed since the first
+ * seed and there is no reason to touch those devices.)
+ */
+const USFOODS_SHEETS: Record<string, { stamp: string; rows: UsfRow[] }> = {
+  pearl: { stamp: 'v1', rows: USFOODS_PEARL as UsfRow[] },
+  flowood: { stamp: 'flowood-v1', rows: USFOODS_FLOWOOD as UsfRow[] },
+}
+
+/**
+ * The US Foods order guide — the vendor's own "Sheet to Shelf" export, one
+ * per store.
  *
- * Runs for whichever store is open; each store gets its own copy and its own
+ * Runs for whichever store is open; each store gets its own layout and its own
  * pars (the sheet carries none — order = par − on hand reads 0 until pars are
  * set). Items carry the vendor's product number, brand, pack size and case
- * price, and the layout is the sheet's: seven storage areas in walk order.
- * Only ever adds; an item already on the guide keeps its par and its place.
+ * price, and the layout is the sheet's storage areas in walk order.
+ *
+ * Fresh device: only ever adds; an item already on the guide (say, from a
+ * received invoice) keeps its place. Stale stamp: before each store had its
+ * own sheet every store seeded from Pearl's, so a Flowood device that already
+ * opened Orders carries Pearl's list. The lines that aren't on this store's
+ * sheet come off THIS store's guide (flags are per store; the catalog entries
+ * stay — Pearl still uses them) and the layout is rebuilt from the sheet.
+ * Pars are per item per store and survive; anything added by hand that isn't
+ * on the sheet is re-hung in the last section by getGuideSections.
  */
 export function seedUsFoodsGuide(): void {
-  if (load<string>(scoped('guide:seeded:usfoods'), '') === 'v1') return
-  const existing = getGuideSections('US Foods')
+  const sheet = USFOODS_SHEETS[useScope.getState().currentLocation]
+  if (!sheet) return
+  const key = scoped('guide:seeded:usfoods')
+  const stamp = load<string>(key, '')
+  if (stamp === sheet.stamp) return
+  const stale = stamp !== ''
+  if (stale) {
+    const onSheet = new Set(sheet.rows.map((r) => r.code))
+    const foreign = new Set(
+      Object.values(USFOODS_SHEETS)
+        .flatMap((s) => s.rows.map((r) => r.code))
+        .filter((c) => !onSheet.has(c)),
+    )
+    for (const ci of getCatalog()) {
+      if (ci.vendor === 'US Foods' && ci.code && foreign.has(ci.code)) setOnGuide(ci.id, false)
+    }
+  }
+  const existing = stale ? [] : getGuideSections('US Foods')
   const have = new Set(existing.flatMap((s) => s.ids))
   const byGroup = new Map<string, string[]>()
-  for (const it of USFOODS_SEED as Array<{ group: string; code: string; name: string; brand: string; size: string; price: number; uom: string; category: string }>) {
+  for (const it of sheet.rows) {
     const ci = registerItem({
       name: it.name,
       unit: it.uom.toLowerCase(),
@@ -132,8 +181,8 @@ export function seedUsFoodsGuide(): void {
     ;(byGroup.get(it.group) ?? byGroup.set(it.group, []).get(it.group)!).push(ci.id)
   }
   const added: GuideSection[] = [...byGroup.entries()].map(([title, ids]) => ({ title, ids }))
-  if (added.length) save(layoutKey('US Foods'), [...existing.filter((s) => s.ids.length), ...added])
-  save(scoped('guide:seeded:usfoods'), 'v1')
+  if (added.length || stale) save(layoutKey('US Foods'), [...existing.filter((s) => s.ids.length), ...added])
+  save(key, sheet.stamp)
 }
 
 /**

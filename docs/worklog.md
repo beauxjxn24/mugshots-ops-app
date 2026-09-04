@@ -50,6 +50,21 @@ so it isn't re-litigated later.
   Pars start at 0. Printables: "US Foods order guide" prints landscape, 8
   pages, storage bands in grey, product number first, 8 write-in boxes a line.
   Verified by `scripts/verify/usfoods.mjs`.
+- **Flowood's own US Foods sheet.** Beau sent `Flowood_Sheet_to_Shelf.csv`
+  the same evening: 226 lines in nine storage areas — Chemical → Dry Storage →
+  Server Room → Walk-In → Freezer → To Go → Expo Line → Liquor Closet → Office
+  (US Foods' "-New" suffix on the group names dropped). 173 lines are on both
+  stores' sheets at identical prices, 53 are Flowood-only, 14 Pearl-only. Each
+  store now seeds from its own file (`src/data/usfoods-guide-<store>.json`,
+  `USFOODS_SHEETS` in `guide.ts`); the converter
+  `scripts/usfoods-sheet-to-json.py` is in the repo and reproduces Pearl's
+  committed seed exactly, so the next sheet is one command. A Flowood tablet
+  that already opened Orders today holds Pearl's list under the old stamp; on
+  its next open it migrates — the 14 Pearl-only lines come off Flowood's
+  guide, the layout is rebuilt from Flowood's sheet, pars and hand-added lines
+  survive, and Pearl's guide on the same device is untouched. `usfoods.mjs`
+  now drives both stores and that migration. Flowood's sheet prints on 10
+  pages.
 - **Add and move on the guide** (Beau: "needs to have the ability to add
   items and move them when i want to"). Adding on the US Foods tab was a silent
   no-op: `addGuideItem` registered the item under category "US Foods" with no
@@ -93,9 +108,13 @@ so it isn't re-litigated later.
   Runbook in `docs/deploy-cloudflare.md`. Sequence: Cloudflare live → domain
   → private. Both dashboard steps are Beau's (no Cloudflare credentials here;
   GitHub token is read-only on the repo). Claude removes the GitHub Pages
-  workflow once step 2 is confirmed.
-- **US Foods guide on Flowood** carries Pearl's list until Beau sends Flowood's
-  sheet; then re-seed that store only (bump `guide:seeded:usfoods` there).
+  workflow once step 2 is confirmed. Beau could not find "Workers & Pages" in
+  his dashboard: it is **Compute (Workers)** under **Build** in the 2026
+  sidebar, and the runbook now carries a direct link that skips the menu.
+- **Next US Foods sheet from either store:** `python3
+  scripts/usfoods-sheet-to-json.py <csv> > src/data/usfoods-guide-<store>.json`,
+  bump that store's stamp in `USFOODS_SHEETS`, ship. Devices re-seed on their
+  next open; pars and hand-added lines survive.
 - **Guide sections are fixed** — the seven storage areas from the sheet. Items
   add and move freely; adding or renaming a storage area is not in the app.
   Say if it's needed.

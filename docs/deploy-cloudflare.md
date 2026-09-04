@@ -19,8 +19,14 @@ needed), relative asset paths (`base: './'`), Node pinned by `.nvmrc`, and the
 ## 1. Connect the repo (Cloudflare dashboard, ~3 minutes)
 
 1. `dash.cloudflare.com` → in the left sidebar under **Build**, open
-   **Compute** (this is where "Workers & Pages" lives in the 2026 dashboard)
-   → **Create** → **Pages** → **Connect to Git**.
+   **Compute (Workers)** — there is no "Workers & Pages" entry any more; this
+   is where it went in the 2026 dashboard. Then **Create** → the **Pages**
+   tab at the top of that screen → **Import an existing Git repository**.
+
+   If the sidebar doesn't show it (it sits collapsed under **Build** — click
+   the word Build itself), this link opens the right page directly and fills
+   in the account: `https://dash.cloudflare.com/?to=/:account/workers-and-pages`
+   Then Create → Pages tab → Import an existing Git repository, as above.
 
    You will see an existing Worker called `mugshots-daily-ops` in Compute.
    That is the old, abandoned deploy target from a different repo — leave it
