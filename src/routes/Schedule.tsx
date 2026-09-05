@@ -5,6 +5,7 @@ import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
+import { managerList, type Person, type SchedulePerson } from '../lib/staff'
 import { forecastDates, periodWeek, periodStartNum, type DayForecast } from '../lib/forecast'
 import type { Night } from '../lib/nightly'
 import type { Booking } from '../lib/catering'
@@ -56,6 +57,18 @@ export const CODE_LABEL: Record<string, string> = {
 const CODE_HELP = 'O open · C close · M mid · OFF day off · RO requested off · R✓ granted · VAC vacation'
 const DEFAULT_RULES =
   'Every manager gets 2 weekend days off per period · no clopens · GM closes ≤ 6 per period. Build week 4 from these rules — adjust and publish.'
+
+/** One rule on the balance card: the rule, and who it isn't met for. */
+function BalanceLine({ label, ok, good, bad }: { label: string; ok: boolean; good: string; bad: string }) {
+  return (
+    <p className="flex gap-2 text-xs">
+      <span className={`mt-px shrink-0 font-bold ${ok ? 'text-up' : 'text-warn'}`}>{ok ? '✓' : '!'}</span>
+      <span className="text-ink/80">
+        <b className="text-ink">{label}</b> — {ok ? good : `${bad} — short of the rule`}
+      </span>
+    </p>
+  )
+}
 
 function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -119,7 +132,13 @@ function expandDates(from: string, to: string): string[] {
  */
 export function Schedule() {
   const [rawUsers] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
-  const users = Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS
+  const [rawStaff] = usePersistentState<Person[]>('staff:list', [])
+  // The people who open and close the building — the Users who can log in,
+  // plus everyone on the roster carrying a Manager / Shift Lead / Key code.
+  const users = useMemo(
+    () => managerList(Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS, Array.isArray(rawStaff) ? rawStaff : []),
+    [rawUsers, rawStaff],
+  )
   const [weeks, setWeeks] = usePersistentState<AllWeeks>('mgrsched:weeks', {})
   const [published, setPublished] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const [rules, setRules] = usePersistentState<string>('mgrsched:rules', DEFAULT_RULES)
@@ -215,29 +234,60 @@ export function Schedule() {
 
   const shiftsInWeek = (uid: string) => (grid[uid] ?? []).filter((c) => ['O', 'C', 'M'].includes(c)).length
 
-  // Period balance: closes + weekend days off per manager, across all 4 weeks.
+  /**
+   * Coverage — the question a manager schedule exists to answer.
+   *
+   * Not "who is working" but "is every day opened and closed". A day with no
+   * closer is the failure this screen has to make impossible to miss, and it
+   * was nowhere on it.
+   */
+  const coverage = useMemo(
+    () =>
+      DOW.map((_, i) => {
+        const who = (code: string) =>
+          users.filter((u) => (grid[u.id] ?? [])[i] === code).map((u) => u.name.split(' ')[0])
+        return { date: shiftDays(weekStart, i), open: who('O'), close: who('C'), mid: who('M') }
+      }),
+    [users, grid, weekStart],
+  )
+  const gaps = coverage.filter((c) => c.open.length === 0 || c.close.length === 0).length
+
+  // Period balance: closes, weekend days off and clopens per manager, across
+  // all 4 weeks. The rules card says "no clopens" — closing at midnight and
+  // opening at eight is the one nobody catches by eye, so it is counted here,
+  // across week boundaries as well as inside them.
   const balance = useMemo(() => {
     const off = new Set(['OFF', 'R✓', 'VAC'])
     return users.map((u) => {
       let closes = 0
       let weekendOff = 0
+      let shifts = 0
+      const run: string[] = []
       for (const ws of weekStarts) {
         const raw = weeks[ws]?.[u.id]
         const row = Array.isArray(raw) ? raw : []
         closes += row.filter((c) => c === 'C').length
+        shifts += row.filter((c) => ['O', 'C', 'M'].includes(c)).length
         if (off.has(row[5])) weekendOff++
         if (off.has(row[6])) weekendOff++
+        for (let i = 0; i < 7; i++) run.push(row[i] ?? '')
       }
-      return { name: (u.name ?? '').split(' ')[0], closes, weekendOff }
+      let clopens = 0
+      for (let i = 0; i + 1 < run.length; i++) if (run[i] === 'C' && run[i + 1] === 'O') clopens++
+      return { name: (u.name ?? '').split(' ')[0], closes, weekendOff, shifts, clopens }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, weeks, period])
-  const anyScheduled = balance.some((b) => b.closes > 0 || b.weekendOff > 0)
+  const anyScheduled = balance.some((b) => b.shifts > 0 || b.weekendOff > 0)
 
   return (
       <Page
         title={`Manager schedule · Period ${period}`}
-        subtitle={`${fmtMD(pStart)} – ${fmtMD(shiftDays(pStart, 27))} · ${CODE_HELP}${unlocked ? '' : ' · locked — GM PIN to edit'}`}
+        /* The code legend used to be spelled out here AND drawn in colour
+           under the week tabs AND repeated on Posted. Once, in colour. */
+        subtitle={`${fmtMD(pStart)} – ${fmtMD(shiftDays(pStart, 27))} · ${users.length} on the schedule${
+          unlocked ? '' : ' · locked — GM PIN to edit'
+        }`}
         right={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             {unlocked ? (
@@ -360,6 +410,15 @@ export function Schedule() {
                 </button>
               )
             })}
+            {/* The week's headline: not how many shifts, but how many days
+                are missing an opener or a closer. */}
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold ${
+                gaps > 0 ? 'bg-down/15 text-down' : 'bg-up/15 text-up'
+              }`}
+            >
+              {gaps > 0 ? `${gaps} ${gaps === 1 ? 'day' : 'days'} uncovered` : 'every day covered'}
+            </span>
             <span className="ml-auto text-xs text-muted">
               Week {weekIdx + 1} · {fmtMD(weekStart)} – {fmtMD(shiftDays(weekStart, 6))}
               {hasForecast && (
@@ -474,6 +533,29 @@ export function Schedule() {
                 <span className="text-right font-mono text-sm text-ink">{shiftsInWeek(u.id)}</span>
               </div>
             ))}
+
+            {/* Coverage — who opens and who closes, day by day. A day missing
+                either is the thing that has to be impossible to walk past, so
+                it is red here and counted in the header above. */}
+            <div className="grid grid-cols-[minmax(0,1.4fr)_repeat(7,minmax(66px,1fr))_80px] items-start gap-1 border-t-2 border-black/10 bg-black/[0.02] px-4 py-2.5">
+              <div className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                Coverage
+                <span className="mt-0.5 block font-semibold normal-case tracking-normal text-muted/70">
+                  open · close
+                </span>
+              </div>
+              {coverage.map((c) => (
+                <div key={c.date} className="text-center text-[10px] leading-tight">
+                  <div className={c.open.length ? 'font-bold text-ink' : 'font-extrabold text-down'}>
+                    {c.open.length ? c.open.join(', ') : 'no open'}
+                  </div>
+                  <div className={c.close.length ? 'font-bold text-ink' : 'font-extrabold text-down'}>
+                    {c.close.length ? c.close.join(', ') : 'no close'}
+                  </div>
+                </div>
+              ))}
+              <span />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-black/5 p-3 print:hidden">
@@ -491,7 +573,10 @@ export function Schedule() {
             >
               <CheckCircle2 size={13} /> {isPublished ? `Week ${weekIdx + 1} published — tap to unpublish` : `Publish week ${weekIdx + 1}`}
             </button>
-            <span className="text-[11px] text-muted">Managers come from Admin → Users &amp; privileges.</span>
+            <span className="text-[11px] text-muted">
+              Rows are everyone carrying a Manager, Shift Lead or Key code on the{' '}
+              <Link to="/staff" className="font-semibold text-brand">roster</Link>, plus Admin → Users.
+            </span>
           </div>
         </Card>
 
@@ -548,25 +633,53 @@ export function Schedule() {
               className="w-full resize-none rounded-lg border border-transparent bg-transparent text-xs leading-relaxed text-ink/80 outline-none hover:border-black/10 focus:border-brand"
             />
           </Card>
+          {/* The rules, checked. Each line is the rule beside the answer, so
+              the card either says "this is fine" or names who it isn't fine
+              for — rather than printing numbers and leaving the arithmetic to
+              whoever is reading at eleven at night. */}
           <Card className="p-4">
-            <div className="mb-2 text-sm font-bold text-ink">P{period} balance</div>
+            <div className="mb-2 flex items-baseline justify-between">
+              <span className="text-sm font-bold text-ink">P{period} balance</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-muted">across all 4 weeks</span>
+            </div>
             {!anyScheduled ? (
               <p className="text-xs text-muted">Fills in as shifts land on the grid.</p>
             ) : (
-              <>
-                <p className="text-xs text-ink/80">
-                  <b>Closes</b> — {balance.map((b) => `${b.name} ${b.closes}`).join(' · ')}
-                </p>
-                <p className="mt-1 text-xs text-ink/80">
-                  <b>Weekend days off</b> —{' '}
-                  {balance.every((b) => b.weekendOff >= 2)
-                    ? 'everyone at 2+ ✓'
-                    : balance
-                        .filter((b) => b.weekendOff < 2)
-                        .map((b) => `${b.name} at ${b.weekendOff}`)
-                        .join(' · ') + ' — short of the rule'}
-                </p>
-              </>
+              <div className="space-y-2">
+                <BalanceLine
+                  label="Weekend days off"
+                  ok={balance.every((b) => b.weekendOff >= 2)}
+                  good="everyone has 2 or more"
+                  bad={balance
+                    .filter((b) => b.weekendOff < 2)
+                    .map((b) => `${b.name} ${b.weekendOff}`)
+                    .join(' · ')}
+                />
+                <BalanceLine
+                  label="Clopens"
+                  ok={balance.every((b) => b.clopens === 0)}
+                  good="none — nobody closes and opens the next day"
+                  bad={balance
+                    .filter((b) => b.clopens > 0)
+                    .map((b) => `${b.name} ${b.clopens}`)
+                    .join(' · ')}
+                />
+                <div className="border-t border-black/5 pt-2">
+                  <div className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                    Closes · shifts
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink/80">
+                    {balance.map((b) => (
+                      <span key={b.name}>
+                        <b className="text-ink">{b.name}</b>{' '}
+                        <span className="font-mono">
+                          {b.closes}C · {b.shifts}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </Card>
         </div>
@@ -581,7 +694,7 @@ function RequestOff({
   requests,
   nameOf,
 }: {
-  users: User[]
+  users: SchedulePerson[]
   onSubmit: (r: TimeOff) => void
   requests: TimeOff[]
   nameOf: (uid: string) => string

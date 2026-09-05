@@ -218,6 +218,51 @@ export function duplicateCount(list: Person[] = getStaff()): number {
   return dupes
 }
 
+/** The job codes that belong on the manager schedule. */
+export const MANAGER_ROLES = ['Manager', 'Shift Lead', 'Key']
+const MGR_RANK = new Map(MANAGER_ROLES.map((r, i) => [r, i]))
+
+export interface SchedulePerson {
+  id: string
+  name: string
+  role: string
+}
+
+/**
+ * Who the manager schedule is for.
+ *
+ * It used to be the Admin → Users list alone, which is the people who can log
+ * in — one person on a roster of sixty-six. The team that actually opens and
+ * closes the building carries a Manager, Shift Lead or Key code in Toast, so
+ * that is where the schedule's rows come from now. Users stay first and keep
+ * their ids, because the grid is keyed by id and their weeks are already
+ * saved against it; roster people are added under their own ids, matched by
+ * name so nobody appears twice.
+ */
+export function managerList(
+  users: Array<{ id: string; name: string; role?: string }>,
+  staff: Person[] = getStaff(),
+): SchedulePerson[] {
+  const out: SchedulePerson[] = users
+    .filter((u) => u?.name)
+    .map((u) => ({ id: u.id, name: u.name, role: u.role || 'Manager' }))
+  const seen = new Set(out.map((u) => personKey(u.name)))
+  for (const p of staff) {
+    const codes = rolesOf(p)
+    const code = MANAGER_ROLES.find((r) => codes.includes(r))
+    if (!code) continue
+    const k = personKey(p.name)
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ id: p.id, name: p.name, role: code })
+  }
+  // Managers, then shift leads, then keys; alphabetical inside each.
+  return out.sort(
+    (a, b) =>
+      (MGR_RANK.get(a.role) ?? 0) - (MGR_RANK.get(b.role) ?? 0) || a.name.localeCompare(b.name),
+  )
+}
+
 /** Does this text look like an employee roster export (e.g. from Toast)? */
 export function isRosterDoc(text: string): boolean {
   const h = text.split(/\r?\n/)[0]?.toLowerCase() ?? ''

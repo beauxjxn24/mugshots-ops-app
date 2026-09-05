@@ -5,6 +5,7 @@ import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useRole } from '../lib/role'
 import { DEFAULT_USERS, type User } from '../lib/users'
+import { managerList, type Person } from '../lib/staff'
 import {
   CHIP,
   CODE_LABEL,
@@ -25,7 +26,11 @@ import { periodWeek, periodStartNum } from '../lib/forecast'
  */
 export function Posted() {
   const [rawUsers] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
-  const users = Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS
+  const [rawStaff] = usePersistentState<Person[]>('staff:list', [])
+  const users = useMemo(
+    () => managerList(Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS, Array.isArray(rawStaff) ? rawStaff : []),
+    [rawUsers, rawStaff],
+  )
   const [weeks] = usePersistentState<AllWeeks>('mgrsched:weeks', {})
   const [published] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const role = useRole((s) => s.role)
@@ -40,6 +45,23 @@ export function Posted() {
   // Only the weeks the GM actually published show here.
   const postedWeeks = useMemo(() => weekStarts.filter((ws) => published[ws]), [weekStarts, published])
   const thisWeekStart = mondayOf(t)
+
+  /**
+   * Today, first.
+   *
+   * Whoever opens this screen is nearly always asking one question — who is
+   * on today — and the answer was a cell somewhere in a four-week grid. It's
+   * a sentence now, at the top, and the grid is there to look up the rest.
+   */
+  const todayShifts = useMemo(() => {
+    if (!published[thisWeekStart]) return null
+    const grid = weeks[thisWeekStart] ?? {}
+    const day = Math.max(0, Math.round((Date.parse(t) - Date.parse(thisWeekStart)) / 86400000))
+    if (day > 6) return null
+    const who = (code: string) =>
+      users.filter((u) => (grid[u.id] ?? [])[day] === code).map((u) => u.name)
+    return { open: who('O'), mid: who('M'), close: who('C') }
+  }, [users, weeks, published, thisWeekStart, t])
 
   return (
       <Page
@@ -87,6 +109,36 @@ export function Posted() {
           </div>
         }
       >
+        {/* Who's on today — the question this screen gets opened for. */}
+        {todayShifts && (
+          <Card className="border-brand/25 bg-brand/[0.06] p-4">
+            <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-brand-600">
+              On today · {fmtMD(t)}
+            </div>
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              {([
+                ['Opening', todayShifts.open, 'O'],
+                ['Mid', todayShifts.mid, 'M'],
+                ['Closing', todayShifts.close, 'C'],
+              ] as const)
+                .filter(([, names, code]) => names.length > 0 || code !== 'M')
+                .map(([label, names, code]) => (
+                  <div key={label}>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <span className={`grid h-5 min-w-6 place-items-center rounded-full px-1 text-[10px] ${CHIP[code]}`}>
+                        {code}
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{label}</span>
+                    </div>
+                    <div className={`font-display text-lg font-semibold ${names.length ? 'text-ink' : 'text-muted/60'}`}>
+                      {names.length ? names.join(', ') : 'nobody'}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </Card>
+        )}
+
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-1.5">
           {PICK_CODES.map((c) => (
