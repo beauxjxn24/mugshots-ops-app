@@ -6,11 +6,8 @@ import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
 import { managerList, type Person, type SchedulePerson } from '../lib/staff'
-import { forecastDates, periodWeek, periodStartNum, type DayForecast } from '../lib/forecast'
-import type { Night } from '../lib/nightly'
-import type { Booking } from '../lib/catering'
+import { periodWeek, periodStartNum } from '../lib/forecast'
 
-const kfmt = (n: number) => `$${(n / 1000).toFixed(1)}k`
 
 /** week map: weekStart(YYYY-MM-DD, Monday) -> userId -> 7 shift codes (Mon..Sun) */
 export type AllWeeks = Record<string, Record<string, string[]>>
@@ -57,189 +54,6 @@ export const CODE_LABEL: Record<string, string> = {
 const CODE_HELP = 'O open · C close · M mid · OFF day off · RO requested off · R✓ granted · VAC vacation'
 const DEFAULT_RULES =
   'Every manager gets 2 weekend days off per period · no clopens · GM closes ≤ 6 per period. Build week 4 from these rules — adjust and publish.'
-
-/**
- * The week as seven days, not as a spreadsheet.
- *
- * A GM does not build a schedule by walking a person's row and filling in
- * seven cells. They build it a day at a time — who opens Monday, who closes
- * Monday — and the question they are actually answering is coverage. So the
- * board is a column per day with the three shifts as slots: a name in a slot
- * is a shift, an empty slot is a hole and looks like one, and everyone not in
- * a slot is off that day and sits underneath in plain sight.
- *
- * It writes the same cells the grid does, so publishing, the posted view and
- * the balance card all carry on unchanged — this is a different way into the
- * same week, not a different week.
- */
-function Board({
-  people,
-  weekStart,
-  grid,
-  today: t,
-  unlocked,
-  onSet,
-  onUnlock,
-}: {
-  people: SchedulePerson[]
-  weekStart: string
-  grid: Record<string, string[]>
-  today: string
-  unlocked: boolean
-  onSet: (uid: string, date: string, code: string) => void
-  onUnlock: () => void
-}) {
-  // Which slot is open for picking: day index + the code being filled.
-  const [picking, setPicking] = useState<{ day: number; code: string } | null>(null)
-  const SLOTS = [
-    { code: 'O', label: 'Opening' },
-    { code: 'M', label: 'Mid' },
-    { code: 'C', label: 'Closing' },
-  ] as const
-
-  const codeOn = (uid: string, day: number) => (grid[uid] ?? [])[day] ?? ''
-  const whoOn = (day: number, code: string) => people.filter((p) => codeOn(p.id, day) === code)
-
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-      {DOW.map((dow, day) => {
-        const date = shiftDays(weekStart, day)
-        const isToday = date === t
-        const open = whoOn(day, 'O')
-        const close = whoOn(day, 'C')
-        const off = people.filter((p) => ['OFF', 'R✓', 'VAC'].includes(codeOn(p.id, day)))
-        const spare = people.filter((p) => !codeOn(p.id, day)).length
-        const offPicking = picking?.day === day && picking.code === 'OFF'
-        const hole = open.length === 0 || close.length === 0
-        return (
-          <div
-            key={date}
-            className={`overflow-hidden rounded-2xl border bg-white ${
-              isToday ? 'border-brand ring-1 ring-brand/30' : hole ? 'border-down/40' : 'border-black/10'
-            }`}
-          >
-            <div className={`flex items-baseline justify-between px-3 py-2 ${isToday ? 'bg-brand/10' : 'bg-black/[0.03]'}`}>
-              <span className={`font-display text-sm font-bold ${isToday ? 'text-brand-600' : 'text-ink'}`}>{dow}</span>
-              <span className="font-mono text-[10px] font-bold text-muted">{fmtMD(date)}</span>
-            </div>
-
-            {SLOTS.map(({ code, label }) => {
-              const on = whoOn(day, code)
-              const missing = on.length === 0 && code !== 'M'
-              const isPicking = picking?.day === day && picking.code === code
-              return (
-                <div key={code} className="border-t border-black/5 px-2.5 py-2">
-                  <div className="mb-1 flex items-center gap-1.5">
-                    <span className={`grid h-4 min-w-5 place-items-center rounded-full px-1 text-[9px] ${CHIP[code]}`}>
-                      {code}
-                    </span>
-                    <span className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{label}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {on.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => (unlocked ? onSet(p.id, date, '') : onUnlock())}
-                        title={unlocked ? `Take ${p.name} off ${label.toLowerCase()}` : 'Locked — tap to unlock'}
-                        className="rounded-lg bg-ink/[0.06] px-2 py-1 text-xs font-bold text-ink hover:bg-down/10 hover:text-down"
-                      >
-                        {p.name.split(' ')[0]}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => (unlocked ? setPicking(isPicking ? null : { day, code }) : onUnlock())}
-                      title={unlocked ? `Put somebody on ${label.toLowerCase()}` : 'Locked — tap to unlock'}
-                      className={`rounded-lg border border-dashed px-2 py-1 text-xs font-bold ${
-                        missing ? 'border-down/50 text-down' : 'border-black/20 text-muted hover:text-ink'
-                      }`}
-                    >
-                      {missing ? 'nobody' : '+'}
-                    </button>
-                  </div>
-                  {isPicking && (
-                    <div className="mt-1.5 flex flex-wrap gap-1 rounded-lg bg-brand/[0.06] p-1.5">
-                      {people.map((p) => {
-                        const cur = codeOn(p.id, day)
-                        return (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              onSet(p.id, date, code)
-                              setPicking(null)
-                            }}
-                            title={cur ? `Currently ${CODE_LABEL[cur] ?? cur}` : 'Not on this day yet'}
-                            className={`rounded-lg px-2 py-1 text-[11px] font-bold ${
-                              cur === code
-                                ? 'bg-brand text-white'
-                                : cur
-                                  ? 'bg-black/5 text-muted'
-                                  : 'bg-white text-ink hover:bg-brand hover:text-white'
-                            }`}
-                          >
-                            {p.name.split(' ')[0]}
-                            {cur && cur !== code && <span className="ml-1 opacity-60">{cur}</span>}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* Who is off, and how many nobody has decided about yet. Listing
-                every unplaced name under every day put a wall of fifty-six
-                names on the week; the count says the same thing in a word, and
-                the + names them. */}
-            <div className="border-t border-black/5 bg-black/[0.02] px-2.5 py-2">
-              <div className="mb-1 flex items-baseline gap-1.5">
-                <span className="text-[9px] font-extrabold uppercase tracking-wide text-muted">Off</span>
-                {spare > 0 && <span className="text-[9px] text-muted/70">{spare} not set</span>}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {off.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => (unlocked ? onSet(p.id, date, '') : onUnlock())}
-                    title={unlocked ? `${p.name} — ${CODE_LABEL[codeOn(p.id, day)] ?? 'off'} · tap to clear` : 'Locked'}
-                    className={`rounded-lg px-2 py-0.5 text-[11px] ${CHIP[codeOn(p.id, day)] ?? 'bg-black/5 text-muted'}`}
-                  >
-                    {p.name.split(' ')[0]}
-                  </button>
-                ))}
-                <button
-                  onClick={() => (unlocked ? setPicking(offPicking ? null : { day, code: 'OFF' }) : onUnlock())}
-                  title={unlocked ? 'Mark somebody off' : 'Locked — tap to unlock'}
-                  className="rounded-lg border border-dashed border-black/20 px-2 py-0.5 text-[11px] font-bold text-muted hover:text-ink"
-                >
-                  +
-                </button>
-              </div>
-              {offPicking && (
-                <div className="mt-1.5 flex flex-wrap gap-1 rounded-lg bg-brand/[0.06] p-1.5">
-                  {people
-                    .filter((p) => codeOn(p.id, day) !== 'OFF')
-                    .map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          onSet(p.id, date, 'OFF')
-                          setPicking(null)
-                        }}
-                        className="rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-ink hover:bg-brand hover:text-white"
-                      >
-                        {p.name.split(' ')[0]}
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 /** One rule on the balance card: the rule, and who it isn't met for. */
 function BalanceLine({ label, ok, good, bad }: { label: string; ok: boolean; good: string; bad: string }) {
@@ -337,18 +151,10 @@ export function Schedule() {
     [candidates, chosen],
   )
   const [pickingPeople, setPickingPeople] = useState(false)
-  /** How the week is being worked: day by day, or the four-week grid. */
-  const [mode, setMode] = usePersistentState<'board' | 'grid'>('mgrsched:view', 'board')
   const [weeks, setWeeks] = usePersistentState<AllWeeks>('mgrsched:weeks', {})
   const [published, setPublished] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const [rules, setRules] = usePersistentState<string>('mgrsched:rules', DEFAULT_RULES)
   const [rawRequests, setRequests] = usePersistentState<TimeOff[]>('mgrsched:timeoff', [])
-  // Sales forecast context — same store keys the Forecast screen reads, so the
-  // per-day projection under each column matches "Week at a glance" exactly.
-  const [salesLog] = usePersistentState<Night[]>('nightly:log', [])
-  const [bookings] = usePersistentState<Booking[]>('catering:bookings', [])
-  const [fcAdj] = usePersistentState<number>('forecast:adj', 0)
-  const [fcOverrides] = usePersistentState<Record<string, number>>('forecast:overrides', {})
   const requests = (Array.isArray(rawRequests) ? rawRequests : []).map((r) => ({
     ...r,
     dates: Array.isArray(r?.dates) ? r.dates : [],
@@ -370,18 +176,6 @@ export function Schedule() {
   const grid = weeks[weekStart] ?? {}
   const isPublished = !!published[weekStart]
 
-  // Projected net + last-year read for each day of the visible week — so the GM
-  // staffs against volume (heavier Fri/Sat get the strong closers).
-  const forecast = useMemo(() => {
-    const dates = Array.from({ length: 7 }, (_, i) => shiftDays(weekStart, i))
-    return forecastDates(dates, { log: salesLog, bookings, adj: fcAdj, overrides: fcOverrides })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart, salesLog, bookings, fcAdj, fcOverrides])
-  const peakProjected = useMemo(
-    () => Math.max(0, ...Object.values(forecast).map((f: DayForecast) => f.projected)),
-    [forecast],
-  )
-  const hasForecast = peakProjected > 0
 
   // Pending requests → a lookup of (user|date) that still needs a decision.
   // A date already coded on the grid is considered handled, so it drops out.
@@ -434,7 +228,6 @@ export function Schedule() {
     setPublished((p) => ({ ...p, [weekStart]: !isPublished }))
   }
 
-  const shiftsInWeek = (uid: string) => (grid[uid] ?? []).filter((c) => ['O', 'C', 'M'].includes(c)).length
 
   /**
    * Coverage — the question a manager schedule exists to answer.
@@ -453,6 +246,19 @@ export function Schedule() {
     [users, grid, weekStart],
   )
   const gaps = coverage.filter((c) => c.open.length === 0 || c.close.length === 0).length
+  /** The gaps, named: "No opener Tue · no closer Sat, Sun". */
+  const shortfall = useMemo(() => {
+    const days = (pick: (c: (typeof coverage)[number]) => string[]) =>
+      coverage.map((c, i) => (pick(c).length === 0 ? DOW[i] : '')).filter(Boolean)
+    const noOpen = days((c) => c.open)
+    const noClose = days((c) => c.close)
+    return [
+      noOpen.length ? `No opener ${noOpen.join(', ')}` : '',
+      noClose.length ? `${noOpen.length ? 'no' : 'No'} closer ${noClose.join(', ')}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ')
+  }, [coverage])
 
   // Period balance: closes, weekend days off and clopens per manager, across
   // all 4 weeks. The rules card says "no clopens" — closing at midnight and
@@ -504,21 +310,6 @@ export function Schedule() {
                 <Lock size={13} /> Unlock to edit
               </button>
             )}
-            {/* Days, or the spreadsheet. The board is how a week gets built;
-                the grid is how it gets read across four weeks. */}
-            <div className="grid grid-cols-2 gap-1 rounded-lg bg-black/5 p-1">
-              {(['board', 'grid'] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-bold capitalize ${
-                    mode === m ? 'bg-navy text-white shadow-sm' : 'text-muted'
-                  }`}
-                >
-                  {m === 'board' ? 'By day' : 'Grid'}
-                </button>
-              ))}
-            </div>
             <button
               onClick={() => setPickingPeople((v) => !v)}
               title="Choose who is on this store's manager schedule"
@@ -660,9 +451,8 @@ export function Schedule() {
         )}
 
         <Card className="overflow-x-auto">
-          {/* Week tabs */}
+          {/* Week tabs, and the one thing worth saying about the week. */}
           <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-            <span className="rounded-lg bg-navy px-2.5 py-1 text-xs font-extrabold text-white">P{period}</span>
             {weekStarts.map((ws, i) => {
               const cur = i === curWeekIdx && period === curPeriod
               const pub = !!published[ws]
@@ -674,107 +464,38 @@ export function Schedule() {
                     i === weekIdx ? (cur ? 'bg-brand text-white' : 'bg-navy text-white') : 'bg-black/5 text-muted hover:text-ink'
                   }`}
                 >
-                  Week {i + 1} {pub ? '✓' : cur ? '· current' : '· draft'}
+                  Week {i + 1}
+                  {pub && <span className={i === weekIdx ? 'ml-1 text-white/70' : 'ml-1 text-up'}>✓</span>}
                 </button>
               )
             })}
-            {/* The week's headline: not how many shifts, but how many days
-                are missing an opener or a closer. */}
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold ${
-                gaps > 0 ? 'bg-down/15 text-down' : 'bg-up/15 text-up'
-              }`}
-            >
-              {gaps > 0 ? `${gaps} ${gaps === 1 ? 'day' : 'days'} uncovered` : 'every day covered'}
-            </span>
             <span className="ml-auto text-xs text-muted">
-              Week {weekIdx + 1} · {fmtMD(weekStart)} – {fmtMD(shiftDays(weekStart, 6))}
-              {hasForecast && (
-                <>
-                  {' · '}
-                  <span className="font-semibold text-ink/70">
-                    {kfmt(Object.values(forecast).reduce((s, f) => s + (f as DayForecast).projected, 0))} projected
-                  </span>
-                </>
-              )}
+              {fmtMD(weekStart)} – {fmtMD(shiftDays(weekStart, 6))}
             </span>
           </div>
-          {hasForecast && (
-            <p className="px-4 pb-1 text-[10px] text-muted">
-              Under each day: <b className="text-ink/70">projected net</b> from your same-weekday history (★ busiest),
-              with ▲▼ vs last year (LY) or last week (LW). Tune it on the <Link to="/forecast" className="font-semibold text-brand">Forecast</Link> page.
-            </p>
-          )}
 
-          {/* Colour legend — the shift codes at a glance */}
-          <div className={`flex flex-wrap items-center gap-1.5 px-4 pb-2.5 ${mode === 'board' ? 'hidden' : ''}`}>
-            {PICK_CODES.map((c) => (
-              <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.03] py-0.5 pl-0.5 pr-2">
-                <span className={`grid h-5 min-w-6 place-items-center rounded-full px-1 text-[10px] ${CHIP[c]}`}>{c}</span>
-                <span className="text-[10px] font-semibold text-muted">{CODE_LABEL[c]}</span>
-              </span>
-            ))}
-          </div>
-
-          {mode === 'board' ? (
-            <div className="px-4 pb-4">
-              <Board
-                people={users}
-                weekStart={weekStart}
-                grid={grid}
-                today={t}
-                unlocked={unlocked}
-                onSet={(uid, date, code) => setCell(uid, date, code)}
-                onUnlock={() => void unlockToEdit()}
-              />
-            </div>
-          ) : (
-          /* Grid */
-          <div className="min-w-[900px]">
-            <div className="grid grid-cols-[minmax(0,1.4fr)_repeat(7,minmax(66px,1fr))_80px] items-end gap-1 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-              <span>Manager</span>
+          <div className="min-w-[760px]">
+            <div className="grid grid-cols-[minmax(0,1fr)_repeat(7,minmax(64px,1fr))] items-end gap-1 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              <span />
               {DOW.map((d, i) => {
                 const date = shiftDays(weekStart, i)
                 const isToday = date === t
-                const f = forecast[date]
-                const isPeak = hasForecast && !!f && f.projected > 0 && f.projected === peakProjected
                 return (
                   <span key={d} className={`text-center ${isToday ? 'text-brand-600' : ''}`}>
                     <span className="block">{d}</span>
                     <span className={`block font-mono text-[9px] font-bold ${isToday ? 'text-brand-600' : 'text-muted/70'}`}>
                       {fmtMD(date)}
                     </span>
-                    {f && f.projected > 0 && (
-                      <span
-                        title={`Projected net ${kfmt(f.projected)}${f.base ? ` · ${f.base === 'ly' ? 'last year' : 'last week'} ${kfmt((f.base === 'ly' ? f.ly : f.lw) ?? 0)}` : ''}${isPeak ? ' · busiest day of the week' : ''}`}
-                        className={`mt-0.5 inline-flex items-center gap-0.5 rounded px-1 py-px font-mono text-[9px] font-extrabold normal-case ${
-                          isPeak ? 'bg-brand/15 text-brand-600' : 'text-ink/70'
-                        }`}
-                      >
-                        {isPeak && <span className="text-[8px]">★</span>}
-                        {kfmt(f.projected)}
-                      </span>
-                    )}
-                    {f && f.vs != null && (
-                      <span className={`block text-[8px] font-bold normal-case ${f.vs >= 0 ? 'text-up' : 'text-down'}`}>
-                        {f.vs >= 0 ? '▲' : '▼'}
-                        {Math.abs(f.vs).toFixed(0)}% {f.base === 'ly' ? 'LY' : 'LW'}
-                      </span>
-                    )}
                   </span>
                 )
               })}
-              <span className="text-right">W{weekIdx + 1} shifts</span>
             </div>
             {users.map((u) => (
               <div
                 key={u.id}
-                className="grid grid-cols-[minmax(0,1.4fr)_repeat(7,minmax(66px,1fr))_80px] items-center gap-1 border-b border-black/5 px-4 py-2.5 last:border-0"
+                className="grid grid-cols-[minmax(0,1fr)_repeat(7,minmax(64px,1fr))] items-center gap-1 border-b border-black/5 px-4 py-2.5 last:border-0"
               >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold text-ink">{u.name}</div>
-                  <div className="text-[10px] text-muted">{u.role}</div>
-                </div>
+                <div className="min-w-0 truncate text-sm font-bold text-ink">{u.name}</div>
                 {Array.from({ length: 7 }, (_, day) => {
                   const date = shiftDays(weekStart, day)
                   const raw = grid[u.id]?.[day] ?? ''
@@ -815,34 +536,16 @@ export function Schedule() {
                     </button>
                   )
                 })}
-                <span className="text-right font-mono text-sm text-ink">{shiftsInWeek(u.id)}</span>
               </div>
             ))}
 
-            {/* Coverage — who opens and who closes, day by day. A day missing
-                either is the thing that has to be impossible to walk past, so
-                it is red here and counted in the header above. */}
-            <div className="grid grid-cols-[minmax(0,1.4fr)_repeat(7,minmax(66px,1fr))_80px] items-start gap-1 border-t-2 border-black/10 bg-black/[0.02] px-4 py-2.5">
-              <div className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
-                Coverage
-                <span className="mt-0.5 block font-semibold normal-case tracking-normal text-muted/70">
-                  open · close
-                </span>
-              </div>
-              {coverage.map((c) => (
-                <div key={c.date} className="text-center text-[10px] leading-tight">
-                  <div className={c.open.length ? 'font-bold text-ink' : 'font-extrabold text-down'}>
-                    {c.open.length ? c.open.join(', ') : 'no open'}
-                  </div>
-                  <div className={c.close.length ? 'font-bold text-ink' : 'font-extrabold text-down'}>
-                    {c.close.length ? c.close.join(', ') : 'no close'}
-                  </div>
-                </div>
-              ))}
-              <span />
-            </div>
           </div>
-          )}
+
+          {/* The whole status of the week, in a sentence. A coverage row under
+              every column said the same thing in fourteen cells. */}
+          <p className={`border-t border-black/5 px-4 py-2.5 text-xs ${gaps > 0 ? 'text-down' : 'text-up'}`}>
+            {gaps === 0 ? 'Every day has an opener and a closer.' : shortfall}
+          </p>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-black/5 p-3 print:hidden">
             <button
@@ -907,6 +610,20 @@ export function Schedule() {
           </>
         )}
 
+        {/* Everything that isn't this week, folded away. The time-off form,
+            the rules and the balance were three cards below the schedule that
+            you scrolled past every single time you came here to put somebody
+            on a Tuesday. They're one line now, and open when you want them. */}
+        <details className="rounded-2xl border border-black/10 bg-white/[0.02] px-4 py-3 print:hidden">
+          <summary className="cursor-pointer text-sm font-bold text-ink">
+            Time off, rules &amp; balance
+            {pending.length > 0 && (
+              <span className="ml-2 rounded-full bg-down/15 px-2 py-0.5 text-[10px] font-extrabold text-down">
+                {pending.length} to review
+              </span>
+            )}
+          </summary>
+          <div className="mt-3 space-y-4">
         <RequestOff users={users} onSubmit={(r) => setRequests((rs) => [r, ...rs])} requests={requests} nameOf={nameOf} />
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -969,6 +686,8 @@ export function Schedule() {
             )}
           </Card>
         </div>
+          </div>
+        </details>
       </Page>
   )
 }
