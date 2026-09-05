@@ -643,11 +643,13 @@ function ProduceGuideSheet() {
 
 /**
  * The US Foods guide printed as the vendor's own "Sheet to Shelf": one band per
- * storage area in walk order, the product number first, then ten empty boxes
- * to count into. Multi-page by nature — 187 lines — so rows are shorter than
- * the produce sheet's and every row and band refuses to split across a page.
+ * storage area in walk order, the product number first, then M-PAR / F-PAR and
+ * empty boxes to count into — the same sheet the produce guide prints, with
+ * the vendor's number and pack added, so the two sheets read as one system.
+ * Multi-page by nature (226 lines), so rows are shorter than the produce
+ * sheet's and every row and band refuses to split across a page.
  */
-const USF_TALLY = 8
+const USF_TALLY = 6
 
 function UsFoodsGuideSheet() {
   const pars = getPars()
@@ -659,7 +661,7 @@ function UsFoodsGuideSheet() {
         const ci = byId.get(id)
         if (!ci) return []
         const p = pars[id] ?? { par: 0, onHand: 0 }
-        return [{ code: ci.code ?? '', name: ci.name, size: ci.size ?? '', unit: ci.unit, cost: ci.cost, par: p.par }]
+        return [{ code: ci.code ?? '', name: ci.name, size: ci.size ?? '', unit: ci.unit, cost: ci.cost, m: p.par, f: p.parF }]
       }),
     }))
     .filter((sec) => sec.rows.length > 0)
@@ -667,7 +669,8 @@ function UsFoodsGuideSheet() {
     return <p className="py-6 text-center text-sm text-muted">Nothing on the US Foods guide yet — open Orders once and it seeds itself.</p>
   }
   const money = (n?: number) => (typeof n === 'number' ? `$${n.toFixed(2)}` : '')
-  const cols = 5 + USF_TALLY
+  const num = (v?: number) => (typeof v === 'number' && v !== 0 ? String(v) : '')
+  const cols = 6 + USF_TALLY
   return (
     <div className="produce-guide usf">
       <div className="pg-band border-2 px-3 py-2 text-center">
@@ -681,7 +684,11 @@ function UsFoodsGuideSheet() {
               <th className="pg-band pg-w-name border px-1.5 py-1 text-left font-bold uppercase">Product</th>
               <th className="pg-band pg-w-size border px-1.5 py-1 text-left font-bold uppercase">Pack · brand</th>
               <th className="pg-band pg-w-price border px-1 py-1 text-right font-bold uppercase">$ / unit</th>
-              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">Par</th>
+              {/* The same two columns the produce sheet prints: Monday's par
+                  has to last to Friday's delivery, Friday's has to cover the
+                  weekend, and they are not the same number. */}
+              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">M-Par</th>
+              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">F-Par</th>
               {Array.from({ length: USF_TALLY }, (_, i) => (
                 <th key={i} className="border border-black/40 px-0 py-1" />
               ))}
@@ -699,11 +706,12 @@ function UsFoodsGuideSheet() {
                   <tr key={r.code || r.name}>
                     {/* A product number or a price broken across two lines
                         reads as two numbers — these never wrap. */}
-                    <td className="whitespace-nowrap border px-1.5 py-[2px] font-mono tabular-nums">{r.code}</td>
-                    <td className="border px-1.5 py-[2px] font-medium">{r.name}</td>
-                    <td className="border px-1.5 py-[2px]">{r.size}</td>
-                    <td className="whitespace-nowrap border px-1 py-[2px] text-right tabular-nums">{money(r.cost)}{r.unit && r.unit !== 'cs' ? ` /${r.unit}` : ''}</td>
-                    <td className="border px-1 py-[2px] text-center tabular-nums">{r.par || ''}</td>
+                    <td className="whitespace-nowrap border border-black/60 px-1.5 py-[2px] font-mono tabular-nums">{r.code}</td>
+                    <td className="border border-black/60 px-1.5 py-[2px] font-medium">{r.name}</td>
+                    <td className="border border-black/60 px-1.5 py-[2px]">{r.size}</td>
+                    <td className="whitespace-nowrap border border-black/60 px-1 py-[2px] text-right tabular-nums">{money(r.cost)}{r.unit && r.unit !== 'cs' ? ` /${r.unit}` : ''}</td>
+                    <td className="border border-black/60 px-1 py-[2px] text-center tabular-nums">{num(r.m)}</td>
+                    <td className="border border-black/60 px-1 py-[2px] text-center tabular-nums">{num(r.f ?? r.m)}</td>
                     {Array.from({ length: USF_TALLY }, (_, i) => (
                       <td key={i} className="border border-black/40 px-0 py-[2px]" />
                     ))}

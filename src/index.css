@@ -948,10 +948,10 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
      in the mono face is ~50px, a "$279.96 /ea" ~60px. The eight write-in
      boxes share what's left. */
   .produce-guide .pg-w-code { width: 8%; }
-  .produce-guide.usf .pg-w-name { width: 38%; }
-  .produce-guide.usf .pg-w-size { width: 14%; }
+  .produce-guide.usf .pg-w-name { width: 35%; }
+  .produce-guide.usf .pg-w-size { width: 13%; }
   .produce-guide.usf .pg-w-price { width: 8%; }
-  .produce-guide.usf .pg-w-par { width: 6%; }
+  .produce-guide.usf .pg-w-par { width: 5.5%; }
   body:has(.prep-print) .produce-guide .pg-section td {
     background: #e6e6e6 !important;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;

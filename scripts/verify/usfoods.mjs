@@ -22,14 +22,16 @@ const check = (label, ok, detail = '') => { if (!ok) failed++; console.log(`  ${
 
 // The sheets the app ships, so the expectations come from the data, not from
 // a copy of it typed in here.
-const SHEETS = {
-  pearl: JSON.parse(fs.readFileSync('src/data/usfoods-guide-pearl.json', 'utf8')),
-  flowood: JSON.parse(fs.readFileSync('src/data/usfoods-guide-flowood.json', 'utf8')),
-}
+// Both stores run Flowood's list — Beau asked for Pearl to mirror it. Pearl's
+// own sheet stays in the repo and is what the migration test seeds the "old
+// device" from.
+const FLOWOOD = JSON.parse(fs.readFileSync('src/data/usfoods-guide-flowood.json', 'utf8'))
+const PEARL_ARCHIVE = JSON.parse(fs.readFileSync('src/data/usfoods-guide-pearl.json', 'utf8'))
+const SHEETS = { pearl: FLOWOOD, flowood: FLOWOOD }
 const walk = (rows) => [...new Set(rows.map((r) => r.group))]
 // A section to add into and the one to move to, per store.
-const ADD_IN = { pearl: 'Bar', flowood: 'Liquor Closet' }
-const MAX_PAGES = { pearl: 8, flowood: 10 }
+const ADD_IN = { pearl: 'Liquor Closet', flowood: 'Liquor Closet' }
+const MAX_PAGES = { pearl: 10, flowood: 10 }
 
 const unlock = async (p, store) => {
   await p.goto('http://localhost:4180/', { waitUntil: 'domcontentloaded' })
@@ -179,58 +181,116 @@ for (const store of ['pearl', 'flowood']) {
   await ctx.close()
 }
 
-// ---- migration: a Flowood device that already seeded Pearl's list ----------
-// Before each store had its own sheet, Flowood seeded from Pearl's file under
-// stamp 'v1'. Rebuild that state the way the old code left it — Pearl's items
-// in the (shared) catalog, Pearl's flags and Pearl's layout copied under
-// Flowood's keys, stamp 'v1' — plus a par and a hand-added item on Flowood.
+// ---- migration: a Pearl device holding the old Pearl-only list -------------
+// It seeded Pearl's own sheet under stamp 'v1'. Opening Orders now has to hand
+// it Flowood's list, PARK the 14 lines only Pearl's sheet carried (they keep
+// their price and history and can be brought back), keep its pars, and leave
+// alone anything Beau added himself.
 {
-  console.log('--- flowood: device that seeded Pearl\'s list before Flowood had a sheet ---')
-  const pc = new Set(SHEETS.pearl.map((r) => r.code)), fc = new Set(SHEETS.flowood.map((r) => r.code))
-  const pearlOnly = [...pc].filter((c) => !fc.has(c))
+  console.log('--- pearl: device holding the old Pearl-only list ---')
+  const fc = new Set(FLOWOOD.map((r) => r.code))
+  const pearlOnly = PEARL_ARCHIVE.map((r) => r.code).filter((c) => !fc.has(c))
   const { ctx, p } = await newContext()
   await unlock(p, 'pearl')
-  await openUsFoods(p) // seeds Pearl's list into the catalog
-  const staged = await p.evaluate((pearlOnly) => {
-    const k = (store, key) => `mugops:mugshots|${store}::${key}`
-    localStorage.setItem(k('flowood', 'catalog:flags'), localStorage.getItem(k('pearl', 'catalog:flags')))
-    localStorage.setItem(k('flowood', 'guide:sections:US Foods'), localStorage.getItem(k('pearl', 'guide:sections:US Foods')))
-    localStorage.setItem(k('flowood', 'guide:seeded:usfoods'), JSON.stringify('v1'))
-    // a par on a line both sheets carry, and one Beau added by hand
-    const cat = JSON.parse(localStorage.getItem('mugops:mugshots|*::catalog:items'))
+  await p.goto('http://localhost:4180/', { waitUntil: 'networkidle' })
+  const staged = await p.evaluate(({ rows, hand }) => {
+    const k = (key) => `mugops:mugshots|pearl::${key}`
+    // the catalog the old seed would have left behind
+    const cat = rows.map((r, i) => ({
+      id: `old${i}`, name: r.name, unit: r.uom.toLowerCase(), category: r.category,
+      vendor: 'US Foods', cost: r.price, code: r.code, size: `${r.size} · ${r.brand}`,
+    }))
+    cat.push(hand)
+    localStorage.setItem('mugops:mugshots|*::catalog:items', JSON.stringify(cat))
+    localStorage.setItem(k('catalog:flags'), JSON.stringify(Object.fromEntries(cat.map((c) => [c.id, true]))))
+    const byGroup = new Map()
+    rows.forEach((r, i) => { if (!byGroup.has(r.group)) byGroup.set(r.group, []); byGroup.get(r.group).push(`old${i}`) })
+    const layout = [...byGroup.entries()].map(([title, ids]) => ({ title, ids }))
+    layout[0].ids.push(hand.id) // Beau's own line, in the first section
+    localStorage.setItem(k('guide:sections:US Foods'), JSON.stringify(layout))
+    localStorage.setItem(k('guide:seeded:usfoods'), JSON.stringify('v1'))
     const cup = cat.find((c) => c.code === '728865')
-    localStorage.setItem(k('flowood', 'catalog:pars'), JSON.stringify({ [cup.id]: { par: 4, onHand: 1 } }))
-    const hand = { id: 'hand-added-1', name: 'Hand Added Thing', unit: 'cs', category: 'Food', vendor: 'US Foods', code: '5550001' }
-    localStorage.setItem('mugops:mugshots|*::catalog:items', JSON.stringify([...cat, hand]))
-    const flags = JSON.parse(localStorage.getItem(k('flowood', 'catalog:flags')))
-    flags[hand.id] = true
-    localStorage.setItem(k('flowood', 'catalog:flags'), JSON.stringify(flags))
-    const layout = JSON.parse(localStorage.getItem(k('flowood', 'guide:sections:US Foods')))
-    layout.find((s) => s.title === 'Bar').ids.push(hand.id)
-    localStorage.setItem(k('flowood', 'guide:sections:US Foods'), JSON.stringify(layout))
-    return { sections: layout.map((s) => s.title).join(' → '), pearlOnlyFlagged: pearlOnly.filter((c) => flags[cat.find((x) => x.code === c)?.id]).length }
-  }, pearlOnly)
-  console.log(`  staged: Flowood holds ${staged.sections} · ${staged.pearlOnlyFlagged}/${pearlOnly.length} Pearl-only lines on its guide`)
-  await setStore(p, 'flowood')
+    localStorage.setItem(k('catalog:pars'), JSON.stringify({ [cup.id]: { par: 4, parF: 7, onHand: 1 } }))
+    return { sections: layout.map((s) => s.title).join(' → '), items: cat.length }
+  }, { rows: PEARL_ARCHIVE, hand: { id: 'hand1', name: 'Hand Added Thing', unit: 'cs', category: 'Food', vendor: 'US Foods', code: '5550001' } })
+  console.log(`  staged: ${staged.items} catalog items · ${staged.sections}`)
   await openUsFoods(p)
   const g = await guide(p, [...pearlOnly.slice(0, 3), '5550001', '728865'])
-  check("Flowood re-lays out from its own sheet", g.bands.join(' → ') === walk(SHEETS.flowood).join(' → '), g.bands.join(' → '))
-  check(`${SHEETS.flowood.length} sheet lines + the hand-added one`, g.items === `${SHEETS.flowood.length + 1} items`, g.items)
-  check('Pearl-only lines are off Flowood\'s guide', pearlOnly.slice(0, 3).every((c) => !g.has[c]), JSON.stringify(g.has))
-  const hand = await whereIs(p, '5550001')
-  check('the hand-added item survives, re-hung in the last section', !!hand && hand.band === 'Office', JSON.stringify(hand))
-  const st = await p.evaluate(() => {
+  check('Pearl re-lays out from the mirrored sheet', g.bands.join(' → ') === walk(FLOWOOD).join(' → '), g.bands.join(' → '))
+  check(`${FLOWOOD.length} sheet lines + the hand-added one`, g.items === `${FLOWOOD.length + 1} items`, g.items)
+  check('the old Pearl-only lines are off the guide', pearlOnly.slice(0, 3).every((c) => !g.has[c]), JSON.stringify(g.has))
+  const st = await p.evaluate((pearlOnly) => {
     const cat = JSON.parse(localStorage.getItem('mugops:mugshots|*::catalog:items'))
     const cup = cat.find((c) => c.code === '728865')
-    return { par: JSON.parse(localStorage.getItem('mugops:mugshots|flowood::catalog:pars'))[cup.id], stamp: JSON.parse(localStorage.getItem('mugops:mugshots|flowood::guide:seeded:usfoods')) }
+    return {
+      parked: pearlOnly.filter((c) => cat.find((x) => x.code === c)?.parked).length,
+      handParked: !!cat.find((c) => c.code === '5550001')?.parked,
+      keptPrice: cat.find((c) => c.code === pearlOnly[0])?.cost,
+      par: JSON.parse(localStorage.getItem('mugops:mugshots|pearl::catalog:pars'))[cup.id],
+      stamp: JSON.parse(localStorage.getItem('mugops:mugshots|pearl::guide:seeded:usfoods')),
+    }
+  }, pearlOnly)
+  check(`all ${pearlOnly.length} Pearl-only lines are parked, not deleted`, st.parked === pearlOnly.length, `${st.parked} parked`)
+  check('a parked line keeps its price', typeof st.keptPrice === 'number', String(st.keptPrice))
+  check("Beau's own added line is NOT parked", !st.handParked)
+  const hand = await whereIs(p, '5550001')
+  check('and it survives on the guide', !!hand, JSON.stringify(hand))
+  check('both pars survive on a shared line', st.par?.par === 4 && st.par?.parF === 7, JSON.stringify(st.par))
+  check('stamp is now the mirrored one', st.stamp === 'mirror-flowood-v1', st.stamp)
+
+  // ---- the Parked shelf in the Item Catalog ------------------------------
+  await p.goto('http://localhost:4180/#/catalog', { waitUntil: 'networkidle' }); await p.waitForTimeout(1200)
+  const chip = p.locator('button', { hasText: /Parked\s*\d+/ })
+  check('Item Catalog shows a Parked shelf', (await chip.count()) === 1, `${await chip.count()} chips · ${(await p.locator('button').allInnerTexts()).filter((t) => /park/i.test(t)).join(' | ')}`)
+  await chip.first().click(); await p.waitForTimeout(600)
+  const parkedList = await p.evaluate(() => {
+    const cards = [...document.querySelectorAll('.grid > div')]
+    return { n: cards.length, first: cards[0]?.innerText.split('\n').slice(0, 2).join(' · ') }
   })
-  check('the Flowood par on a shared line survives', st.par?.par === 4, JSON.stringify(st.par))
-  check("stamp is now Flowood's", st.stamp === 'flowood-v1', st.stamp)
-  // Pearl on the same device: untouched
-  await setStore(p, 'pearl')
+  check(`the shelf lists all ${pearlOnly.length} parked items`, parkedList.n === pearlOnly.length, `${parkedList.n} · ${parkedList.first}`)
+  await p.screenshot({ path: `${SP}/parked-shelf.png` })
+  // un-park the first one and watch it come back
+  await p.locator('button', { hasText: /Un-park/ }).first().click(); await p.waitForTimeout(700)
+  const back = await p.evaluate(() => {
+    const cat = JSON.parse(localStorage.getItem('mugops:mugshots|*::catalog:items'))
+    return { stillParked: cat.filter((c) => c.parked).length }
+  })
+  check('un-park takes it off the shelf', back.stillParked === pearlOnly.length - 1, `${back.stillParked} left`)
   await openUsFoods(p)
-  const gp = await guide(p, pearlOnly.slice(0, 3))
-  check("Pearl's guide on the same device is untouched", gp.items === `${SHEETS.pearl.length} items` && pearlOnly.slice(0, 3).every((c) => gp.has[c]), `${gp.items} · ${JSON.stringify(gp.has)}`)
+  const after = await guide(p, [])
+  check('and it is back on the guide', after.items === `${FLOWOOD.length + 2} items`, after.items)
+  await ctx.close()
+}
+
+// ---- the shipped documents actually load ----------------------------------
+// The service worker's SPA fallback used to answer the PDF's navigation with
+// index.html, so Printables' documents opened the app and printed blank.
+{
+  console.log('--- shipped documents (service worker active) ---')
+  const { ctx, p } = await newContext()
+  await p.goto('http://localhost:4180/', { waitUntil: 'domcontentloaded' })
+  await p.waitForTimeout(6000) // the app reloads itself when the new SW takes control
+  await p.goto('http://localhost:4180/', { waitUntil: 'networkidle' }); await p.waitForTimeout(1500)
+  check('a service worker is in control', await p.evaluate(() => !!navigator.serviceWorker.controller))
+  for (const href of ['sheets/employment-application.pdf', 'sheets/mini-mugs-2026.pdf']) {
+    const what = await p.evaluate(async (href) => {
+      const f = document.createElement('iframe')
+      f.style.cssText = 'position:fixed;left:-9999px;width:794px;height:1123px'
+      f.src = href
+      document.body.appendChild(f)
+      await new Promise((s) => { f.onload = s; setTimeout(s, 6000) })
+      let out
+      try {
+        const d = f.contentDocument
+        // A real PDF loads Chrome's viewer, whose document contentType is
+        // application/pdf. The SPA fallback used to serve index.html here.
+        out = !d ? 'the PDF' : d.contentType === 'application/pdf' ? 'the PDF' : `${d.contentType} — "${d.title}" WRONG`
+      } catch { out = 'the PDF' }
+      f.remove()
+      return out
+    }, href)
+    check(`${href} loads the document`, what === 'the PDF', what)
+  }
   await ctx.close()
 }
 await b.close()

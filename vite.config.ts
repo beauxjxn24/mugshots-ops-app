@@ -56,6 +56,26 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // The OCR engine (~9MB) loads on demand — don't precache it.
         globIgnores: ['tesseract/**'],
+        // Hands off the shipped documents. Opening a PDF — in a frame, a new
+        // tab, or by tapping a link — is a NAVIGATION, and the SPA fallback
+        // was answering every navigation with index.html. So Printables'
+        // documents loaded the APP instead of the file, and what reached the
+        // printer was a blank page. Anything under /sheets/ or ending .pdf
+        // goes to the network instead.
+        navigateFallbackDenylist: [/\/sheets\//, /\.pdf$/i],
+        // Keep a copy once it has been opened, so a tablet can still print the
+        // kids menu when the restaurant's wifi dips.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }: { url: URL }) => /\.pdf$/i.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'documents',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
         // Take control of already-open tabs the moment a new version activates
         // (skipWaiting alone activates it but leaves open pages on the old one).
         // Paired with the controllerchange reload in main.tsx, an open app now

@@ -8,6 +8,7 @@ import {
   setCatalog,
   getFlags,
   setOnGuide,
+  setParked,
   registerItem,
   updateItem,
   findSimilar,
@@ -20,7 +21,7 @@ import {
   SHELVES,
   type CatalogItem,
 } from '../lib/catalog'
-import { Pencil, Plus, Check, PackageOpen, ChefHat, ClipboardList, X, Layers } from 'lucide-react'
+import { Pencil, Plus, Check, PackageOpen, ChefHat, ClipboardList, X, Layers, Archive, RotateCcw } from 'lucide-react'
 
 const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
 
@@ -139,28 +140,51 @@ export function Catalog() {
   const hasDest = (it: CatalogItem, d: Dest) =>
     d === 'guide' ? !!flags[it.id] : d === 'prep' ? isInPrep(it.name) : isInInventory(it.name)
 
+  /**
+   * Parking, the alternative to deleting.
+   *
+   * Deleting an item loses its price history and every invoice spelling it has
+   * learned, and this kitchen brings things back — LTOs, seasonal items, a
+   * product a vendor drops and then carries again. Parked items leave the
+   * order guides and the browse list and wait on the Parked shelf.
+   */
+  const park = (it: CatalogItem, on: boolean) => {
+    setParked(it.id, on)
+    refresh()
+  }
+
+  const active = useMemo(() => items.filter((i) => !i.parked), [items])
+  const parked = useMemo(() => items.filter((i) => !!i.parked), [items])
+  const showingParked = cat === 'Parked'
+
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
-    return items
+    return (showingParked ? parked : active)
       .filter(
         (i) =>
-          (cat === 'All' || i.category === cat) &&
+          (cat === 'All' || showingParked || i.category === cat) &&
           (!query || i.name.toLowerCase().includes(query) || i.vendor.toLowerCase().includes(query)),
       )
-      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
-  }, [items, q, cat, tick])
+      .sort((a, b) =>
+        showingParked
+          ? (b.parked ?? '').localeCompare(a.parked ?? '') // most recently parked first
+          : (a.name ?? '').localeCompare(b.name ?? ''),
+      )
+  }, [active, parked, showingParked, q, cat, tick])
 
-  const onGuideCount = items.filter((i) => flags[i.id]).length
+  const onGuideCount = active.filter((i) => flags[i.id]).length
   const catCounts = useMemo(() => {
     const m = new Map<string, number>()
-    for (const it of items) m.set(it.category, (m.get(it.category) ?? 0) + 1)
+    for (const it of active) m.set(it.category, (m.get(it.category) ?? 0) + 1)
     return m
-  }, [items])
+  }, [active])
 
   return (
       <Page
         title="Item Catalog"
-        subtitle={`${items.length} items · ${concept} — ${location} · ${onGuideCount} on the order guide`}
+        subtitle={`${active.length} items · ${concept} — ${location} · ${onGuideCount} on the order guide${
+          parked.length ? ` · ${parked.length} parked` : ''
+        }`}
         right={<SearchInput value={q} onChange={setQ} placeholder="Search items…" className="w-full max-w-xs" />}
         flush
         className="space-y-4"
@@ -254,29 +278,53 @@ export function Catalog() {
         {/* ---- Category rail ---- */}
         <div className="flex flex-wrap items-center gap-1.5">
           {['All', ...SHELVES].map((c) => {
-            const n = c === 'All' ? items.length : catCounts.get(c) ?? 0
-            const active = cat === c
+            const n = c === 'All' ? active.length : catCounts.get(c) ?? 0
+            const on = cat === c
             return (
               <button
                 key={c}
                 onClick={() => setCat(c)}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
-                  active ? 'border-brand bg-brand text-white' : 'border-white/10 bg-white/[0.03] text-muted hover:text-ink'
+                  on ? 'border-brand bg-brand text-white' : 'border-white/10 bg-white/[0.03] text-muted hover:text-ink'
                 }`}
               >
                 {c !== 'All' && <span className="size-2 rounded-full" style={{ background: dotFor(c) }} />}
-                {c} <span className={active ? 'text-white/70' : 'text-muted/70'}>{n}</span>
+                {c} <span className={on ? 'text-white/70' : 'text-muted/70'}>{n}</span>
               </button>
             )
           })}
+          {/* The parked shelf. Set apart from the categories because it isn't
+              one — it's the same catalog, put away. Only shows once something
+              is on it. */}
+          {parked.length > 0 && (
+            <button
+              onClick={() => setCat(showingParked ? 'All' : 'Parked')}
+              className={`ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
+                showingParked ? 'border-warn bg-warn/20 text-warn' : 'border-warn/30 bg-warn/[0.06] text-warn/80 hover:text-warn'
+              }`}
+            >
+              <Archive size={13} /> Parked <span className="opacity-70">{parked.length}</span>
+            </button>
+          )}
         </div>
+
+        {showingParked && (
+          <p className="rounded-xl border border-warn/25 bg-warn/[0.06] px-3 py-2 text-xs text-ink">
+            <b className="text-warn">Parked</b> — off every order guide, kept whole: price, vendor, product number and
+            the invoice spellings each one has learned. Put one back and it returns to the guides it was on.
+          </p>
+        )}
 
         {/* ---- Item grid ---- */}
         {filtered.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] py-12 text-center">
             <Layers size={26} className="mx-auto mb-2 text-muted" />
             <p className="text-sm text-muted">
-              {items.length ? 'No items match.' : 'No items yet — add your first above, or drop a vendor guide on Imports.'}
+              {showingParked
+                ? 'Nothing parked.'
+                : active.length
+                  ? 'No items match.'
+                  : 'No items yet — add your first above, or drop a vendor guide on Imports.'}
             </p>
           </div>
         ) : (
@@ -303,11 +351,33 @@ export function Catalog() {
                       {it.size ? ` · ${it.size}` : ''}
                       {it.vendor ? ` · ${it.vendor}` : ''}
                       {it.cost != null && <> · <b className="font-mono text-ink">{money(it.cost)}</b></>}
+                      {it.parked && <> · <span className="font-semibold text-warn">parked {it.parked}</span></>}
                     </div>
                   </div>
+                  {/* Park sits where the eye lands first, because it is the
+                      right move nearly every time somebody reaches for the X. */}
+                  <button
+                    onClick={() => park(it, !it.parked)}
+                    title={it.parked ? 'Put it back on the working list' : 'Park it — off the guides, kept in full'}
+                    aria-label={it.parked ? `Un-park ${it.name}` : `Park ${it.name}`}
+                    className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold ${
+                      it.parked ? 'bg-warn/15 text-warn' : 'text-muted/60 hover:bg-warn/10 hover:text-warn'
+                    }`}
+                  >
+                    {it.parked ? (
+                      <span className="inline-flex items-center gap-1"><RotateCcw size={13} /> Un-park</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1"><Archive size={13} /> Park</span>
+                    )}
+                  </button>
                   <button
                     onClick={async () => {
-                      if (await confirmDelete(`Delete ${it.name} from the catalog?`, 'Removes it for every store of this concept.')) {
+                      if (
+                        await confirmDelete(
+                          `Delete ${it.name} from the catalog?`,
+                          'Removes it for every store of this concept, with its price history and the invoice spellings it has learned. Park it instead to keep all of that.',
+                        )
+                      ) {
                         setCatalog(getCatalog().filter((x: CatalogItem) => x.id !== it.id))
                         removeFromPrep(it.name)
                         removeFromInventory(it.name)

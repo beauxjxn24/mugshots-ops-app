@@ -22,6 +22,16 @@ export interface CatalogItem {
   code?: string
   /** Pack size (750ml, 4/5LB, 24 ct…). */
   size?: string
+  /**
+   * Parked: retired from the working lists, kept in full.
+   *
+   * The date it was parked. A parked item drops off every order guide but
+   * keeps its price, its history and the invoice spellings it has learned, so
+   * an LTO or a seasonal product that comes back is one tap away instead of
+   * being re-typed and re-matched. This is the alternative to deleting — the
+   * catalog is concept-level, so parking is too.
+   */
+  parked?: string
 }
 
 export const SHELVES = ['Produce', 'Liquor', 'Beer', 'Food', 'Paper / Supply', 'Kitchen', 'Other']
@@ -180,6 +190,29 @@ export function cleanupCatalogNames(): void {
 export function setOnGuide(id: string, on: boolean): void {
   setFlags({ ...getFlags(), [id]: on })
 }
+
+/**
+ * Park an item (or bring it back).
+ *
+ * Parking is the answer to "we don't carry this right now" — the item leaves
+ * every order guide but stays whole in the catalog, on the Parked shelf, with
+ * its price, vendor, product number and learned invoice spellings intact.
+ * Un-parking puts it back on the guides of every store that still had it
+ * flagged on, exactly where it used to sit in the layout.
+ */
+export function setParked(id: string, parked: boolean): void {
+  const items = getCatalog()
+  const it = items.find((x) => x.id === id)
+  if (!it) return
+  if (parked) it.parked = isoToday()
+  else delete it.parked
+  setCatalog(items)
+}
+
+export const isParked = (it: CatalogItem): boolean => !!it.parked
+/** The working catalog: everything except what's on the Parked shelf. */
+export const activeCatalog = (): CatalogItem[] => getCatalog().filter((it) => !it.parked)
+export const parkedCatalog = (): CatalogItem[] => getCatalog().filter((it) => !!it.parked)
 
 /** Teach the catalog: this invoice description IS that item. Sticks forever. */
 /**

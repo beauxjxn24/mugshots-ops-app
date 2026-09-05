@@ -5,7 +5,7 @@
 
 import { load, save } from './store'
 import { useScope } from './scope'
-import { getCatalog, getFlags, getPars, setPars, setOnGuide, registerItem, updateItem, guessCategory } from './catalog'
+import { getCatalog, getFlags, getPars, setPars, setOnGuide, setParked, registerItem, updateItem, guessCategory } from './catalog'
 import LIQUOR_SEED from '../data/liquor-guide-flowood.json'
 import PRODUCE_SEED from '../data/produce-guide.json'
 import USFOODS_PEARL from '../data/usfoods-guide-pearl.json'
@@ -115,16 +115,31 @@ interface UsfRow {
 }
 
 /**
- * One US Foods "Sheet to Shelf" export per store, both from Beau on
- * 2026-09-04. Regenerate a file with scripts/usfoods-sheet-to-json.py and bump
- * that store's stamp: a device whose stamp doesn't match re-seeds from the
- * sheet. (Pearl's stamp stays 'v1' — its sheet hasn't changed since the first
- * seed and there is no reason to touch those devices.)
+ * The US Foods guide each store seeds from.
+ *
+ * Both stores run Flowood's "Sheet to Shelf" list: Beau asked for Pearl to
+ * mirror it (2026-09-05) so there is one list to maintain, and the per-store
+ * differences are handled the way he actually works — move an item, add one,
+ * park one. Pearl's own sheet is kept at `src/data/usfoods-guide-pearl.json`;
+ * to give Pearl its own list again, point `pearl.rows` back at it and bump the
+ * stamp. Regenerate either file with scripts/usfoods-sheet-to-json.py.
+ *
+ * A device whose stored stamp doesn't match re-seeds from the sheet.
  */
 const USFOODS_SHEETS: Record<string, { stamp: string; rows: UsfRow[] }> = {
-  pearl: { stamp: 'v1', rows: USFOODS_PEARL as UsfRow[] },
+  pearl: { stamp: 'mirror-flowood-v1', rows: USFOODS_FLOWOOD as UsfRow[] },
   flowood: { stamp: 'flowood-v1', rows: USFOODS_FLOWOOD as UsfRow[] },
 }
+
+/**
+ * Every product number this app has ever seeded onto a US Foods guide —
+ * including Pearl's archived sheet. A re-seed uses it to tell "a line from an
+ * older shipped sheet" (park it: nobody's list carries it now) from "something
+ * Beau added himself" (leave it exactly where he put it).
+ */
+const SEEDED_USF_CODES = new Set(
+  [...(USFOODS_PEARL as UsfRow[]), ...(USFOODS_FLOWOOD as UsfRow[])].map((r) => r.code),
+)
 
 /**
  * The US Foods order guide — the vendor's own "Sheet to Shelf" export, one
@@ -136,13 +151,13 @@ const USFOODS_SHEETS: Record<string, { stamp: string; rows: UsfRow[] }> = {
  * price, and the layout is the sheet's storage areas in walk order.
  *
  * Fresh device: only ever adds; an item already on the guide (say, from a
- * received invoice) keeps its place. Stale stamp: before each store had its
- * own sheet every store seeded from Pearl's, so a Flowood device that already
- * opened Orders carries Pearl's list. The lines that aren't on this store's
- * sheet come off THIS store's guide (flags are per store; the catalog entries
- * stay — Pearl still uses them) and the layout is rebuilt from the sheet.
- * Pars are per item per store and survive; anything added by hand that isn't
- * on the sheet is re-hung in the last section by getGuideSections.
+ * received invoice) keeps its place. Stale stamp — the shipped sheet changed
+ * under a device that already seeded: lines from the older sheet that this
+ * store's new one doesn't carry come off the guide and are PARKED, so they
+ * keep their price, product number and learned invoice spellings and can be
+ * brought back from Item Catalog → Parked. The layout is then rebuilt from the
+ * sheet. Pars are per item per store and survive; anything Beau added by hand
+ * is left alone and re-hung in the last section by getGuideSections.
  */
 export function seedUsFoodsGuide(): void {
   const sheet = USFOODS_SHEETS[useScope.getState().currentLocation]
@@ -153,13 +168,13 @@ export function seedUsFoodsGuide(): void {
   const stale = stamp !== ''
   if (stale) {
     const onSheet = new Set(sheet.rows.map((r) => r.code))
-    const foreign = new Set(
-      Object.values(USFOODS_SHEETS)
-        .flatMap((s) => s.rows.map((r) => r.code))
-        .filter((c) => !onSheet.has(c)),
-    )
     for (const ci of getCatalog()) {
-      if (ci.vendor === 'US Foods' && ci.code && foreign.has(ci.code)) setOnGuide(ci.id, false)
+      if (ci.vendor !== 'US Foods' || !ci.code) continue
+      if (onSheet.has(ci.code) || !SEEDED_USF_CODES.has(ci.code)) continue
+      // Park only — the guide flag is left alone on purpose, so bringing the
+      // item back from the Parked shelf puts it back on the guide instead of
+      // needing a second step nobody would guess at.
+      setParked(ci.id, true)
     }
   }
   const existing = stale ? [] : getGuideSections('US Foods')
@@ -192,7 +207,13 @@ export function seedUsFoodsGuide(): void {
  */
 export function getGuideSections(shelf: GuideShelf): GuideSection[] {
   const flags = getFlags()
-  const live = new Map(getCatalog().filter((ci) => flags[ci.id] && onShelf(ci.category, shelf, ci.vendor)).map((ci) => [ci.id, ci]))
+  // Parked items are off every guide — that is what parking is. The flag is
+  // left as it was, so un-parking puts the item straight back where it sat.
+  const live = new Map(
+    getCatalog()
+      .filter((ci) => flags[ci.id] && !ci.parked && onShelf(ci.category, shelf, ci.vendor))
+      .map((ci) => [ci.id, ci]),
+  )
   const stored = load<GuideSection[]>(layoutKey(shelf), [])
   const seen = new Set<string>()
   const sections: GuideSection[] = stored

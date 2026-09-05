@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Printer, Check, GripVertical, Plus, PackageOpen, ChevronUp, ChevronDown } from 'lucide-react'
+import { Printer, Check, GripVertical, Plus, PackageOpen, ChevronUp, ChevronDown, Archive } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { Page, Card } from '../components/ui'
 import { entryColumn, entryField } from '../lib/nextfield'
 import { suggested, setParEntry, getReceiptLog, getParEdits, vendors } from '../lib/ordering'
-import { getCatalog, getPars, getFlags, setOnGuide, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog, updateItem } from '../lib/catalog'
+import { getCatalog, getPars, getFlags, setParked, getPriceLog, renameItem, setItemCost, setItemVendor, setCatalog, updateItem } from '../lib/catalog'
 import {
   GUIDE_SHELVES,
   seedProduceGuide,
@@ -72,7 +72,9 @@ export function Ordering() {
   // both columns the paper sheet does. Every other shelf has one par and gets
   // one column — an empty "F par" on the liquor guide is a question nobody can
   // answer. Fri–Sun the Order column counts against F; Mon–Thu against M.
-  const twoPar = shelf === 'Produce'
+  // Produce and the US Foods sheet are both ordered twice a week to different
+  // levels, so both print — and edit — the paper sheet's two columns.
+  const twoPar = shelf === 'Produce' || isVendorGuide(shelf)
   const onF = [5, 6, 0].includes(new Date().getDay())
   const gridCols = twoPar
     ? 'grid-cols-[20px_minmax(0,1fr)_76px_52px_52px_60px_68px]'
@@ -218,11 +220,25 @@ export function Ordering() {
     refresh()
   }
 
-  const removeFromGuide = async (r: Row) => {
+  /**
+   * Park it, don't drop it.
+   *
+   * "Off guide" left an item in limbo — gone from the sheet, still in the
+   * catalog, with nowhere that listed what had been taken off. Parking is the
+   * same move with a shelf to land on: Item Catalog → Parked, price, product
+   * number and learned invoice spellings intact, one tap to bring back. The
+   * catalog is shared by both stores, so parking is too.
+   */
+  const parkItem = async (r: Row) => {
     if (
-      await confirmDelete(`Take ${r.name} off this store's guide?`, 'It stays in the Item Catalog — flip it back on anytime.', 'Off guide')
+      await confirmDelete(
+        `Park ${r.name}?`,
+        'Comes off the order guides and waits in Item Catalog → Parked, with its price and history. Un-park it any time.',
+        'Park it',
+      )
     ) {
-      setOnGuide(r.id, false)
+      setParked(r.id, true)
+      setEditingId(null)
       refresh()
     }
   }
@@ -770,8 +786,8 @@ export function Ordering() {
                           <button onClick={commitEdit} className="rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white">
                             Save
                           </button>
-                          <button onClick={() => void removeFromGuide(r)} className="rounded-lg border border-down/30 px-3 py-2 text-xs font-bold text-down">
-                            Off guide
+                          <button onClick={() => void parkItem(r)} title="Off the guides, kept in Item Catalog → Parked" className="inline-flex items-center gap-1.5 rounded-lg border border-warn/40 px-3 py-2 text-xs font-bold text-warn">
+                            <Archive size={13} /> Park
                           </button>
                           {/* Moving by tap, for a finger on a tablet where the
                               drag grip is a mouse thing: a step up or down, or
