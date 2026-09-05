@@ -20,6 +20,7 @@ import {
   addGuideItem,
   onShelf,
 } from '../lib/guide'
+import { seedLiquorPrices } from '../lib/priceseed'
 import { usePersistentState, today } from '../lib/store'
 import { useIsPhone } from '../lib/useIsPhone'
 import type { Night } from '../lib/nightly'
@@ -62,6 +63,9 @@ export function Ordering() {
   useMemo(() => seedLiquorGuide(), [])
   useMemo(() => seedProduceGuide(), [])
   useMemo(() => seedUsFoodsGuide(), [])
+  // Bottle prices off the Lincoln Road receipts — after the liquor guide, so
+  // they land on items that already exist rather than creating them twice.
+  useMemo(() => seedLiquorPrices(), [])
 
   const isPhone = useIsPhone()
   const priceLog = useMemo(() => getPriceLog(), [])

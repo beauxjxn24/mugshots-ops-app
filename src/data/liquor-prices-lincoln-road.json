@@ -1,0 +1,33 @@
+{
+  "vendor": "Lincoln Road Package Store",
+  "source": "Two sales receipts, Mugshots Pearl (acct 1812, permit 077012): INV 04-1315876 dated 2026-09-01 ($523.25, 32 bottles) and INV 04-1314598 dated 2026-08-26 ($548.16, 48 bottles). Both transcribed line by line; each receipt's extended prices sum exactly to its printed total, so the unit prices below are the receipts', not an estimate. Where a product is on both receipts the price is identical.",
+  "priced": "2026-09-01",
+  "lines": [
+    { "code": "38177", "receipt": "TITO'S / HANDMADE VODKA / 1.0L", "item": "Tito's", "size": "1.0L", "price": 21.24 },
+    { "code": "36970", "receipt": "NEW AMSTERDAM / VODKA / 1.0L", "item": "New Amsterdam Vodka", "size": "1.0L", "price": 12.32 },
+    { "code": "40053", "receipt": "DEEP EDDY / LEMON VODKA / 750ml", "item": "Deep Eddy Lemon", "size": "750ml", "price": 16.99 },
+    { "code": "38387", "receipt": "HOODOO / ESPRESSO VODKA / 750ml", "item": "Cathead Hoodoo Espresso", "size": "750ml", "price": 30.17 },
+    { "code": "39761", "receipt": "CATHEAD / HONEYSUCKLE VODKA / 1.0L", "item": "Cathead Honeysuckle", "size": "1.0L", "price": 24.22 },
+    { "code": "17086", "receipt": "BULLEIT / BOURBON / 750ml", "item": "Bulleit Bourbon", "size": "750ml", "price": 25.92 },
+    { "code": "16517", "receipt": "ANCIENT AGE / KENTUCKY BOURBON / 1.0L", "item": "Ancient Age", "size": "1.0L", "price": 10.62 },
+    { "code": "15627", "receipt": "JAMESON / IRISH WHISKEY / 1.0L", "item": "Jameson", "size": "1.0L", "price": 32.29 },
+    { "code": "10808", "receipt": "CROWN ROYAL / REGAL APPLE / 1.0L", "item": "Crown Apple", "size": "1.0L", "price": 30.17 },
+    { "code": "88296", "receipt": "PATRON / SILVER / 750ml", "item": "Patron", "size": "750ml", "price": 42.49 },
+    { "code": "87485", "receipt": "DON JULIO / BLANCO / 750ml", "item": "Don Julio", "size": "750ml", "price": 46.74 },
+    { "code": "88796", "receipt": "TWO FINGERS / WHITE TEQUILA / 750ml", "item": "Two Fingers White (house)", "size": "750ml", "price": 14.44 },
+    { "code": "88018", "receipt": "LUNAZUL / BLANCO TEQUILA / 750ml", "item": "Lunazul Blanco", "size": "750ml", "price": 22.09 },
+    { "code": "31470", "receipt": "NEW AMSTERDAM / GIN / 1.0L", "item": "New Amsterdam (House)", "size": "1.0L", "price": 15.72 },
+    { "code": "65257", "receipt": "JAGERMEISTER / GERMAN LIQUEUR / 1.0L", "item": "Jager", "size": "1.0L", "price": 27.62 },
+    { "code": "85437", "receipt": "MR. BOSTON'S / BLUE CURACAO / 1.0L", "item": "Mr. Boston Blue Curacao", "size": "1.0L", "price": 6.79 },
+    { "code": "86487", "receipt": "MR. BOSTON'S / TRIPLE SEC / 1.0L", "item": "Mr. Boston Triple Sec", "size": "1.0L", "price": 4.24 },
+    { "code": "65127", "receipt": "GRAND MARNIER / ORANGE LIQUEUR / 1.0L", "item": "Grand Marnier", "size": "1.0L", "price": 45.89 },
+    { "code": "64776", "receipt": "COINTREAU / ORANGE LIQUEUR / 750ml", "item": "Cointreau", "size": "750ml", "price": 36.54 },
+    { "code": "68037", "receipt": "BAILEY'S / IRISH CREAM / 1.0L", "item": "Baileys", "size": "1.0L", "price": 36.12 },
+    { "code": "FCMANGO", "receipt": "FINEST CALL / MANGO PUREE / 1.0L", "item": "Finest Call Mango", "size": "1.0L", "price": 6.79 },
+    { "code": "FCPEACH1L", "receipt": "FINEST CALL / PEACH PUREE / 1.0L", "item": "Finest Call Peach", "size": "1.0L", "price": 6.79 },
+    { "code": "FCWM1L", "receipt": "FINEST CALL / WATERMELON PUREE / 1.0L", "item": "Watermelon Puree", "size": "1.0L", "price": 6.79 },
+    { "code": "544083", "receipt": "BAREFOOT CELLARS / PINOT GRIGIO / 187ml", "item": "Pinot Grigio", "size": "187ml", "price": 2.24 },
+    { "code": "544072", "receipt": "BAREFOOT CELLARS / CHARDONNAY / 187ml", "item": "Chardonnay", "size": "187ml", "price": 2.24 },
+    { "code": "744205", "receipt": "COOK'S / BRUT / 750ml", "item": "Cook's Brut", "size": "750ml", "price": 8.24 }
+  ]
+}

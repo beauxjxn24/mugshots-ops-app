@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Printer, ExternalLink, FileText, ScrollText } from 'lucide-react'
 import { getDoc } from '../lib/docs'
+import { renderPdfPages, framePdfIsReliable } from '../lib/pdfpages'
 import { fmtDate, fmtTime, type Booking } from '../lib/catering'
 import { mapItems, unmapped } from '../lib/ezmap'
 import { useScope } from '../lib/scope'
@@ -30,6 +31,17 @@ export function OrderTicket({ booking, onClose }: { booking: Booking | null; onC
   const [url, setUrl] = useState<string | null>(null)
   const [doc, setDoc] = useState<'looking' | 'here' | 'gone'>('looking')
   const [view, setView] = useState<'pdf' | 'details'>('pdf')
+  /**
+   * The caterer's pages as images — what actually goes to the printer.
+   *
+   * Printing straight out of the PDF frame works in Chrome and nowhere else
+   * that matters here: an iPad won't render a PDF in a frame at all, and
+   * `print()` on a PDF viewer is blocked in Safari. Rendering the pages
+   * ourselves means the printed order is the caterer's page on every device
+   * in the building. `null` while rendering, `[]` if the file won't render.
+   */
+  const [pages, setPages] = useState<string[] | null>(null)
+  const frameOk = useRef(framePdfIsReliable())
   const frame = useRef<HTMLIFrameElement>(null)
   const concepts = useScope((s) => s.concepts)
   const conceptId = useScope((s) => s.currentConcept)
@@ -48,12 +60,18 @@ export function OrderTicket({ booking, onClose }: { booking: Booking | null; onC
     let made = ''
     setDoc('looking')
     setUrl(null)
+    setPages(null)
     void getDoc(docId).then((rec) => {
       if (cancelled) return
       if (!rec) return setDoc('gone')
       made = URL.createObjectURL(rec.blob)
       setUrl(made)
       setDoc('here')
+      // Render for the printer in the background — the file is open by the
+      // time anyone reaches for Print.
+      void renderPdfPages(rec.blob)
+        .then((imgs) => !cancelled && setPages(imgs))
+        .catch(() => !cancelled && setPages([]))
     })
     return () => {
       cancelled = true
@@ -84,6 +102,10 @@ export function OrderTicket({ booking, onClose }: { booking: Booking | null; onC
   }
   const print = () => {
     if (showingPdf) {
+      // The rendered pages are in the document already (print-only), so this
+      // prints the caterer's own page on any browser.
+      if (pages && pages.length > 0) return window.print()
+      // Nothing rendered — fall back to the frame, then to a tab.
       try {
         const w = frame.current?.contentWindow
         if (w) {
@@ -170,13 +192,46 @@ export function OrderTicket({ booking, onClose }: { booking: Booking | null; onC
           </div>
         )}
 
+        {/* What prints when the caterer's page is what's open: their pages,
+            rendered. Never on screen — the frame (or the images below) is
+            what you look at. */}
+        {showingPdf && pages && pages.length > 0 && (
+          <div className="order-print order-pdf-print hidden print:block">
+            {pages.map((src, i) => (
+              <img key={i} src={src} alt={`Order page ${i + 1}`} />
+            ))}
+          </div>
+        )}
+
         {showingPdf ? (
-          <iframe
-            ref={frame}
-            src={url ?? ''}
-            title={`Catering order — ${b.event}`}
-            className="min-h-0 w-full flex-1 border-0 bg-white"
-          />
+          frameOk.current ? (
+            <iframe
+              ref={frame}
+              src={url ?? ''}
+              title={`Catering order — ${b.event}`}
+              className="min-h-0 w-full flex-1 border-0 bg-white"
+            />
+          ) : (
+            /* iPads and Safari don't render a PDF in a frame — they show a
+               grey box. The rendered pages are the view there. */
+            <div className="order-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-black/5 p-3 print:hidden">
+              {pages === null ? (
+                <p className="p-6 text-center text-sm text-muted">Opening the caterer’s page…</p>
+              ) : pages.length > 0 ? (
+                pages.map((src, i) => (
+                  <img key={i} src={src} alt={`Order page ${i + 1}`} className="mx-auto mb-3 block w-full max-w-3xl bg-white shadow" />
+                ))
+              ) : (
+                <div className="p-4">
+                  <p className="mb-3 rounded-lg border border-brand/30 bg-brand/[0.07] p-3 text-xs text-ink/80">
+                    This device can’t display the caterer’s PDF. Tap the arrow above to open it, or print the
+                    order below.
+                  </p>
+                  <OrderPaper b={b} where={where} />
+                </div>
+              )}
+            </div>
+          )
         ) : doc === 'looking' ? (
           <p className="p-6 text-center text-sm text-muted">Opening the order…</p>
         ) : (

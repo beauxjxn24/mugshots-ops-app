@@ -1082,6 +1082,20 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
     line-height: 1.45;
   }
   .order-print li { break-inside: avoid; }
+  /* The caterer's own pages, rendered to images: one per sheet of paper,
+     edge to edge, nothing else on the page. */
+  .order-pdf-print img {
+    display: block;
+    width: 100%;
+    height: auto;
+    break-after: page;
+    page-break-after: always;
+  }
+  .order-pdf-print img:last-child { break-after: auto; page-break-after: auto; }
+  /* The frame is what's on screen; on paper the images take over, or both
+     would print and the order would come out twice. */
+  body:has(.order-pdf-print) .order-panel iframe { display: none !important; }
+  body:has(.order-pdf-print) .order-panel > .print\:hidden { display: none !important; }
 }
 
 /* The Mugsy launcher sits above every overlay so it stays draggable anywhere.
