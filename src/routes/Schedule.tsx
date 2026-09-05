@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Copy, Printer, Lock, LockOpen, CheckCircle2, CalendarClock, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Copy, Printer, Lock, LockOpen, CheckCircle2, CalendarClock, Check, X, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { Page, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
@@ -57,6 +57,189 @@ export const CODE_LABEL: Record<string, string> = {
 const CODE_HELP = 'O open · C close · M mid · OFF day off · RO requested off · R✓ granted · VAC vacation'
 const DEFAULT_RULES =
   'Every manager gets 2 weekend days off per period · no clopens · GM closes ≤ 6 per period. Build week 4 from these rules — adjust and publish.'
+
+/**
+ * The week as seven days, not as a spreadsheet.
+ *
+ * A GM does not build a schedule by walking a person's row and filling in
+ * seven cells. They build it a day at a time — who opens Monday, who closes
+ * Monday — and the question they are actually answering is coverage. So the
+ * board is a column per day with the three shifts as slots: a name in a slot
+ * is a shift, an empty slot is a hole and looks like one, and everyone not in
+ * a slot is off that day and sits underneath in plain sight.
+ *
+ * It writes the same cells the grid does, so publishing, the posted view and
+ * the balance card all carry on unchanged — this is a different way into the
+ * same week, not a different week.
+ */
+function Board({
+  people,
+  weekStart,
+  grid,
+  today: t,
+  unlocked,
+  onSet,
+  onUnlock,
+}: {
+  people: SchedulePerson[]
+  weekStart: string
+  grid: Record<string, string[]>
+  today: string
+  unlocked: boolean
+  onSet: (uid: string, date: string, code: string) => void
+  onUnlock: () => void
+}) {
+  // Which slot is open for picking: day index + the code being filled.
+  const [picking, setPicking] = useState<{ day: number; code: string } | null>(null)
+  const SLOTS = [
+    { code: 'O', label: 'Opening' },
+    { code: 'M', label: 'Mid' },
+    { code: 'C', label: 'Closing' },
+  ] as const
+
+  const codeOn = (uid: string, day: number) => (grid[uid] ?? [])[day] ?? ''
+  const whoOn = (day: number, code: string) => people.filter((p) => codeOn(p.id, day) === code)
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      {DOW.map((dow, day) => {
+        const date = shiftDays(weekStart, day)
+        const isToday = date === t
+        const open = whoOn(day, 'O')
+        const close = whoOn(day, 'C')
+        const off = people.filter((p) => ['OFF', 'R✓', 'VAC'].includes(codeOn(p.id, day)))
+        const spare = people.filter((p) => !codeOn(p.id, day)).length
+        const offPicking = picking?.day === day && picking.code === 'OFF'
+        const hole = open.length === 0 || close.length === 0
+        return (
+          <div
+            key={date}
+            className={`overflow-hidden rounded-2xl border bg-white ${
+              isToday ? 'border-brand ring-1 ring-brand/30' : hole ? 'border-down/40' : 'border-black/10'
+            }`}
+          >
+            <div className={`flex items-baseline justify-between px-3 py-2 ${isToday ? 'bg-brand/10' : 'bg-black/[0.03]'}`}>
+              <span className={`font-display text-sm font-bold ${isToday ? 'text-brand-600' : 'text-ink'}`}>{dow}</span>
+              <span className="font-mono text-[10px] font-bold text-muted">{fmtMD(date)}</span>
+            </div>
+
+            {SLOTS.map(({ code, label }) => {
+              const on = whoOn(day, code)
+              const missing = on.length === 0 && code !== 'M'
+              const isPicking = picking?.day === day && picking.code === code
+              return (
+                <div key={code} className="border-t border-black/5 px-2.5 py-2">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span className={`grid h-4 min-w-5 place-items-center rounded-full px-1 text-[9px] ${CHIP[code]}`}>
+                      {code}
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{label}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {on.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => (unlocked ? onSet(p.id, date, '') : onUnlock())}
+                        title={unlocked ? `Take ${p.name} off ${label.toLowerCase()}` : 'Locked — tap to unlock'}
+                        className="rounded-lg bg-ink/[0.06] px-2 py-1 text-xs font-bold text-ink hover:bg-down/10 hover:text-down"
+                      >
+                        {p.name.split(' ')[0]}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => (unlocked ? setPicking(isPicking ? null : { day, code }) : onUnlock())}
+                      title={unlocked ? `Put somebody on ${label.toLowerCase()}` : 'Locked — tap to unlock'}
+                      className={`rounded-lg border border-dashed px-2 py-1 text-xs font-bold ${
+                        missing ? 'border-down/50 text-down' : 'border-black/20 text-muted hover:text-ink'
+                      }`}
+                    >
+                      {missing ? 'nobody' : '+'}
+                    </button>
+                  </div>
+                  {isPicking && (
+                    <div className="mt-1.5 flex flex-wrap gap-1 rounded-lg bg-brand/[0.06] p-1.5">
+                      {people.map((p) => {
+                        const cur = codeOn(p.id, day)
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              onSet(p.id, date, code)
+                              setPicking(null)
+                            }}
+                            title={cur ? `Currently ${CODE_LABEL[cur] ?? cur}` : 'Not on this day yet'}
+                            className={`rounded-lg px-2 py-1 text-[11px] font-bold ${
+                              cur === code
+                                ? 'bg-brand text-white'
+                                : cur
+                                  ? 'bg-black/5 text-muted'
+                                  : 'bg-white text-ink hover:bg-brand hover:text-white'
+                            }`}
+                          >
+                            {p.name.split(' ')[0]}
+                            {cur && cur !== code && <span className="ml-1 opacity-60">{cur}</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Who is off, and how many nobody has decided about yet. Listing
+                every unplaced name under every day put a wall of fifty-six
+                names on the week; the count says the same thing in a word, and
+                the + names them. */}
+            <div className="border-t border-black/5 bg-black/[0.02] px-2.5 py-2">
+              <div className="mb-1 flex items-baseline gap-1.5">
+                <span className="text-[9px] font-extrabold uppercase tracking-wide text-muted">Off</span>
+                {spare > 0 && <span className="text-[9px] text-muted/70">{spare} not set</span>}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {off.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => (unlocked ? onSet(p.id, date, '') : onUnlock())}
+                    title={unlocked ? `${p.name} — ${CODE_LABEL[codeOn(p.id, day)] ?? 'off'} · tap to clear` : 'Locked'}
+                    className={`rounded-lg px-2 py-0.5 text-[11px] ${CHIP[codeOn(p.id, day)] ?? 'bg-black/5 text-muted'}`}
+                  >
+                    {p.name.split(' ')[0]}
+                  </button>
+                ))}
+                <button
+                  onClick={() => (unlocked ? setPicking(offPicking ? null : { day, code: 'OFF' }) : onUnlock())}
+                  title={unlocked ? 'Mark somebody off' : 'Locked — tap to unlock'}
+                  className="rounded-lg border border-dashed border-black/20 px-2 py-0.5 text-[11px] font-bold text-muted hover:text-ink"
+                >
+                  +
+                </button>
+              </div>
+              {offPicking && (
+                <div className="mt-1.5 flex flex-wrap gap-1 rounded-lg bg-brand/[0.06] p-1.5">
+                  {people
+                    .filter((p) => codeOn(p.id, day) !== 'OFF')
+                    .map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          onSet(p.id, date, 'OFF')
+                          setPicking(null)
+                        }}
+                        className="rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-ink hover:bg-brand hover:text-white"
+                      >
+                        {p.name.split(' ')[0]}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 /** One rule on the balance card: the rule, and who it isn't met for. */
 function BalanceLine({ label, ok, good, bad }: { label: string; ok: boolean; good: string; bad: string }) {
@@ -133,12 +316,29 @@ function expandDates(from: string, to: string): string[] {
 export function Schedule() {
   const [rawUsers] = usePersistentState<User[]>('users:list', DEFAULT_USERS)
   const [rawStaff] = usePersistentState<Person[]>('staff:list', [])
-  // The people who open and close the building — the Users who can log in,
-  // plus everyone on the roster carrying a Manager / Shift Lead / Key code.
-  const users = useMemo(
+  // Everyone who COULD be on it — the Users who can log in, plus everyone on
+  // the roster carrying a Manager / Shift Lead / Key code.
+  const candidates = useMemo(
     () => managerList(Array.isArray(rawUsers) ? rawUsers : DEFAULT_USERS, Array.isArray(rawStaff) ? rawStaff : []),
     [rawUsers, rawStaff],
   )
+  /**
+   * Who is actually on this store's schedule.
+   *
+   * Toast's job codes are not the manager schedule. Flowood's export has eight
+   * people carrying a Manager, Shift Lead or Key code; four of them run the
+   * building. So the codes propose and the GM decides — `null` means "everyone
+   * who qualifies", and a saved list is the real one. Per store, because Pearl
+   * has its own four.
+   */
+  const [chosen, setChosen] = usePersistentState<string[] | null>('mgrsched:people', null)
+  const users = useMemo(
+    () => (chosen ? candidates.filter((u) => chosen.includes(u.id)) : candidates),
+    [candidates, chosen],
+  )
+  const [pickingPeople, setPickingPeople] = useState(false)
+  /** How the week is being worked: day by day, or the four-week grid. */
+  const [mode, setMode] = usePersistentState<'board' | 'grid'>('mgrsched:view', 'board')
   const [weeks, setWeeks] = usePersistentState<AllWeeks>('mgrsched:weeks', {})
   const [published, setPublished] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const [rules, setRules] = usePersistentState<string>('mgrsched:rules', DEFAULT_RULES)
@@ -211,6 +411,8 @@ export function Schedule() {
   const nameOf = (uid: string) => users.find((u) => u.id === uid)?.name ?? '?'
 
   const setCell = (uid: string, date: string, val: string) => setWeeks((w) => withCell(w, uid, date, val))
+  /** The one way in: every locked control asks for the same PIN. */
+  const unlockToEdit = () => requirePin('Edit the schedule', 'schedule')
 
   const grant = async (req: TimeOff) => {
     if (!unlocked && !(await requirePin('Grant time off', 'schedule'))) return
@@ -296,12 +498,36 @@ export function Schedule() {
               </button>
             ) : (
               <button
-                onClick={() => requirePin('Edit the schedule', 'schedule')}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink"
+                onClick={() => void unlockToEdit()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs font-bold text-warn"
               >
                 <Lock size={13} /> Unlock to edit
               </button>
             )}
+            {/* Days, or the spreadsheet. The board is how a week gets built;
+                the grid is how it gets read across four weeks. */}
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-black/5 p-1">
+              {(['board', 'grid'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-bold capitalize ${
+                    mode === m ? 'bg-navy text-white shadow-sm' : 'text-muted'
+                  }`}
+                >
+                  {m === 'board' ? 'By day' : 'Grid'}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setPickingPeople((v) => !v)}
+              title="Choose who is on this store's manager schedule"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
+                pickingPeople ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
+              }`}
+            >
+              <Users size={13} /> Who's on it
+            </button>
             <Link to="/posted" className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink">
               View posted →
             </Link>
@@ -391,6 +617,48 @@ export function Schedule() {
           </Card>
         )}
 
+        {/* Who is on this store's schedule. Toast's job codes propose;
+            the GM decides. */}
+        {pickingPeople && (
+          <Card className="p-4 print:hidden">
+            <div className="mb-2 flex flex-wrap items-baseline gap-2">
+              <span className="font-display text-sm font-bold text-ink">Who's on this schedule</span>
+              <span className="text-xs text-muted">
+                Everyone carrying a Manager, Shift Lead or Key code — tap to leave somebody off. It doesn't
+                change the roster, only this board.
+              </span>
+              {chosen && (
+                <button onClick={() => setChosen(null)} className="ml-auto text-[11px] font-bold text-brand">
+                  Use all {candidates.length}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {candidates.map((c) => {
+                const on = users.some((u) => u.id === c.id)
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() =>
+                      setChosen((cur) => {
+                        const base = cur ?? candidates.map((x) => x.id)
+                        return on ? base.filter((id) => id !== c.id) : [...base, c.id]
+                      })
+                    }
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                      on ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white text-muted'
+                    }`}
+                  >
+                    {on && <Check size={12} />}
+                    {c.name}
+                    <span className={on ? 'text-white/70' : 'text-muted/60'}>{c.role}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </Card>
+        )}
+
         <Card className="overflow-x-auto">
           {/* Week tabs */}
           <div className="flex flex-wrap items-center gap-2 px-4 py-3">
@@ -439,7 +707,7 @@ export function Schedule() {
           )}
 
           {/* Colour legend — the shift codes at a glance */}
-          <div className="flex flex-wrap items-center gap-1.5 px-4 pb-2.5">
+          <div className={`flex flex-wrap items-center gap-1.5 px-4 pb-2.5 ${mode === 'board' ? 'hidden' : ''}`}>
             {PICK_CODES.map((c) => (
               <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.03] py-0.5 pl-0.5 pr-2">
                 <span className={`grid h-5 min-w-6 place-items-center rounded-full px-1 text-[10px] ${CHIP[c]}`}>{c}</span>
@@ -448,7 +716,20 @@ export function Schedule() {
             ))}
           </div>
 
-          {/* Grid */}
+          {mode === 'board' ? (
+            <div className="px-4 pb-4">
+              <Board
+                people={users}
+                weekStart={weekStart}
+                grid={grid}
+                today={t}
+                unlocked={unlocked}
+                onSet={(uid, date, code) => setCell(uid, date, code)}
+                onUnlock={() => void unlockToEdit()}
+              />
+            </div>
+          ) : (
+          /* Grid */
           <div className="min-w-[900px]">
             <div className="grid grid-cols-[minmax(0,1.4fr)_repeat(7,minmax(66px,1fr))_80px] items-end gap-1 border-b border-black/10 px-4 pb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
               <span>Manager</span>
@@ -504,14 +785,18 @@ export function Schedule() {
                     code ? CHIP[code] : 'border border-dashed border-black/20 text-muted/50'
                   } ${pend ? 'ring-1 ring-inset ring-down/50' : ''}`
                   if (!unlocked) {
+                    // A locked square used to be a plain div: tapping it did
+                    // nothing at all, which reads as the app being broken
+                    // rather than as a lock. Tap it and it asks for the PIN.
                     return (
-                      <div
+                      <button
                         key={day}
-                        title={pend ? 'Requested off — unlock to grant' : CODE_LABEL[code] ?? ''}
-                        className={`mx-auto ${chipCls}`}
+                        onClick={() => void unlockToEdit()}
+                        title="Locked — tap to unlock with a manager PIN"
+                        className={`mx-auto ${chipCls} cursor-pointer hover:ring-2 hover:ring-warn/50`}
                       >
-                        {code || '·'}
-                      </div>
+                        {code || <Lock size={11} className="opacity-50" />}
+                      </button>
                     )
                   }
                   return (
@@ -557,6 +842,7 @@ export function Schedule() {
               <span />
             </div>
           </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-2 border-t border-black/5 p-3 print:hidden">
             <button
