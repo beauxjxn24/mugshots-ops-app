@@ -16,6 +16,74 @@ interface Entry {
   /** Manager-approved pickup stamp (handoff spec): who approved, when. */
   pickedUp?: { by: string; at: string }
 }
+/**
+ * A name on the sheet you can fix.
+ *
+ * Both lists let you type an amount and delete a row, but the name itself was
+ * set once when it was added — so a typo, or the wrong Katie, meant deleting
+ * the line and re-entering it, losing the hours or the tip-out already keyed
+ * against it. Tap the name, fix it, Enter.
+ */
+function EditableName({
+  value,
+  options,
+  onChange,
+  children,
+}: {
+  value: string
+  options: string[]
+  onChange: (name: string) => void
+  children?: React.ReactNode
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const listId = `names-${value.replace(/\W+/g, '')}`
+  if (!editing) {
+    return (
+      <span className="min-w-0">
+        <button
+          onClick={() => {
+            setDraft(value)
+            setEditing(true)
+          }}
+          title="Tap to fix this name"
+          className="block max-w-full truncate text-left font-semibold hover:underline"
+        >
+          {value}
+        </button>
+        {children}
+      </span>
+    )
+  }
+  const commit = () => {
+    const next = draft.trim()
+    if (next && next !== value) onChange(next)
+    setEditing(false)
+  }
+  return (
+    <span className="min-w-0">
+      <input
+        autoFocus
+        value={draft}
+        list={listId}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        aria-label={`Name — ${value}`}
+        className="w-full rounded-md border border-white/30 bg-white/10 px-1.5 py-0.5 text-sm font-semibold text-white outline-none focus:border-white"
+      />
+      <datalist id={listId}>
+        {options.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
+    </span>
+  )
+}
+
 interface ServerOut {
   id: string
   name: string
@@ -224,6 +292,9 @@ export function Tipshare() {
                 onAdd={(nm, hrs) =>
                   setCur({ entries: [...cur.entries, { id: `t${++seq}-${Date.now()}`, name: nm, role, hours: hrs }] })
                 }
+                onRename={(e, nm) =>
+                  setCur({ entries: cur.entries.map((x) => (x.id === e.id ? { ...x, name: nm } : x)) })
+                }
                 onHours={(e, hrs) =>
                   setCur({ entries: cur.entries.map((x) => (x.id === e.id ? { ...x, hours: hrs } : x)) })
                 }
@@ -240,6 +311,9 @@ export function Tipshare() {
             <ServersCard
               servers={cur.servers}
               onAdd={(nm, amt) => setCur({ servers: [...cur.servers, { id: `sv${++seq}-${Date.now()}`, name: nm, amount: amt }] })}
+              onRename={(sv, nm) =>
+                setCur({ servers: cur.servers.map((x) => (x.id === sv.id ? { ...x, name: nm } : x)) })
+              }
               onAmount={(sv, amt) =>
                 setCur({ servers: cur.servers.map((x) => (x.id === sv.id ? { ...x, amount: amt } : x)) })
               }
@@ -385,6 +459,7 @@ function RoleCard({
   staff,
   onAdd,
   onHours,
+  onRename,
   onRemove,
   onPickup,
 }: {
@@ -398,6 +473,7 @@ function RoleCard({
   roleOf?: (name: string) => Entry['role'] | undefined
   onAdd: (name: string, hours: number) => void
   onHours: (e: Entry, hours: number) => void
+  onRename: (e: Entry, name: string) => void
   onRemove: (e: Entry) => void
   onPickup: (e: Entry) => void
 }) {
@@ -434,12 +510,11 @@ function RoleCard({
       ) : (
         entries.map((e) => (
           <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_64px_64px_auto] items-center gap-2 border-b border-white/10 py-1.5 text-sm last:border-0">
-            <span className="min-w-0">
-              <span className="block truncate font-semibold">{e.name}</span>
+            <EditableName value={e.name} options={staff.map((p) => p.name)} onChange={(nm) => onRename(e, nm)}>
               {e.pickedUp && (
-                <span className="text-[10px] text-emerald-300">picked up ✓ {e.pickedUp.by} · {e.pickedUp.at}</span>
+                <span className="block text-[10px] text-emerald-300">picked up ✓ {e.pickedUp.by} · {e.pickedUp.at}</span>
               )}
-            </span>
+            </EditableName>
             <input
               type="number"
               inputMode="decimal"
@@ -526,12 +601,14 @@ function ServersCard({
   staff,
   onAdd,
   onAmount,
+  onRename,
   onRemove,
 }: {
   servers: ServerOut[]
   staff: Person[]
   onAdd: (name: string, amount: number) => void
   onAmount: (s: ServerOut, amount: number) => void
+  onRename: (s: ServerOut, name: string) => void
   onRemove: (s: ServerOut) => void
 }) {
   const [name, setName] = useState('')
@@ -563,7 +640,7 @@ function ServersCard({
       ) : (
         servers.map((s) => (
           <div key={s.id} className="grid grid-cols-[minmax(0,1fr)_90px_auto] items-center gap-2 border-b border-white/10 py-1.5 text-sm last:border-0">
-            <span className="truncate font-semibold">{s.name}</span>
+            <EditableName value={s.name} options={staff.map((p) => p.name)} onChange={(nm) => onRename(s, nm)} />
             <input
               type="number"
               inputMode="decimal"
