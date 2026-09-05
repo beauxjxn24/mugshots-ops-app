@@ -62,8 +62,31 @@ so it isn't re-litigated later.
   balance card checks the period rules by name, including clopens across week
   boundaries. Posted opens with who is on today.
 
+- **Every order guide prints the same sheet.** `components/GuideSheet` renders
+  any shelf and picks its own columns (product number where the vendor prints
+  one, price where known, M-PAR/F-PAR where ordered twice a week, section
+  bands from the store's layout, count boxes filling the rest). Liquor and Beer
+  join Produce and US Foods in Printables — a guide with nothing on it is not
+  offered — and Orders' Print button prints that sheet instead of the screen.
+  `scripts/verify/printables.mjs` audits all 20 printables: content, black ink,
+  no clipped cells, no app chrome, page count, one print job per tap.
+- **Sidework**: duties drag between and within tiles (grip in edit mode; the
+  filter is off while editing because edits write by index); closing filters to
+  one cut, defaulting to the reader's own, so a server sees their eight jobs
+  instead of thirty-two; name pickers offer tonight's Tipshare crew first; and
+  a tile no longer takes a name at close, where cuts are the model.
+- **Copy buttons** split by vendor only when two vendors are actually named.
+- **Manager schedule** rebuilt around the day: Opening / Mid / Closing slots per
+  day card, red where nobody is on, "Who's on it" so the GM picks the four who
+  run the building rather than everyone Toast codes as a manager, and a locked
+  square that asks for the PIN instead of ignoring the tap. The grid is behind
+  a toggle.
+
 ### Found
 
+- **The GM PIN is the owner PIN** in Admin → Users & PINs (default 2424 on a
+  device that has never changed it). Nothing on the schedule said so, which is
+  most of why "I can't type in the squares".
 - **No access to usfoods.com from this session** — the environment's proxy
   refuses the connection (403 on CONNECT to `usfoods.com` and
   `order.usfoods.com`). Ordering through their site has to be Beau's hands, or

@@ -30,6 +30,8 @@ Screenshots and PDFs land in `scripts/verify/out/` (ignored by git).
 | `ezcater.mjs` | An ezCater PDF dropped on Imports creates a booking pointing at the stored file, the order window shows it, and the print job contains the caterer's own page and nothing else |
 | `roster.mjs` | The weekly employee import updates people instead of duplicating them — a re-drop adds nobody, a rename with the same GUID stays one person, a leaver is kept and reported, and another store's export lands nobody here |
 | `schedule.mjs` | The manager schedule is built from the roster's Managers / Shift Leads / Keys, names each day's opener and closer, counts uncovered days, flags clopens and weekend-day-off shortfalls, and Posted leads with who is on today |
+| `schedule2.mjs` | The schedule can actually be built: a locked square asks for the PIN, the PIN unlocks it, tapping a day's slot assigns somebody, coverage only clears with both an opener and a closer, and "Who's on it" narrows the board to the people who run the building |
+| `printables.mjs` | Every printable, audited: what is on the page, black ink, no clipped cells, no app chrome, page count, one print job per tap — plus Orders' Print button producing the ruled sheet rather than the screen |
 
 The seeds themselves come from `scripts/usfoods-sheet-to-json.py` — one US Foods
 "Sheet to Shelf" CSV in, one JSON out; see its docstring.
