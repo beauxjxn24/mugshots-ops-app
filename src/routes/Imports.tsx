@@ -922,7 +922,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
   )
 
   return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+    <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-xs font-bold uppercase tracking-wide text-muted">
           Receiving · match every line to your order guide
@@ -981,7 +981,7 @@ function Receiving({ lineItems, fileName, text, docId }: { lineItems: LineItem[]
         /* Phone: one card per line — name, then size/qty/price, then the mapping */
         <div className="space-y-2.5">
           {rows.map((r, i) => (
-            <div key={i} className="rounded-xl border border-black/10 bg-white p-2.5">
+            <div key={i} className="panel p-2.5">
               {nameInput(r, i)}
               <div className="mt-2 flex items-center gap-3 text-xs text-muted">
                 <span>Size <b className="text-ink">{r.size ?? '—'}</b></span>
@@ -1077,7 +1077,7 @@ function PriceUpdate({ lineItems, text, fileName }: { lineItems: LineItem[]; tex
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-black/10 bg-white p-3">
+    <div className="panel mt-3 p-3">
       <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
         Price update · {result.changes.length} matched · {result.misses.length} not in catalog
       </div>
@@ -1163,7 +1163,7 @@ function CateringImport({ text, fileName, docId }: { text: string; fileName: str
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+    <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
         <CalendarPlus size={14} /> Looks like a catering order — review &amp; add
       </div>
@@ -1362,7 +1362,7 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+    <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
         <Users size={14} /> Employee roster — {people.length} people read
         {skipped > 0 && <span className="font-semibold normal-case text-warn">· {skipped} skipped (another store)</span>}
@@ -1444,7 +1444,7 @@ function CountSheetImport({ text, fileName }: { text: string; fileName: string }
     )
   }
   return (
-    <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+    <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
         <FileCheck2 size={14} /> Inventory count sheet — {parsed.length} items · {areas.length} areas
       </div>
@@ -1568,7 +1568,7 @@ function LaborSummaryImport({ text, fileName, hintDate, periodLevel, hintRange }
   if (!s) return null
   if (isRange)
     return (
-      <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+      <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3">
         <div className="flex items-center gap-2 text-sm font-bold text-brand-600">
           <ReceiptText size={16} /> Period labor {money2(s.labor)} · {(s.laborPct ?? 0).toFixed(1)}% of net
         </div>
@@ -1847,7 +1847,7 @@ function DailyReports() {
   const removeReport = (id: string) => setReports(list.filter((r) => r.id !== id))
 
   return (
-    <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_10px_30px_-18px_rgba(23,32,55,0.18)]">
+    <div className="panel p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-sm font-bold text-ink">Daily reports</span>
         <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-muted">{todayPrefix}</span>

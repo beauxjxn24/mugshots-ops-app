@@ -837,7 +837,7 @@ export function Prep() {
           deleting the row and adding it back -- losing its seven pars. */}
       {editing === it.name && canEdit && (
         <div
-          className="grid gap-2 border-b border-brand/20 bg-brand/[0.05] px-4 py-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_100px_140px_auto]"
+          className="grid gap-2 border-b border-brand/25 bg-brand/[0.06] px-4 py-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_100px_140px_auto]"
           onKeyDown={(e) => {
             if (e.key === 'Enter') commitEdit(it.name)
             if (e.key === 'Escape') setEditing(null)
@@ -1275,7 +1275,7 @@ export function Prep() {
                   setDragName(null)
                   setOverName(null)
                 }}
-                className="flex items-center gap-3 border-b border-brand/20 bg-brand/[0.07] px-4 py-2"
+                className="flex items-center gap-3 border-b border-brand/25 bg-brand/[0.06] px-4 py-2"
               >
                 <span className="text-xs font-extrabold uppercase tracking-wider text-brand-600">
                   {sec} <span className="ml-1 font-semibold text-muted">{rows.length}</span>
@@ -1382,7 +1382,7 @@ export function Prep() {
         {/* Manage line stations — add / remove; renaming happens by removing and
             re-adding, and each item's station picker moves it. */}
         {canEdit && (
-        <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
+        <details className="panel px-4 py-3 print:hidden">
           <summary className="cursor-pointer text-sm font-bold text-ink">
             Line stations
             <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">{stations.length}</span>
@@ -1440,7 +1440,7 @@ export function Prep() {
 
         {/* Parked — archived, never lost */}
         {canEdit && (
-        <details className="rounded-2xl border border-black/10 bg-white px-4 py-3">
+        <details className="panel px-4 py-3">
           <summary className="cursor-pointer text-sm font-bold text-ink">
             <span className="inline-flex items-center gap-1.5">
               <Archive size={14} className="text-muted" /> Parked items

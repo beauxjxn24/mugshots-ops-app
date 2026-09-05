@@ -29,17 +29,20 @@ export const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const CODES = ['', 'O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
 /** The seven pickable codes (everything but the empty cell). */
 export const PICK_CODES = ['O', 'C', 'M', 'OFF', 'RO', 'R✓', 'VAC'] as const
-// Solid, high-contrast shift chips — readable at a glance on the grid and on
-// a printout, the way a 2026 scheduling tool (Sling / 7shifts) shows them.
+// Solid, high-contrast shift chips, drawn from the app's own palette. They
+// used to reach for sky-500, slate-200 and a hard-coded violet — three colours
+// that appear on no other screen, which is most of what made this page look
+// like somebody else's app. Working shifts are the accent at two weights;
+// everything that means "not working" is neutral or a state colour.
 export const CHIP: Record<string, string> = {
   '': 'text-muted/40',
   O: 'bg-brand text-white font-extrabold shadow-sm',
   C: 'bg-navy text-white font-extrabold shadow-sm',
-  M: 'bg-sky-500 text-white font-extrabold shadow-sm',
-  OFF: 'bg-slate-200 text-slate-600 font-bold',
+  M: 'bg-signal/80 text-navy font-extrabold shadow-sm',
+  OFF: 'bg-black/10 text-muted font-bold',
   RO: 'bg-down/15 text-down font-extrabold ring-1 ring-inset ring-down/40',
   'R✓': 'bg-up text-white font-extrabold shadow-sm',
-  VAC: 'bg-[#7C3AED] text-white font-extrabold shadow-sm',
+  VAC: 'bg-warn text-navy font-extrabold shadow-sm',
 }
 /** Full label for each code — shown in the picker and the legend. */
 export const CODE_LABEL: Record<string, string> = {
@@ -382,7 +385,7 @@ export function Schedule() {
                   return (
                     <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2">
                       <span className="text-sm font-bold text-ink">{nameOf(req.userId)}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${req.type === 'vac' ? 'bg-[#EDE9FE] text-[#6D28D9]' : 'bg-down/10 text-down'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${req.type === 'vac' ? 'bg-warn/20 text-warn' : 'bg-down/10 text-down'}`}>
                         {req.type === 'vac' ? 'VACATION' : 'DAY OFF'}
                       </span>
                       <span className="text-xs text-muted">{span}</span>
@@ -614,7 +617,7 @@ export function Schedule() {
             the rules and the balance were three cards below the schedule that
             you scrolled past every single time you came here to put somebody
             on a Tuesday. They're one line now, and open when you want them. */}
-        <details className="rounded-2xl border border-black/10 bg-white/[0.02] px-4 py-3 print:hidden">
+        <details className="panel px-4 py-3 print:hidden">
           <summary className="cursor-pointer text-sm font-bold text-ink">
             Time off, rules &amp; balance
             {pending.length > 0 && (

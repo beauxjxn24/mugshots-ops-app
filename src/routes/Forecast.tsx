@@ -173,12 +173,12 @@ export function Forecast() {
                     <span className="font-display text-4xl font-semibold">{kfmt(weekTotal)}</span>
                     <span className="text-sm text-white/70">projected net</span>
                     {vsLy != null && (
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${vsLy >= 0 ? 'bg-emerald-400/15 text-emerald-300' : 'bg-red-400/15 text-red-300'}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${vsLy >= 0 ? 'bg-up/15 text-up' : 'bg-down/15 text-down'}`}>
                         {vsLy >= 0 ? '▲ +' : '▼ −'}
                         {Math.abs(vsLy).toFixed(1)}% ({vsLy >= 0 ? '+' : '−'}{kfmt(Math.abs(weekTotal - lyTotal))}) vs {days.some((d) => d.ly != null) ? 'LY' : 'LW'}
                       </span>
                     )}
-                    <span className="rounded-full bg-[#eec263]/20 px-2.5 py-1 text-xs font-bold text-[#eec263]">
+                    <span className="rounded-full bg-warn/20 px-2.5 py-1 text-xs font-bold text-warn">
                       Labor budget {money(laborBudget)} @ {targets.laborPct}%
                     </span>
                   </div>
@@ -190,7 +190,7 @@ export function Forecast() {
                       {fmtShort(peak.date)} · {kfmt(peak.value)}
                     </div>
                     {peak.caterings.length > 0 && (
-                      <div className="text-[11px] font-bold text-[#eec263]">
+                      <div className="text-[11px] font-bold text-warn">
                         ★ {peak.caterings[0].event.slice(0, 40)} — plan for volume
                       </div>
                     )}

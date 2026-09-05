@@ -58,7 +58,7 @@ export function CateringBuilds() {
                   <button
                     key={b.name}
                     onClick={() => setOpen(b)}
-                    className="group overflow-hidden rounded-2xl border border-black/10 bg-white text-left transition-colors hover:border-signal/60"
+                    className="panel group overflow-hidden text-left transition-colors hover:border-signal/60"
                   >
                     <span className="block aspect-[4/3] overflow-hidden bg-black/20">
                       {photo ? (

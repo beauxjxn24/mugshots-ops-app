@@ -236,7 +236,7 @@ export function Period() {
                     <span className="font-display text-4xl font-semibold">{kfmt(netToDate)}</span>
                     <span className="text-sm text-white/70">net to date · {inPeriod.length} nights</span>
                     {vsLy != null && (
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${vsLy >= 0 ? 'bg-emerald-400/15 text-emerald-300' : 'bg-red-400/15 text-red-300'}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${vsLy >= 0 ? 'bg-up/15 text-up' : 'bg-down/15 text-down'}`}>
                         {vsLy >= 0 ? '▲ +' : '▼ −'}
                         {Math.abs(vsLy).toFixed(1)}% ({vsLy >= 0 ? '+' : '−'}{kfmt(Math.abs(lyCur - lyPrev))}) vs LY
                       </span>
@@ -244,7 +244,7 @@ export function Period() {
                     {periodLaborPct != null && (
                       <span
                         title={laborFromRange ? `Toast's own labor total for ${rangeLabor?.start} → ${rangeLabor?.end}` : undefined}
-                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${periodLaborPct <= targets.laborPct ? 'bg-emerald-400/15 text-emerald-300' : 'bg-red-400/15 text-red-300'}`}
+                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${periodLaborPct <= targets.laborPct ? 'bg-up/15 text-up' : 'bg-down/15 text-down'}`}
                       >
                         Labor {periodLaborPct.toFixed(1)}% · goal {targets.laborPct}% {periodLaborPct <= targets.laborPct ? '✓' : '▲'}
                         {laborFromRange && <span className="ml-1 opacity-75">· period total</span>}
@@ -260,7 +260,7 @@ export function Period() {
                 <div className="text-right">
                   <div className="text-[11px] font-extrabold uppercase tracking-wider text-white/60">Projected finish</div>
                   <div className="font-display text-3xl font-semibold">{kfmt(projected)}</div>
-                  <div className="text-[11px] font-bold text-emerald-300">goal +{targets.growthPct}% vs LY</div>
+                  <div className="text-[11px] font-bold text-up">goal +{targets.growthPct}% vs LY</div>
                 </div>
               </div>
             </Card>

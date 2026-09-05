@@ -190,7 +190,7 @@ export function Catalog() {
         className="space-y-4"
       >
         {/* ---- Add panel ---- */}
-        <div className="rounded-2xl border border-signal/20 bg-gradient-to-b from-signal/[0.06] to-transparent p-4">
+        <div className="rounded-2xl border border-brand/25 bg-brand/[0.06] p-4">
           <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-signal">
             <Plus size={13} /> New item
           </div>
@@ -330,7 +330,7 @@ export function Catalog() {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {filtered.map((it) => (
-              <div key={it.id} className="rounded-2xl border border-white/10 bg-white p-3.5">
+              <div key={it.id} className="panel p-3.5">
                 <div className="flex items-start gap-2.5">
                   <span className="mt-1.5 size-2.5 shrink-0 rounded-full" style={{ background: dotFor(it.category) }} />
                   <div className="min-w-0 flex-1">

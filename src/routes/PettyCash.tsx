@@ -166,14 +166,14 @@ export function PettyCash() {
           <div ref={gridRef} onKeyDown={onGridKey} className="min-w-[1180px]">
             {/* Navy header — the sheet's column band */}
             <div style={GRID} className="grid items-center gap-1 rounded-[10px] bg-navy px-2 py-2 text-[10.5px] font-extrabold tracking-[0.05em] text-white/70">
-              <div className="text-[#E8A33C]">SHIFT</div>
+              <div className="text-warn">SHIFT</div>
               {COLS.map(([k, label]) => (
                 <div key={k} className={HEAD_CELL}>
                   {label}
                 </div>
               ))}
               <div className="text-right text-white">TOTAL</div>
-              <div className="text-center text-[#E8A33C]">MGR</div>
+              <div className="text-center text-warn">MGR</div>
             </div>
 
             {SLOTS.map(([slot, label], si) => {
@@ -328,7 +328,7 @@ function InOutLog() {
   }
 
   return (
-    <details className="rounded-2xl border border-black/10 bg-white px-4 py-3" open={rows.length > 0}>
+    <details className="panel px-4 py-3" open={rows.length > 0}>
       <summary className="cursor-pointer text-sm font-bold text-ink">
         Cash in / out log
         <span className="ml-2 text-xs font-normal text-muted">

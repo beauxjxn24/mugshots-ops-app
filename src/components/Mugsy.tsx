@@ -157,7 +157,7 @@ export function Mugsy() {
           open ? 'translate-x-0' : 'translate-x-[105%]'
         }`}
       >
-        <div className="flex items-center justify-between bg-navy px-5 pb-4 pt-5 text-[#F7F3E8]">
+        <div className="flex items-center justify-between bg-navy px-5 pb-4 pt-5 text-ink">
           <div>
             <div className="flex items-center gap-2 font-display text-lg font-semibold">
               <Sparkles size={16} className="text-brand" /> Ask Mugsy
@@ -267,7 +267,7 @@ function Bubble({ role, html }: { role: 'user' | 'assistant'; html: string }) {
       <div
         className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-normal ${
           mine
-            ? 'rounded-br-md bg-navy text-[#F4F2EC]'
+            ? 'rounded-br-md bg-navy text-ink'
             : 'rounded-bl-md border border-white/10 bg-white text-ink'
         }`}
         dangerouslySetInnerHTML={{ __html: html }}

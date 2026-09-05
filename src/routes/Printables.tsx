@@ -230,7 +230,7 @@ export function Printables() {
 
   return (
     <Page title="Printables" subtitle={`Tap a name to print it · ${location}`} width="narrow" flush className="space-y-5">
-      <div className="overflow-hidden rounded-2xl border border-black/10 bg-white print:hidden">
+      <div className="panel overflow-hidden print:hidden">
         {groupsOfRows.map((g, gi) => (
           <div key={g.title}>
             <div
@@ -357,7 +357,7 @@ function Documents() {
     /* Shut by default. This is setup, and it was sitting above the things
        people actually came for. The shipped PDFs moved out of here into the
        print list, where they read as one more name you can tap. */
-    <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
+    <details className="panel px-4 py-3 print:hidden">
       <summary className="cursor-pointer text-sm font-bold text-ink">
         Add your own
         {docs.length > 0 && (

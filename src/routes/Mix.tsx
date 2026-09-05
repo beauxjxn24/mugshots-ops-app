@@ -263,7 +263,7 @@ export function Mix() {
                   {trackedRows.length === 0 ? (
                     <p className="text-xs text-white/60">
                       Nothing tracked yet — pick items in{' '}
-                      <Link to="/stores" className="font-bold text-[#e0b23c]">
+                      <Link to="/stores" className="font-bold text-warn">
                         Stores &amp; Concepts →
                       </Link>
                     </p>
@@ -277,7 +277,7 @@ export function Mix() {
                               {hit ? `${hit.qty.toLocaleString()} sold · ~${Math.round(hit.qty / nDays)}/day` : 'not in this window'}
                             </span>
                           </span>
-                          <span className="font-mono text-sm font-bold text-[#e0b23c]">{hit ? money(hit.sales) : '—'}</span>
+                          <span className="font-mono text-sm font-bold text-warn">{hit ? money(hit.sales) : '—'}</span>
                         </div>
                       ))}
                     </div>

@@ -131,9 +131,9 @@ let seq = 0
 // Command Deck: dark glass cards (matches the app), role-colored dots + Add buttons.
 const SLATE = 'border border-white/10 !bg-white/[0.045] text-ink backdrop-blur-xl'
 const ROLE_CARDS: Array<{ role: Entry['role']; title: string; hint: string; dot: string; btn: string }> = [
-  { role: 'Bar', title: 'Bartenders', hint: 'Add bartenders.', dot: 'bg-sky-300', btn: 'bg-navy' },
-  { role: 'Expo', title: 'Expos', hint: 'Add expos.', dot: 'bg-orange-400', btn: 'bg-orange-600' },
-  { role: 'Host', title: 'Hosts', hint: 'Add hosts.', dot: 'bg-emerald-400', btn: 'bg-emerald-600' },
+  { role: 'Bar', title: 'Bartenders', hint: 'Add bartenders.', dot: 'bg-brand', btn: 'bg-navy' },
+  { role: 'Expo', title: 'Expos', hint: 'Add expos.', dot: 'bg-warn', btn: 'bg-navy' },
+  { role: 'Host', title: 'Hosts', hint: 'Add hosts.', dot: 'bg-up', btn: 'bg-navy' },
 ]
 
 export function Tipshare() {
@@ -443,7 +443,7 @@ function TotalRow({ label, value, gold, strong }: { label: string; value: string
   return (
     <div className="flex items-baseline justify-between py-0.5 text-sm">
       <span className={strong ? 'font-bold text-white' : 'text-white/80'}>{label}</span>
-      <span className={`font-mono font-bold ${gold ? 'text-[#eec263]' : 'text-white'}`}>{value}</span>
+      <span className={`font-mono font-bold ${gold ? 'text-warn' : 'text-white'}`}>{value}</span>
     </div>
   )
 }
@@ -512,7 +512,7 @@ function RoleCard({
           <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_64px_64px_auto] items-center gap-2 border-b border-white/10 py-1.5 text-sm last:border-0">
             <EditableName value={e.name} options={staff.map((p) => p.name)} onChange={(nm) => onRename(e, nm)}>
               {e.pickedUp && (
-                <span className="block text-[10px] text-emerald-300">picked up ✓ {e.pickedUp.by} · {e.pickedUp.at}</span>
+                <span className="block text-[10px] text-up">picked up ✓ {e.pickedUp.by} · {e.pickedUp.at}</span>
               )}
             </EditableName>
             <input
@@ -531,10 +531,10 @@ function RoleCard({
               className={`w-full rounded-md border px-1 py-0.5 text-right font-mono text-xs outline-none ${
                 e.hours > 0
                   ? 'border-transparent bg-white/10 text-white'
-                  : 'border-[#eec263]/40 bg-transparent text-white placeholder:text-[#eec263]/60'
+                  : 'border-warn/40 bg-transparent text-white placeholder:text-warn/60'
               }`}
             />
-            <span className="text-right font-mono text-xs font-bold text-[#eec263]">{whole(perHour * e.hours)}</span>
+            <span className="text-right font-mono text-xs font-bold text-warn">{whole(perHour * e.hours)}</span>
             <span className="flex items-center gap-1">
               {!e.pickedUp && (
                 <button
@@ -589,7 +589,7 @@ function RoleCard({
         </button>
       </div>
       {(name.trim() || hours.trim()) && why && (
-        <p className="mt-1.5 text-[11px] font-semibold text-[#eec263]">{why} to add them.</p>
+        <p className="mt-1.5 text-[11px] font-semibold text-warn">{why} to add them.</p>
       )}
     </Card>
   )
@@ -626,7 +626,7 @@ function ServersCard({
   return (
     <Card className={`${SLATE} p-4`}>
       <div className="mb-2 flex items-center gap-2">
-        <span className="size-2 rounded-full bg-[#eec263]" />
+        <span className="size-2 rounded-full bg-warn" />
         <span className="font-bold">Servers — Tip-out</span>
         <span className="rounded-full bg-white/15 px-1.5 text-[10px] font-bold">{servers.length}</span>
       </div>
@@ -656,8 +656,8 @@ function ServersCard({
               title="Tip-out — Enter jumps to the next server down"
               className={`w-full rounded-md border px-1 py-0.5 text-right font-mono text-xs font-bold outline-none ${
                 s.amount > 0
-                  ? 'border-transparent bg-white/10 text-[#eec263]'
-                  : 'border-[#eec263]/40 bg-transparent text-[#eec263] placeholder:text-[#eec263]/60'
+                  ? 'border-transparent bg-white/10 text-warn'
+                  : 'border-warn/40 bg-transparent text-warn placeholder:text-warn/60'
               }`}
             />
             <button onClick={() => onRemove(s)} aria-label={`Remove ${s.name}`} className="text-white/50 hover:text-white">
@@ -700,7 +700,7 @@ function ServersCard({
         </button>
       </div>
       {(name.trim() || amt.trim()) && why && (
-        <p className="mt-1.5 text-[11px] font-semibold text-[#eec263]">{why} to add the tip-out.</p>
+        <p className="mt-1.5 text-[11px] font-semibold text-warn">{why} to add the tip-out.</p>
       )}
     </Card>
   )

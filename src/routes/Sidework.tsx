@@ -1000,7 +1000,7 @@ export function Sidework() {
           <Card className={`overflow-hidden ${editOpening ? 'ring-2 ring-brand' : 'border-signal/30'}`}>
             <div
               className={`flex items-center gap-2 border-b px-4 py-2 ${
-                editOpening ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-signal/[0.07]'
+                editOpening ? 'border-brand/25 bg-brand/[0.06]' : 'border-black/5 bg-signal/[0.07]'
               }`}
             >
               <span className="font-display text-sm font-semibold text-ink">{OPENING_SECTION}</span>
@@ -1183,7 +1183,7 @@ export function Sidework() {
                   setDragTask(null)
                   setOverTask(null)
                 }}
-                className={`flex items-center justify-between gap-2 border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'} ${
+                className={`flex items-center justify-between gap-2 border-b px-4 py-2 ${editing ? 'border-brand/25 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'} ${
                   dragTask && overTask?.si === si && overTask.ti === 0 ? 'ring-2 ring-inset ring-brand' : ''
                 }`}
               >

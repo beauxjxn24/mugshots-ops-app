@@ -170,6 +170,29 @@ body {
    something to edit, and what's on the screen is what comes out
    of the printer.
    ============================================================ */
+/* ============================================================
+   The app has ONE surface.
+
+   Screens written at different times grew two: the `Card` component — a
+   translucent lift with a hairline and a soft shadow — and a hand-rolled
+   `rounded-2xl border border-black/10 bg-white`, which the dark theme remaps
+   to flat #101013 with a border you can't see. Side by side they read as two
+   different apps, which is exactly what they were.
+
+   This is that surface, named, so a panel that isn't a `Card` still looks
+   like one. Floating things (menus, pickers) keep an opaque background on
+   purpose — you have to be able to read them over whatever they cover.
+   ============================================================ */
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: color-mix(in oklab, #fff 4.5%, transparent);
+  box-shadow:
+    0 24px 60px -30px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+}
+
 .sheet-paper {
   /* !important because the dark remap above claims .bg-white with one too,
      and Card carries bg-white. */

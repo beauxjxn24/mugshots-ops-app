@@ -403,7 +403,7 @@ export function Ordering() {
             said and then go find it. This is the tile's other half: the vendors
             due, their cutoff, and one tap to count just that vendor. */}
         {dueToday.length > 0 && view === 'guide' && (
-          <Card className="border-brand/30 bg-brand/[0.07] p-3 print:hidden">
+          <Card className="border-brand/25 bg-brand/[0.06] p-3 print:hidden">
             <div className="mb-2 flex items-center gap-2">
               <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-brand/20 text-brand-600">
                 <PackageOpen size={15} />
@@ -559,7 +559,7 @@ export function Ordering() {
             {/* Enter in a count box drops to the same box on the next line. */}
             {shownSections.map(({ sec, si }) => (
               <div key={sec.title + si}>
-                <div className="border-b border-brand/20 bg-brand/[0.07] px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-brand-600">
+                <div className="border-b border-brand/25 bg-brand/[0.06] px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-brand-600">
                   {sec.title}
                 </div>
                 {sec.ids.map((id) => {
@@ -654,7 +654,7 @@ export function Ordering() {
                     setDrag(null)
                     setOver(null)
                   }}
-                  className="flex items-center justify-between border-b border-brand/20 bg-brand/[0.07] px-4 py-1.5"
+                  className="flex items-center justify-between border-b border-brand/25 bg-brand/[0.06] px-4 py-1.5"
                 >
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-brand-600">
                     {sec.title} <span className="ml-1 font-semibold text-muted">{sec.ids.length}</span>
@@ -781,7 +781,7 @@ export function Ordering() {
                         </div>
                       </div>
                       {editingId === r.id && (
-                        <div className="flex flex-wrap items-end gap-2 border-b border-brand/20 bg-brand/[0.05] px-4 py-2.5 print:hidden">
+                        <div className="flex flex-wrap items-end gap-2 border-b border-brand/25 bg-brand/[0.06] px-4 py-2.5 print:hidden">
                           {isVendorGuide(shelf) && (
                             <label className="w-28 text-[10px] font-bold uppercase text-muted">
                               Product #
@@ -945,7 +945,7 @@ function EditTrail({ rows }: { rows: Row[] }) {
   if (edits.length === 0) return null
   const nameOf = (id: string) => rows.find((r) => r.id === id)?.name ?? id
   return (
-    <details className="rounded-2xl border border-black/10 bg-white px-4 py-3 print:hidden">
+    <details className="panel px-4 py-3 print:hidden">
       <summary className="cursor-pointer text-sm font-bold text-ink">
         Recent changes
         <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-extrabold text-muted">

@@ -386,7 +386,7 @@ function LineRow({ label, value, tone, strong, zebra, info }: { label: string; v
       </span>
       <span
         className={`font-sans tabular-nums ${strong ? 'text-lg font-bold' : 'text-sm font-semibold'} ${
-          tone === 'blue' ? 'text-[#7aa2ff]' : tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : tone === 'muted' ? 'text-muted' : 'text-ink'
+          tone === 'blue' ? 'text-signal' : tone === 'up' ? 'text-up' : tone === 'down' ? 'text-down' : tone === 'muted' ? 'text-muted' : 'text-ink'
         }`}
       >
         {value}
@@ -479,7 +479,7 @@ function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstC
                       </td>
                       <td className={`${dc} text-ink`}>{int(r.qty)}</td>
                       <td className={`${dc} text-ink`}>{money2(r.net)}</td>
-                      <td className={`${dc} ${r.disc > 0 ? 'text-[#7aa2ff]' : 'text-muted'}`}>{money2(r.disc)}</td>
+                      <td className={`${dc} ${r.disc > 0 ? 'text-signal' : 'text-muted'}`}>{money2(r.disc)}</td>
                       <td className={`${dc} text-ink`}>{money2(r.gross)}</td>
                       <td className={`${dc} pr-4 text-muted`}>{money2(r.tax)}</td>
                     </tr>
@@ -489,7 +489,7 @@ function BreakdownCard({ title, firstCol, rows, empty }: { title: string; firstC
                           <td className="py-1.5 pl-9 pr-4 text-muted">{k.name}</td>
                           <td className={`${dc} py-1.5 text-muted`}>{int(k.qty)}</td>
                           <td className={`${dc} py-1.5 text-ink/70`}>{money2(k.net)}</td>
-                          <td className={`${dc} py-1.5 ${k.disc > 0 ? 'text-[#7aa2ff]' : 'text-muted'}`}>{k.disc > 0 ? money2(k.disc) : ''}</td>
+                          <td className={`${dc} py-1.5 ${k.disc > 0 ? 'text-signal' : 'text-muted'}`}>{k.disc > 0 ? money2(k.disc) : ''}</td>
                           <td className={`${dc} py-1.5 text-ink/70`}>{money2(k.gross)}</td>
                           <td className={`${dc} py-1.5 pr-4 text-muted`}>{money2(k.tax)}</td>
                         </tr>

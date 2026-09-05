@@ -32,12 +32,12 @@ interface Shift {
 const money = (n: number) => `$${(n ?? 0).toFixed(2)}`
 const DOT: Record<string, string> = {
   Server: 'bg-brand',
-  Bartender: 'bg-sky-400',
+  Bartender: 'bg-signal',
   Expo: 'bg-orange-400',
   Host: 'bg-emerald-500',
   ToGo: 'bg-amber-500',
   Cook: 'bg-navy',
-  Dish: 'bg-slate-400',
+  Dish: 'bg-muted',
   Manager: 'bg-purple-400',
   Corporate: 'bg-rose-400',
 }
@@ -456,7 +456,7 @@ function ImportPanel({ onImport }: { onImport: (p: ReturnType<typeof importPeopl
   }
 
   return (
-    <Card className="border-brand/30 bg-brand/5 p-4">
+    <Card className="border-brand/25 bg-brand/[0.06] p-4">
       <div className="mb-2 text-sm font-semibold text-ink">Import your team</div>
       <p className="mb-3 text-xs text-muted text-pretty">
         Paste a list (one per line, or “Name, Role”) — or upload a <b>Toast employee export</b> (CSV).

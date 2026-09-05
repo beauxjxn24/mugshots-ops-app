@@ -530,7 +530,7 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
       {currentWeekMode && hasPrior && (
         <div className="mb-3 flex flex-wrap items-center justify-end gap-3 text-[11px] font-medium text-muted">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-slate-300" /> {priorWord}
+            <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-muted/60" /> {priorWord}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-brand" /> This year
@@ -558,7 +558,7 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
             <div key={c.date} className="relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end">
               {/* value labels — last week (left), this year / forecast (right) */}
               <div className="mb-1.5 flex items-end justify-center gap-1.5 text-[10px] font-semibold leading-none tabular-nums sm:text-[11px]">
-                {c.prior != null && <span className="text-slate-400">${(c.prior / 1000).toFixed(1)}k</span>}
+                {c.prior != null && <span className="text-muted">${(c.prior / 1000).toFixed(1)}k</span>}
                 {aVal != null && (
                   <span className={c.actual != null ? 'text-ink' : 'text-brand-600/70'}>
                     {c.actual == null ? '~' : ''}${(aVal / 1000).toFixed(1)}k
@@ -570,7 +570,7 @@ function WeekBars({ nights, h = 168 }: { nights: Night[]; h?: number }) {
               <div className="flex items-end justify-center gap-[3px]">
                 {c.prior != null ? (
                   <div
-                    className="rise w-3.5 rounded-t-md bg-slate-300 sm:w-4"
+                    className="rise w-3.5 rounded-t-md bg-muted/60 sm:w-4"
                     style={{ height: pH, '--i': ci } as React.CSSProperties}
                     title={`${c.date} · ${c.priorKind === 'ly' ? 'last year' : 'last week'} ${money(c.prior)}`}
                   />
@@ -786,7 +786,7 @@ function LtoFocus() {
           </div>
           <div className="mt-auto flex flex-wrap items-center gap-3 pt-3">
             {sold ? (
-              <span className="text-sm font-semibold text-emerald-300">
+              <span className="text-sm font-semibold text-up">
                 {sold.qty} sold {fmtWhen(sold.day)} · {money(sold.sales)}
               </span>
             ) : (

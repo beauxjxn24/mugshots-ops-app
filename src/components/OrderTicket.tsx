@@ -223,7 +223,7 @@ export function OrderTicket({ booking, onClose }: { booking: Booking | null; onC
                 ))
               ) : (
                 <div className="p-4">
-                  <p className="mb-3 rounded-lg border border-brand/30 bg-brand/[0.07] p-3 text-xs text-ink/80">
+                  <p className="mb-3 rounded-lg border border-brand/25 bg-brand/[0.06] p-3 text-xs text-ink/80">
                     This device can’t display the caterer’s PDF. Tap the arrow above to open it, or print the
                     order below.
                   </p>
@@ -237,7 +237,7 @@ export function OrderTicket({ booking, onClose }: { booking: Booking | null; onC
         ) : (
           <div className="order-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
             {docId && doc === 'gone' && (
-              <p className="mb-3 rounded-lg border border-brand/30 bg-brand/[0.07] p-3 text-xs leading-relaxed text-ink/80 print:hidden">
+              <p className="mb-3 rounded-lg border border-brand/25 bg-brand/[0.06] p-3 text-xs leading-relaxed text-ink/80 print:hidden">
                 The caterer’s PDF isn’t on this device — the file stays on whichever device imported
                 it. Below is the order as it was read in, and it prints. To print the caterer’s own
                 page here, re-drop the PDF on Imports.
