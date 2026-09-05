@@ -9,7 +9,7 @@ import { updatePrices, registerItem, addAlias, setItemCost, setOnGuide } from '.
 import { addInvoice, parseInvoice } from '../lib/invoices'
 import { isCateringDoc, parseCatering, addBooking, recordCateringImport } from '../lib/catering'
 import { isSalesSummary, parseSalesSummary, upsertNights, isCategorySummary, parseCategorySummary, parseCategoryRows, applyCategoryRows, setCatMix, applyCatMixToNights, isLaborReport, parseLaborByDay, applyLaborRows, isLaborSummary, parseLaborSummary, applyLaborSummary, isCashSummary, parseCashSummary, applyCashSummary, isDiscountReport, parseDiscounts, applyDiscounts, isDiningOptions, parseDiningRows, togoFromDining, applyDining, isNetSalesSummary, parseNetSummary, applyNetSummary, isSalesBreakdown, parseSalesBreakdown, applySalesBreakdown, latestNightDate } from '../lib/nightly'
-import { isRosterDoc, importPeople, addPeople } from '../lib/staff'
+import { isRosterDoc, importPeople, addPeople, rowsSkippedForOtherStores, type RosterMerge } from '../lib/staff'
 import { isBuildSheet } from '../lib/buildsheet'
 import { takeStaged } from '../lib/dropstage'
 import { BuildSheetImport } from '../components/BuildSheetImport'
@@ -1316,15 +1316,22 @@ function CategoryImport({ text, fileName, hintDate, periodLevel }: { text: strin
 
 /** Import a dropped employee roster (e.g. Toast export) into Staff. */
 function StaffImport({ text, fileName }: { text: string; fileName: string }) {
-  const people = useMemo(() => importPeople(text), [text])
-  const [added, setAdded] = useState<{ added: number; updated: number } | null>(null)
+  // Parsed together, because the skipped count is set by the parse and read
+  // straight after it.
+  const { people, skipped } = useMemo(
+    () => ({ people: importPeople(text), skipped: rowsSkippedForOtherStores() }),
+    [text],
+  )
+  const [added, setAdded] = useState<RosterMerge | null>(null)
 
   // A dropped roster IS the import, the same as every other report here. It used
   // to wait behind an "Import N to Staff" button, and the drop log already read
   // "employee roster -- review below", so a manager who dropped the file saw a
   // success line, never scrolled to the button, and found Staff still empty.
-  // Safe to run on sight: addPeople matches on name and skips anyone already on
-  // the roster, so a re-drop adds nobody twice.
+  // Safe to run on sight, and safe to run every week: addPeople matches on
+  // Toast's GUID, then the employee number, then the name, so a re-drop
+  // updates people instead of adding second copies of them — and it never
+  // removes anyone who isn't in the file.
   const ran = useRef(false)
   useEffect(() => {
     if (ran.current || people.length === 0) return
@@ -1333,27 +1340,57 @@ function StaffImport({ text, fileName }: { text: string; fileName: string }) {
     setAdded(r)
     logImport(
       fileName,
-      `${r.added} people → Staff roster${r.updated ? `, ${r.updated} job codes refreshed` : ''}`,
+      `${r.added} added, ${r.updated} updated, ${r.unchanged} unchanged → Staff roster${
+        r.absent.length ? ` · ${r.absent.length} on the roster not in this export (kept)` : ''
+      }`,
     )
   }, [people, fileName])
 
-  if (people.length === 0) return null
+  // A roster that is entirely another store's would otherwise vanish without
+  // a word — and "I dropped it and nothing happened" is the worst outcome here.
+  if (people.length === 0) {
+    if (skipped === 0) return null
+    return (
+      <div className="mt-3 rounded-xl border border-warn/30 bg-warn/[0.07] p-3 text-sm text-ink">
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-warn">
+          <Users size={14} /> Another store's roster
+        </div>
+        All {skipped} people in this export belong to a different location, so nobody was imported here.
+        Switch stores at the top right and drop it again.
+      </div>
+    )
+  }
 
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
         <Users size={14} /> Employee roster — {people.length} people read
+        {skipped > 0 && <span className="font-semibold normal-case text-warn">· {skipped} skipped (another store)</span>}
       </div>
       {added !== null && (
-        <div className="mb-2 flex items-center gap-2 rounded-lg border border-up/30 bg-up/5 p-2.5 text-sm font-semibold text-up">
-          <Users size={16} />
-          {[
-            added.added > 0 ? `Added ${added.added} to Staff` : '',
-            added.updated > 0 ? `refreshed job codes on ${added.updated}` : '',
-          ]
-            .filter(Boolean)
-            .join(' · ') || 'Everyone here was already on the Staff roster, unchanged.'}
-        </div>
+        <>
+          <div className="mb-2 flex items-center gap-2 rounded-lg border border-up/30 bg-up/5 p-2.5 text-sm font-semibold text-up">
+            <Users size={16} />
+            {[
+              added.added > 0 ? `${added.added} added` : '',
+              added.updated > 0 ? `${added.updated} updated` : '',
+              added.unchanged > 0 ? `${added.unchanged} already on the roster, unchanged` : '',
+            ]
+              .filter(Boolean)
+              .join(' · ') || 'Everyone here was already on the Staff roster, unchanged.'}
+          </div>
+          {/* Who's on the roster and not in this week's export. Never removed —
+              somebody on leave still has to be schedulable — but worth seeing,
+              because this is the list that quietly goes stale. */}
+          {added.absent.length > 0 && (
+            <div className="mb-2 rounded-lg border border-warn/30 bg-warn/[0.07] p-2.5 text-xs text-ink">
+              <b className="text-warn">{added.absent.length} on the roster, not in this export</b> — kept, nobody
+              is removed by an import. {added.absent.slice(0, 8).map((p) => p.name).join(', ')}
+              {added.absent.length > 8 ? ` +${added.absent.length - 8} more` : ''}. Remove anyone who has left on
+              the Staff screen.
+            </div>
+          )}
+        </>
       )}
       <div className="max-h-52 overflow-y-auto rounded-lg bg-white">
         <table className="w-full text-sm">

@@ -4,7 +4,8 @@ import { confirmDelete } from '../lib/confirm'
 import { Upload, Users } from 'lucide-react'
 import { Page, Card } from '../components/ui'
 import { usePersistentState } from '../lib/store'
-import { type Person, ROLES, newId, importPeople, addPeople, rolesOf } from '../lib/staff'
+import { type Person, ROLES, newId, importPeople, addPeople, rolesOf, dedupeRoster, duplicateCount, getStaff } from '../lib/staff'
+import { toast } from '../lib/toast'
 
 interface Entry {
   id: string
@@ -97,7 +98,12 @@ export function Staff() {
   // Goes through addPeople so a paste and a dropped export behave identically —
   // new people added, existing people's job codes refreshed. The write fires a
   // same-tab save event, which is what pulls the list above back into sync.
-  const bulkAdd = (people: ReturnType<typeof importPeople>): number => addPeople(people).added
+  const bulkAdd = (people: ReturnType<typeof importPeople>): number => {
+    const r = addPeople(people)
+    setStaff(getStaff())
+    return r.added
+  }
+  const dupes = useMemo(() => duplicateCount(staff), [staff])
 
   // Tip totals per person, from the tipshare shift log — real history only.
   const tipTotals = useMemo(() => {
@@ -184,6 +190,28 @@ export function Staff() {
         {showImport && (
           <div className="mb-5">
             <ImportPanel onImport={bulkAdd} />
+          </div>
+        )}
+        {/* Doubles from before the weekly import matched on Toast's GUID. One
+            tap folds them together — nobody is lost, the rows just become one
+            person again. */}
+        {dupes > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-warn/30 bg-warn/[0.07] px-3 py-2.5 text-sm text-ink">
+            <Users size={15} className="text-warn" />
+            <span>
+              <b className="text-warn">{dupes} duplicate {dupes === 1 ? 'row' : 'rows'}</b> on the roster — the same
+              person listed more than once.
+            </span>
+            <button
+              onClick={() => {
+                const { merged } = dedupeRoster()
+                setStaff(getStaff())
+                toast(`Merged ${merged} duplicate ${merged === 1 ? 'row' : 'rows'}`, 'success')
+              }}
+              className="ml-auto rounded-lg bg-warn px-3 py-1.5 text-xs font-bold text-navy"
+            >
+              Merge them
+            </button>
           </div>
         )}
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

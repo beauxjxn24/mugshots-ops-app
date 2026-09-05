@@ -6,6 +6,18 @@ import { useScope } from './scope'
 export interface Person {
   id: string
   name: string
+  /**
+   * Toast's GUID for this person — the only identifier that survives a name
+   * change, and what a weekly re-import matches on first. Two people really
+   * can share a name, and one person really can change theirs; matching on
+   * the name alone gets both of those wrong, which is how a roster ends up
+   * with the same server on it twice.
+   */
+  extId?: string
+  /** Toast's "Employee ID" (1001, 1004…) — the store's own number. */
+  empNo?: string
+  /** ISO date of the most recent export this person appeared in. */
+  lastSeen?: string
   /** Primary job code — the first one that mapped. Tipshare still reads this. */
   role: string
   /**
@@ -32,35 +44,178 @@ export const getStaff = (): Person[] => load<Person[]>(key(), [])
 export const setStaff = (p: Person[]): void => save(key(), p)
 
 /**
- * Add people to the roster, and refresh the job codes of anyone already on it.
- *
- * A re-dropped export used to skip known names outright, which meant a roster
- * already imported could never pick up a new job code — someone cross-trained
- * onto the bar stayed a Host forever. Toast owns job codes, so a re-drop
- * updates them; everything entered by hand here (the person, their phone) is
- * left alone.
+ * How many rows the last parse skipped because they belong to another store.
+ * Read straight after importPeople() — the import panel says so on screen,
+ * because "nothing imported" needs a reason attached to it.
  */
-export function addPeople(people: Omit<Person, 'id'>[]): { added: number; updated: number } {
+let lastSkipped = 0
+export const rowsSkippedForOtherStores = (): number => lastSkipped
+
+/**
+ * One person's identity, normalized for matching: case, punctuation, accents
+ * and spacing all go, and "Bartholomew, Beau" reads the same as "Beau
+ * Bartholomew" — payroll exports print names both ways.
+ */
+export function personKey(name: string): string {
+  const n = (name || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+  const flipped = /^[^,]+,\s*[^,]+$/.test(n)
+    ? n.split(',').map((s) => s.trim()).reverse().join(' ')
+    : n
+  return flipped.replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function isoToday(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export interface RosterMerge {
+  added: number
+  updated: number
+  unchanged: number
+  /** On the roster but not in this export. Kept — never deleted. */
+  absent: Person[]
+}
+
+/**
+ * Merge an export into the roster. Nobody is ever removed.
+ *
+ * This import runs every week, so identity is the whole job: match on Toast's
+ * GUID first, then the store's employee number, then the normalized name. A
+ * marriage (new surname, same GUID) updates the person instead of adding a
+ * second one, and two real people who share a name stay two people.
+ *
+ * Toast owns job codes, so a re-drop refreshes them and fills in a phone or
+ * employee number that was blank; anything typed in by hand is left alone.
+ * People missing from the export are reported, not deleted — somebody on leave
+ * still has to be on next week's schedule.
+ */
+export function addPeople(people: Omit<Person, 'id'>[]): RosterMerge {
   const cur = getStaff()
-  const incoming = new Map(people.filter((p) => p.name).map((p) => [p.name.toLowerCase(), p]))
+  const today = isoToday()
 
+  const byExt = new Map<string, Person>()
+  const byNo = new Map<string, Person>()
+  const byName = new Map<string, Person>()
+  for (const p of cur) {
+    if (p.extId) byExt.set(p.extId, p)
+    if (p.empNo) byNo.set(p.empNo, p)
+    const k = personKey(p.name)
+    if (k && !byName.has(k)) byName.set(k, p)
+  }
+
+  const patch = new Map<string, Person>() // roster id → the updated person
+  const fresh: Person[] = []
+  const seen = new Set<string>()
+  let added = 0
   let updated = 0
-  const merged = cur.map((p) => {
-    const inc = incoming.get(p.name.toLowerCase())
-    if (!inc) return p
-    const sameRoles = rolesOf(p).join('|') === rolesOf(inc).join('|')
-    if (sameRoles && p.role === inc.role) return p
-    updated++
-    return { ...p, role: inc.role, roles: inc.roles }
-  })
+  let unchanged = 0
 
-  const have = new Set(cur.map((p) => p.name.toLowerCase()))
-  const fresh = people
-    .filter((p) => p.name && !have.has(p.name.toLowerCase()))
-    .map((p) => ({ ...p, id: newId() }))
+  for (const inc of people) {
+    if (!inc.name) continue
+    const hit =
+      (inc.extId ? byExt.get(inc.extId) : undefined) ??
+      (inc.empNo ? byNo.get(inc.empNo) : undefined) ??
+      byName.get(personKey(inc.name))
+    if (!hit) {
+      const person: Person = { ...inc, id: newId(), lastSeen: today }
+      fresh.push(person)
+      // So the same new person appearing twice in one file can't land twice.
+      if (person.extId) byExt.set(person.extId, person)
+      if (person.empNo) byNo.set(person.empNo, person)
+      byName.set(personKey(person.name), person)
+      seen.add(person.id)
+      added++
+      continue
+    }
+    seen.add(hit.id)
+    const before = patch.get(hit.id) ?? hit
+    const next: Person = {
+      ...before,
+      role: inc.role || before.role,
+      roles: inc.roles?.length ? inc.roles : before.roles,
+      // A new spelling is the person's real name now — but only when the match
+      // was on something stronger than the name itself.
+      name: inc.extId && before.extId === inc.extId && inc.name ? inc.name : before.name,
+      phone: before.phone || inc.phone || '',
+      extId: before.extId || inc.extId,
+      empNo: before.empNo || inc.empNo,
+      lastSeen: today,
+    }
+    const changed =
+      next.name !== hit.name ||
+      next.role !== hit.role ||
+      rolesOf(next).join('|') !== rolesOf(hit).join('|') ||
+      next.phone !== hit.phone ||
+      next.extId !== hit.extId ||
+      next.empNo !== hit.empNo
+    if (!patch.has(hit.id)) {
+      if (changed) updated++
+      else unchanged++
+    }
+    patch.set(hit.id, next)
+  }
 
+  const merged = cur.map((p) => patch.get(p.id) ?? p)
   setStaff([...merged, ...fresh])
-  return { added: fresh.length, updated }
+  return { added, updated, unchanged, absent: merged.filter((p) => !seen.has(p.id)) }
+}
+
+/**
+ * Fold duplicate roster rows into one — for rosters that picked up doubles
+ * before identity matching existed. Rows that share a GUID, an employee number
+ * or a normalized name merge into the first, keeping whatever each row knew: a
+ * phone typed on one, job codes imported onto the other.
+ */
+export function dedupeRoster(): { merged: number } {
+  const cur = getStaff()
+  const keep: Person[] = []
+  const at = new Map<string, number>()
+  let merged = 0
+  for (const p of cur) {
+    const keys = [p.extId && `g:${p.extId}`, p.empNo && `n:${p.empNo}`, `k:${personKey(p.name)}`].filter(
+      Boolean,
+    ) as string[]
+    const hitIdx = keys.map((k) => at.get(k)).find((i) => i != null)
+    if (hitIdx == null) {
+      keep.push(p)
+      for (const k of keys) at.set(k, keep.length - 1)
+      continue
+    }
+    const a = keep[hitIdx]
+    keep[hitIdx] = {
+      ...a,
+      name: a.name || p.name,
+      role: a.role || p.role,
+      roles: rolesOf(a).length >= rolesOf(p).length ? a.roles : p.roles,
+      phone: a.phone || p.phone,
+      extId: a.extId || p.extId,
+      empNo: a.empNo || p.empNo,
+      lastSeen: [a.lastSeen, p.lastSeen].filter(Boolean).sort().pop(),
+    }
+    for (const k of keys) at.set(k, hitIdx)
+    merged++
+  }
+  if (merged) setStaff(keep)
+  return { merged }
+}
+
+/** How many roster rows would fold together right now. */
+export function duplicateCount(list: Person[] = getStaff()): number {
+  const at = new Set<string>()
+  let dupes = 0
+  for (const p of list) {
+    const keys = [p.extId && `g:${p.extId}`, p.empNo && `n:${p.empNo}`, `k:${personKey(p.name)}`].filter(
+      Boolean,
+    ) as string[]
+    if (keys.some((k) => at.has(k))) dupes++
+    for (const k of keys) at.add(k)
+  }
+  return dupes
 }
 
 /** Does this text look like an employee roster export (e.g. from Toast)? */
@@ -134,11 +289,42 @@ export function importPeople(text: string): Omit<Person, 'id'>[] {
   const iPhone = find(['phone', 'mobile'])
 
   const iEmail = find(['email'])
+  // Toast's GUID column is the stable identity; "Employee ID" is the store's
+  // own number. Either beats matching on a name that can change.
+  const iGuid = cols.findIndex((h) => h.trim() === 'guid' || h.includes('employee guid'))
+  const iEmpNo = cols.findIndex((h) => h.includes('employee id') || h.trim() === 'employee #')
+  const iLoc = cols.findIndex((h) => h.includes('location') || h.includes('restaurant'))
+
+  // A Toast export can cover every store on the account, and dropping one
+  // whole puts Flowood's team on Pearl's roster — a duplicate of somebody who
+  // works somewhere else. Keep the rows for the store that's open. A row whose
+  // location clearly belongs to a DIFFERENT store of this concept is skipped
+  // and counted; a label we don't recognise at all (a single-store export
+  // named something else) is kept, because importing nobody is worse.
+  const { here, others } = locationWords()
+  const belongs = (loc: string) => {
+    const l = loc.toLowerCase()
+    if (!l || here.some((w) => l.includes(w))) return 'here'
+    return others.some((w) => l.includes(w)) ? 'elsewhere' : 'unknown'
+  }
+  let skipped = 0
+  const body =
+    iLoc >= 0 && here.length
+      ? lines.slice(1).filter((l) => {
+          const where = belongs(splitCsv(l)[iLoc] ?? '')
+          if (where === 'elsewhere') {
+            skipped++
+            return false
+          }
+          return true
+        })
+      : lines.slice(1)
+  lastSkipped = skipped
 
   const out: Omit<Person, 'id'>[] = []
   const seen = new Set<string>()
-  for (let r = 1; r < lines.length; r++) {
-    const c = splitCsv(lines[r])
+  for (const line of body) {
+    const c = splitCsv(line)
     let name = ''
     if (iFirst >= 0) name = [c[iFirst], iLast >= 0 ? c[iLast] : ''].filter(Boolean).join(' ').trim()
     if (!name && iFull >= 0) name = c[iFull] ?? ''
@@ -148,9 +334,11 @@ export function importPeople(text: string): Omit<Person, 'id'>[] {
     if (!name) continue
     const job = iRole >= 0 ? c[iRole] ?? '' : ''
     if (isSystemAccount(name, job, iEmail >= 0 ? c[iEmail] : '')) continue
+    const extId = iGuid >= 0 ? (c[iGuid] || '').trim() : ''
+    const empNo = iEmpNo >= 0 ? (c[iEmpNo] || '').trim() : ''
     // A roster export lists a person once, but re-drops and multi-location
-    // files repeat them — one row per person.
-    const dedupe = name.toLowerCase()
+    // files repeat them — one row per person, keyed the same way the merge is.
+    const dedupe = extId ? `g:${extId}` : empNo ? `n:${empNo}` : `k:${personKey(name)}`
     if (seen.has(dedupe)) continue
     seen.add(dedupe)
     out.push({
@@ -158,9 +346,40 @@ export function importPeople(text: string): Omit<Person, 'id'>[] {
       role: primaryRole(job),
       roles: allRoles(job),
       phone: (iPhone >= 0 ? c[iPhone] : '') || '',
+      ...(extId ? { extId } : {}),
+      ...(empNo ? { empNo } : {}),
     })
   }
   return out
+}
+
+/**
+ * Words that identify the store that's open, and the ones that identify the
+ * concept's other stores, for reading a Location column:
+ * "Mugshots Grill & Bar - Flowood, MS" → matched by "flowood".
+ */
+function locationWords(): { here: string[]; others: string[] } {
+  const s = useScope.getState()
+  const concept = s.concepts.find((c) => c.id === s.currentConcept)
+  const noise = ['mugshots', 'grill', 'store', 'location', 'restaurant']
+  const wordsFor = (id: string, name: string) =>
+    [id, name]
+      .join(' ')
+      .toLowerCase()
+      .split(/[^a-z]+/)
+      .filter((w) => w.length > 3 && !noise.includes(w))
+  const here = new Set(
+    wordsFor(
+      s.currentLocation,
+      concept?.locations.find((l) => l.id === s.currentLocation)?.name ?? '',
+    ),
+  )
+  const others = new Set<string>()
+  for (const l of concept?.locations ?? []) {
+    if (l.id === s.currentLocation) continue
+    for (const w of wordsFor(l.id, l.name)) if (!here.has(w)) others.add(w)
+  }
+  return { here: [...here], others: [...others] }
 }
 
 /**
