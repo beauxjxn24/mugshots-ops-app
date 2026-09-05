@@ -6,6 +6,7 @@ import { usePersistentState, today } from '../lib/store'
 import { requirePin, usePin } from '../lib/pin'
 import { DEFAULT_USERS, type User } from '../lib/users'
 import { managerList, type Person, type SchedulePerson } from '../lib/staff'
+import { PickList } from '../components/PickList'
 import { periodWeek, periodStartNum } from '../lib/forecast'
 
 
@@ -153,7 +154,6 @@ export function Schedule() {
     () => (chosen ? candidates.filter((u) => chosen.includes(u.id)) : candidates),
     [candidates, chosen],
   )
-  const [pickingPeople, setPickingPeople] = useState(false)
   const [weeks, setWeeks] = usePersistentState<AllWeeks>('mgrsched:weeks', {})
   const [published, setPublished] = usePersistentState<Record<string, boolean>>('mgrsched:published', {})
   const [rules, setRules] = usePersistentState<string>('mgrsched:rules', DEFAULT_RULES)
@@ -313,15 +313,16 @@ export function Schedule() {
                 <Lock size={13} /> Unlock to edit
               </button>
             )}
-            <button
-              onClick={() => setPickingPeople((v) => !v)}
-              title="Choose who is on this store's manager schedule"
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${
-                pickingPeople ? 'bg-brand text-white' : 'border border-black/10 bg-white text-ink'
-              }`}
-            >
-              <Users size={13} /> Who's on it
-            </button>
+            <PickList
+              label="Who's on it"
+              icon={<Users size={13} />}
+              options={candidates.map((c) => ({ id: c.id, label: c.name, hint: c.role }))}
+              selected={users.map((u) => u.id)}
+              onChange={(ids) => setChosen(ids)}
+              onReset={chosen ? () => setChosen(null) : undefined}
+              resetLabel={`Everyone (${candidates.length})`}
+              empty="Nobody on the roster carries a Manager, Shift Lead or Key code yet."
+            />
             <Link to="/posted" className="rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-bold text-ink">
               View posted →
             </Link>
@@ -407,48 +408,6 @@ export function Schedule() {
                     </div>
                   )
                 })}
-            </div>
-          </Card>
-        )}
-
-        {/* Who is on this store's schedule. Toast's job codes propose;
-            the GM decides. */}
-        {pickingPeople && (
-          <Card className="p-4 print:hidden">
-            <div className="mb-2 flex flex-wrap items-baseline gap-2">
-              <span className="font-display text-sm font-bold text-ink">Who's on this schedule</span>
-              <span className="text-xs text-muted">
-                Everyone carrying a Manager, Shift Lead or Key code — tap to leave somebody off. It doesn't
-                change the roster, only this board.
-              </span>
-              {chosen && (
-                <button onClick={() => setChosen(null)} className="ml-auto text-[11px] font-bold text-brand">
-                  Use all {candidates.length}
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {candidates.map((c) => {
-                const on = users.some((u) => u.id === c.id)
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() =>
-                      setChosen((cur) => {
-                        const base = cur ?? candidates.map((x) => x.id)
-                        return on ? base.filter((id) => id !== c.id) : [...base, c.id]
-                      })
-                    }
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${
-                      on ? 'border-brand bg-brand text-white' : 'border-black/10 bg-white text-muted'
-                    }`}
-                  >
-                    {on && <Check size={12} />}
-                    {c.name}
-                    <span className={on ? 'text-white/70' : 'text-muted/60'}>{c.role}</span>
-                  </button>
-                )
-              })}
             </div>
           </Card>
         )}
@@ -619,7 +578,7 @@ export function Schedule() {
             on a Tuesday. They're one line now, and open when you want them. */}
         <details className="panel px-4 py-3 print:hidden">
           <summary className="cursor-pointer text-sm font-bold text-ink">
-            Time off, rules &amp; balance
+            Period rules, time off &amp; balance
             {pending.length > 0 && (
               <span className="ml-2 rounded-full bg-down/15 px-2 py-0.5 text-[10px] font-extrabold text-down">
                 {pending.length} to review
@@ -627,18 +586,29 @@ export function Schedule() {
             )}
           </summary>
           <div className="mt-3 space-y-4">
+        {/* The rules first, because they're what the balance below is checked
+            against — and because a text box with no border and no label read
+            as printed text rather than as something you could type in. */}
+        <Card className="border-brand/25 bg-brand/[0.06] p-4">
+          <div className="mb-1.5 flex items-baseline gap-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wide text-brand-600">Period rules</span>
+            <span className="text-[11px] text-muted">
+              Type in the box — it saves as you go, and the balance below is checked against it.
+            </span>
+          </div>
+          <textarea
+            value={rules}
+            onChange={(e) => setRules(e.target.value)}
+            rows={3}
+            aria-label="Period rules"
+            placeholder="e.g. Every manager gets 2 weekend days off per period · no clopens"
+            className="w-full resize-y rounded-lg border border-black/15 bg-white px-3 py-2 text-xs leading-relaxed text-ink outline-none focus:border-brand"
+          />
+        </Card>
+
         <RequestOff users={users} onSubmit={(r) => setRequests((rs) => [r, ...rs])} requests={requests} nameOf={nameOf} />
 
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <Card className="border-brand/25 bg-brand/[0.06] p-4">
-            <div className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-brand-600">Period rules</div>
-            <textarea
-              value={rules}
-              onChange={(e) => setRules(e.target.value)}
-              rows={3}
-              className="w-full resize-none rounded-lg border border-transparent bg-transparent text-xs leading-relaxed text-ink/80 outline-none hover:border-black/10 focus:border-brand"
-            />
-          </Card>
+        <div className="grid grid-cols-1 items-start gap-5">
           {/* The rules, checked. Each line is the rule beside the answer, so
               the card either says "this is fine" or names who it isn't fine
               for — rather than printing numbers and leaving the arithmetic to
