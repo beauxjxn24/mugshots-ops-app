@@ -10,6 +10,73 @@ so it isn't re-litigated later.
 
 ---
 
+## 2026-09-05
+
+### Done
+
+- **Park, instead of "off guide" or delete.** An item now parks: off every
+  order guide, kept whole on a **Parked** shelf in the Item Catalog with its
+  price, vendor, product number and the invoice spellings it has learned. Park
+  button on every catalog item and in the Orders editor; the guide flag is
+  left untouched, so un-parking puts the item back where it was. Deleting is
+  still there and now says what it costs you.
+- **Pearl mirrors Flowood's US Foods guide**, as asked — one list to maintain,
+  then move / add / park per store. A Pearl device holding the old list
+  re-seeds: the 14 lines only Pearl's sheet carried are **parked**, not
+  dropped; pars survive; hand-added lines are left alone. Pearl's own sheet
+  stays at `src/data/usfoods-guide-pearl.json` — point `USFOODS_SHEETS.pearl`
+  back at it and bump the stamp to undo.
+- **US Foods guide takes two pars** (M and F) like the produce sheet, on
+  screen and on paper, and the printed sheet now reads like the produce guide:
+  same band, same ruled grid, M-PAR / F-PAR, then the count boxes.
+- **The shipped documents print again.** They were blank because the service
+  worker answered their navigation with the app shell — an iframe pointed at a
+  PDF loaded The Pass and printed an empty page. `/sheets/` and `.pdf` now
+  bypass the SPA fallback (`navigateFallbackDenylist`) and are cached once
+  opened. *This was mine: the SW was configured without a denylist.*
+- **Liquor prices from the two Lincoln Road receipts** (9/1 and 8/26) →
+  `src/data/liquor-prices-lincoln-road.json`, 26 bottles priced with the
+  store's item code and bottle size, the vendor's spelling kept as an alias so
+  the next invoice import matches itself. Both receipts' line prices sum
+  exactly to their printed totals, so these are the receipts' numbers. Two
+  bottles the guide never had (New Amsterdam Vodka, Cook's Brut) were created
+  and filed.
+- **The ezCater order prints as the caterer's page on every device.** It
+  already opened the imported PDF, but only Chrome will print one out of a
+  frame; an iPad won't render it and Safari blocks `print()` on the viewer —
+  which is where the kitchen prints from. Pages are rendered with pdf.js and
+  those images are the print job (`src/lib/pdfpages.ts`).
+- **Weekly employee imports stopped being able to duplicate anyone.** The
+  importer matched on the name and ignored Toast's GUID and Employee ID, so a
+  marriage added a second person and two people sharing a name collapsed into
+  one. Now GUID → employee number → normalized name (case, punctuation,
+  accents, "Last, First" all folded). Nobody is ever removed: people missing
+  from this week's export are listed instead. Rosters that already doubled get
+  a "Merge them" button on Staff. A multi-store export no longer puts
+  Flowood's team on Pearl's roster — and says so rather than doing nothing.
+- **Manager schedule + Posted overhauled.** Rows came from Admin → Users, so a
+  66-person team with 8 managers showed as one line. They now come from the
+  roster (Manager / Shift Lead / Key) plus Users. The build tab answers the
+  question it exists for — a coverage row naming each day's opener and closer,
+  red where there is none, and "N days uncovered" in the header — and the
+  balance card checks the period rules by name, including clopens across week
+  boundaries. Posted opens with who is on today.
+
+### Found
+
+- **No access to usfoods.com from this session** — the environment's proxy
+  refuses the connection (403 on CONNECT to `usfoods.com` and
+  `order.usfoods.com`). Ordering through their site has to be Beau's hands, or
+  a paid API integration Beau arranges with his rep.
+
+### Open
+
+- Pars on the US Foods guide are 0 until set — and now there are two per item
+  (M and F) on both stores.
+- The Cloudflare cutover is still waiting on Beau's two dashboard steps.
+
+---
+
 ## 2026-09-04
 
 ### Done

@@ -26,8 +26,17 @@ Screenshots and PDFs land in `scripts/verify/out/` (ignored by git).
 | `badge.mjs` | No count pill left in the rail; Checklists still reports due state |
 | `usfoods.mjs` | Each store's US Foods guide seeds from its own sheet (`src/data/usfoods-guide-<store>.json`) in sheet-to-shelf order with product numbers; the copy-out carries them; adding on the tab lands the item in its section with the vendor set; an item moves by tap (up, and to another section); the printed sheet is landscape, full-width, black ink, grey storage bands, nothing wrapped mid-number, within the page budget; and a Flowood device that seeded Pearl's list before Flowood had a sheet migrates (Pearl-only lines off, layout rebuilt, pars and hand-added items kept, Pearl untouched). Exits non-zero on any failure |
 
+| `liquorprices.mjs` | The Lincoln Road receipt prices land on the right catalog items on both stores, with the vendor's spelling kept as an alias and no double-pricing on re-open |
+| `ezcater.mjs` | An ezCater PDF dropped on Imports creates a booking pointing at the stored file, the order window shows it, and the print job contains the caterer's own page and nothing else |
+| `roster.mjs` | The weekly employee import updates people instead of duplicating them — a re-drop adds nobody, a rename with the same GUID stays one person, a leaver is kept and reported, and another store's export lands nobody here |
+| `schedule.mjs` | The manager schedule is built from the roster's Managers / Shift Leads / Keys, names each day's opener and closer, counts uncovered days, flags clopens and weekend-day-off shortfalls, and Posted leads with who is on today |
+
 The seeds themselves come from `scripts/usfoods-sheet-to-json.py` — one US Foods
 "Sheet to Shelf" CSV in, one JSON out; see its docstring.
+
+`roster.mjs` and `schedule.mjs` build their fixtures from the real Toast export
+in the uploads directory; regenerate `scripts/verify/out/_roster-w{1,2}.csv`
+with the snippet in the worklog if they're missing.
 
 Assumptions: Chromium at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
 an admin day-code unlock written straight to localStorage, business day rolls
