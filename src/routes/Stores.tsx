@@ -18,7 +18,7 @@ import { usePersistentState, today } from '../lib/store'
 import { requirePin } from '../lib/pin'
 import { getSettingsAudit, logSettingChange, stampLabel } from '../lib/settings'
 import { DEFAULT_TARGETS, TARGETS_KEY, type Targets } from '../lib/targets'
-import { DOW, CADENCES, type OrderSchedule, type Cadence } from '../lib/orderDays'
+import { DOW, CADENCES, nextPlacement, type OrderSchedule, type Cadence } from '../lib/orderDays'
 import { vendors } from '../lib/ordering'
 import { getPmixDays } from '../lib/pmix'
 import { ACTIVE_SPECS } from '../lib/specs'
@@ -244,15 +244,36 @@ function OrderDays() {
           <>
             {draft.length === 0 && (
               <p className="mb-3 text-sm text-muted">
-                {unlocked ? 'Add your first vendor below.' : 'No delivery calendar yet — tap Edit to set one up.'}
+                {unlocked
+                  ? 'Add your first vendor below — then set the days you place the order, the days it arrives, and whether it runs every week, every other week or monthly.'
+                  : 'No delivery calendar yet — tap Edit to set one up. Each vendor gets its order days, its delivery days, and how often it runs: every week, every other week, or monthly.'}
               </p>
             )}
 
             <div className="space-y-2">
               {draft.map((r) => (
                 <div key={r.vendor} className="rounded-xl border border-black/10 bg-black/[0.015] p-3">
-                  <div className="mb-2.5 flex items-center gap-2">
+                  <div className="mb-2.5 flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-ink">{r.vendor}</span>
+                    {/* How often, up here with the vendor's name rather than
+                        below two rows of weekday buttons — it's the first
+                        thing you decide about a truck, and it was the last
+                        thing on the card. */}
+                    <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted">
+                      Every
+                      <select
+                        value={r.cadence ?? 'weekly'}
+                        onChange={(e) => setCadence(r.vendor, e.target.value as Cadence)}
+                        aria-label={`How often ${r.vendor} is ordered`}
+                        className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs font-bold normal-case tracking-normal text-ink outline-none focus:border-brand disabled:bg-transparent disabled:opacity-60"
+                      >
+                        {CADENCES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.id === 'weekly' ? 'week' : c.id === 'biweekly' ? 'other week' : 'month'}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <input
                       value={r.cutoff ?? ''}
                       onChange={(e) => setCutoff(r.vendor, e.target.value)}
@@ -270,44 +291,38 @@ function OrderDays() {
                   <div className="space-y-2">
                     <DayRow r={r} field="days" label="Place" tone="place" />
                     <DayRow r={r} field="deliveryDays" label="Arrives" tone="receive" />
-                    {/* How often the pattern repeats. Without this every vendor
-                        was weekly, so an every-other-week truck had to be
-                        entered as weekly and the dashboard called for it on the
-                        wrong week. */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="w-20 shrink-0 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-                        How often
-                      </span>
-                      {CADENCES.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => setCadence(r.vendor, c.id)}
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                            (r.cadence ?? 'weekly') === c.id
-                              ? 'bg-brand text-white'
-                              : 'border border-black/10 bg-white text-muted enabled:hover:text-ink'
-                          }`}
-                        >
-                          {c.label}
-                        </button>
-                      ))}
-                      {(r.cadence ?? 'weekly') === 'biweekly' && (
-                        <label className="ml-1 flex items-center gap-1.5 text-[11px] text-muted">
-                          starting
-                          <input
-                            type="date"
-                            value={r.anchor ?? ''}
-                            onChange={(e) => setAnchor(r.vendor, e.target.value)}
-                            title="A date in a week this order DOES happen — the weeks alternate from here"
-                            className="rounded-lg border border-black/10 bg-white px-2 py-1 text-[11px] text-ink outline-none focus:border-brand disabled:bg-transparent disabled:opacity-60"
-                          />
-                        </label>
-                      )}
-                    </div>
-                    {(r.cadence ?? 'weekly') === 'biweekly' && !r.anchor && (
-                      <p className="pl-20 text-[11px] text-warn">
-                        Pick a starting week, or the app can’t tell which Thursday is the “on” one.
-                      </p>
+                    {/* Every other week needs a fixed point to alternate from,
+                        and the answer it produces — which Thursday is the "on"
+                        one — is the thing worth showing. */}
+                    {(r.cadence ?? 'weekly') === 'biweekly' && (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <span className="w-20 shrink-0 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+                          Starting
+                        </span>
+                        <input
+                          type="date"
+                          value={r.anchor ?? ''}
+                          onChange={(e) => setAnchor(r.vendor, e.target.value)}
+                          title="A date in a week this order DOES happen — the weeks alternate from here"
+                          className="rounded-lg border border-black/10 bg-white px-2 py-1 text-[11px] text-ink outline-none focus:border-brand disabled:bg-transparent disabled:opacity-60"
+                        />
+                        {!r.anchor ? (
+                          <span className="text-[11px] text-warn">
+                            Pick a week this order really goes, or the app can’t tell which one is the “on” week.
+                          </span>
+                        ) : (
+                          (() => {
+                            const next = nextPlacement(r, today())
+                            return (
+                              <span className="text-[11px] text-muted">
+                                {next
+                                  ? `Next order: ${new Date(next + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`
+                                  : 'Pick the days below and this will say which one is next.'}
+                              </span>
+                            )
+                          })()
+                        )}
+                      </div>
                     )}
                     {(r.cadence ?? 'weekly') === 'monthly' && (
                       <p className="pl-20 text-[11px] text-muted">

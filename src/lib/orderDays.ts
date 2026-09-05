@@ -102,6 +102,24 @@ function cadenceHits(s: OrderSchedule, iso: string): boolean {
   return weeksBetween(anchor, d) % 2 === 0
 }
 
+/**
+ * The next date this order has to be placed, on or after `from`.
+ *
+ * So a schedule can say "every other Thursday — next one Sep 11" instead of
+ * leaving the reader to work out which Thursday the anchor makes the "on" one.
+ * Looks a season ahead, then gives up rather than looping.
+ */
+export function nextPlacement(s: OrderSchedule, from: string): string | null {
+  const start = dateOf(from)
+  if (!start || !s.days.length) return null
+  for (let i = 0; i < 120; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    if (s.days.includes(d.getDay()) && cadenceHits(s, iso)) return iso
+  }
+  return null
+}
+
 /** Which orders have to be PLACED on the given date. */
 export function ordersDueOn(isoDate: string): OrderSchedule[] {
   const dow = dowOf(isoDate)
