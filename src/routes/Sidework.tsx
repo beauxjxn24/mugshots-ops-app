@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pencil, Check, AlertTriangle } from 'lucide-react'
+import { Pencil, Check, AlertTriangle, GripVertical } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
 import { PageHeader, Card } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
@@ -18,6 +18,7 @@ import { BohCleaning, CleaningToday } from '../components/BohCleaning'
 import { phaseKind, PHASE_META, OPENING_DUTIES, OPENING_SECTION, openingId } from '../lib/sidework'
 import { SheetRail, ClosersStrip } from '../components/SheetRail'
 import { rolesOf, type Person } from '../lib/staff'
+import { tonightsCrew, EMPTY_TIPS_LIVE, type TipsLive } from '../lib/tipscrew'
 import { useRole } from '../lib/role'
 import { useShift, phaseForShift } from '../lib/shift'
 import { shiftPerson } from '../lib/daycode'
@@ -147,18 +148,36 @@ export function Sidework() {
     {},
   )
   const [staff] = usePersistentState<Person[]>('staff:list', [])
+  // Tonight's Tipshare sheet — the people actually working this shift.
+  const [live] = usePersistentState<TipsLive>('tips:live', EMPTY_TIPS_LIVE)
   // Whoever holds the code for the role being viewed — a Server tile offers the
   // servers, not all seventy-one people on the roster. The duty sheet and the
   // roster don't spell every job the same way ("Bar" against "Bartender",
   // "To-Go" against "ToGo"), so the two are bridged here rather than the picker
   // coming up empty.
+  /**
+   * Who can be put on a piece of side work.
+   *
+   * Tonight's crew first: the people already on the Tipshare sheet for this
+   * shift are, by definition, the ones in the building — servers, bartenders,
+   * hosts. Offering the whole sixty-six-person roster to name four sections
+   * is a scroll on a tablet and an invitation to name somebody who is off.
+   *
+   * The roster for this role is the fallback (and the only list before
+   * Tipshare has been touched), so the picker is never empty.
+   */
   const crew = useMemo(() => {
     const code = JOB_CODE[role] ?? role
-    return staff
+    const onRoster = staff
       .filter((p) => rolesOf(p).includes(code))
       .map((p) => p.name)
       .sort((a, b) => a.localeCompare(b))
-  }, [staff, role])
+    const working = tonightsCrew(live, role)
+    if (working.length === 0) return onRoster
+    // Tonight's people first, then anyone else on the roster who could cover.
+    const seen = new Set(working.map((n) => n.toLowerCase()))
+    return [...working, ...onRoster.filter((n) => !seen.has(n.toLowerCase()))]
+  }, [staff, role, live])
   // Switching role lands on that role's sheet for the shift being worked, not
   // on whatever its first phase happens to be.
   const activePhase = phases.includes(phase) ? phase : phaseForShift(phases, shift)
@@ -448,6 +467,34 @@ export function Sidework() {
       secs.map((s, i) => (i === si ? { ...s, tasks: s.tasks.filter((_, j) => j !== ti) } : s)),
     )
   }
+  /**
+   * Move a duty — inside its tile, or into another one.
+   *
+   * The sheet is the store's own list and it drifts: a duty that belongs to
+   * the bar side ends up under Section 1, a new one gets typed at the bottom
+   * of the wrong tile. Retyping it somewhere else loses its check-offs;
+   * dragging it keeps the sheet honest.
+   */
+  const moveTask = (from: { si: number; ti: number }, to: { si: number; ti: number }) => {
+    if (from.si === to.si && from.ti === to.ti) return
+    setSections((secs) => {
+      const next = secs.map((s) => ({ ...s, tasks: [...s.tasks] }))
+      const src = next[from.si]
+      const dst = next[to.si]
+      if (!src || !dst) return secs
+      const [task] = src.tasks.splice(from.ti, 1)
+      if (task == null) return secs
+      // Dropping below the row it came from inside the same tile: the splice
+      // above already shifted everything up by one.
+      const at = from.si === to.si && from.ti < to.ti ? to.ti - 1 : to.ti
+      dst.tasks.splice(Math.max(0, Math.min(at, dst.tasks.length)), 0, task)
+      return next
+    })
+  }
+  // Which duty is being dragged, and where it would land.
+  const [dragTask, setDragTask] = useState<{ si: number; ti: number } | null>(null)
+  const [overTask, setOverTask] = useState<{ si: number; ti: number } | null>(null)
+
   const addTask = (si: number) => {
     const text = (adding[si] ?? '').trim()
     if (!text) return
@@ -544,6 +591,36 @@ export function Sidework() {
     }
     return m
   }, [plan])
+
+  /**
+   * Which cut the sheet below is showing — 0 for all of them.
+   *
+   * Defaults to the reader's own cut, because a server who has been cut is
+   * opening this screen to work their list, not to audit the deal.
+   */
+  const showCuts = !isStation(role) && phaseKind(activePhase) === 'close'
+  const [cutFilter, setCutFilter] = useState(0)
+  useEffect(() => {
+    setCutFilter(showCuts && myCut > 0 ? myCut : 0)
+  }, [showCuts, myCut, activePhase, role])
+  const shownSections = useMemo(() => {
+    const withIdx = sections.map((sec, si) => ({ sec, si }))
+    // Editing writes by row index, so a filtered tile would rewrite the wrong
+    // duty. Editing the sheet always sees the whole sheet.
+    if (!showCuts || cutFilter === 0 || editingSec !== null) return withIdx
+    return withIdx
+      .map(({ sec, si }) => ({
+        // The tile keeps its real index, because editing writes by index.
+        sec: {
+          ...sec,
+          tasks: sec.tasks.filter(
+            (t) => ownerOf.get(dutyId(role, activePhase, sec.section, t))?.cut === cutFilter,
+          ),
+        },
+        si,
+      }))
+      .filter((x) => x.sec.tasks.length > 0)
+  }, [sections, showCuts, cutFilter, ownerOf, role, activePhase, editingSec])
 
   /**
    * Every sheet's state for tonight, for the rail.
@@ -1054,8 +1131,36 @@ export function Sidework() {
               </button>
             </div>
           )}
+          {/* One cut at a time.
+              Closing duties are dealt to cuts, but the sheet below lists every
+              one of them across five tiles with a small CUT tag on the right —
+              so a server on cut 2 was hunting their eight jobs out of thirty-two.
+              Tap a cut and the sheet becomes that cut's list, in the sheet's own
+              order, still checkable. */}
+          {showCuts && plan.cuts > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[10px] font-extrabold uppercase tracking-wide text-muted">Show</span>
+              {[0, ...Array.from({ length: plan.cuts }, (_, i) => i + 1)].map((c) => {
+                const on = cutFilter === c
+                const mine = c > 0 && c === myCut
+                const label = c === 0 ? 'Everything' : (plan.people?.[c] ?? '').trim() || `Cut ${c}`
+                return (
+                  <button
+                    key={c}
+                    onClick={() => setCutFilter(c)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                      on ? 'bg-brand text-white' : 'bg-black/5 text-muted hover:text-ink'
+                    }`}
+                  >
+                    {label}
+                    {mine && <span className={`ml-1 text-[10px] ${on ? 'text-white/80' : 'text-brand-600'}`}>· yours</span>}
+                  </button>
+                )
+              })}
+            </div>
+          )}
           <div className="mt-3 space-y-3">
-        {sections.map((sec, si) => {
+        {shownSections.map(({ sec, si }) => {
           const secKeys = sec.tasks.map((t) => key(sec.section, t))
           const secDone = secKeys.filter((k) => done[k]).length
           const editing = editingSec === si
@@ -1064,7 +1169,24 @@ export function Sidework() {
             // looked like a different card to React, which tore the input down
             // and rebuilt it — so focus was lost after a single character.
             <Card key={si} className={`overflow-hidden ${editing ? 'ring-2 ring-brand' : ''}`}>
-              <div className={`flex items-center justify-between gap-2 border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'}`}>
+              <div
+                onDragOver={(e) => {
+                  if (!dragTask) return
+                  e.preventDefault()
+                  setOverTask({ si, ti: 0 })
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  // Dropping on a tile's header puts the duty at the top of it —
+                  // and it is the only target an empty tile has.
+                  if (dragTask) moveTask(dragTask, { si, ti: 0 })
+                  setDragTask(null)
+                  setOverTask(null)
+                }}
+                className={`flex items-center justify-between gap-2 border-b px-4 py-2 ${editing ? 'border-brand/20 bg-brand/[0.06]' : 'border-black/5 bg-black/[0.02]'} ${
+                  dragTask && overTask?.si === si && overTask.ti === 0 ? 'ring-2 ring-inset ring-brand' : ''
+                }`}
+              >
                 {editing ? (
                   <input
                     value={sec.section}
@@ -1093,9 +1215,16 @@ export function Sidework() {
                           else gets the answer. A server reading the sheet needs
                           to see that Section 2 is Katie's — they just mustn't be
                           able to make it somebody else's. */}
+                      {/* A name per tile is how OPENING is divided. At close
+                          the same work is dealt as CUTS, and having both on
+                          screen meant two different answers to "whose is
+                          this?" — a tile named Katie whose duties are dealt to
+                          cut 3. Closing belongs to the cut planner. */}
                       <div
                         className={`w-[9.5rem] ${
-                          phaseKind(activePhase) === 'handover' ? 'hidden' : ''
+                          phaseKind(activePhase) === 'handover' || (!isStation(role) && phaseKind(activePhase) === 'close')
+                            ? 'hidden'
+                            : ''
                         }`}
                       >
                         {canAssign ? (
@@ -1163,7 +1292,41 @@ export function Sidework() {
 
               {sec.tasks.map((t, ti) =>
                 editing ? (
-                  <div key={ti} className="flex items-center gap-2 border-b border-black/5 px-3 py-2 last:border-0">
+                  <div
+                    key={ti}
+                    onDragOver={(e) => {
+                      if (!dragTask) return
+                      e.preventDefault()
+                      setOverTask({ si, ti })
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      if (dragTask) moveTask(dragTask, { si, ti })
+                      setDragTask(null)
+                      setOverTask(null)
+                    }}
+                    className={`flex items-center gap-2 border-b border-black/5 px-3 py-2 last:border-0 ${
+                      dragTask?.si === si && dragTask.ti === ti ? 'opacity-40' : ''
+                    } ${overTask?.si === si && overTask.ti === ti ? 'border-t-2 border-t-brand' : ''}`}
+                  >
+                    {/* Drag the grip to move this duty — up, down, or into
+                        another tile. The check-offs travel with it. */}
+                    <span
+                      draggable
+                      onDragStart={(e) => {
+                        setDragTask({ si, ti })
+                        e.dataTransfer.effectAllowed = 'move'
+                        e.dataTransfer.setData('text/plain', t)
+                      }}
+                      onDragEnd={() => {
+                        setDragTask(null)
+                        setOverTask(null)
+                      }}
+                      title="Drag to move this duty — into another tile too"
+                      className="shrink-0 cursor-grab text-muted/50 hover:text-ink active:cursor-grabbing"
+                    >
+                      <GripVertical size={14} />
+                    </span>
                     <input
                       value={t}
                       onChange={(e) => editTask(si, ti, e.target.value)}

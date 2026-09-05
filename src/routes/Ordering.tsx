@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Printer, Check, GripVertical, Plus, PackageOpen, ChevronUp, ChevronDown, Archive } from 'lucide-react'
 import { confirmDelete } from '../lib/confirm'
@@ -20,6 +21,7 @@ import {
   addGuideItem,
   onShelf,
 } from '../lib/guide'
+import { GuideSheet } from '../components/GuideSheet'
 import { seedLiquorPrices } from '../lib/priceseed'
 import { usePersistentState, today } from '../lib/store'
 import { useIsPhone } from '../lib/useIsPhone'
@@ -210,6 +212,25 @@ export function Ordering() {
     refresh()
   }
 
+  /**
+   * Printing the guide.
+   *
+   * The sheet is rendered off-screen only while the print dialog is up — same
+   * arrangement as Printables — so what comes out of the printer is the ruled
+   * count sheet rather than a photograph of the app.
+   */
+  const [printing, setPrinting] = useState(false)
+  useEffect(() => {
+    if (!printing) return
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
+    return () => cancelAnimationFrame(id)
+  }, [printing])
+  useEffect(() => {
+    const done = () => setPrinting(false)
+    window.addEventListener('afterprint', done)
+    return () => window.removeEventListener('afterprint', done)
+  }, [])
+
   const [adding, setAdding] = useState<{ sec: number; name: string; code: string } | null>(null)
   const commitAdd = () => {
     if (!adding || !adding.name.trim()) return
@@ -279,6 +300,20 @@ export function Ordering() {
     }
   }
 
+  /**
+   * One button, unless the shelf genuinely ships from two places.
+   *
+   * The split exists for beer, which comes from Capital City AND Southern
+   * Beverage. It started firing on the liquor guide the moment 26 bottles got
+   * a vendor off a receipt: "Copy Lincoln Road Package Store (24)" beside
+   * "Copy Unassigned (54)" — two buttons, neither of which says what it does,
+   * for a shelf that is one order to one package store. So the split needs
+   * TWO NAMED vendors; one named vendor plus items nobody has assigned yet is
+   * one order.
+   */
+  const namedVendors = orderVendors.filter(([v]) => v !== 'Unassigned')
+  const splitByVendor = namedVendors.length > 1
+
   // One "Copy order" when the shelf ships from a single distributor; one button
   // per vendor when it's split (beer → Capital City + Southern Beverage).
   const CopyButtons = ({ size = 'lg' }: { size?: 'lg' | 'sm' }) => {
@@ -286,17 +321,31 @@ export function Ordering() {
       size === 'lg'
         ? 'inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40 print:hidden'
         : 'rounded-lg px-3 py-2 text-xs font-bold disabled:opacity-40'
-    if (orderVendors.length <= 1)
+    if (!splitByVendor)
       return (
-        <button onClick={() => copyOrder()} disabled={shownNeeded.length === 0} className={`${base} bg-brand text-white`}>
+        <button
+          onClick={() => copyOrder()}
+          disabled={shownNeeded.length === 0}
+          title="Copies tonight's order as text — quantity, unit and item — ready to send to your rep"
+          className={`${base} bg-brand text-white`}
+        >
           {copied ? '✓ Copied' : `Copy order (${shownNeeded.length})`}
         </button>
       )
     return (
       <div className="flex flex-wrap items-center gap-1.5 print:hidden">
         {orderVendors.map(([v, rows]) => (
-          <button key={v} onClick={() => copyOrder(v)} className={`${base} bg-brand text-white`}>
-            {copiedVendor === v ? '✓ Copied' : `Copy ${v} (${rows.length})`}
+          <button
+            key={v}
+            onClick={() => copyOrder(v)}
+            title={
+              v === 'Unassigned'
+                ? "These items have no vendor set — click an item and fill in “Order from” to put it on a rep's list"
+                : `Copies just ${v}'s items as text, ready to send`
+            }
+            className={`${base} bg-brand text-white`}
+          >
+            {copiedVendor === v ? '✓ Copied' : `Copy ${v === 'Unassigned' ? 'the rest' : v} (${rows.length})`}
           </button>
         ))}
       </div>
@@ -333,8 +382,11 @@ export function Ordering() {
                 Usage
               </button>
             </div>
+            {/* Prints the SHEET, not the screen. Printing the page gave you
+                the app's own layout — no ruled boxes, nothing to write a count
+                in — which is not what anyone carries into a stock room. */}
             <button
-              onClick={() => window.print()}
+              onClick={() => setPrinting(true)}
               className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-xs font-bold text-white print:hidden"
             >
               <Printer size={13} /> Print
@@ -861,6 +913,21 @@ export function Ordering() {
           Guides are stored per store; items live once in the Item Catalog. Direct vendor-API ordering plugs in on the
           Connections page when your reps support it.
         </p>
+
+        {/* The printed sheet for whichever guide is open. Never on screen.
+            Rendered to <body> rather than into the page: `Page` wraps its
+            children in two containers, so the rule that hides everything
+            beside a sheet — which only reaches main's direct children — left
+            the whole Orders screen printing behind it. On the body it is the
+            page, and #root drops out. */}
+        {printing && view === 'guide' &&
+          createPortal(
+            <div className="hidden print:block prep-print sheet-paper">
+              <style>{'@page { size: letter landscape; margin: 10mm; }'}</style>
+              <GuideSheet shelf={shelf} />
+            </div>,
+            document.body,
+          )}
       </Page>
     </>
   )

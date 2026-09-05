@@ -892,6 +892,10 @@ input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--colo
   .prep-print * { overflow-wrap: anywhere; }
   .prep-print .whitespace-nowrap { overflow-wrap: normal; }
   main:has(.prep-print) > :not(:has(.prep-print)):not(.prep-print) { display: none !important; }
+  /* A sheet rendered straight onto <body> (a portal) IS the page: the app
+     drops out entirely. The rule above only reaches main's direct children,
+     which is no use to a screen whose layout nests the sheet deeper. */
+  body:has(> .prep-print) #root { display: none !important; }
   /* A dedicated sheet owns the paper: nothing fixed or floating from the app
      shell may paint on it, whether or not it remembered to opt out. */
   body:has(.prep-print) canvas,

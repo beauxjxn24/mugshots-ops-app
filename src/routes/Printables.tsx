@@ -4,8 +4,9 @@ import { Page } from '../components/ui'
 import { usePersistentState, today } from '../lib/store'
 import { useCurrentNames } from '../lib/scope'
 import { SIDEWORK, ROLES, phasesFor, type Role, type Section } from '../lib/sidework'
-import { getCatalog, getFlags, getPars } from '../lib/catalog'
-import { getGuideSections } from '../lib/guide'
+import { getCatalog, getFlags } from '../lib/catalog'
+import { GuideSheet } from '../components/GuideSheet'
+import { getGuideSections, type GuideShelf } from '../lib/guide'
 import { SECTIONS_KEY, DEFAULTS, PHASES, type Phase, type Section as CheckSection } from '../lib/checkdue'
 import { saveDoc, openDoc } from '../lib/docs'
 import { SPECS, groups } from '../lib/specs'
@@ -30,8 +31,15 @@ const rid = () => `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).
 
 type SidworkData = Record<Role, Record<string, Section[]>>
 
-const SHEETS = ['AM checklist', 'PM checklist', 'Weekly checklist', 'Period checklist', 'Sidework', 'Inventory count', 'Prep card', 'Produce order guide', 'US Foods order guide'] as const
+const SHEETS = ['AM checklist', 'PM checklist', 'Weekly checklist', 'Period checklist', 'Sidework', 'Inventory count', 'Prep card', 'Produce order guide', 'US Foods order guide', 'Liquor order guide', 'Beer order guide'] as const
 type Sheet = (typeof SHEETS)[number]
+
+/** The guides that can print, in the order the list offers them. */
+const GUIDE_SHEETS: GuideShelf[] = ['Produce', 'US Foods', 'Liquor', 'Beer']
+
+/** The order guides print the same sheet, off the same component. */
+const isGuideSheet = (s: Sheet): boolean => s.endsWith('order guide')
+const shelfOf = (s: Sheet): GuideShelf => s.replace(' order guide', '') as GuideShelf
 
 /** Every company prep sheet opens with these two, without exception — so a card
  *  printed from here has to as well, or it reads as a different document. */
@@ -159,18 +167,17 @@ export function Printables() {
     {
       title: 'Ordering & counts',
       rows: [
-        {
-          key: 'produce',
-          name: 'Produce order guide',
-          note: 'with the count grid',
-          go: () => setJob({ sheet: 'Produce order guide', role: 'Server' }),
-        },
-        {
-          key: 'usfoods',
-          name: 'US Foods order guide',
-          note: 'sheet to shelf, with count columns',
-          go: () => setJob({ sheet: 'US Foods order guide', role: 'Server' }),
-        },
+        // One row per guide that has something on it. A guide this store
+        // doesn't keep — Flowood buys no beer through the app — would print a
+        // sheet that says "nothing here yet", which is not worth a row.
+        ...GUIDE_SHEETS.map((shelf) => ({ shelf, n: getGuideSections(shelf).reduce((a, s) => a + s.ids.length, 0) }))
+          .filter(({ n }) => n > 0)
+          .map(({ shelf, n }) => ({
+            key: `guide-${shelf}`,
+            name: `${shelf} order guide`,
+            note: `${n} items · with count columns`,
+            go: () => setJob({ sheet: `${shelf} order guide` as Sheet, role: 'Server' }),
+          })),
         {
           key: 'inventory',
           name: 'Inventory count sheet',
@@ -261,10 +268,8 @@ export function Printables() {
               printer with real margins. Landscape, and only while this is the
               job — @page is global, so it is rendered into the document just
               for the moment this sheet is what's printing. */}
-          {(active.sheet === 'Produce order guide' || active.sheet === 'US Foods order guide') && (
-            <style>{'@page { size: letter landscape; margin: 10mm; }'}</style>
-          )}
-          {active.sheet !== 'Produce order guide' && active.sheet !== 'US Foods order guide' && (
+          {isGuideSheet(active.sheet) && <style>{'@page { size: letter landscape; margin: 10mm; }'}</style>}
+          {!isGuideSheet(active.sheet) && (
             <div className="mb-4 flex items-baseline justify-between border-b-2 border-ink pb-2">
               <div>
                 <div className="font-display text-xl font-semibold uppercase text-ink">
@@ -288,8 +293,7 @@ export function Printables() {
           {active.sheet === 'Sidework' && <SideworkSheet role={active.role} data={sidework} />}
           {active.sheet === 'Inventory count' && <InventorySheet />}
           {active.sheet === 'Prep card' && <PrepCardSheet spec={spec} />}
-          {active.sheet === 'Produce order guide' && <ProduceGuideSheet />}
-          {active.sheet === 'US Foods order guide' && <UsFoodsGuideSheet />}
+          {isGuideSheet(active.sheet) && <GuideSheet shelf={shelfOf(active.sheet)} />}
         </div>
       )}
 
@@ -557,175 +561,9 @@ function PrepCardSheet({ spec }: { spec: Spec }) {
 }
 
 /**
- * The produce order guide, printed as the paper one: a green title band, the
- * four printed columns, then a run of empty boxes to write counts into.
- *
- * The blank grid is the point. This sheet gets carried into the walk-in and
- * counted on over and over — one column per count — so the printed part is
- * only the left third and the rest of the page has to be somewhere to write.
- * Items and pars come from this store's live guide, so a par changed in the
- * app is on the next sheet off the printer.
+ * A blank count sheet for everything on the guides — the one sheet here that
+ * isn't a per-shelf order guide (those all print from components/GuideSheet).
  */
-const TALLY_COLS = 14
-
-function ProduceGuideSheet() {
-  const pars = getPars()
-  const byId = new Map(getCatalog().map((c) => [c.id, c]))
-  const rows = getGuideSections('Produce')
-    .flatMap((sec) => sec.ids)
-    .flatMap((id) => {
-      const ci = byId.get(id)
-      if (!ci) return []
-      const p = pars[id] ?? { par: 0, onHand: 0 }
-      return [{ name: ci.name, size: ci.size ?? '', m: p.par, f: p.parF }]
-    })
-
-  const num = (v?: number) => (typeof v === 'number' ? String(v) : '')
-
-  if (rows.length === 0) {
-    return (
-      <p className="py-6 text-center text-sm text-muted">
-        Nothing on the produce guide yet — add items on the Orders screen.
-      </p>
-    )
-  }
-
-  return (
-    <div className="produce-guide">
-      <div className="pg-band border-2 px-3 py-2 text-center">
-        <span className="font-display text-xl font-bold tracking-wide text-ink">Produce Order Guide</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="pg-table w-full border-collapse text-[11px]">
-          <thead>
-            <tr>
-              <th className="pg-band pg-w-name border px-1.5 py-1 text-left font-bold uppercase">Product</th>
-              <th className="pg-band pg-w-size border px-1.5 py-1 text-left font-bold uppercase">Size</th>
-              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">M-Par</th>
-              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">F-Par</th>
-              {/* Undated on purpose — whoever counts writes the date in. */}
-              {Array.from({ length: TALLY_COLS }, (_, i) => (
-                <th key={i} className="border border-black/40 px-0 py-1" />
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.name}>
-                <td className="border border-black/60 px-1.5 py-[3px] font-medium">{r.name}</td>
-                <td className="border border-black/60 px-1.5 py-[3px]">{r.size}</td>
-                <td className="border border-black/60 px-1 py-[3px] text-center tabular-nums">{num(r.m)}</td>
-                <td className="border border-black/60 px-1 py-[3px] text-center tabular-nums">{num(r.f)}</td>
-                {Array.from({ length: TALLY_COLS }, (_, i) => (
-                  <td key={i} className="border border-black/40 px-0 py-[3px]" />
-                ))}
-              </tr>
-            ))}
-            {/* Spare lines up to a fixed twenty rows — so a new item has somewhere
-                to go, and the sheet is the same height whether the guide has
-                twelve items or nineteen. Twenty rows is what fits one landscape
-                page with room to spare. */}
-            {Array.from({ length: Math.max(0, 20 - rows.length) }, (_, i) => (
-              <tr key={`blank${i}`}>
-                {Array.from({ length: 4 + TALLY_COLS }, (_, c) => (
-                  <td key={c} className={`border px-1 py-[3px] ${c < 4 ? 'border-black/60' : 'border-black/40'}`}>
-                    &nbsp;
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-/**
- * The US Foods guide printed as the vendor's own "Sheet to Shelf": one band per
- * storage area in walk order, the product number first, then M-PAR / F-PAR and
- * empty boxes to count into — the same sheet the produce guide prints, with
- * the vendor's number and pack added, so the two sheets read as one system.
- * Multi-page by nature (226 lines), so rows are shorter than the produce
- * sheet's and every row and band refuses to split across a page.
- */
-const USF_TALLY = 6
-
-function UsFoodsGuideSheet() {
-  const pars = getPars()
-  const byId = new Map(getCatalog().map((c) => [c.id, c]))
-  const sections = getGuideSections('US Foods')
-    .map((sec) => ({
-      title: sec.title,
-      rows: sec.ids.flatMap((id) => {
-        const ci = byId.get(id)
-        if (!ci) return []
-        const p = pars[id] ?? { par: 0, onHand: 0 }
-        return [{ code: ci.code ?? '', name: ci.name, size: ci.size ?? '', unit: ci.unit, cost: ci.cost, m: p.par, f: p.parF }]
-      }),
-    }))
-    .filter((sec) => sec.rows.length > 0)
-  if (sections.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted">Nothing on the US Foods guide yet — open Orders once and it seeds itself.</p>
-  }
-  const money = (n?: number) => (typeof n === 'number' ? `$${n.toFixed(2)}` : '')
-  const num = (v?: number) => (typeof v === 'number' && v !== 0 ? String(v) : '')
-  const cols = 6 + USF_TALLY
-  return (
-    <div className="produce-guide usf">
-      <div className="pg-band border-2 px-3 py-2 text-center">
-        <span className="font-display text-xl font-bold tracking-wide text-ink">US Foods Order Guide · Sheet to Shelf</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="pg-table w-full border-collapse text-[11px]">
-          <thead>
-            <tr>
-              <th className="pg-band pg-w-code border px-1.5 py-1 text-left font-bold uppercase">#</th>
-              <th className="pg-band pg-w-name border px-1.5 py-1 text-left font-bold uppercase">Product</th>
-              <th className="pg-band pg-w-size border px-1.5 py-1 text-left font-bold uppercase">Pack · brand</th>
-              <th className="pg-band pg-w-price border px-1 py-1 text-right font-bold uppercase">$ / unit</th>
-              {/* The same two columns the produce sheet prints: Monday's par
-                  has to last to Friday's delivery, Friday's has to cover the
-                  weekend, and they are not the same number. */}
-              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">M-Par</th>
-              <th className="pg-band pg-w-par border px-1 py-1 text-center font-bold uppercase">F-Par</th>
-              {Array.from({ length: USF_TALLY }, (_, i) => (
-                <th key={i} className="border border-black/40 px-0 py-1" />
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sections.map((sec) => (
-              <Fragment key={sec.title}>
-                <tr className="pg-section">
-                  <td colSpan={cols} className="border px-1.5 py-1 text-[10px] font-extrabold uppercase tracking-wider">
-                    {sec.title}
-                  </td>
-                </tr>
-                {sec.rows.map((r) => (
-                  <tr key={r.code || r.name}>
-                    {/* A product number or a price broken across two lines
-                        reads as two numbers — these never wrap. */}
-                    <td className="whitespace-nowrap border border-black/60 px-1.5 py-[2px] font-mono tabular-nums">{r.code}</td>
-                    <td className="border border-black/60 px-1.5 py-[2px] font-medium">{r.name}</td>
-                    <td className="border border-black/60 px-1.5 py-[2px]">{r.size}</td>
-                    <td className="whitespace-nowrap border border-black/60 px-1 py-[2px] text-right tabular-nums">{money(r.cost)}{r.unit && r.unit !== 'cs' ? ` /${r.unit}` : ''}</td>
-                    <td className="border border-black/60 px-1 py-[2px] text-center tabular-nums">{num(r.m)}</td>
-                    <td className="border border-black/60 px-1 py-[2px] text-center tabular-nums">{num(r.f ?? r.m)}</td>
-                    {Array.from({ length: USF_TALLY }, (_, i) => (
-                      <td key={i} className="border border-black/40 px-0 py-[2px]" />
-                    ))}
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
 function InventorySheet() {
   const items = getCatalog()
   const flags = getFlags()
